@@ -1,0 +1,141 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model StripeMetrics {
+  id               Int      @id @default(autoincrement())
+  syncedAt         DateTime @default(now())
+  mrr              Float
+  totalRevenue     Float
+  activeCustomers  Int
+  newCustomers     Int
+  churnedCustomers Int
+  netRevenue       Float
+}
+
+model StripeCustomer {
+  id         String    @id
+  name       String?
+  email      String?
+  status     String
+  mrr        Float     @default(0)
+  createdAt  DateTime
+  canceledAt DateTime?
+  updatedAt  DateTime  @updatedAt
+}
+
+model SyncLog {
+  id       Int      @id @default(autoincrement())
+  source   String
+  status   String
+  message  String?
+  syncedAt DateTime @default(now())
+}
+
+model DailyRevenue {
+  id          Int      @id @default(autoincrement())
+  date        String   @unique // YYYY-MM-DD format
+  amount      Float
+  chargeCount Int      @default(0)
+  syncedAt    DateTime @default(now())
+}
+
+model ZendeskSnapshot {
+  id                  Int      @id @default(autoincrement())
+  syncedAt            DateTime @default(now())
+  // Queue
+  queueNew            Int      @default(0)
+  queueOpen           Int      @default(0)
+  queuePending        Int      @default(0)
+  queueHold           Int      @default(0)
+  queueTotal          Int      @default(0)
+  // This month
+  createdThisMonth    Int      @default(0)
+  resolvedThisMonth   Int      @default(0)
+  resolutionRate      Float    @default(0)
+  // Resolution times (hours)
+  resTimeMean         Float    @default(0)
+  resTimeMedian       Float    @default(0)
+  resTimeMode         Float    @default(0)
+  resTimeSample       Int      @default(0)
+  // By type (open tickets)
+  typeWebsiteBuild    Int      @default(0)
+  typeWebsiteHelpdesk Int      @default(0)
+  typeSMM             Int      @default(0)
+  typeGoogleAds       Int      @default(0)
+  typeCRM             Int      @default(0)
+  // First reply time (minutes)
+  firstReplyTimeMean   Float   @default(0)
+  firstReplyTimeMedian Float   @default(0)
+  firstReplyTimeSample Int     @default(0)
+  // SLA / overdue
+  overdueTickets       Int     @default(0)
+  // Relations
+  buckets              ZendeskResolutionBucket[]
+  orgTickets           ZendeskOrgTicket[]
+  monthlyVolumes       ZendeskMonthlyVolume[]
+  assigneeLoads        ZendeskAssigneeLoad[]
+}
+
+model ZendeskOrgTicket {
+  id         Int             @id @default(autoincrement())
+  snapshotId Int
+  orgName    String
+  orgId      String
+  openCount  Int
+  snapshot   ZendeskSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+}
+
+model ZendeskMonthlyVolume {
+  id         Int             @id @default(autoincrement())
+  snapshotId Int
+  month      String          // "2026-01"
+  count      Int
+  snapshot   ZendeskSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+}
+
+model ZendeskAssigneeLoad {
+  id         Int             @id @default(autoincrement())
+  snapshotId Int
+  name       String
+  openCount  Int
+  snapshot   ZendeskSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+}
+
+model ZendeskResolutionBucket {
+  id         Int             @id @default(autoincrement())
+  snapshotId Int
+  label      String
+  minHours   Float
+  maxHours   Float
+  count      Int
+  snapshot   ZendeskSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+}
+
+model AsanaSnapshot {
+  id                 Int      @id @default(autoincrement())
+  syncedAt           DateTime @default(now())
+  totalOpen          Int      @default(0)
+  totalOverdue       Int      @default(0)
+  dueSoon            Int      @default(0)
+  completedThisWeek  Int      @default(0)
+  completedThisMonth Int      @default(0)
+  assignees          AsanaAssigneeLoad[]
+}
+
+model AsanaAssigneeLoad {
+  id                 Int           @id @default(autoincrement())
+  snapshotId         Int
+  name               String
+  email              String        @default("")
+  totalOpen          Int           @default(0)
+  overdue            Int           @default(0)
+  dueSoon            Int           @default(0)
+  completedThisWeek  Int           @default(0)
+  snapshot           AsanaSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+}
