@@ -512,6 +512,7 @@ export default function ChurnPage() {
                   <Legend wrapperStyle={{ color: '#9CA3AF', fontSize: 12 }} />
                   <Bar  dataKey="newMRR" name="New MRR" fill={TEAL} radius={[4, 4, 0, 0]} />
                   <Bar  dataKey="lostMRRNeg" name="Lost MRR" fill={RED} radius={[0, 0, 4, 4]} />
+                  <Line type="monotone" dataKey="netMRR" name="Net MRR" stroke={AMBER} strokeWidth={2} dot={false} />
                   <Line type="monotone" dataKey="trendNewMRR" name="New Trend" stroke={TEAL} strokeWidth={1.5} strokeDasharray="4 2" dot={false} />
                   <Line type="monotone" dataKey="trendLostMRRNeg" name="Lost Trend" stroke="#9CA3AF" strokeWidth={1.5} strokeDasharray="4 2" dot={false} />
                 </ComposedChart>
