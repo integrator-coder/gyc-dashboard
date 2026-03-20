@@ -119,11 +119,13 @@ export default function ChurnPage() {
     churnRevPct: m.churnRevPct > 20 ? null : m.churnRevPct,
   }))
 
-  // Zoom-ins: last quarter (3 months)
-  const lastQuarter = chartData.slice(-3)
-  const churnZoom = trendline(lastQuarter, 'churnPct', 'trendChurnPct')
+  // Zoom-ins: year-to-date (auto-grows month by month)
+  const latestMonth = chartData[chartData.length - 1]?.month || ''
+  const latestYearSuffix = latestMonth.split('-')[1] || ''
+  const ytdData = chartData.filter(m => (m.month?.split('-')[1] || '') === latestYearSuffix)
+  const churnZoom = trendline(ytdData, 'churnPct', 'trendChurnPct')
   const mrrZoom = trendline(
-    trendline(lastQuarter, 'newMRR', 'trendNewMRR'),
+    trendline(ytdData, 'newMRR', 'trendNewMRR'),
     'lostMRRNeg',
     'trendLostMRRNeg'
   )
@@ -464,12 +466,12 @@ export default function ChurnPage() {
             </div>
           </div>
 
-          {/* ── Row 2: Last Quarter Zoom-Ins ─────────────────────────────── */}
+          {/* ── Row 2: Year-to-Date Zoom-Ins ─────────────────────────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Zoom-In: Monthly Churn Rate */}
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-              <h2 className="text-white font-semibold mb-1">Monthly Churn Rate (Last Quarter)</h2>
-              <p className="text-gray-500 text-xs mb-4">Last 3 months + trendline</p>
+              <h2 className="text-white font-semibold mb-1">Monthly Churn Rate (Year to Date)</h2>
+              <p className="text-gray-500 text-xs mb-4">YTD + trendline (auto-expands each month)</p>
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={churnZoom} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -493,8 +495,8 @@ export default function ChurnPage() {
 
             {/* Zoom-In: Lost vs Added MRR */}
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-              <h2 className="text-white font-semibold mb-1">Lost vs Added MRR (Last Quarter)</h2>
-              <p className="text-gray-500 text-xs mb-4">Last 3 months + trendlines</p>
+              <h2 className="text-white font-semibold mb-1">Lost vs Added MRR (Year to Date)</h2>
+              <p className="text-gray-500 text-xs mb-4">YTD + trendlines (auto-expands each month)</p>
               <ResponsiveContainer width="100%" height={220}>
                 <ComposedChart data={mrrZoom} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
