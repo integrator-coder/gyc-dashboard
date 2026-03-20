@@ -22,6 +22,22 @@ const fmtK  = (n) => {
 }
 const fmtPct = (n) => (n != null && n !== 0 ? n.toFixed(1) + '%' : '—')
 
+function trendline(data, dataKey, outKey) {
+  const n = data.length
+  if (n < 2) return data.map(d => ({ ...d, [outKey]: d[dataKey] ?? 0 }))
+  const xs = data.map((_, i) => i)
+  const ys = data.map(d => d[dataKey] ?? 0)
+  const sumX = xs.reduce((s, x) => s + x, 0)
+  const sumY = ys.reduce((s, y) => s + y, 0)
+  const sumXY = xs.reduce((s, x, i) => s + x * ys[i], 0)
+  const sumXX = xs.reduce((s, x) => s + x * x, 0)
+  const denom = n * sumXX - sumX * sumX
+  if (denom === 0) return data.map(d => ({ ...d, [outKey]: sumY / n }))
+  const slope = (n * sumXY - sumX * sumY) / denom
+  const intercept = (sumY - slope * sumX) / n
+  return data.map((d, i) => ({ ...d, [outKey]: parseFloat((slope * i + intercept).toFixed(4)) }))
+}
+
 function KpiCard({ label, value, sub, highlight, negative }) {
   return (
     <div className={`rounded-xl border p-4 flex flex-col gap-1 ${
@@ -102,6 +118,15 @@ export default function ChurnPage() {
     churnPct:    m.churnPct    > 20 ? null : m.churnPct,
     churnRevPct: m.churnRevPct > 20 ? null : m.churnRevPct,
   }))
+
+  // Zoom-ins: last quarter (3 months)
+  const lastQuarter = chartData.slice(-3)
+  const churnZoom = trendline(lastQuarter, 'churnPct', 'trendChurnPct')
+  const mrrZoom = trendline(
+    trendline(lastQuarter, 'newMRR', 'trendNewMRR'),
+    'lostMRRNeg',
+    'trendLostMRRNeg'
+  )
 
   // Yearly summaries
   const yearSummaries = (() => {
@@ -439,7 +464,62 @@ export default function ChurnPage() {
             </div>
           </div>
 
-          {/* ── Row 2: Churn Rate + Lost vs Added MRR ───────────────────── */}
+          {/* ── Row 2: Last Quarter Zoom-Ins ─────────────────────────────── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Zoom-In: Monthly Churn Rate */}
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+              <h2 className="text-white font-semibold mb-1">Monthly Churn Rate (Last Quarter)</h2>
+              <p className="text-gray-500 text-xs mb-4">Last 3 months + trendline</p>
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={churnZoom} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="month" tick={{ fill: '#9CA3AF', fontSize: 10 }} />
+                  <YAxis tickFormatter={v => v + '%'} tick={{ fill: '#9CA3AF', fontSize: 11 }} width={44} />
+                  <ReferenceLine y={3} stroke={AMBER} strokeDasharray="4 2" label={{ value: '3%', fill: AMBER, fontSize: 10, position: 'right' }} />
+                  <Tooltip content={({ active, payload, label }) => active && payload?.length ? (
+                    <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm">
+                      <p className="text-white font-semibold mb-1">{label}</p>
+                      {payload.map(p => (
+                        <p key={p.name} style={{ color: p.color }}>{p.name}: {p.value?.toFixed?.(1)}%</p>
+                      ))}
+                    </div>
+                  ) : null} />
+                  <Legend wrapperStyle={{ color: '#9CA3AF', fontSize: 12 }} />
+                  <Line type="monotone" dataKey="churnPct" name="Client Churn %" stroke={RED} strokeWidth={2.5} dot />
+                  <Line type="monotone" dataKey="trendChurnPct" name="Trend" stroke="#9CA3AF" strokeWidth={1.5} strokeDasharray="4 2" dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Zoom-In: Lost vs Added MRR */}
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+              <h2 className="text-white font-semibold mb-1">Lost vs Added MRR (Last Quarter)</h2>
+              <p className="text-gray-500 text-xs mb-4">Last 3 months + trendlines</p>
+              <ResponsiveContainer width="100%" height={220}>
+                <ComposedChart data={mrrZoom} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="month" tick={{ fill: '#9CA3AF', fontSize: 10 }} />
+                  <YAxis tickFormatter={fmtK} tick={{ fill: '#9CA3AF', fontSize: 11 }} width={56} />
+                  <ReferenceLine y={0} stroke="#6B7280" strokeWidth={1} />
+                  <Tooltip content={({ active, payload, label }) => active && payload?.length ? (
+                    <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm">
+                      <p className="text-white font-semibold mb-1">{label}</p>
+                      {payload.map(p => (
+                        <p key={p.name} style={{ color: p.color }}>{p.name}: {fmt$(p.value)}</p>
+                      ))}
+                    </div>
+                  ) : null} />
+                  <Legend wrapperStyle={{ color: '#9CA3AF', fontSize: 12 }} />
+                  <Bar  dataKey="newMRR" name="New MRR" fill={TEAL} radius={[4, 4, 0, 0]} />
+                  <Bar  dataKey="lostMRRNeg" name="Lost MRR" fill={RED} radius={[0, 0, 4, 4]} />
+                  <Line type="monotone" dataKey="trendNewMRR" name="New Trend" stroke={TEAL} strokeWidth={1.5} strokeDasharray="4 2" dot={false} />
+                  <Line type="monotone" dataKey="trendLostMRRNeg" name="Lost Trend" stroke="#9CA3AF" strokeWidth={1.5} strokeDasharray="4 2" dot={false} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* ── Row 3: Churn Rate + Lost vs Added MRR (Full History) ─────── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Churn Rate */}
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
