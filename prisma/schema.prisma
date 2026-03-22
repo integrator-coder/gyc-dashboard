@@ -3,8 +3,120 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ApiConnection {
+  id             String       @id
+  organizationId Int
+  provider       String
+  credentials    Json
+  status         String       @default("pending")
+  lastTestedAt   DateTime?
+  errorMessage   String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime
+  Organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, provider])
+}
+
+model AsanaAssigneeLoad {
+  id                Int           @id @default(autoincrement())
+  snapshotId        Int
+  name              String
+  email             String        @default("")
+  totalOpen         Int           @default(0)
+  overdue           Int           @default(0)
+  dueSoon           Int           @default(0)
+  completedThisWeek Int           @default(0)
+  AsanaSnapshot     AsanaSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+}
+
+model AsanaSnapshot {
+  id                 Int                 @id @default(autoincrement())
+  organizationId     String              @default("default")
+  syncedAt           DateTime            @default(now())
+  totalOpen          Int                 @default(0)
+  totalOverdue       Int                 @default(0)
+  dueSoon            Int                 @default(0)
+  completedThisWeek  Int                 @default(0)
+  completedThisMonth Int                 @default(0)
+  AsanaAssigneeLoad  AsanaAssigneeLoad[]
+}
+
+model Client {
+  id                String              @id
+  acronym           String              @unique
+  name              String
+  sheetId           String
+  funnelTab         String
+  status            String              @default("active")
+  teamNotes         String?
+  notesBy           String?
+  notesAt           DateTime?
+  lastSyncAt        DateTime?
+  createdAt         DateTime            @default(now())
+  ClientFunnelMonth ClientFunnelMonth[]
+}
+
+model ClientFunnelMonth {
+  id           String   @id
+  clientId     String
+  month        String
+  locationName String   @default("default")
+  leads        Int      @default(0)
+  tours        Int      @default(0)
+  registered   Int      @default(0)
+  revenue      Float    @default(0)
+  leadToTour   Float?
+  tourToReg    Float?
+  leadToReg    Float?
+  syncedAt     DateTime @default(now())
+  Client       Client   @relation(fields: [clientId], references: [id])
+
+  @@unique([clientId, month, locationName])
+}
+
+model DailyRevenue {
+  id             Int      @id @default(autoincrement())
+  date           String   @unique
+  amount         Float
+  chargeCount    Int      @default(0)
+  syncedAt       DateTime @default(now())
+  organizationId String   @default("default")
+}
+
+model Organization {
+  id            Int             @id @default(autoincrement())
+  name          String
+  slug          String          @unique
+  industry      String?
+  logoUrl       String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime
+  ApiConnection ApiConnection[]
+  User          User[]
+}
+
+model Session {
+  id           String   @id
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+}
+
+model StripeCustomer {
+  id             String    @id
+  name           String?
+  email          String?
+  status         String
+  mrr            Float     @default(0)
+  createdAt      DateTime
+  canceledAt     DateTime?
+  updatedAt      DateTime
+  organizationId String    @default("default")
 }
 
 model StripeMetrics {
@@ -16,126 +128,110 @@ model StripeMetrics {
   newCustomers     Int
   churnedCustomers Int
   netRevenue       Float
-}
-
-model StripeCustomer {
-  id         String    @id
-  name       String?
-  email      String?
-  status     String
-  mrr        Float     @default(0)
-  createdAt  DateTime
-  canceledAt DateTime?
-  updatedAt  DateTime  @updatedAt
+  organizationId   String   @default("default")
 }
 
 model SyncLog {
-  id       Int      @id @default(autoincrement())
-  source   String
-  status   String
-  message  String?
-  syncedAt DateTime @default(now())
+  id             Int      @id @default(autoincrement())
+  source         String
+  status         String
+  message        String?
+  syncedAt       DateTime @default(now())
+  organizationId String   @default("default")
 }
 
-model DailyRevenue {
-  id          Int      @id @default(autoincrement())
-  date        String   @unique // YYYY-MM-DD format
-  amount      Float
-  chargeCount Int      @default(0)
-  syncedAt    DateTime @default(now())
+model User {
+  id             String       @id
+  name           String
+  email          String       @unique
+  passwordHash   String?
+  role           String       @default("viewer")
+  organizationId Int
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime
+  Organization   Organization @relation(fields: [organizationId], references: [id])
+  UserTeam       UserTeam[]
 }
 
-model ZendeskSnapshot {
-  id                  Int      @id @default(autoincrement())
-  syncedAt            DateTime @default(now())
-  // Queue
-  queueNew            Int      @default(0)
-  queueOpen           Int      @default(0)
-  queuePending        Int      @default(0)
-  queueHold           Int      @default(0)
-  queueTotal          Int      @default(0)
-  // This month
-  createdThisMonth    Int      @default(0)
-  resolvedThisMonth   Int      @default(0)
-  resolutionRate      Float    @default(0)
-  // Resolution times (hours)
-  resTimeMean         Float    @default(0)
-  resTimeMedian       Float    @default(0)
-  resTimeMode         Float    @default(0)
-  resTimeSample       Int      @default(0)
-  // By type (open tickets)
-  typeWebsiteBuild    Int      @default(0)
-  typeWebsiteHelpdesk Int      @default(0)
-  typeSMM             Int      @default(0)
-  typeGoogleAds       Int      @default(0)
-  typeCRM             Int      @default(0)
-  // First reply time (minutes)
-  firstReplyTimeMean   Float   @default(0)
-  firstReplyTimeMedian Float   @default(0)
-  firstReplyTimeSample Int     @default(0)
-  // SLA / overdue
-  overdueTickets       Int     @default(0)
-  // Relations
-  buckets              ZendeskResolutionBucket[]
-  orgTickets           ZendeskOrgTicket[]
-  monthlyVolumes       ZendeskMonthlyVolume[]
-  assigneeLoads        ZendeskAssigneeLoad[]
+model UserTeam {
+  id     String @id
+  userId String
+  team   String
+  User   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, team])
 }
 
-model ZendeskOrgTicket {
-  id         Int             @id @default(autoincrement())
-  snapshotId Int
-  orgName    String
-  orgId      String
-  openCount  Int
-  snapshot   ZendeskSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
-}
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
 
-model ZendeskMonthlyVolume {
-  id         Int             @id @default(autoincrement())
-  snapshotId Int
-  month      String          // "2026-01"
-  count      Int
-  snapshot   ZendeskSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  @@unique([identifier, token])
 }
 
 model ZendeskAssigneeLoad {
-  id         Int             @id @default(autoincrement())
-  snapshotId Int
-  name       String
-  openCount  Int
-  snapshot   ZendeskSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  id              Int             @id @default(autoincrement())
+  snapshotId      Int
+  name            String
+  openCount       Int
+  ZendeskSnapshot ZendeskSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+}
+
+model ZendeskMonthlyVolume {
+  id              Int             @id @default(autoincrement())
+  snapshotId      Int
+  month           String
+  count           Int
+  ZendeskSnapshot ZendeskSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+}
+
+model ZendeskOrgTicket {
+  id              Int             @id @default(autoincrement())
+  snapshotId      Int
+  orgName         String
+  orgId           String
+  openCount       Int
+  ZendeskSnapshot ZendeskSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
 }
 
 model ZendeskResolutionBucket {
-  id         Int             @id @default(autoincrement())
-  snapshotId Int
-  label      String
-  minHours   Float
-  maxHours   Float
-  count      Int
-  snapshot   ZendeskSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  id              Int             @id @default(autoincrement())
+  snapshotId      Int
+  label           String
+  minHours        Float
+  maxHours        Float
+  count           Int
+  ZendeskSnapshot ZendeskSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
 }
 
-model AsanaSnapshot {
-  id                 Int      @id @default(autoincrement())
-  syncedAt           DateTime @default(now())
-  totalOpen          Int      @default(0)
-  totalOverdue       Int      @default(0)
-  dueSoon            Int      @default(0)
-  completedThisWeek  Int      @default(0)
-  completedThisMonth Int      @default(0)
-  assignees          AsanaAssigneeLoad[]
-}
-
-model AsanaAssigneeLoad {
-  id                 Int           @id @default(autoincrement())
-  snapshotId         Int
-  name               String
-  email              String        @default("")
-  totalOpen          Int           @default(0)
-  overdue            Int           @default(0)
-  dueSoon            Int           @default(0)
-  completedThisWeek  Int           @default(0)
-  snapshot           AsanaSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+model ZendeskSnapshot {
+  id                      Int                       @id @default(autoincrement())
+  organizationId          String                    @default("default")
+  syncedAt                DateTime                  @default(now())
+  queueNew                Int                       @default(0)
+  queueOpen               Int                       @default(0)
+  queuePending            Int                       @default(0)
+  queueHold               Int                       @default(0)
+  queueTotal              Int                       @default(0)
+  createdThisMonth        Int                       @default(0)
+  resolvedThisMonth       Int                       @default(0)
+  resolutionRate          Float                     @default(0)
+  resTimeMean             Float                     @default(0)
+  resTimeMedian           Float                     @default(0)
+  resTimeMode             Float                     @default(0)
+  resTimeSample           Int                       @default(0)
+  typeWebsiteBuild        Int                       @default(0)
+  typeWebsiteHelpdesk     Int                       @default(0)
+  typeSMM                 Int                       @default(0)
+  typeGoogleAds           Int                       @default(0)
+  typeCRM                 Int                       @default(0)
+  firstReplyTimeMean      Float                     @default(0)
+  firstReplyTimeMedian    Float                     @default(0)
+  firstReplyTimeSample    Int                       @default(0)
+  overdueTickets          Int                       @default(0)
+  ZendeskAssigneeLoad     ZendeskAssigneeLoad[]
+  ZendeskMonthlyVolume    ZendeskMonthlyVolume[]
+  ZendeskOrgTicket        ZendeskOrgTicket[]
+  ZendeskResolutionBucket ZendeskResolutionBucket[]
 }

@@ -1,7 +1,9 @@
-// scripts/sync-asana.js — pulls Asana data per-assignee and stores a snapshot in SQLite
+// scripts/sync-asana.js — pulls Asana data per-assignee and stores a snapshot in Neon
+require('dotenv').config({ path: '.env.local' })
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
+const ORG_ID = 'default'
 const PAT = process.env.ASANA_PAT
 const WS = '931093392134374'
 const BASE = 'https://app.asana.com/api/1.0'
@@ -145,12 +147,13 @@ async function main() {
   console.log('  Writing to database...')
   const snapshot = await prisma.asanaSnapshot.create({
     data: {
+      organizationId: ORG_ID,
       totalOpen,
       totalOverdue,
       dueSoon,
       completedThisWeek,
       completedThisMonth,
-      assignees: {
+      AsanaAssigneeLoad: {
         create: assigneeRows.map(({ atCap, ...r }) => r)  // atCap is a runtime flag, not stored
       }
     }
@@ -158,6 +161,7 @@ async function main() {
 
   await prisma.syncLog.create({
     data: {
+      organizationId: ORG_ID,
       source: 'asana',
       status: 'success',
       message: `Snapshot ID ${snapshot.id}, ${staff.length} staff, open=${totalOpen} overdue=${totalOverdue}`
@@ -176,7 +180,7 @@ main()
   .catch(async (e) => {
     console.error('❌ Sync failed:', e.message)
     await prisma.syncLog.create({
-      data: { source: 'asana', status: 'error', message: e.message }
+      data: { organizationId: ORG_ID, source: 'asana', status: 'error', message: e.message }
     }).catch(() => {})
     process.exit(1)
   })
