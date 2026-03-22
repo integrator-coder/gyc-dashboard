@@ -79,6 +79,27 @@ model ClientFunnelMonth {
   @@unique([clientId, month, locationName])
 }
 
+model ClientGAMetrics {
+  acronym            String
+  propertyId         String   @map("propertyId")
+  period             String
+  sessions           Int      @default(0)
+  activeUsers        Int      @default(0) @map("activeUsers")
+  newUsers           Int      @default(0) @map("newUsers")
+  bounceRate         Float    @default(0) @map("bounceRate")
+  organicSearch      Int      @default(0) @map("organicSearch")
+  paidSearch         Int      @default(0) @map("paidSearch")
+  directSessions     Int      @default(0) @map("directSessions")
+  organicSocial      Int      @default(0) @map("organicSocial")
+  paidSocial         Int      @default(0) @map("paidSocial")
+  referral           Int      @default(0)
+  avgSessionDuration Float    @default(0) @map("avgSessionDuration")
+  syncedAt           DateTime @default(now()) @map("syncedAt")
+
+  @@id([acronym, period])
+  @@index([period, sessions(sort: Desc)])
+}
+
 model DailyRevenue {
   id             Int      @id @default(autoincrement())
   date           String   @unique
