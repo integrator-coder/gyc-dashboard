@@ -1,55 +1,72 @@
+export const dynamic = 'force-dynamic'
+
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import pkg from 'pg'
+const { Pool } = pkg
+
+const pool = new Pool({
+  connectionString: process.env.NEON_DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+})
 
 export async function GET() {
+  const client = await pool.connect()
   try {
-    // Get the latest and previous metrics snapshots
-    const latest = await prisma.stripeMetrics.findFirst({
-      orderBy: { syncedAt: 'desc' }
-    })
+    // Latest and previous StripeMetrics snapshots
+    const { rows: metricsRows } = await client.query(`
+      SELECT * FROM "StripeMetrics"
+      ORDER BY "syncedAt" DESC
+      LIMIT 2
+    `)
+    const latest = metricsRows[0] || null
+    const previous = metricsRows[1] || null
 
-    const previous = await prisma.stripeMetrics.findFirst({
-      orderBy: { syncedAt: 'desc' },
-      skip: 1
-    })
+    // Active customers sorted by MRR
+    const { rows: customers } = await client.query(`
+      SELECT * FROM "StripeCustomer"
+      WHERE status = 'active'
+      ORDER BY mrr DESC
+    `)
 
-    // Get all active customers sorted by MRR
-    const customers = await prisma.stripeCustomer.findMany({
-      where: { status: 'active' },
-      orderBy: { mrr: 'desc' }
-    })
+    // Last sync log for stripe
+    const { rows: syncRows } = await client.query(`
+      SELECT * FROM "SyncLog"
+      WHERE source = 'stripe'
+      ORDER BY "syncedAt" DESC
+      LIMIT 1
+    `)
+    const lastSync = syncRows[0] || null
 
-    // Get last sync log for stripe
-    const lastSync = await prisma.syncLog.findFirst({
-      where: { source: 'stripe' },
-      orderBy: { syncedAt: 'desc' }
-    })
+    // Last 10 snapshots for chart (oldest first)
+    const { rows: historyRows } = await client.query(`
+      SELECT * FROM "StripeMetrics"
+      ORDER BY "syncedAt" DESC
+      LIMIT 10
+    `)
+    const history = historyRows.reverse()
 
-    // Get last 10 snapshots for chart (oldest first)
-    const history = await prisma.stripeMetrics.findMany({
-      orderBy: { syncedAt: 'desc' },
-      take: 10
-    })
-
-    // Get last 35 days of daily revenue (oldest first), use date filter to ensure today is included
+    // Last 35 days of daily revenue (oldest first)
     const thirtyFiveDaysAgo = new Date()
     thirtyFiveDaysAgo.setDate(thirtyFiveDaysAgo.getDate() - 35)
     const cutoffDate = thirtyFiveDaysAgo.toISOString().split('T')[0]
-    const dailyRevenue = await prisma.dailyRevenue.findMany({
-      where: { date: { gte: cutoffDate } },
-      orderBy: { date: 'asc' }
-    })
+    const { rows: dailyRevenue } = await client.query(`
+      SELECT * FROM "DailyRevenue"
+      WHERE date >= $1
+      ORDER BY date ASC
+    `, [cutoffDate])
 
     return NextResponse.json({
       metrics: latest,
       previous,
       customers,
       lastSync,
-      history: history.reverse(), // oldest first for chart
-      dailyRevenue
+      history,
+      dailyRevenue,
     })
   } catch (error) {
     console.error('Finance metrics error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
+  } finally {
+    client.release()
   }
 }
