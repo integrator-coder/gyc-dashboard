@@ -4,56 +4,64 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 
-const NAV = [
-  {
-    label: 'Leadership', emoji: '🏆', group: true,
-    children: [
-      { label: 'Overview', emoji: '🏆', href: '/leadership' },
-      { label: 'HR', emoji: '🧑', href: '/hr' },
-    ],
-  },
-  {
-    label: 'Finance', emoji: '💰', group: true,
-    children: [
-      { label: 'Overview', emoji: '💰', href: '/finance' },
-      { label: 'Churn', emoji: '📉', href: '/churn' },
-      { label: 'Dunning', emoji: '⚠️', href: '/dunning' },
-    ],
-  },
-  {
-    label: 'Sales', emoji: '📞', group: true,
-    children: [
-      { label: 'Sales Activity', emoji: '📞', href: '/sales-activity' },
-      { label: 'New Business', emoji: '💵', href: '/new-business' },
-    ],
-  },
-  {
-    label: 'CX', emoji: '👥', group: true,
-    children: [
-      { label: 'CX Overview', emoji: '👥', href: '/cx' },
-      { label: 'Client Results', emoji: '📊', href: '/clients' },
-      { label: 'Web Analytics', emoji: '📈', href: '/web-analytics' },
-      { label: 'Helpdesk', emoji: '🌐', href: '/helpdesk' },
-    ],
-  },
-  {
-    label: 'Operations', emoji: '🛠️', group: true,
-    children: [
-      { label: 'CX Handoffs', emoji: '🧾', href: '/cx-handoff' },
-    ],
-  },
-  { label: 'Marketing', emoji: '📣', href: '/marketing' },
-  { label: 'Production', emoji: '🔧', href: '/production' },
-]
-
-const TEAM_PORTAL_GROUP = {
-  label: 'Team Portal', emoji: '🧩', group: true,
+const DASHBOARD_GROUP = {
+  label: 'Dashboard',
+  emoji: '📊',
   children: [
-    { label: 'Classify Calls', emoji: '🏷️', href: '/team/classify', roles: ['sales', 'ga', 'admin'] },
-    { label: 'CX Review & Q&A', emoji: '🧠', href: '/team/cx', roles: ['cx', 'admin'] },
-    { label: 'Recon Review', emoji: '📍', href: '/team/recon', roles: ['recon', 'admin'] },
+    {
+      label: 'Leadership',
+      emoji: '🏆',
+      items: [
+        { label: 'Overview', emoji: '🏆', href: '/leadership' },
+        { label: 'HR', emoji: '🧑', href: '/hr' },
+      ],
+    },
+    {
+      label: 'Finance',
+      emoji: '💰',
+      items: [
+        { label: 'Overview', emoji: '💰', href: '/finance' },
+        { label: 'Churn', emoji: '📉', href: '/churn' },
+        { label: 'Dunning', emoji: '⚠️', href: '/dunning' },
+      ],
+    },
+    {
+      label: 'Sales',
+      emoji: '📞',
+      items: [
+        { label: 'Sales Activity', emoji: '📞', href: '/sales-activity' },
+        { label: 'New Business', emoji: '💵', href: '/new-business' },
+      ],
+    },
+    {
+      label: 'CX',
+      emoji: '👥',
+      items: [
+        { label: 'CX Overview', emoji: '👥', href: '/cx' },
+        { label: 'Client Results', emoji: '📊', href: '/clients' },
+        { label: 'Web Analytics', emoji: '📈', href: '/web-analytics' },
+        { label: 'Helpdesk', emoji: '🌐', href: '/helpdesk' },
+      ],
+    },
+    {
+      label: 'Marketing',
+      emoji: '📣',
+      href: '/marketing',
+    },
+    {
+      label: 'Production',
+      emoji: '🔧',
+      href: '/production',
+    },
   ],
 }
+
+const TEAM_PORTAL_ITEMS = [
+  { label: 'CX Handoffs', emoji: '🧾', href: '/cx-handoff' },
+  { label: 'Classify Calls', emoji: '🏷️', href: '/team/classify', roles: ['sales', 'ga', 'admin'] },
+  { label: 'CX Review & Q&A', emoji: '🧠', href: '/team/cx', roles: ['cx', 'admin'] },
+  { label: 'Recon & Intel', emoji: '🔍', href: '/team/recon', roles: ['recon', 'admin'] },
+]
 
 function hasRole(user, allowedRoles = []) {
   if (!allowedRoles.length) return true
@@ -61,45 +69,80 @@ function hasRole(user, allowedRoles = []) {
   return allowedRoles.some((role) => roles.has(String(role).toLowerCase()))
 }
 
-function GroupItem({ group, pathname }) {
-  const isChildActive = group.children.some((c) => pathname === c.href)
-  const [manualOpen, setManualOpen] = useState(false)
+function DashboardGroup({ group, pathname }) {
+  const isChildActive = group.children.some((child) => child.href ? pathname === child.href : child.items?.some((item) => pathname === item.href))
+  const [manualOpen, setManualOpen] = useState(isChildActive)
   const open = isChildActive || manualOpen
+
+  useEffect(() => {
+    if (isChildActive) setManualOpen(true)
+  }, [isChildActive])
 
   return (
     <div>
       <button
-        onClick={() => setManualOpen((o) => !o)}
-        style={isChildActive ? { color: '#f5f5f5', backgroundColor: '#1a0a2e' } : {}}
-        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isChildActive ? '' : 'hover:bg-[#1a0a2e]'}`}
-        onMouseEnter={(e) => { if (!isChildActive) e.currentTarget.style.color = '#f5f5f5' }}
-        onMouseLeave={(e) => { if (!isChildActive) e.currentTarget.style.color = '' }}
+        onClick={() => setManualOpen((current) => !current)}
+        style={isChildActive ? { color: '#f5f5f5', backgroundColor: '#1a0a2e' } : { color: '#d1d5db' }}
+        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${isChildActive ? '' : 'hover:bg-[#1a0a2e] hover:text-white'}`}
       >
-        <div className="flex items-center gap-3" style={{ color: isChildActive ? '#f5f5f5' : '#9ca3af' }}>
+        <div className="flex items-center gap-3">
           <span className="text-base">{group.emoji}</span>
-          {group.label}
+          <span>{group.label}</span>
         </div>
-        <span style={{ color: '#4a3060', fontSize: '12px' }} className={`transition-transform ${open ? 'rotate-90' : ''}`}>›</span>
+        <span style={{ color: '#6d4c89', fontSize: '12px' }} className={`transition-transform ${open ? 'rotate-90' : ''}`}>›</span>
       </button>
+
       {open && (
-        <div className="ml-4 mt-0.5 space-y-0.5 pl-2" style={{ borderLeft: '1px solid #2a1a3e' }}>
+        <div className="ml-3 mt-2 space-y-3 border-l border-[#2a1a3e] pl-4">
           {group.children.map((child) => {
-            const isActive = pathname === child.href
+            if (child.href) {
+              const isActive = pathname === child.href
+              return (
+                <Link
+                  key={child.href}
+                  href={child.href}
+                  style={isActive ? {
+                    backgroundColor: '#731494',
+                    color: '#ffffff',
+                    borderLeft: '3px solid #AE2BCF',
+                    paddingLeft: '10px',
+                  } : { color: '#9ca3af' }}
+                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive ? '' : 'hover:bg-[#1a0a2e] hover:text-white'}`}
+                >
+                  <span className="text-sm">{child.emoji}</span>
+                  <span>{child.label}</span>
+                </Link>
+              )
+            }
+
             return (
-              <Link
-                key={child.href}
-                href={child.href}
-                style={isActive ? {
-                  backgroundColor: '#731494',
-                  color: '#ffffff',
-                  borderLeft: '3px solid #AE2BCF',
-                  paddingLeft: '10px',
-                } : { color: '#9ca3af' }}
-                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${isActive ? '' : 'hover:bg-[#1a0a2e] hover:text-white'} font-medium`}
-              >
-                <span className="text-sm">{child.emoji}</span>
-                {child.label}
-              </Link>
+              <div key={child.label} className="space-y-1.5">
+                <div className="flex items-center gap-2 px-3 pt-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-violet-300/80">
+                  <span className="text-sm normal-case tracking-normal">{child.emoji}</span>
+                  <span>{child.label}</span>
+                </div>
+                <div className="space-y-0.5">
+                  {child.items.map((item) => {
+                    const isActive = pathname === item.href
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        style={isActive ? {
+                          backgroundColor: '#731494',
+                          color: '#ffffff',
+                          borderLeft: '3px solid #AE2BCF',
+                          paddingLeft: '10px',
+                        } : { color: '#9ca3af' }}
+                        className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${isActive ? '' : 'hover:bg-[#1a0a2e] hover:text-white'} font-medium`}
+                      >
+                        <span className="text-sm">{item.emoji}</span>
+                        <span>{item.label}</span>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
             )
           })}
         </div>
@@ -122,14 +165,10 @@ export default function Sidebar() {
     return () => { active = false }
   }, [pathname])
 
-  const items = useMemo(() => {
-    const next = [...NAV]
-    const visibleTeamChildren = TEAM_PORTAL_GROUP.children.filter((child) => hasRole(session.user, child.roles))
-    if (visibleTeamChildren.length) {
-      next.splice(5, 0, { ...TEAM_PORTAL_GROUP, children: visibleTeamChildren })
-    }
-    return next
-  }, [session.user])
+  const teamPortalItems = useMemo(
+    () => TEAM_PORTAL_ITEMS.filter((item) => hasRole(session.user, item.roles)),
+    [session.user],
+  )
 
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -149,27 +188,33 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-1">
-        {items.map((item) => {
-          if (item.group) return <GroupItem key={item.label} group={item} pathname={pathname} />
-          const isActive = pathname === item.href
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              style={isActive ? {
-                backgroundColor: '#731494',
-                color: '#ffffff',
-                borderLeft: '3px solid #AE2BCF',
-                paddingLeft: '10px',
-              } : { color: '#9ca3af' }}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? '' : 'hover:bg-[#1a0a2e] hover:text-white'}`}
-            >
-              <span className="text-base">{item.emoji}</span>
-              {item.label}
-            </Link>
-          )
-        })}
+      <nav className="flex-1 px-3 py-4 space-y-4">
+        <DashboardGroup group={DASHBOARD_GROUP} pathname={pathname} />
+
+        <div className="space-y-1">
+          <div className="px-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-violet-300/70">
+            Team Portal
+          </div>
+          {teamPortalItems.map((item) => {
+            const isActive = pathname === item.href
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                style={isActive ? {
+                  backgroundColor: '#731494',
+                  color: '#ffffff',
+                  borderLeft: '3px solid #AE2BCF',
+                  paddingLeft: '10px',
+                } : { color: '#9ca3af' }}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? '' : 'hover:bg-[#1a0a2e] hover:text-white'}`}
+              >
+                <span className="text-base">{item.emoji}</span>
+                {item.label}
+              </Link>
+            )
+          })}
+        </div>
       </nav>
 
       <div className="px-5 py-4 space-y-3" style={{ borderTop: '1px solid #2a1a3e' }}>
