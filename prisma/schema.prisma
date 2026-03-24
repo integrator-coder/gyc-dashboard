@@ -46,6 +46,22 @@ model AsanaSnapshot {
   AsanaAssigneeLoad  AsanaAssigneeLoad[]
 }
 
+model CXHandoff {
+  id                Int                 @id @default(autoincrement())
+  clientName        String
+  clientId          String?
+  repName           String?
+  closedAt          DateTime
+  createdAt         DateTime            @default(now())
+  pipelinePhase     String              @default("phase1-mvp")
+  rawOutputJson     Json
+  PromiseLedgerItem PromiseLedgerItem[]
+  CXHandoffCall     CXHandoffCall[]
+
+  @@unique([clientName, closedAt])
+  @@index([closedAt])
+}
+
 model Client {
   id                String              @id
   acronym           String              @unique
@@ -121,6 +137,25 @@ model Organization {
   User          User[]
 }
 
+model PromiseLedgerItem {
+  id             Int       @id @default(autoincrement())
+  handoffId      Int
+  promiseText    String
+  category       String
+  owner          String?
+  confidence     String?
+  riskFlag       String?
+  reviewStatus   String    @default("Pending Review")
+  reviewComment  String?
+  evidenceSource String?
+  evidenceLink   String?
+  createdAt      DateTime  @default(now())
+  CXHandoff      CXHandoff @relation(fields: [handoffId], references: [id], onDelete: Cascade)
+
+  @@index([handoffId])
+  @@index([category])
+}
+
 model Session {
   id           String   @id
   sessionToken String   @unique
@@ -189,6 +224,90 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model ZoomCall {
+  id                   String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  meetingId            String
+  meetingUuid          String?
+  meetingTopic         String?
+  startedAt            DateTime?
+  durationSecs         Int?
+  repName              String?
+  clientName           String?
+  callDate             DateTime?       @db.Date
+  callLink             String?
+  matchMethod          String
+  matchConfidence      Float           @default(0)
+  matchReasonCode      String?
+  sourceRef            String
+  purposes             String[]
+  createdAt            DateTime        @default(now())
+  classificationStatus String?         @default("needs-confirmation")
+  hostEmail            String?
+  hostName             String?
+  acronym              String?
+  ZoomTranscript       ZoomTranscript?
+  CallAnalysis         CallAnalysis[]
+  CXHandoffCall        CXHandoffCall[]
+
+  @@unique([meetingId, sourceRef])
+  @@index([meetingId])
+  @@index([callDate])
+  @@index([clientName])
+}
+
+model ZoomTranscript {
+  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  zoomCallId            String                  @unique @db.Uuid
+  vttRaw                String                  @db.Text
+  parsedAt              DateTime?
+  createdAt             DateTime                @default(now())
+  ZoomCall              ZoomCall                @relation(fields: [zoomCallId], references: [id], onDelete: Cascade)
+  ZoomTranscriptSegment ZoomTranscriptSegment[]
+
+  @@index([zoomCallId])
+}
+
+model ZoomTranscriptSegment {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  transcriptId   String         @db.Uuid
+  startMs        Int
+  endMs          Int?
+  speaker        String?
+  text           String         @db.Text
+  tags           String[]
+  purposes       String[]
+  createdAt      DateTime       @default(now())
+  ZoomTranscript ZoomTranscript @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
+
+  @@index([transcriptId])
+  @@index([startMs])
+}
+
+model CallAnalysis {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  zoomCallId   String   @db.Uuid
+  purpose      String
+  analysisJson Json
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  ZoomCall     ZoomCall @relation(fields: [zoomCallId], references: [id], onDelete: Cascade)
+
+  @@unique([zoomCallId, purpose])
+  @@index([purpose])
+}
+
+model CXHandoffCall {
+  handoffId  Int
+  zoomCallId String   @db.Uuid
+  createdAt  DateTime @default(now())
+  CXHandoff  CXHandoff @relation(fields: [handoffId], references: [id], onDelete: Cascade)
+  ZoomCall   ZoomCall  @relation(fields: [zoomCallId], references: [id], onDelete: Cascade)
+
+  @@id([handoffId, zoomCallId])
+  @@unique([handoffId, zoomCallId])
+  @@index([zoomCallId])
 }
 
 model ZendeskAssigneeLoad {
