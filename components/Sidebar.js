@@ -51,6 +51,7 @@ const TEAM_PORTAL_GROUP = {
   children: [
     { label: 'Classify Calls', emoji: '🏷️', href: '/team/classify', roles: ['sales', 'ga', 'admin'] },
     { label: 'CX Review & Q&A', emoji: '🧠', href: '/team/cx', roles: ['cx', 'admin'] },
+    { label: 'Recon Review', emoji: '📍', href: '/team/recon', roles: ['recon', 'admin'] },
   ],
 }
 
@@ -62,16 +63,13 @@ function hasRole(user, allowedRoles = []) {
 
 function GroupItem({ group, pathname }) {
   const isChildActive = group.children.some((c) => pathname === c.href)
-  const [open, setOpen] = useState(isChildActive)
-
-  useEffect(() => {
-    if (isChildActive) setOpen(true)
-  }, [isChildActive])
+  const [manualOpen, setManualOpen] = useState(false)
+  const open = isChildActive || manualOpen
 
   return (
     <div>
       <button
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => setManualOpen((o) => !o)}
         style={isChildActive ? { color: '#f5f5f5', backgroundColor: '#1a0a2e' } : {}}
         className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isChildActive ? '' : 'hover:bg-[#1a0a2e]'}`}
         onMouseEnter={(e) => { if (!isChildActive) e.currentTarget.style.color = '#f5f5f5' }}

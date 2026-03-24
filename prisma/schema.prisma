@@ -218,6 +218,45 @@ model UserTeam {
   @@unique([userId, team])
 }
 
+model ReconDraft {
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  prospectName   String
+  websiteUrl     String
+  requestedBy    String
+  status         String          @default("draft")
+  rawAutoData    Json            @default("{}")
+  validatedData  Json?
+  reviewedBy     String?
+  reviewedAt     DateTime?
+  notes          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  ReconLocation  ReconLocation[]
+
+  @@index([status, createdAt(sort: Desc)])
+}
+
+model ReconLocation {
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reconDraftId  String     @db.Uuid
+  locationName  String
+  address       String?
+  city          String?
+  state         String?
+  googleMapsUrl String?
+  gbpClaimed    String     @default("unknown")
+  gbpStatus     String     @default("not-found")
+  reviewNotes   String?
+  autoData      Json       @default("{}")
+  manualData    Json?
+  locationIndex Int        @default(0)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  ReconDraft    ReconDraft @relation(fields: [reconDraftId], references: [id], onDelete: Cascade)
+
+  @@index([reconDraftId, locationIndex])
+}
+
 model VerificationToken {
   identifier String
   token      String   @unique
