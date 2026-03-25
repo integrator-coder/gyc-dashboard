@@ -1,5 +1,5 @@
-import { requireUser } from '@/lib/auth'
 import CXHandoffPage from '@/components/CXHandoffPage'
+import { requireUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
