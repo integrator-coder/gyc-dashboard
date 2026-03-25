@@ -87,6 +87,9 @@ export default function CXHandoffPage() {
   const [savingAssignment, setSavingAssignment] = useState(false)
   const [savingPromises, setSavingPromises] = useState({})
   const [savingGaps, setSavingGaps] = useState({})
+  const [qaQuery, setQaQuery] = useState('')
+  const [qaResults, setQaResults] = useState([])
+  const [qaLoading, setQaLoading] = useState(false)
   const [error, setError] = useState('')
   const [toast, setToast] = useState('')
 
@@ -117,6 +120,7 @@ export default function CXHandoffPage() {
       const handoff = json.handoff
       setDetail(handoff)
       setAssignmentDraft(handoff.assignedGA || '')
+      setQaResults([])
       setPromiseDrafts(
         Object.fromEntries(
           (handoff.promiseLedgerItems || []).map((item) => [
@@ -181,6 +185,30 @@ export default function CXHandoffPage() {
         ...patch,
       },
     }))
+  }
+
+  async function runTranscriptSearch(event) {
+    event?.preventDefault?.()
+    if (!detail) return
+
+    const trimmedQuery = qaQuery.trim()
+    if (!trimmedQuery) {
+      setQaResults([])
+      return
+    }
+
+    setQaLoading(true)
+    try {
+      const res = await fetch(`/api/cx-handoff/${detail.id}/search?q=${encodeURIComponent(trimmedQuery)}`, { cache: 'no-store' })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to search transcript.')
+      setQaResults(json.results || [])
+      setError('')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setQaLoading(false)
+    }
   }
 
   async function saveAssignment() {
@@ -258,6 +286,7 @@ export default function CXHandoffPage() {
 
   const selectedSummary = useMemo(() => handoffs.find((item) => item.id === selectedId), [handoffs, selectedId])
   const groupedGaps = useMemo(() => groupGapsBySource(detail?.dataGaps || []), [detail?.dataGaps])
+  const transcriptMap = useMemo(() => new Map((detail?.transcripts || []).map((item) => [item.zoomCallId, item])), [detail?.transcripts])
   const openGapCount = (detail?.dataGaps || []).filter((gap) => gap.status === 'open').length
 
   return (
@@ -352,6 +381,7 @@ export default function CXHandoffPage() {
                     ['Promises', detail.promiseLedgerItems?.length || 0],
                     ['Open gaps', openGapCount],
                     ['Calls', detail.salesCalls?.length || 0],
+                    ['Transcript segments', detail.transcriptCount || 0],
                     ['Client ID', detail.clientId || '—'],
                   ].map(([label, value]) => (
                     <div key={label} className="rounded-xl border border-[var(--brand-border)] bg-black/20 px-4 py-3">
@@ -413,26 +443,55 @@ export default function CXHandoffPage() {
                   No linked Zoom calls yet for {selectedSummary?.clientName || 'this handoff'}.
                 </div>
               ) : (
-                detail.salesCalls.map((call) => (
-                  <div key={call.id} className="rounded-2xl border border-[var(--brand-border)] bg-black/20 p-5">
-                    <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                      <div>
-                        <div className="text-lg font-semibold text-white">{call.meetingTopic || 'Untitled sales call'}</div>
-                        <div className="mt-1 text-sm text-gray-400">
-                          {formatDate(call.callDate || call.startedAt, true)} · {call.repName || detail.repName || 'Unknown rep'} · Duration {formatDuration(call.durationSecs)}
+                detail.salesCalls.map((call) => {
+                  const transcript = transcriptMap.get(call.id)
+                  return (
+                    <div key={call.id} className="rounded-2xl border border-[var(--brand-border)] bg-black/20 p-5">
+                      <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                        <div className="max-w-4xl">
+                          <div className="text-lg font-semibold text-white">{call.meetingTopic || 'Untitled sales call'}</div>
+                          <div className="mt-1 text-sm text-gray-400">
+                            {formatDate(call.callDate || call.startedAt, true)} · {call.repName || detail.repName || 'Unknown rep'} · Duration {formatDuration(call.durationSecs)}
+                          </div>
+                          <div className="mt-2 text-xs text-gray-500">Match: {call.matchMethod || '—'} · Confidence {call.matchConfidence ?? '—'}</div>
+
+                          <div className="mt-4 rounded-2xl border border-[var(--brand-border)] bg-black/20 p-4">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-300">Transcript</div>
+                              <span className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${transcript ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-[var(--brand-border)] bg-black/20 text-gray-400'}`}>
+                                {transcript ? `${transcript.segmentCount || 0} segments` : 'Not available'}
+                              </span>
+                            </div>
+                            {transcript ? (
+                              <>
+                                <div className="mt-3 text-sm leading-6 text-gray-300">{transcript.snippet || 'Transcript attached, but no preview segments were parsed.'}</div>
+                                {(transcript.previewSegments || []).length > 0 ? (
+                                  <div className="mt-4 space-y-2">
+                                    {transcript.previewSegments.map((segment) => (
+                                      <div key={segment.id || `${segment.startMs}-${segment.speaker || 'speaker'}`} className="rounded-xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-3 py-2.5 text-sm text-gray-300">
+                                        <div className="text-xs uppercase tracking-[0.16em] text-gray-500">{segment.speaker || 'Unknown speaker'} · {segment.startMs != null ? `${Math.round(Number(segment.startMs) / 1000)}s` : '—'}</div>
+                                        <div className="mt-1 leading-6">{segment.text}</div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : null}
+                              </>
+                            ) : (
+                              <div className="mt-3 text-sm text-gray-500">No transcript is linked to this sales call yet.</div>
+                            )}
+                          </div>
                         </div>
-                        <div className="mt-2 text-xs text-gray-500">Match: {call.matchMethod || '—'} · Confidence {call.matchConfidence ?? '—'}</div>
+                        {call.callLink ? (
+                          <a href={call.callLink} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center rounded-2xl border border-violet-500/30 bg-violet-500/10 px-4 py-2.5 text-sm font-medium text-violet-200 transition hover:bg-violet-500/20 hover:text-white">
+                            Open recording ↗
+                          </a>
+                        ) : (
+                          <div className="text-sm text-gray-500">No recording link saved.</div>
+                        )}
                       </div>
-                      {call.callLink ? (
-                        <a href={call.callLink} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center rounded-2xl border border-violet-500/30 bg-violet-500/10 px-4 py-2.5 text-sm font-medium text-violet-200 transition hover:bg-violet-500/20 hover:text-white">
-                          Open recording ↗
-                        </a>
-                      ) : (
-                        <div className="text-sm text-gray-500">No recording link saved.</div>
-                      )}
                     </div>
-                  </div>
-                ))
+                  )
+                })
               )}
             </div>
           </section>
@@ -589,6 +648,61 @@ export default function CXHandoffPage() {
                     </div>
                   </div>
                 ))
+              )}
+            </div>
+          </section>
+
+          <section className="overflow-hidden rounded-3xl border border-[var(--brand-border)] bg-[var(--brand-bg-card)]">
+            <div className="border-b border-[var(--brand-border)] px-6 py-4">
+              <div className="text-sm font-semibold uppercase tracking-[0.24em] text-gray-400">Transcript Q&amp;A</div>
+              <div className="mt-1 text-sm text-gray-500">Search exact transcript quotes across this client&apos;s linked sales calls.</div>
+            </div>
+            <div className="space-y-4 p-6">
+              {!detail ? (
+                <div className="text-sm text-gray-500">No handoff selected.</div>
+              ) : (
+                <>
+                  <form onSubmit={runTranscriptSearch} className="flex flex-col gap-3 lg:flex-row">
+                    <input
+                      value={qaQuery}
+                      onChange={(event) => setQaQuery(event.target.value)}
+                      placeholder="Ask anything about this client's calls..."
+                      className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-violet-500/50"
+                    />
+                    <button
+                      type="submit"
+                      disabled={qaLoading || !qaQuery.trim()}
+                      className="rounded-2xl border border-violet-500/30 bg-violet-500/10 px-5 py-3 text-sm font-semibold text-violet-100 transition hover:bg-violet-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {qaLoading ? 'Searching…' : 'Search transcript'}
+                    </button>
+                  </form>
+
+                  {qaQuery.trim() && !qaLoading && qaResults.length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-[var(--brand-border)] bg-black/10 px-5 py-6 text-sm text-gray-500">
+                      No matching transcript quotes found yet.
+                    </div>
+                  ) : null}
+
+                  {qaResults.length > 0 ? (
+                    <div className="space-y-3">
+                      {qaResults.map((result) => (
+                        <div key={result.id} className="rounded-2xl border border-[var(--brand-border)] bg-black/20 p-4">
+                          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                            <div className="text-sm text-gray-400">{result.speaker || 'Unknown speaker'} · {formatDate(result.callDate, true)}</div>
+                            {result.zoomLink ? (
+                              <a href={result.zoomLink} target="_blank" rel="noreferrer" className="text-sm font-medium text-violet-300 hover:text-violet-200">
+                                Open Zoom ↗
+                              </a>
+                            ) : null}
+                          </div>
+                          <div className="mt-2 text-xs uppercase tracking-[0.16em] text-gray-500">{result.repName || 'Unknown rep'}{result.startMs != null ? ` · ${Math.round(Number(result.startMs) / 1000)}s` : ''}</div>
+                          <blockquote className="mt-3 border-l border-violet-500/30 pl-4 text-sm leading-6 text-gray-200">“{result.snippet || result.text}”</blockquote>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </>
               )}
             </div>
           </section>
