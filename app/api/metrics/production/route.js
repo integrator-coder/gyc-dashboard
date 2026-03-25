@@ -149,6 +149,30 @@ export async function GET() {
     const denominator = onTimeCount + lateCount
     const onTimePct = denominator ? Number(((onTimeCount / denominator) * 100).toFixed(1)) : 0
 
+    // Client Approval wait time: days since project entered Client Approval stage
+    // Proxy: use project created_at as absolute floor, modified_at as upper bound
+    // Best available signal without Asana activity log API: project modified_at minus project start date
+    // We use today - project start_date for CA projects as conservative estimate
+    const clientApprovalWaitTimes = clientApprovalProjects.map(project => {
+      const startDate = getDateValue(project.start_on || project.fieldMap['Start date'] || project.created_at)
+      if (!startDate) return null
+      return diffDays(startDate, today)
+    }).filter(v => v !== null)
+
+    const avgClientApprovalDays = clientApprovalWaitTimes.length
+      ? Number((clientApprovalWaitTimes.reduce((s, d) => s + d, 0) / clientApprovalWaitTimes.length).toFixed(1))
+      : 0
+
+    const clientApprovalProjects_ = clientApprovalProjects.map(project => {
+      const startDate = getDateValue(project.start_on || project.fieldMap['Start date'] || project.created_at)
+      const daysWaiting = startDate ? diffDays(startDate, today) : null
+      return {
+        name: project.name,
+        daysWaiting,
+        dueDate: getProjectDueDate(project)?.toISOString().split('T')[0] || null,
+      }
+    }).sort((a, b) => (b.daysWaiting || 0) - (a.daysWaiting || 0))
+
     const activeSeoProjects = seoProjects.filter(project => {
       const stage = getNormalizedStage(project)
       return !isCompletedStage(stage) && !project.completed
@@ -199,6 +223,8 @@ export async function GET() {
       lateCount,
       onTimePct,
       avgBuildTimeDays,
+      avgClientApprovalDays,
+      clientApprovalQueue: clientApprovalProjects_,
       seoInProduction,
       seoStageBreakdown,
       seoOverdueCount,

@@ -107,6 +107,8 @@ export default function ProductionPage() {
     lateCount = 0,
     onTimePct = 0,
     avgBuildTimeDays = 0,
+    avgClientApprovalDays = 0,
+    clientApprovalQueue = [],
     seoInProduction = 0,
     seoStageBreakdown = {},
     seoOverdueCount = 0,
@@ -207,6 +209,35 @@ export default function ProductionPage() {
             <ProductionMetricCard title="Other" value={typeBreakdown.other || 0} accent="#4C1D95" />
           </div>
         </div>
+      </SectionShell>
+
+      {/* Client Approval Queue */}
+      <SectionShell title="⏳ Client Approval Queue" subtitle="Projects waiting for client review — sorted by longest wait time.">
+        <div className="mb-4">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg" style={{ backgroundColor: avgClientApprovalDays > 30 ? '#450a0a' : '#1a0a2e', border: `1px solid ${avgClientApprovalDays > 30 ? '#991b1b' : '#3b1d8a'}` }}>
+            <span className="text-sm text-gray-400">Avg time in Client Approval:</span>
+            <span className={`text-lg font-bold ${avgClientApprovalDays > 30 ? 'text-red-400' : avgClientApprovalDays > 14 ? 'text-yellow-400' : 'text-green-400'}`}>
+              {avgClientApprovalDays} days
+            </span>
+          </div>
+        </div>
+        {clientApprovalQueue.length === 0 ? (
+          <p className="text-gray-500 text-sm">No projects in Client Approval.</p>
+        ) : (
+          <div className="space-y-2">
+            {clientApprovalQueue.map((project, i) => (
+              <div key={i} className="flex items-center justify-between px-4 py-3 rounded-lg" style={{ backgroundColor: '#0a0a0a', border: '1px solid #1f1f3a' }}>
+                <span className="text-sm text-white">{project.name}</span>
+                <div className="flex items-center gap-4">
+                  {project.dueDate && <span className="text-xs text-gray-500">Due: {project.dueDate}</span>}
+                  <span className={`text-sm font-semibold ${(project.daysWaiting || 0) > 60 ? 'text-red-400' : (project.daysWaiting || 0) > 30 ? 'text-yellow-400' : 'text-gray-300'}`}>
+                    {project.daysWaiting != null ? `${project.daysWaiting}d` : '—'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </SectionShell>
 
       <SectionShell title="SEO Builds" subtitle="Active SEO work with stage visibility and at-risk projects.">
