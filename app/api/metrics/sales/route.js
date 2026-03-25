@@ -5,7 +5,7 @@ const PRIMARY_REPS = ['Jesse', 'Briana']
 const OUTBOUND_REPS = ['Pia']
 const GROWTH_ADVISORS = ['Sebastian', 'Stefen', 'JC', 'Zu']
 
-// GHL user IDs per rep — Close Rate numerator comes from GHL Closed Won
+// GHL user IDs per rep — Conversion Rate numerator comes from GHL Closed Won
 const GHL_USER_IDS = {
   'Jesse':     'veHn1vMej8ag3oRNSMF7',
   'Briana':    'Ipb94f9KRyRNdYIJg9qj',
@@ -28,6 +28,7 @@ const DAILY_TARGETS = {
   'Rebooked': 4,
   'Agreements Sent': 6,
   'Close Rate': 0.3333,
+  'Conversion Rate': 0.3333,
 }
 
 const WEEKLY_TARGETS = {
@@ -42,6 +43,7 @@ const WEEKLY_TARGETS = {
   'Rebooked': 20,
   'Agreements Sent': 30,
   'Close Rate': 0.3333,
+  'Conversion Rate': 0.3333,
 }
 
 const MONTHLY_TARGETS = {
@@ -50,9 +52,10 @@ const MONTHLY_TARGETS = {
   'Agreements Sent': 120,
   'Show Rate': 0.58,
   'Close Rate': 0.3333,
+  'Conversion Rate': 0.3333,
 }
 
-const RATE_METRICS = new Set(['Show Rate', 'Close Rate'])
+const RATE_METRICS = new Set(['Show Rate', 'Conversion Rate', 'Close Rate'])
 
 // Cache all GHL won deals at request time (assigned_to filter is ignored by GHL API)
 let _ghlWonCache = null
@@ -179,11 +182,12 @@ export async function GET() {
       const sheetMetrics = sheetResults[i]
       if (!sheetMetrics) return
 
-      // Override Close Rate with GHL Closed Won / Sheet Shown
+      // Conversion Rate = GHL Closed Won / Shown (includes follow-up closes)
+      // Close Rate = Agreements Closed / Shown (same-session closes)
       const shown = sheetMetrics['Shown'] || { today: 0, week: 0, month: 0 }
       const won = ghlWon[rep] || { today: 0, week: 0, month: 0 }
 
-      sheetMetrics['Close Rate'] = {
+      sheetMetrics['Conversion Rate'] = {
         today: shown.today > 0 ? won.today / shown.today : 0,
         week:  shown.week  > 0 ? won.week  / shown.week  : 0,
         month: shown.month > 0 ? won.month / shown.month : 0,
@@ -191,6 +195,14 @@ export async function GET() {
 
       // Add GHL won counts as a separate metric for transparency
       sheetMetrics['GHL Closed Won'] = won
+
+      // Close Rate = Agreements Closed / Shown (same-session closes)
+      const agrClosed = sheetMetrics['Agreements Closed'] || { today: 0, week: 0, month: 0 }
+      sheetMetrics['Close Rate'] = {
+        today: shown.today > 0 ? agrClosed.today / shown.today : 0,
+        week:  shown.week  > 0 ? agrClosed.week  / shown.week  : 0,
+        month: shown.month > 0 ? agrClosed.month / shown.month : 0,
+      }
 
       repData[rep] = sheetMetrics
       repFlags[rep] = getDataFlags(rep, sheetMetrics)

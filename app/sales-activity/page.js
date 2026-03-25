@@ -10,6 +10,7 @@ const VIEW_KEYS = ['today', 'week', 'month', 'year']
 const PRIMARY_METRICS = [
   { key: 'Agreements Closed', isRate: false, size: 'large' },
   { key: 'Close Rate', isRate: true },
+  { key: 'Conversion Rate', isRate: true },
   { key: 'Show Rate', isRate: true },
   { key: 'Scheduled Calls', isRate: false },
   { key: 'Shown', isRate: false },
@@ -36,9 +37,9 @@ function RepCard({ repName, repData, period, metrics, targets }) {
   }
 
   return (
-    <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+    <div className="rounded-xl p-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
       <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-        <span className="w-7 h-7 rounded-full bg-blue-900 flex items-center justify-center text-xs text-blue-300 font-bold">
+        <span className="w-7 h-7 rounded-full bg-[#340B67] flex items-center justify-center text-xs text-[#AE2BCF] font-bold">
           {repName[0]}
         </span>
         {repName}
@@ -76,7 +77,7 @@ function PiaCard({ repData, period }) {
 
   // Pia has no formal targets — just show raw numbers
   return (
-    <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+    <div className="rounded-xl p-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
       <h3 className="text-white font-semibold mb-1 flex items-center gap-2">
         <span className="w-7 h-7 rounded-full bg-purple-900 flex items-center justify-center text-xs text-purple-300 font-bold">
           P
@@ -223,7 +224,7 @@ export default function SalesPage() {
             onClick={() => setViewIdx(i)}
             className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
               viewIdx === i
-                ? 'bg-blue-600 text-white'
+                ? 'brand-active text-white'
                 : 'text-gray-400 hover:text-white'
             }`}
           >
@@ -319,7 +320,7 @@ export default function SalesPage() {
             <span className="text-gray-500 text-sm">Loading deals{period === 'year' ? ' (this may take a moment for full year data)' : '…'}</span>
           </div>
         ) : (
-          <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+          <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
