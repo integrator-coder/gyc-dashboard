@@ -45,6 +45,33 @@ export async function GET() {
     `)
     const history = historyRows.reverse()
 
+    // Real 30-day MRR history built from StripeCustomer subscription lifecycle
+    const { rows: mrrHistoryRows } = await client.query(`
+      SELECT
+        to_char(day, 'YYYY-MM-DD') AS date,
+        ROUND(COALESCE(SUM(sc.mrr), 0)::numeric, 2) AS mrr
+      FROM generate_series(
+        CURRENT_DATE - INTERVAL '29 days',
+        CURRENT_DATE,
+        INTERVAL '1 day'
+      ) AS day
+      LEFT JOIN "StripeCustomer" sc
+        ON sc.status = 'active'
+        AND sc."createdAt"::date <= day::date
+        AND (sc."canceledAt" IS NULL OR sc."canceledAt"::date > day::date)
+      GROUP BY day
+      ORDER BY day ASC
+    `)
+
+    const mrrHistory = mrrHistoryRows.map((row) => {
+      const labelDate = new Date(`${row.date}T12:00:00Z`)
+      return {
+        date: row.date,
+        label: labelDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }),
+        mrr: Number(row.mrr) || 0,
+      }
+    })
+
     // Last 35 days of daily revenue (oldest first)
     const thirtyFiveDaysAgo = new Date()
     thirtyFiveDaysAgo.setDate(thirtyFiveDaysAgo.getDate() - 35)
@@ -61,6 +88,7 @@ export async function GET() {
       customers,
       lastSync,
       history,
+      mrrHistory,
       dailyRevenue,
     })
   } catch (error) {

@@ -6,13 +6,10 @@ import MetricCard from '@/components/MetricCard'
 import {
   BarChart,
   Bar,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  ReferenceLine,
   Cell
 } from 'recharts'
 
@@ -130,7 +127,7 @@ export default function FinancePage() {
   const previous = data?.previous
   const customers = data?.customers || []
   const lastSync = data?.lastSync
-  const history = data?.history || []
+  const mrrHistory = data?.mrrHistory || []
   const dailyRevenue = data?.dailyRevenue || []
 
   // Daily cash stats
@@ -166,24 +163,6 @@ export default function FinancePage() {
   const mrrTrend = metrics && previous ? calcTrend(metrics.mrr, previous.mrr) : null
   const clientTrend = metrics && previous ? calcTrend(metrics.activeCustomers, previous.activeCustomers) : null
 
-  // Chart data — format dates for X axis
-  // Group history by day — take last snapshot per calendar day, last 30 days
-  const mrrByDay = {}
-  history.forEach(h => {
-    const day = h.syncedAt.split('T')[0]
-    mrrByDay[day] = h.mrr // last write per day wins
-  })
-  // Build 30-day array filled from available data
-  const chartData = Array.from({ length: 30 }, (_, i) => {
-    const d = new Date()
-    d.setDate(d.getDate() - (29 - i))
-    const dayKey = d.toISOString().split('T')[0]
-    return {
-      name: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      mrr: mrrByDay[dayKey] ?? null,
-      date: dayKey,
-    }
-  }).filter(d => d.mrr !== null)
 
   if (loading || syncing) {
     return (
@@ -366,8 +345,8 @@ export default function FinancePage() {
         </div>
       </div>
 
-      {/* MRR Trend — one point per day, last 30 days */}
-      {chartData.length > 1 && (
+      {/* MRR Trend — real daily bars, last 30 days */}
+      {mrrHistory.length > 0 && (
         <div className="rounded-xl p-5" style={{ backgroundColor: B.card, border: `1px solid ${B.border}` }}>
           <div className="flex items-center justify-between mb-4">
             <h3
@@ -376,16 +355,19 @@ export default function FinancePage() {
             >
               MRR — Last 30 Days
             </h3>
-            <span style={{ color: B.muted }} className="text-xs">One data point per day</span>
+            <span style={{ color: B.muted }} className="text-xs">Real daily MRR from active subscriptions</span>
           </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={mrrHistory} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
               <XAxis
-                dataKey="name"
+                dataKey="label"
                 tick={{ fill: B.muted, fontSize: 10 }}
                 axisLine={{ stroke: B.border }}
                 tickLine={false}
-                interval="preserveStartEnd"
+                interval={0}
+                tickFormatter={(value, index) => (
+                  index % 5 === 0 || index === mrrHistory.length - 1 ? value : ''
+                )}
               />
               <YAxis
                 tick={{ fill: B.muted, fontSize: 11 }}
@@ -395,21 +377,20 @@ export default function FinancePage() {
                 domain={['auto', 'auto']}
               />
               <Tooltip
-                formatter={(v) => [`$${v.toLocaleString()}`, 'MRR']}
+                formatter={(v) => [`$${Number(v).toLocaleString()}`, 'MRR']}
                 contentStyle={{ backgroundColor: '#0a0a0a', border: `1px solid ${B.border}`, borderRadius: 8 }}
                 labelStyle={{ color: B.muted }}
                 itemStyle={{ color: B.p3 }}
               />
-              <Line
-                type="monotone"
-                dataKey="mrr"
-                stroke={B.p3}
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 4, fill: B.p4 }}
-                connectNulls={false}
-              />
-            </LineChart>
+              <Bar dataKey="mrr" radius={[4, 4, 0, 0]}>
+                {mrrHistory.map((entry, index) => (
+                  <Cell
+                    key={`cell-mrr-${entry.date}`}
+                    fill={index === mrrHistory.length - 1 ? B.p4 : B.p2}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
           </ResponsiveContainer>
         </div>
       )}
