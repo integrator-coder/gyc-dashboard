@@ -6,6 +6,8 @@ import MetricCard from '@/components/MetricCard'
 import {
   BarChart,
   Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -18,6 +20,19 @@ import {
 const NORMALIZED_EMPLOYEES = 18.5
 // RPE target: $250,000/year
 const RPE_TARGET = 250000
+
+// Brand colors
+const B = {
+  card: '#111111',
+  border: '#2a1a3e',
+  p1: '#340B67',
+  p2: '#731494',
+  p3: '#732FBA',
+  p4: '#AE2BCF',
+  accent: '#C19C46',
+  muted: '#9ca3af',
+  elevated: '#1a1a1a',
+}
 
 function formatCurrency(value) {
   if (value === null || value === undefined) return '—'
@@ -45,8 +60,8 @@ function calcTrend(current, previous) {
 function CustomTooltip({ active, payload, label }) {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm">
-        <p className="text-gray-400">{label}</p>
+      <div style={{ background: B.elevated, border: `1px solid ${B.border}` }} className="rounded-lg px-3 py-2 text-sm">
+        <p style={{ color: B.muted }}>{label}</p>
         <p className="text-white font-bold">{formatCurrency(payload[0].value)}</p>
       </div>
     )
@@ -140,8 +155,6 @@ export default function FinancePage() {
   const rpeRevenue = metrics ? (metrics.totalRevenue * 12) / NORMALIZED_EMPLOYEES : null
   const rpeProgress = rpeMrr ? Math.min((rpeMrr / RPE_TARGET) * 100, 100) : 0
   const rpeRevenueProgress = rpeRevenue ? Math.min((rpeRevenue / RPE_TARGET) * 100, 100) : 0
-  // Keep rpe as alias for backwards compat
-  const rpe = rpeMrr
   const rpeTrend = previous
     ? calcTrend(
         (metrics.mrr * 12) / NORMALIZED_EMPLOYEES,
@@ -154,18 +167,30 @@ export default function FinancePage() {
   const clientTrend = metrics && previous ? calcTrend(metrics.activeCustomers, previous.activeCustomers) : null
 
   // Chart data — format dates for X axis
-  const chartData = history.map((h, i) => ({
-    name: new Date(h.syncedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    mrr: h.mrr,
-    index: i
-  }))
+  // Group history by day — take last snapshot per calendar day, last 30 days
+  const mrrByDay = {}
+  history.forEach(h => {
+    const day = h.syncedAt.split('T')[0]
+    mrrByDay[day] = h.mrr // last write per day wins
+  })
+  // Build 30-day array filled from available data
+  const chartData = Array.from({ length: 30 }, (_, i) => {
+    const d = new Date()
+    d.setDate(d.getDate() - (29 - i))
+    const dayKey = d.toISOString().split('T')[0]
+    return {
+      name: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      mrr: mrrByDay[dayKey] ?? null,
+      date: dayKey,
+    }
+  }).filter(d => d.mrr !== null)
 
   if (loading || syncing) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <div className="w-10 h-10 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">{syncing ? 'Syncing Stripe data…' : 'Loading…'}</p>
+          <div className="w-10 h-10 border-2 border-t-transparent rounded-full animate-spin mx-auto mb-4" style={{ borderColor: B.p4, borderTopColor: 'transparent' }} />
+          <p style={{ color: B.muted }}>{syncing ? 'Syncing Stripe data…' : 'Loading…'}</p>
         </div>
       </div>
     )
@@ -176,15 +201,21 @@ export default function FinancePage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Finance</h1>
-          <p className="text-gray-500 text-sm mt-0.5">
+          <h1
+            className="text-2xl font-bold text-white"
+            style={{ borderLeft: `3px solid ${B.p3}`, paddingLeft: '12px' }}
+          >
+            Finance
+          </h1>
+          <p style={{ color: B.muted }} className="text-sm mt-0.5 pl-4">
             {lastSync ? `Last synced ${formatDate(lastSync.syncedAt)}` : 'No sync data yet'}
           </p>
         </div>
         <button
           onClick={handleSync}
           disabled={syncing}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
+          style={{ backgroundColor: B.p3, borderColor: B.p2 }}
+          className="flex items-center gap-2 px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-opacity border"
         >
           {syncing ? (
             <>
@@ -262,30 +293,33 @@ export default function FinancePage() {
       {/* RPE Cards */}
       <div className="grid grid-cols-1 gap-4">
         {/* RPE based on MRR */}
-        <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+        <div className="rounded-xl p-5" style={{ backgroundColor: B.card, border: `1px solid ${B.border}` }}>
           <div className="flex items-center justify-between mb-3">
             <div>
               <h3 className="text-white font-semibold">RPE — MRR Based</h3>
-              <p className="text-gray-500 text-xs mt-0.5">
+              <p style={{ color: B.muted }} className="text-xs mt-0.5">
                 MRR × 12 ÷ {NORMALIZED_EMPLOYEES} employees · Target: {formatCurrency(RPE_TARGET)}/yr
               </p>
             </div>
             <div className="text-right">
-              <div className={`text-2xl font-bold ${rpeMrr && rpeMrr >= RPE_TARGET ? 'text-green-400' : 'text-white'}`}>
+              <div style={{ color: rpeMrr && rpeMrr >= RPE_TARGET ? '#22c55e' : B.accent }} className="text-2xl font-bold">
                 {formatCurrency(rpeMrr)}
               </div>
-              <div className="text-gray-500 text-xs">per year</div>
+              <div style={{ color: B.muted }} className="text-xs">per year</div>
             </div>
           </div>
-          <div className="w-full bg-gray-800 rounded-full h-2.5">
+          <div className="w-full rounded-full h-2.5" style={{ backgroundColor: B.elevated }}>
             <div
-              className={`h-2.5 rounded-full transition-all ${rpeProgress >= 100 ? 'bg-green-500' : 'bg-blue-500'}`}
-              style={{ width: `${rpeProgress}%` }}
+              className="h-2.5 rounded-full transition-all"
+              style={{
+                width: `${rpeProgress}%`,
+                backgroundColor: rpeProgress >= 100 ? '#22c55e' : B.p3,
+              }}
             />
           </div>
-          <div className="flex justify-between text-xs text-gray-600 mt-1.5">
+          <div className="flex justify-between text-xs mt-1.5" style={{ color: B.muted }}>
             <span>$0</span>
-            <span className={rpeProgress >= 100 ? 'text-green-400' : 'text-gray-400'}>
+            <span style={{ color: rpeProgress >= 100 ? '#22c55e' : B.accent }}>
               {rpeProgress.toFixed(1)}% of target
             </span>
             <span>{formatCurrency(RPE_TARGET)}</span>
@@ -298,30 +332,33 @@ export default function FinancePage() {
         </div>
 
         {/* RPE based on actual revenue collected */}
-        <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+        <div className="rounded-xl p-5" style={{ backgroundColor: B.card, border: `1px solid ${B.border}` }}>
           <div className="flex items-center justify-between mb-3">
             <div>
               <h3 className="text-white font-semibold">RPE — Revenue Based</h3>
-              <p className="text-gray-500 text-xs mt-0.5">
+              <p style={{ color: B.muted }} className="text-xs mt-0.5">
                 30d Cash × 12 ÷ {NORMALIZED_EMPLOYEES} employees · Target: {formatCurrency(RPE_TARGET)}/yr
               </p>
             </div>
             <div className="text-right">
-              <div className={`text-2xl font-bold ${rpeRevenue && rpeRevenue >= RPE_TARGET ? 'text-green-400' : 'text-white'}`}>
+              <div style={{ color: rpeRevenue && rpeRevenue >= RPE_TARGET ? '#22c55e' : B.accent }} className="text-2xl font-bold">
                 {formatCurrency(rpeRevenue)}
               </div>
-              <div className="text-gray-500 text-xs">per year</div>
+              <div style={{ color: B.muted }} className="text-xs">per year</div>
             </div>
           </div>
-          <div className="w-full bg-gray-800 rounded-full h-2.5">
+          <div className="w-full rounded-full h-2.5" style={{ backgroundColor: B.elevated }}>
             <div
-              className={`h-2.5 rounded-full transition-all ${rpeRevenueProgress >= 100 ? 'bg-green-500' : 'bg-purple-500'}`}
-              style={{ width: `${rpeRevenueProgress}%` }}
+              className="h-2.5 rounded-full transition-all"
+              style={{
+                width: `${rpeRevenueProgress}%`,
+                backgroundColor: rpeRevenueProgress >= 100 ? '#22c55e' : B.p4,
+              }}
             />
           </div>
-          <div className="flex justify-between text-xs text-gray-600 mt-1.5">
+          <div className="flex justify-between text-xs mt-1.5" style={{ color: B.muted }}>
             <span>$0</span>
-            <span className={rpeRevenueProgress >= 100 ? 'text-green-400' : 'text-gray-400'}>
+            <span style={{ color: rpeRevenueProgress >= 100 ? '#22c55e' : B.accent }}>
               {rpeRevenueProgress.toFixed(1)}% of target
             </span>
             <span>{formatCurrency(RPE_TARGET)}</span>
@@ -329,34 +366,50 @@ export default function FinancePage() {
         </div>
       </div>
 
-      {/* MRR Chart (only show if we have history) */}
+      {/* MRR Trend — one point per day, last 30 days */}
       {chartData.length > 1 && (
-        <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
-          <h3 className="text-white font-semibold mb-4">MRR History</h3>
+        <div className="rounded-xl p-5" style={{ backgroundColor: B.card, border: `1px solid ${B.border}` }}>
+          <div className="flex items-center justify-between mb-4">
+            <h3
+              className="text-white font-semibold"
+              style={{ borderLeft: `3px solid ${B.p3}`, paddingLeft: '10px' }}
+            >
+              MRR — Last 30 Days
+            </h3>
+            <span style={{ color: B.muted }} className="text-xs">One data point per day</span>
+          </div>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+            <LineChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
               <XAxis
                 dataKey="name"
-                tick={{ fill: '#6b7280', fontSize: 11 }}
-                axisLine={{ stroke: '#374151' }}
+                tick={{ fill: B.muted, fontSize: 10 }}
+                axisLine={{ stroke: B.border }}
                 tickLine={false}
+                interval="preserveStartEnd"
               />
               <YAxis
-                tick={{ fill: '#6b7280', fontSize: 11 }}
+                tick={{ fill: B.muted, fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+                domain={['auto', 'auto']}
               />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
-              <Bar dataKey="mrr" radius={[4, 4, 0, 0]}>
-                {chartData.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={index === chartData.length - 1 ? '#3b82f6' : '#1e3a5f'}
-                  />
-                ))}
-              </Bar>
-            </BarChart>
+              <Tooltip
+                formatter={(v) => [`$${v.toLocaleString()}`, 'MRR']}
+                contentStyle={{ backgroundColor: '#0a0a0a', border: `1px solid ${B.border}`, borderRadius: 8 }}
+                labelStyle={{ color: B.muted }}
+                itemStyle={{ color: B.p3 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="mrr"
+                stroke={B.p3}
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4, fill: B.p4 }}
+                connectNulls={false}
+              />
+            </LineChart>
           </ResponsiveContainer>
         </div>
       )}
@@ -372,118 +425,58 @@ export default function FinancePage() {
               subtitle="Cash collected today"
               icon="💵"
             />
-            <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
-              <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Yesterday</p>
+            <div className="rounded-xl p-5" style={{ backgroundColor: B.card, border: `1px solid ${B.border}` }}>
+              <p style={{ color: B.muted }} className="text-xs uppercase tracking-wider mb-1">Yesterday</p>
               <p className="text-2xl font-bold text-white">{formatCurrency(yesterdayRevenue)}</p>
-              <p className="text-gray-500 text-xs mt-1">Cash collected yesterday</p>
+              <p style={{ color: B.muted }} className="text-xs mt-1">Cash collected yesterday</p>
             </div>
-            <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
-              <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">7-Day Avg</p>
+            <div className="rounded-xl p-5" style={{ backgroundColor: B.card, border: `1px solid ${B.border}` }}>
+              <p style={{ color: B.muted }} className="text-xs uppercase tracking-wider mb-1">7-Day Avg</p>
               <p className="text-2xl font-bold text-white">{formatCurrency(sevenDayAvg)}</p>
-              <p className="text-gray-500 text-xs mt-1">Average daily cash (last 7 days)</p>
+              <p style={{ color: B.muted }} className="text-xs mt-1">Average daily cash (last 7 days)</p>
             </div>
           </div>
 
           {/* Daily bar chart */}
-          <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
-            <h3 className="text-white font-semibold mb-1">Daily Cash Collected (30d)</h3>
-            <p className="text-gray-500 text-xs mb-4">Successful charges per day</p>
+          <div className="rounded-xl p-5" style={{ backgroundColor: B.card, border: `1px solid ${B.border}` }}>
+            <h3
+              className="text-white font-semibold mb-1"
+              style={{ borderLeft: `3px solid ${B.p3}`, paddingLeft: '10px' }}
+            >
+              Daily Cash Collected (30d)
+            </h3>
+            <p style={{ color: B.muted }} className="text-xs mb-4">Successful charges per day</p>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={dailyChartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                 <XAxis
                   dataKey="name"
-                  tick={{ fill: '#6b7280', fontSize: 10 }}
-                  axisLine={{ stroke: '#374151' }}
+                  tick={{ fill: B.muted, fontSize: 10 }}
+                  axisLine={{ stroke: B.border }}
                   tickLine={false}
                   interval="preserveStartEnd"
                 />
                 <YAxis
-                  tick={{ fill: '#6b7280', fontSize: 11 }}
+                  tick={{ fill: B.muted, fontSize: 11 }}
                   axisLine={false}
                   tickLine={false}
                   tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
                 />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(174,43,207,0.07)' }} />
                 <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
                   {dailyChartData.map((entry, index) => (
                     <Cell
                       key={`cell-daily-${index}`}
-                      fill={entry.date === todayStr ? '#22c55e' : '#3b82f6'}
+                      fill={entry.date === todayStr ? B.accent : B.p3}
                     />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-            <p className="text-gray-600 text-xs mt-2 text-center">Today highlighted in green</p>
+            <p style={{ color: '#4a3060' }} className="text-xs mt-2 text-center">Today highlighted in gold</p>
           </div>
         </div>
       )}
 
-      {/* Top Customers Table */}
-      <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-800 flex items-center justify-between">
-          <h3 className="text-white font-semibold">Active Clients</h3>
-          <span className="text-gray-500 text-sm">{customers.length} total</span>
-        </div>
-        {customers.length === 0 ? (
-          <div className="px-5 py-10 text-center text-gray-600">
-            No customer data yet. Sync to load clients.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-800">
-                  <th className="text-left px-5 py-3 text-gray-500 text-xs font-medium uppercase tracking-wider">Client</th>
-                  <th className="text-left px-5 py-3 text-gray-500 text-xs font-medium uppercase tracking-wider">Email</th>
-                  <th className="text-right px-5 py-3 text-gray-500 text-xs font-medium uppercase tracking-wider">MRR</th>
-                  <th className="text-right px-5 py-3 text-gray-500 text-xs font-medium uppercase tracking-wider">ARR</th>
-                  <th className="text-left px-5 py-3 text-gray-500 text-xs font-medium uppercase tracking-wider">Since</th>
-                </tr>
-              </thead>
-              <tbody>
-                {customers.map((c, i) => (
-                  <tr
-                    key={c.id}
-                    className={`border-b border-gray-800 last:border-0 hover:bg-gray-800/50 transition-colors`}
-                  >
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-blue-900 flex items-center justify-center text-xs text-blue-300 font-bold shrink-0">
-                          {(c.name || c.email || '?')[0].toUpperCase()}
-                        </div>
-                        <span className="text-white text-sm font-medium">
-                          {c.name || <span className="text-gray-500 italic">No name</span>}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3 text-gray-400 text-sm">{c.email || '—'}</td>
-                    <td className="px-5 py-3 text-right text-white text-sm font-medium">{formatCurrency(c.mrr)}</td>
-                    <td className="px-5 py-3 text-right text-gray-400 text-sm">{formatCurrency(c.mrr * 12)}</td>
-                    <td className="px-5 py-3 text-gray-400 text-sm">
-                      {new Date(c.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              {customers.length > 0 && (
-                <tfoot>
-                  <tr className="bg-gray-800/50">
-                    <td className="px-5 py-3 text-gray-400 text-sm font-medium" colSpan={2}>Total</td>
-                    <td className="px-5 py-3 text-right text-blue-400 text-sm font-bold">
-                      {formatCurrency(customers.reduce((s, c) => s + c.mrr, 0))}
-                    </td>
-                    <td className="px-5 py-3 text-right text-blue-400 text-sm font-bold">
-                      {formatCurrency(customers.reduce((s, c) => s + c.mrr * 12, 0))}
-                    </td>
-                    <td />
-                  </tr>
-                </tfoot>
-              )}
-            </table>
-          </div>
-        )}
-      </div>
     </div>
   )
 }

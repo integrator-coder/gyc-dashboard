@@ -37,11 +37,11 @@ export async function GET() {
     `)
     const lastSync = syncRows[0] || null
 
-    // Last 10 snapshots for chart (oldest first)
+    // Last 35 snapshots for 30-day trend (1 per day, oldest first)
     const { rows: historyRows } = await client.query(`
       SELECT * FROM "StripeMetrics"
       ORDER BY "syncedAt" DESC
-      LIMIT 10
+      LIMIT 35
     `)
     const history = historyRows.reverse()
 
