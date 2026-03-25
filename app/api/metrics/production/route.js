@@ -35,6 +35,31 @@ function getProjectDueDate(project) {
   return getDateValue(project.due_on || project.fieldMap['Due due'] || project.fieldMap['QL due'])
 }
 
+function getProjectStartDate(project) {
+  return getDateValue(project.start_on || project.fieldMap['Start date'] || project.created_at)
+}
+
+function getProjectCompletedDate(project) {
+  return getDateValue(project.completed_at)
+}
+
+function getCompletionMetrics(project) {
+  const startDate = getProjectStartDate(project)
+  const completedAt = getProjectCompletedDate(project)
+  const dueDate = getProjectDueDate(project)
+
+  if (!completedAt) return null
+
+  const buildDays = startDate ? diffDays(startDate, completedAt) : null
+  const onTime = dueDate ? completedAt.getTime() <= dueDate.getTime() : null
+
+  return {
+    buildDays,
+    onTime,
+    completedAt,
+  }
+}
+
 function getStageBucket(stage) {
   if (stage.includes('blocked')) return 'blocked'
   if (stage.includes('client approval')) return 'clientApproval'
@@ -61,6 +86,190 @@ function getTypeBucket(type) {
 
 function createProjectRecord(project) {
   return { ...project, fieldMap: mapAsanaCustomFields(project) }
+}
+
+function addDays(date, days) {
+  const result = new Date(date)
+  result.setDate(result.getDate() + days)
+  return result
+}
+
+function startOfMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1)
+}
+
+function addMonths(date, months) {
+  return new Date(date.getFullYear(), date.getMonth() + months, 1)
+}
+
+function getMonthKey(date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  return `${year}-${month}`
+}
+
+function getMonthLabel(date) {
+  return date.toLocaleString('en-US', { month: 'short', year: 'numeric' })
+}
+
+function getQuarterInfo(date) {
+  const quarterNumber = Math.floor(date.getMonth() / 3) + 1
+  const year = date.getFullYear()
+  return {
+    key: `${year}-Q${quarterNumber}`,
+    label: `Q${quarterNumber} ${year}`,
+    year,
+    quarterNumber,
+  }
+}
+
+function createHistoryStat() {
+  return {
+    completed: 0,
+    buildDaysSum: 0,
+    buildDaysCount: 0,
+    onTimeCount: 0,
+    onTimeDenominator: 0,
+  }
+}
+
+function accumulateHistoryStat(stat, project) {
+  const metrics = getCompletionMetrics(project)
+  if (!metrics?.completedAt) return
+
+  stat.completed += 1
+
+  if (metrics.buildDays !== null) {
+    stat.buildDaysSum += metrics.buildDays
+    stat.buildDaysCount += 1
+  }
+
+  if (metrics.onTime !== null) {
+    stat.onTimeDenominator += 1
+    if (metrics.onTime) stat.onTimeCount += 1
+  }
+}
+
+function finalizeHistoryStat(stat) {
+  return {
+    completed: stat.completed,
+    avgBuildDays: stat.buildDaysCount
+      ? Number((stat.buildDaysSum / stat.buildDaysCount).toFixed(1))
+      : null,
+    onTimePct: stat.onTimeDenominator
+      ? Number(((stat.onTimeCount / stat.onTimeDenominator) * 100).toFixed(1))
+      : null,
+  }
+}
+
+function buildRangeStats(projects, rangeStart, rangeEnd) {
+  const webStat = createHistoryStat()
+  const seoStat = createHistoryStat()
+
+  projects.forEach(project => {
+    const completedAt = getProjectCompletedDate(project)
+    if (!completedAt) return
+    if (completedAt < rangeStart || completedAt >= rangeEnd) return
+
+    const department = String(project.fieldMap.Department || '').toUpperCase()
+    if (department === 'WEB') accumulateHistoryStat(webStat, project)
+    if (department === 'SEO') accumulateHistoryStat(seoStat, project)
+  })
+
+  return {
+    web: finalizeHistoryStat(webStat),
+    seo: finalizeHistoryStat(seoStat),
+  }
+}
+
+function deltaValue(current, previous) {
+  if (current === null || previous === null) return null
+  return Number((current - previous).toFixed(1))
+}
+
+function getHistory(allProjects, today) {
+  const completedProjects = allProjects.filter(project => project.completed && getProjectCompletedDate(project))
+
+  const trailing30Start = addDays(today, -30)
+  const previous30Start = addDays(today, -60)
+
+  const trailing30 = buildRangeStats(completedProjects, trailing30Start, today)
+  const previous30 = buildRangeStats(completedProjects, previous30Start, trailing30Start)
+
+  const sixMonthStart = startOfMonth(addMonths(today, -5))
+  const monthBuckets = new Map()
+  for (let i = 0; i < 6; i += 1) {
+    const monthDate = addMonths(sixMonthStart, i)
+    monthBuckets.set(getMonthKey(monthDate), {
+      month: getMonthKey(monthDate),
+      label: getMonthLabel(monthDate),
+      web: createHistoryStat(),
+      seo: createHistoryStat(),
+    })
+  }
+
+  const currentQuarter = getQuarterInfo(today)
+  const quarterBuckets = new Map()
+  for (let i = 3; i >= 0; i -= 1) {
+    const quarterDate = new Date(currentQuarter.year, (currentQuarter.quarterNumber - 1) * 3, 1)
+    quarterDate.setMonth(quarterDate.getMonth() - (i * 3))
+    const quarterInfo = getQuarterInfo(quarterDate)
+    quarterBuckets.set(quarterInfo.key, {
+      quarter: quarterInfo.label,
+      web: createHistoryStat(),
+      seo: createHistoryStat(),
+    })
+  }
+
+  completedProjects.forEach(project => {
+    const completedAt = getProjectCompletedDate(project)
+    if (!completedAt) return
+
+    const department = String(project.fieldMap.Department || '').toUpperCase()
+    const monthKey = getMonthKey(completedAt)
+    const quarterKey = getQuarterInfo(completedAt).key
+
+    if (monthBuckets.has(monthKey)) {
+      const bucket = monthBuckets.get(monthKey)
+      if (department === 'WEB') accumulateHistoryStat(bucket.web, project)
+      if (department === 'SEO') accumulateHistoryStat(bucket.seo, project)
+    }
+
+    if (quarterBuckets.has(quarterKey)) {
+      const bucket = quarterBuckets.get(quarterKey)
+      if (department === 'WEB') accumulateHistoryStat(bucket.web, project)
+      if (department === 'SEO') accumulateHistoryStat(bucket.seo, project)
+    }
+  })
+
+  const monthlyHistory = Array.from(monthBuckets.values()).map(bucket => ({
+    month: bucket.month,
+    label: bucket.label,
+    web: finalizeHistoryStat(bucket.web),
+    seo: finalizeHistoryStat(bucket.seo),
+  }))
+
+  const quarterlyHistory = Array.from(quarterBuckets.values()).map(bucket => ({
+    quarter: bucket.quarter,
+    web: finalizeHistoryStat(bucket.web),
+    seo: finalizeHistoryStat(bucket.seo),
+  }))
+
+  return {
+    trailing30,
+    trailing30vs30: {
+      web: {
+        completedDelta: trailing30.web.completed - previous30.web.completed,
+        avgBuildDaysDelta: deltaValue(trailing30.web.avgBuildDays, previous30.web.avgBuildDays),
+      },
+      seo: {
+        completedDelta: trailing30.seo.completed - previous30.seo.completed,
+        avgBuildDaysDelta: deltaValue(trailing30.seo.avgBuildDays, previous30.seo.avgBuildDays),
+      },
+    },
+    monthlyHistory,
+    quarterlyHistory,
+  }
 }
 
 export async function GET() {
@@ -134,12 +343,7 @@ export async function GET() {
     })
 
     const buildTimes = completedBuilds
-      .map(project => {
-        const startDate = getDateValue(project.start_on || project.fieldMap['Start date'] || project.created_at)
-        const clientApprovalDate = getDateValue(project.completed_at)
-        if (!startDate || !clientApprovalDate) return null
-        return diffDays(startDate, clientApprovalDate)
-      })
+      .map(project => getCompletionMetrics(project)?.buildDays)
       .filter(value => value !== null)
 
     const avgBuildTimeDays = buildTimes.length
@@ -149,12 +353,8 @@ export async function GET() {
     const denominator = onTimeCount + lateCount
     const onTimePct = denominator ? Number(((onTimeCount / denominator) * 100).toFixed(1)) : 0
 
-    // Client Approval wait time: days since project entered Client Approval stage
-    // Proxy: use project created_at as absolute floor, modified_at as upper bound
-    // Best available signal without Asana activity log API: project modified_at minus project start date
-    // We use today - project start_date for CA projects as conservative estimate
     const clientApprovalWaitTimes = clientApprovalProjects.map(project => {
-      const startDate = getDateValue(project.start_on || project.fieldMap['Start date'] || project.created_at)
+      const startDate = getProjectStartDate(project)
       if (!startDate) return null
       return diffDays(startDate, today)
     }).filter(v => v !== null)
@@ -164,7 +364,7 @@ export async function GET() {
       : 0
 
     const clientApprovalProjects_ = clientApprovalProjects.map(project => {
-      const startDate = getDateValue(project.start_on || project.fieldMap['Start date'] || project.created_at)
+      const startDate = getProjectStartDate(project)
       const daysWaiting = startDate ? diffDays(startDate, today) : null
       return {
         name: project.name,
@@ -214,6 +414,8 @@ export async function GET() {
         return b.daysPastDue - a.daysPastDue
       })
 
+    const history = getHistory(allProjects, today)
+
     return NextResponse.json({
       projectsInProduction,
       stageBreakdown,
@@ -231,6 +433,11 @@ export async function GET() {
       blockedProjects,
       totalWebProjects: webProjects.length,
       completedWebProjectsLast90d: completedBuilds.length,
+      history,
+      trailing30: history.trailing30,
+      trailing30vs30: history.trailing30vs30,
+      monthlyHistory: history.monthlyHistory,
+      quarterlyHistory: history.quarterlyHistory,
       updatedAt: new Date().toISOString(),
     })
   } catch (error) {

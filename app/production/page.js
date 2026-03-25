@@ -1,6 +1,17 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 
 function formatUpdated(isoStr) {
   if (!isoStr) return ''
@@ -10,13 +21,38 @@ function formatUpdated(isoStr) {
   return `${diff} min ago`
 }
 
-function ProductionMetricCard({ title, value, subtitle, accent = '#AE2BCF', valueClass = 'text-white' }) {
+function formatMetricValue(value, suffix = '') {
+  if (value === null || value === undefined || Number.isNaN(value)) return 'N/A'
+  return `${value}${suffix}`
+}
+
+function formatDelta(delta, suffix = '') {
+  if (delta === null || delta === undefined || Number.isNaN(delta)) return 'vs prior 30d: N/A'
+  if (delta === 0) return `vs prior 30d: 0${suffix}`
+  const sign = delta > 0 ? '+' : ''
+  return `vs prior 30d: ${sign}${delta}${suffix}`
+}
+
+function deltaTone(delta, positiveIsGood = true) {
+  if (delta === null || delta === undefined || Number.isNaN(delta) || delta === 0) return 'text-gray-500'
+  const good = positiveIsGood ? delta > 0 : delta < 0
+  return good ? 'text-green-400' : 'text-red-400'
+}
+
+function DeltaPill({ delta, suffix = '', positiveIsGood = true }) {
+  const tone = deltaTone(delta, positiveIsGood)
+  const arrow = delta > 0 ? '↑' : delta < 0 ? '↓' : '→'
+  return <p className={`text-xs mt-1 ${tone}`}>{formatDelta(delta, suffix)} {delta ? arrow : ''}</p>
+}
+
+function ProductionMetricCard({ title, value, subtitle, accent = '#AE2BCF', valueClass = 'text-white', children }) {
   return (
     <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
       <div className="w-10 h-1 rounded-full mb-3" style={{ backgroundColor: accent }} />
       <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">{title}</p>
       <p className={`text-3xl font-bold ${valueClass}`}>{value}</p>
       {subtitle && <p className="text-gray-600 text-xs mt-1">{subtitle}</p>}
+      {children}
     </div>
   )
 }
@@ -49,6 +85,21 @@ function SectionShell({ title, subtitle, children }) {
       </div>
       {children}
     </section>
+  )
+}
+
+function HistoryTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+
+  return (
+    <div className="rounded-lg border border-[#2a1a3e] bg-[#0b0b0f] px-3 py-2 shadow-xl">
+      <p className="text-sm font-semibold text-white mb-1">{label}</p>
+      {payload.map(item => (
+        <p key={item.dataKey} className="text-xs" style={{ color: item.color }}>
+          {item.name}: {item.value ?? 0}
+        </p>
+      ))}
+    </div>
   )
 }
 
@@ -113,12 +164,35 @@ export default function ProductionPage() {
     seoStageBreakdown = {},
     seoOverdueCount = 0,
     blockedProjects = [],
+    history = {},
     updatedAt,
   } = data || {}
+
+  const trailing30 = history.trailing30 || {
+    web: { completed: 0, avgBuildDays: null, onTimePct: null },
+    seo: { completed: 0, avgBuildDays: null, onTimePct: null },
+  }
+  const trailing30vs30 = history.trailing30vs30 || {
+    web: { completedDelta: 0, avgBuildDaysDelta: null },
+    seo: { completedDelta: 0, avgBuildDaysDelta: null },
+  }
+  const monthlyHistory = history.monthlyHistory || []
+  const quarterlyHistory = history.quarterlyHistory || []
 
   const webBlockedCount = stageBreakdown.blocked || 0
   const seoBlockedCount = seoStageBreakdown.blocked || 0
   const onTimeTextColor = onTimePct >= 80 ? 'text-green-400' : onTimePct >= 60 ? 'text-yellow-400' : 'text-red-400'
+
+  const monthlyCompletedData = monthlyHistory.map(entry => ({
+    label: entry.label,
+    webCompleted: entry.web?.completed || 0,
+    seoCompleted: entry.seo?.completed || 0,
+  }))
+
+  const monthlyBuildTimeData = monthlyHistory.map(entry => ({
+    label: entry.label,
+    webAvgBuildDays: entry.web?.avgBuildDays ?? null,
+  }))
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -211,7 +285,6 @@ export default function ProductionPage() {
         </div>
       </SectionShell>
 
-      {/* Client Approval Queue */}
       <SectionShell title="⏳ Client Approval Queue" subtitle="Projects waiting for client review — sorted by longest wait time.">
         <div className="mb-4">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg" style={{ backgroundColor: avgClientApprovalDays > 30 ? '#450a0a' : '#1a0a2e', border: `1px solid ${avgClientApprovalDays > 30 ? '#991b1b' : '#3b1d8a'}` }}>
@@ -302,6 +375,130 @@ export default function ProductionPage() {
               ))}
             </div>
           )}
+        </div>
+      </SectionShell>
+
+      <SectionShell title="📈 Production History" subtitle="Trailing 30-day delivery signals plus monthly and quarterly completion trends.">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
+          <ProductionMetricCard
+            title="WEB Completed (30d)"
+            value={trailing30.web.completed || 0}
+            subtitle="Completed WEB builds in the trailing 30 days"
+            accent="#A855F7"
+          >
+            <DeltaPill delta={trailing30vs30.web.completedDelta} />
+          </ProductionMetricCard>
+          <ProductionMetricCard
+            title="WEB Avg Build Time (30d)"
+            value={formatMetricValue(trailing30.web.avgBuildDays, ' days')}
+            subtitle="Start date to completed date"
+            accent="#7C3AED"
+          >
+            <DeltaPill delta={trailing30vs30.web.avgBuildDaysDelta} suffix=" days" positiveIsGood={false} />
+          </ProductionMetricCard>
+          <ProductionMetricCard
+            title="SEO Completed (30d)"
+            value={trailing30.seo.completed || 0}
+            subtitle="Completed SEO projects in the trailing 30 days"
+            accent="#C084FC"
+          >
+            <DeltaPill delta={trailing30vs30.seo.completedDelta} />
+          </ProductionMetricCard>
+          <ProductionMetricCard
+            title="SEO On-Time % (30d)"
+            value={formatMetricValue(trailing30.seo.onTimePct, '%')}
+            subtitle="Completed on or before due date"
+            accent="#8B5CF6"
+            valueClass={
+              trailing30.seo.onTimePct >= 80
+                ? 'text-green-400'
+                : trailing30.seo.onTimePct >= 60
+                  ? 'text-yellow-400'
+                  : 'text-red-400'
+            }
+          />
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 mb-4">
+          <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
+            <div className="mb-4">
+              <h3 className="text-white font-semibold">Monthly Completed Builds</h3>
+              <p className="text-gray-500 text-sm mt-1">Last 6 months · WEB vs SEO completed volume</p>
+            </div>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyCompletedData} barGap={8}>
+                  <CartesianGrid stroke="#221530" strokeDasharray="3 3" />
+                  <XAxis dataKey="label" stroke="#6B7280" tickLine={false} axisLine={{ stroke: '#2a1a3e' }} />
+                  <YAxis stroke="#6B7280" tickLine={false} axisLine={{ stroke: '#2a1a3e' }} allowDecimals={false} />
+                  <Tooltip content={<HistoryTooltip />} />
+                  <Bar dataKey="webCompleted" name="WEB completed" fill="#AE2BCF" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="seoCompleted" name="SEO completed" fill="#8B5CF6" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
+            <div className="mb-4">
+              <h3 className="text-white font-semibold">WEB Avg Build Time Trend</h3>
+              <p className="text-gray-500 text-sm mt-1">Last 6 months · N/A periods render as gaps</p>
+            </div>
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={monthlyBuildTimeData}>
+                  <CartesianGrid stroke="#221530" strokeDasharray="3 3" />
+                  <XAxis dataKey="label" stroke="#6B7280" tickLine={false} axisLine={{ stroke: '#2a1a3e' }} />
+                  <YAxis stroke="#6B7280" tickLine={false} axisLine={{ stroke: '#2a1a3e' }} />
+                  <Tooltip content={<HistoryTooltip />} />
+                  <Line
+                    type="monotone"
+                    dataKey="webAvgBuildDays"
+                    name="WEB avg build days"
+                    stroke="#C084FC"
+                    strokeWidth={3}
+                    dot={{ r: 4, fill: '#C084FC', stroke: '#111111' }}
+                    connectNulls={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl p-5 overflow-x-auto" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
+          <div className="mb-4">
+            <h3 className="text-white font-semibold">Quarterly Summary</h3>
+            <p className="text-gray-500 text-sm mt-1">Last 4 quarters of completed work</p>
+          </div>
+          <table className="w-full min-w-[720px] text-sm">
+            <thead>
+              <tr className="border-b border-[#2a1a3e] text-left text-gray-400 uppercase tracking-wider text-xs">
+                <th className="py-3 pr-4">Quarter</th>
+                <th className="py-3 pr-4">WEB Builds</th>
+                <th className="py-3 pr-4">WEB Avg Build Time</th>
+                <th className="py-3 pr-4">WEB On-Time %</th>
+                <th className="py-3">SEO Builds</th>
+              </tr>
+            </thead>
+            <tbody>
+              {quarterlyHistory.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-4 text-gray-500">No quarterly history available.</td>
+                </tr>
+              ) : (
+                quarterlyHistory.map(row => (
+                  <tr key={row.quarter} className="border-b border-[#1d1329] text-gray-200">
+                    <td className="py-3 pr-4 font-medium text-white">{row.quarter}</td>
+                    <td className="py-3 pr-4">{row.web?.completed || 0}</td>
+                    <td className="py-3 pr-4">{formatMetricValue(row.web?.avgBuildDays, ' days')}</td>
+                    <td className="py-3 pr-4">{formatMetricValue(row.web?.onTimePct, '%')}</td>
+                    <td className="py-3">{row.seo?.completed || 0}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </SectionShell>
     </div>
