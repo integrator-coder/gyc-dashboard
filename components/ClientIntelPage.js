@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
 import { formatDuration, formatTimestamp } from '@/lib/team'
 
 function formatDate(value, includeTime = false) {
@@ -156,6 +157,26 @@ export default function ClientIntelPage({ acronym, user }) {
   }, [ticketFilter, tickets])
   const leadFlowByLocation = data?.leadFlowByLocation || {}
   const leadLocations = Object.entries(leadFlowByLocation)
+  const enrollmentChartData = useMemo(() => {
+    const byMonth = new Map()
+
+    for (const [, rows] of leadLocations) {
+      for (const row of rows || []) {
+        if (!row?.month) continue
+        const key = String(row.month)
+        const existing = byMonth.get(key) || { month: key, leads: 0, tours: 0, registered: 0 }
+        existing.leads += Number(row.leads || 0)
+        existing.tours += Number(row.tours || 0)
+        existing.registered += Number(row.registered || 0)
+        byMonth.set(key, existing)
+      }
+    }
+
+    return Array.from(byMonth.values())
+      .sort((a, b) => String(a.month).localeCompare(String(b.month)))
+      .map((row) => ({ ...row, monthLabel: formatMonth(row.month) }))
+  }, [leadLocations])
+
   const pendingTicketCount = tickets.filter((ticket) => String(ticket.status).toLowerCase() === 'pending').length
 
   return (
@@ -292,6 +313,24 @@ export default function ClientIntelPage({ acronym, user }) {
               <EmptyState>No lead flow data yet.</EmptyState>
             ) : (
               <div className="space-y-6">
+                <div className="rounded-2xl border border-[var(--brand-border)] bg-black/20 p-4">
+                  <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">Enrollment trend (all locations)</div>
+                  <div className="h-72 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={enrollmentChartData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.16)" />
+                        <XAxis dataKey="monthLabel" tick={{ fill: '#c4b5fd', fontSize: 12 }} axisLine={{ stroke: 'rgba(148, 163, 184, 0.2)' }} tickLine={{ stroke: 'rgba(148, 163, 184, 0.2)' }} />
+                        <YAxis tick={{ fill: '#cbd5e1', fontSize: 12 }} axisLine={{ stroke: 'rgba(148, 163, 184, 0.2)' }} tickLine={{ stroke: 'rgba(148, 163, 184, 0.2)' }} />
+                        <Tooltip contentStyle={{ background: '#111827', border: '1px solid rgba(139, 92, 246, 0.35)', borderRadius: 12, color: '#f8fafc' }} labelStyle={{ color: '#c4b5fd' }} />
+                        <Legend wrapperStyle={{ color: '#cbd5e1' }} />
+                        <Bar dataKey="leads" name="Leads" fill="#a78bfa" radius={[6, 6, 0, 0]} />
+                        <Bar dataKey="tours" name="Tours" fill="#818cf8" radius={[6, 6, 0, 0]} />
+                        <Bar dataKey="registered" name="Registered" fill="#d946ef" radius={[6, 6, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
                 {leadLocations.map(([locationName, rows]) => (
                   <div key={locationName}>
                     <div className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-violet-300">{locationName}</div>
