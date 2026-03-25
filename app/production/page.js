@@ -5,8 +5,6 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -24,25 +22,6 @@ function formatUpdated(isoStr) {
 function formatMetricValue(value, suffix = '') {
   if (value === null || value === undefined || Number.isNaN(value)) return 'N/A'
   return `${value}${suffix}`
-}
-
-function formatDelta(delta, suffix = '') {
-  if (delta === null || delta === undefined || Number.isNaN(delta)) return 'vs prior 30d: N/A'
-  if (delta === 0) return `vs prior 30d: 0${suffix}`
-  const sign = delta > 0 ? '+' : ''
-  return `vs prior 30d: ${sign}${delta}${suffix}`
-}
-
-function deltaTone(delta, positiveIsGood = true) {
-  if (delta === null || delta === undefined || Number.isNaN(delta) || delta === 0) return 'text-gray-500'
-  const good = positiveIsGood ? delta > 0 : delta < 0
-  return good ? 'text-green-400' : 'text-red-400'
-}
-
-function DeltaPill({ delta, suffix = '', positiveIsGood = true }) {
-  const tone = deltaTone(delta, positiveIsGood)
-  const arrow = delta > 0 ? '↑' : delta < 0 ? '↓' : '→'
-  return <p className={`text-xs mt-1 ${tone}`}>{formatDelta(delta, suffix)} {delta ? arrow : ''}</p>
 }
 
 function ProductionMetricCard({ title, value, subtitle, accent = '#AE2BCF', valueClass = 'text-white', children }) {
@@ -104,16 +83,33 @@ function HistoryTooltip({ active, payload, label }) {
 }
 
 export default function ProductionPage() {
-  const [data, setData] = useState(null)
+  const [productionData, setProductionData] = useState(null)
+  const [historyData, setHistoryData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch('/api/metrics/production')
-      const json = await res.json()
-      if (json.error) throw new Error(json.error)
-      setData(json)
+      const [productionRes, historyRes] = await Promise.all([
+        fetch('/api/metrics/production'),
+        fetch('/api/metrics/production-history'),
+      ])
+
+      const [productionJson, historyJson] = await Promise.all([
+        productionRes.json(),
+        historyRes.json(),
+      ])
+
+      if (!productionRes.ok || productionJson.error) {
+        throw new Error(productionJson.error || 'Failed to load production metrics')
+      }
+
+      if (!historyRes.ok || historyJson.error) {
+        throw new Error(historyJson.error || 'Failed to load production history')
+      }
+
+      setProductionData(productionJson)
+      setHistoryData(historyJson)
       setError(null)
     } catch (err) {
       setError(err.message)
@@ -164,35 +160,35 @@ export default function ProductionPage() {
     seoStageBreakdown = {},
     seoOverdueCount = 0,
     blockedProjects = [],
-    history = {},
-    updatedAt,
-  } = data || {}
+    updatedAt: productionUpdatedAt,
+  } = productionData || {}
 
-  const trailing30 = history.trailing30 || {
-    web: { completed: 0, avgBuildDays: null, onTimePct: null },
-    seo: { completed: 0, avgBuildDays: null, onTimePct: null },
-  }
-  const trailing30vs30 = history.trailing30vs30 || {
-    web: { completedDelta: 0, avgBuildDaysDelta: null },
-    seo: { completedDelta: 0, avgBuildDaysDelta: null },
-  }
-  const monthlyHistory = history.monthlyHistory || []
-  const quarterlyHistory = history.quarterlyHistory || []
+  const {
+    trailing30 = { total: 0, onTime: 0, late: 0, onTimePct: 0, clientDelayPct: 0, internalDelayPct: 0 },
+    monthlyHistory = [],
+    quarterlyHistory = [],
+    allTime = {
+      total: 0,
+      onTimePct: 0,
+      avgTimelineScore: 0,
+      byType: { landingPage: 0, quickLaunch: 0, fullLaunch: 0 },
+    },
+    lastUpdated: historyUpdatedAt,
+  } = historyData || {}
 
   const webBlockedCount = stageBreakdown.blocked || 0
   const seoBlockedCount = seoStageBreakdown.blocked || 0
   const onTimeTextColor = onTimePct >= 80 ? 'text-green-400' : onTimePct >= 60 ? 'text-yellow-400' : 'text-red-400'
+  const historyOnTimeColor = trailing30.onTimePct >= 80 ? 'text-green-400' : trailing30.onTimePct >= 60 ? 'text-yellow-400' : 'text-red-400'
 
-  const monthlyCompletedData = monthlyHistory.map(entry => ({
-    label: entry.label,
-    webCompleted: entry.web?.completed || 0,
-    seoCompleted: entry.seo?.completed || 0,
+  const monthlyTrendData = monthlyHistory.map(entry => ({
+    label: entry.month,
+    onTime: entry.onTime,
+    late: entry.late,
+    ahead: entry.ahead,
   }))
 
-  const monthlyBuildTimeData = monthlyHistory.map(entry => ({
-    label: entry.label,
-    webAvgBuildDays: entry.web?.avgBuildDays ?? null,
-  }))
+  const lastUpdated = historyUpdatedAt || productionUpdatedAt
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -200,7 +196,7 @@ export default function ProductionPage() {
         <div>
           <h1 className="text-2xl font-bold text-white">Production</h1>
           <p className="text-gray-500 text-sm mt-0.5">
-            {updatedAt ? `Updated ${formatUpdated(updatedAt)}` : 'Loading…'}
+            {lastUpdated ? `Updated ${formatUpdated(lastUpdated)}` : 'Loading…'}
           </p>
         </div>
         <button
@@ -378,127 +374,124 @@ export default function ProductionPage() {
         </div>
       </SectionShell>
 
-      <SectionShell title="📈 Production History" subtitle="Trailing 30-day delivery signals plus monthly and quarterly completion trends.">
+      <SectionShell title="📈 Production History" subtitle="Lada's scorecard history from the WEB sheet — trailing 30-day performance, monthly trend, quarterly rollup, and all-time mix.">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
           <ProductionMetricCard
-            title="WEB Completed (30d)"
-            value={trailing30.web.completed || 0}
-            subtitle="Completed WEB builds in the trailing 30 days"
+            title="Builds (Trailing 30d)"
+            value={trailing30.total || 0}
+            subtitle={`${trailing30.onTime || 0} on time or ahead · ${trailing30.late || 0} late`}
             accent="#A855F7"
-          >
-            <DeltaPill delta={trailing30vs30.web.completedDelta} />
-          </ProductionMetricCard>
+          />
           <ProductionMetricCard
-            title="WEB Avg Build Time (30d)"
-            value={formatMetricValue(trailing30.web.avgBuildDays, ' days')}
-            subtitle="Start date to completed date"
-            accent="#7C3AED"
-          >
-            <DeltaPill delta={trailing30vs30.web.avgBuildDaysDelta} suffix=" days" positiveIsGood={false} />
-          </ProductionMetricCard>
+            title="On-Time % (Trailing 30d)"
+            value={formatMetricValue(trailing30.onTimePct, '%')}
+            subtitle="On time + ahead, based on go-live history"
+            accent="#22c55e"
+            valueClass={historyOnTimeColor}
+          />
           <ProductionMetricCard
-            title="SEO Completed (30d)"
-            value={trailing30.seo.completed || 0}
-            subtitle="Completed SEO projects in the trailing 30 days"
-            accent="#C084FC"
-          >
-            <DeltaPill delta={trailing30vs30.seo.completedDelta} />
-          </ProductionMetricCard>
+            title="Client Delay %"
+            value={formatMetricValue(trailing30.clientDelayPct, '%')}
+            subtitle="Share of late builds tagged Client"
+            accent="#F59E0B"
+            valueClass="text-yellow-300"
+          />
           <ProductionMetricCard
-            title="SEO On-Time % (30d)"
-            value={formatMetricValue(trailing30.seo.onTimePct, '%')}
-            subtitle="Completed on or before due date"
-            accent="#8B5CF6"
-            valueClass={
-              trailing30.seo.onTimePct >= 80
-                ? 'text-green-400'
-                : trailing30.seo.onTimePct >= 60
-                  ? 'text-yellow-400'
-                  : 'text-red-400'
-            }
+            title="Internal Delay %"
+            value={formatMetricValue(trailing30.internalDelayPct, '%')}
+            subtitle="Share of late builds tagged Internal"
+            accent="#EF4444"
+            valueClass="text-red-400"
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 mb-4">
-          <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-            <div className="mb-4">
-              <h3 className="text-white font-semibold">Monthly Completed Builds</h3>
-              <p className="text-gray-500 text-sm mt-1">Last 6 months · WEB vs SEO completed volume</p>
-            </div>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyCompletedData} barGap={8}>
-                  <CartesianGrid stroke="#221530" strokeDasharray="3 3" />
-                  <XAxis dataKey="label" stroke="#6B7280" tickLine={false} axisLine={{ stroke: '#2a1a3e' }} />
-                  <YAxis stroke="#6B7280" tickLine={false} axisLine={{ stroke: '#2a1a3e' }} allowDecimals={false} />
-                  <Tooltip content={<HistoryTooltip />} />
-                  <Bar dataKey="webCompleted" name="WEB completed" fill="#AE2BCF" radius={[6, 6, 0, 0]} />
-                  <Bar dataKey="seoCompleted" name="SEO completed" fill="#8B5CF6" radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+        <div className="rounded-xl p-5 mb-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
+          <div className="mb-4">
+            <h3 className="text-white font-semibold">Monthly Trend</h3>
+            <p className="text-gray-500 text-sm mt-1">Go-live volume by month from the production scorecard.</p>
           </div>
-
-          <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-            <div className="mb-4">
-              <h3 className="text-white font-semibold">WEB Avg Build Time Trend</h3>
-              <p className="text-gray-500 text-sm mt-1">Last 6 months · N/A periods render as gaps</p>
-            </div>
-            <div className="h-52">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={monthlyBuildTimeData}>
-                  <CartesianGrid stroke="#221530" strokeDasharray="3 3" />
-                  <XAxis dataKey="label" stroke="#6B7280" tickLine={false} axisLine={{ stroke: '#2a1a3e' }} />
-                  <YAxis stroke="#6B7280" tickLine={false} axisLine={{ stroke: '#2a1a3e' }} />
-                  <Tooltip content={<HistoryTooltip />} />
-                  <Line
-                    type="monotone"
-                    dataKey="webAvgBuildDays"
-                    name="WEB avg build days"
-                    stroke="#C084FC"
-                    strokeWidth={3}
-                    dot={{ r: 4, fill: '#C084FC', stroke: '#111111' }}
-                    connectNulls={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={monthlyTrendData} barGap={8}>
+                <CartesianGrid stroke="#221530" strokeDasharray="3 3" />
+                <XAxis dataKey="label" stroke="#6B7280" tickLine={false} axisLine={{ stroke: '#2a1a3e' }} />
+                <YAxis stroke="#6B7280" tickLine={false} axisLine={{ stroke: '#2a1a3e' }} allowDecimals={false} />
+                <Tooltip content={<HistoryTooltip />} />
+                <Bar dataKey="onTime" name="On Time" fill="#22c55e" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="late" name="Late" fill="#ef4444" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="ahead" name="Ahead" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="rounded-xl p-5 overflow-x-auto" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
+        <div className="rounded-xl p-5 overflow-x-auto mb-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
           <div className="mb-4">
             <h3 className="text-white font-semibold">Quarterly Summary</h3>
-            <p className="text-gray-500 text-sm mt-1">Last 4 quarters of completed work</p>
+            <p className="text-gray-500 text-sm mt-1">Quarterly rollup from the scorecard history.</p>
           </div>
-          <table className="w-full min-w-[720px] text-sm">
+          <table className="w-full min-w-[760px] text-sm">
             <thead>
               <tr className="border-b border-[#2a1a3e] text-left text-gray-400 uppercase tracking-wider text-xs">
                 <th className="py-3 pr-4">Quarter</th>
-                <th className="py-3 pr-4">WEB Builds</th>
-                <th className="py-3 pr-4">WEB Avg Build Time</th>
-                <th className="py-3 pr-4">WEB On-Time %</th>
-                <th className="py-3">SEO Builds</th>
+                <th className="py-3 pr-4">Total</th>
+                <th className="py-3 pr-4">On Time</th>
+                <th className="py-3 pr-4">Late</th>
+                <th className="py-3 pr-4">Ahead</th>
+                <th className="py-3 pr-4">On-Time %</th>
+                <th className="py-3 pr-4">Avg Timeline Score</th>
+                <th className="py-3">Avg Bugs</th>
               </tr>
             </thead>
             <tbody>
               {quarterlyHistory.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-4 text-gray-500">No quarterly history available.</td>
+                  <td colSpan={8} className="py-4 text-gray-500">No quarterly history available.</td>
                 </tr>
               ) : (
                 quarterlyHistory.map(row => (
                   <tr key={row.quarter} className="border-b border-[#1d1329] text-gray-200">
                     <td className="py-3 pr-4 font-medium text-white">{row.quarter}</td>
-                    <td className="py-3 pr-4">{row.web?.completed || 0}</td>
-                    <td className="py-3 pr-4">{formatMetricValue(row.web?.avgBuildDays, ' days')}</td>
-                    <td className="py-3 pr-4">{formatMetricValue(row.web?.onTimePct, '%')}</td>
-                    <td className="py-3">{row.seo?.completed || 0}</td>
+                    <td className="py-3 pr-4">{row.total || 0}</td>
+                    <td className="py-3 pr-4 text-green-400">{row.onTime || 0}</td>
+                    <td className="py-3 pr-4 text-red-400">{row.late || 0}</td>
+                    <td className="py-3 pr-4 text-blue-400">{row.ahead || 0}</td>
+                    <td className="py-3 pr-4">{formatMetricValue(row.onTimePct, '%')}</td>
+                    <td className="py-3 pr-4">{formatMetricValue(row.avgTimelineScore)}</td>
+                    <td className="py-3">{formatMetricValue(row.avgBugs)}</td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <ProductionMetricCard
+            title="All-Time Builds"
+            value={allTime.total || 0}
+            subtitle="All scorecard rows with a valid go-live or due date"
+            accent="#A855F7"
+          />
+          <ProductionMetricCard
+            title="All-Time On-Time %"
+            value={formatMetricValue(allTime.onTimePct, '%')}
+            subtitle="On time + ahead across full scorecard history"
+            accent="#22c55e"
+            valueClass={allTime.onTimePct >= 80 ? 'text-green-400' : allTime.onTimePct >= 60 ? 'text-yellow-400' : 'text-red-400'}
+          />
+          <ProductionMetricCard
+            title="Avg Timeline Score"
+            value={formatMetricValue(allTime.avgTimelineScore)}
+            subtitle="Average score from Lada's timeline scoring"
+            accent="#7C3AED"
+          />
+          <ProductionMetricCard
+            title="By Type"
+            value={`${allTime.byType?.fullLaunch || 0} / ${allTime.byType?.quickLaunch || 0} / ${allTime.byType?.landingPage || 0}`}
+            subtitle="Full launch / Quick launch / Landing page"
+            accent="#3B82F6"
+          />
         </div>
       </SectionShell>
     </div>
