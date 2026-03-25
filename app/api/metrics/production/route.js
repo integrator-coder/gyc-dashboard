@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { asanaFetch, mapAsanaCustomFields } from '@/lib/asana'
 
+const ASANA_BASE = 'https://app.asana.com/api/1.0'
+
 export const dynamic = 'force-dynamic'
 
 const PORTFOLIO_ID = '1205807037864307'
@@ -43,9 +45,13 @@ function getProjectCompletedDate(project) {
   return getDateValue(project.completed_at)
 }
 
+function getEffectiveCompletedDate(project) {
+  return getDateValue(project.effectiveCompletionDate)
+}
+
 function getCompletionMetrics(project) {
   const startDate = getProjectStartDate(project)
-  const completedAt = getProjectCompletedDate(project)
+  const completedAt = getEffectiveCompletedDate(project)
   const dueDate = getProjectDueDate(project)
 
   if (!completedAt) return null
@@ -85,7 +91,81 @@ function getTypeBucket(type) {
 }
 
 function createProjectRecord(project) {
-  return { ...project, fieldMap: mapAsanaCustomFields(project) }
+  return { ...project, fieldMap: mapAsanaCustomFields(project), effectiveCompletionDate: null }
+}
+
+function getAsanaHeaders() {
+  const token = process.env.ASANA_TOKEN || process.env.ASANA_PAT
+  return {
+    Authorization: `Bearer ${token}`,
+  }
+}
+
+function getCompletionSignalNames(project) {
+  const department = String(project.fieldMap.Department || '').toUpperCase()
+
+  if (department === 'SEO') {
+    return ['seo setup complete', 'delivery', 'go live', 'launched', 'onboarding complete']
+  }
+
+  if (department === 'WEB') {
+    return ['website is completed', 'full website launch', 'homepage launch', 'a landing page has been launched', 'go live']
+  }
+
+  return []
+}
+
+async function getEffectiveCompletionDate(projectGid, asanaHeaders, signalNames) {
+  if (!signalNames.length) return null
+
+  const url = `${ASANA_BASE}/tasks?project=${projectGid}&opt_fields=name,completed,completed_at&limit=50`
+  const res = await fetch(url, {
+    headers: asanaHeaders,
+    cache: 'no-store',
+  })
+
+  if (res.status === 429) {
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    return getEffectiveCompletionDate(projectGid, asanaHeaders, signalNames)
+  }
+
+  const payload = await res.json()
+
+  if (!res.ok) {
+    throw new Error(payload?.errors?.[0]?.message || `Asana ${res.status}`)
+  }
+
+  const matchingDates = (payload.data || [])
+    .filter(task => task?.completed && task?.completed_at)
+    .filter(task => {
+      const name = String(task.name || '').toLowerCase()
+      return signalNames.some(signal => name.includes(signal))
+    })
+    .map(task => getDateValue(task.completed_at))
+    .filter(Boolean)
+    .sort((a, b) => b.getTime() - a.getTime())
+
+  return matchingDates[0] || null
+}
+
+async function mapWithConcurrency(items, limit, mapper) {
+  const results = new Array(items.length)
+  let index = 0
+
+  async function worker() {
+    while (true) {
+      const currentIndex = index
+      index += 1
+      if (currentIndex >= items.length) return
+      results[currentIndex] = await mapper(items[currentIndex], currentIndex)
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, () => worker())
+  )
+
+  return results
 }
 
 function addDays(date, days) {
@@ -167,7 +247,7 @@ function buildRangeStats(projects, rangeStart, rangeEnd) {
   const seoStat = createHistoryStat()
 
   projects.forEach(project => {
-    const completedAt = getProjectCompletedDate(project)
+    const completedAt = getEffectiveCompletedDate(project)
     if (!completedAt) return
     if (completedAt < rangeStart || completedAt >= rangeEnd) return
 
@@ -188,7 +268,7 @@ function deltaValue(current, previous) {
 }
 
 function getHistory(allProjects, today) {
-  const completedProjects = allProjects.filter(project => project.completed && getProjectCompletedDate(project))
+  const completedProjects = allProjects.filter(project => getEffectiveCompletedDate(project))
 
   const trailing30Start = addDays(today, -30)
   const previous30Start = addDays(today, -60)
@@ -222,7 +302,7 @@ function getHistory(allProjects, today) {
   }
 
   completedProjects.forEach(project => {
-    const completedAt = getProjectCompletedDate(project)
+    const completedAt = getEffectiveCompletedDate(project)
     if (!completedAt) return
 
     const department = String(project.fieldMap.Department || '').toUpperCase()
@@ -294,6 +374,20 @@ export async function GET() {
       String(project.fieldMap.Department || '').toUpperCase() === 'SEO'
     )
 
+    const historyProjects = [...webProjects, ...seoProjects]
+    const asanaHeaders = getAsanaHeaders()
+
+    await mapWithConcurrency(historyProjects, 5, async project => {
+      const effectiveCompletionDate = await getEffectiveCompletionDate(
+        project.gid,
+        asanaHeaders,
+        getCompletionSignalNames(project)
+      )
+
+      project.effectiveCompletionDate = effectiveCompletionDate?.toISOString() || null
+      return project
+    })
+
     const activeWebProjects = webProjects.filter(project => {
       const stage = getNormalizedStage(project)
       return !isCompletedStage(stage) && !project.completed
@@ -342,7 +436,11 @@ export async function GET() {
       return project.completed && completedAt && completedAt >= ninetyDaysAgo
     })
 
-    const buildTimes = completedBuilds
+    const buildTimes = webProjects
+      .filter(project => {
+        const completedAt = getEffectiveCompletedDate(project)
+        return completedAt && completedAt >= ninetyDaysAgo
+      })
       .map(project => getCompletionMetrics(project)?.buildDays)
       .filter(value => value !== null)
 
@@ -413,6 +511,16 @@ export async function GET() {
         if (b.daysPastDue === null) return -1
         return b.daysPastDue - a.daysPastDue
       })
+
+    const effectiveCompletionMatches = historyProjects
+      .filter(project => project.effectiveCompletionDate)
+      .map(project => ({
+        name: project.name,
+        department: String(project.fieldMap.Department || '').toUpperCase() || 'OTHER',
+        effectiveCompletionDate: project.effectiveCompletionDate,
+      }))
+
+    console.log('[production-metrics] effective completion dates found', effectiveCompletionMatches)
 
     const history = getHistory(allProjects, today)
 
