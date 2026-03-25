@@ -4,6 +4,6 @@ import { requireUser } from '@/lib/auth'
 export const dynamic = 'force-dynamic'
 
 export default async function Page() {
-  await requireUser(['cx', 'admin'])
-  return <CXHandoffPage />
+  const user = await requireUser(['sales', 'ga', 'cx', 'admin'])
+  return <CXHandoffPage user={serializeUser(user)} />
 }

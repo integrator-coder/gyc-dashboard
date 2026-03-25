@@ -5,7 +5,7 @@ export default async function LoginPage({ searchParams }) {
   return (
     <LoginPageClient
       message={params?.message || ''}
-      nextUrl={params?.next || '/team/classify'}
+      nextUrl={params?.next || '/cx-handoff'}
     />
   )
 }

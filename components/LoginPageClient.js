@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
-export default function LoginPageClient({ message = '', nextUrl = '/team/classify' }) {
+export default function LoginPageClient({ message = '', nextUrl = '/cx-handoff' }) {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

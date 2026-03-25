@@ -7,20 +7,20 @@ import { getRepAliases } from '@/lib/team'
 
 export async function GET() {
   try {
-    const auth = await requireApiUser(['sales', 'ga', 'admin'])
+    const auth = await requireApiUser(['sales', 'ga', 'cx', 'admin'])
     if (auth.error) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
     const user = auth.user
-    const isAdmin = userHasRole(user, ['admin'])
+    const hasFullQueueAccess = userHasRole(user, ['cx', 'admin'])
     const aliases = getRepAliases(user)
     const aliasPatterns = aliases.map((alias) => `%${alias.toLowerCase()}%`)
 
     const params = []
-    let whereClause = `COALESCE(zc."classificationStatus", 'needs-confirmation') IN ('needs-confirmation', 'auto')`
+    let whereClause = `COALESCE(zc."classificationStatus", 'needs-confirmation') = 'needs-confirmation'`
 
-    if (!isAdmin) {
+    if (!hasFullQueueAccess) {
       params.push(aliasPatterns, user.email.toLowerCase())
       whereClause += `
         AND (

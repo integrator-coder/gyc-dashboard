@@ -7,7 +7,7 @@ import { getRepAliases } from '@/lib/team'
 
 export async function PATCH(request, { params }) {
   try {
-    const auth = await requireApiUser(['sales', 'ga', 'admin'])
+    const auth = await requireApiUser(['sales', 'ga', 'cx', 'admin'])
     if (auth.error) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
@@ -22,8 +22,8 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: 'Client name and acronym are required.' }, { status: 400 })
     }
 
-    const isAdmin = userHasRole(user, ['admin'])
-    if (!isAdmin) {
+    const hasFullQueueAccess = userHasRole(user, ['cx', 'admin'])
+    if (!hasFullQueueAccess) {
       const aliases = getRepAliases(user)
       const aliasPatterns = aliases.map((alias) => `%${alias.toLowerCase()}%`)
       const ownership = await pool.query(
