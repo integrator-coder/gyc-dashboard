@@ -75,7 +75,6 @@ function PiaCard({ repData, period }) {
     { key: 'Show Rate', isRate: true },
   ]
 
-  // Pia has no formal targets — just show raw numbers
   return (
     <div className="rounded-xl p-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
       <h3 className="text-white font-semibold mb-1 flex items-center gap-2">
@@ -118,14 +117,29 @@ function formatCurrency(val) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val)
 }
 
+function MarketingMetricCard({ title, value, subtitle, accent = '#AE2BCF' }) {
+  return (
+    <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
+      <div className="w-10 h-1 rounded-full mb-3" style={{ backgroundColor: accent }} />
+      <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">{title}</p>
+      <p className="text-3xl font-bold text-white">{value}</p>
+      {subtitle && <p className="text-gray-600 text-xs mt-1">{subtitle}</p>}
+    </div>
+  )
+}
+
 export default function SalesPage() {
   const [data, setData] = useState(null)
   const [ghlData, setGhlData] = useState(null)
+  const [leadsData, setLeadsData] = useState(null)
+  const [dealSizeData, setDealSizeData] = useState(null)
   const [commissionData, setCommissionData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [ghlLoading, setGhlLoading] = useState(true)
+  const [marketingLoading, setMarketingLoading] = useState(true)
   const [commissionLoading, setCommissionLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [marketingError, setMarketingError] = useState(null)
   const [viewIdx, setViewIdx] = useState(2)
 
   const period = VIEW_KEYS[viewIdx]
@@ -147,6 +161,28 @@ export default function SalesPage() {
       setLoading(false)
     }
   }, [period])
+
+  const fetchMarketingData = useCallback(async () => {
+    setMarketingLoading(true)
+    try {
+      const [leadsRes, dealSizeRes] = await Promise.all([
+        fetch('/api/metrics/ghl-leads'),
+        fetch('/api/metrics/deal-size'),
+      ])
+      const [leadsJson, dealSizeJson] = await Promise.all([leadsRes.json(), dealSizeRes.json()])
+      if (leadsJson.error) throw new Error(leadsJson.error)
+      if (dealSizeJson.error) throw new Error(dealSizeJson.error)
+      setLeadsData(leadsJson)
+      setDealSizeData(dealSizeJson)
+      setMarketingError(null)
+    } catch (err) {
+      setMarketingError(err.message)
+      setLeadsData(null)
+      setDealSizeData(null)
+    } finally {
+      setMarketingLoading(false)
+    }
+  }, [])
 
   const fetchCommission = useCallback(async () => {
     setCommissionLoading(true)
@@ -172,6 +208,12 @@ export default function SalesPage() {
   }, [fetchData, period])
 
   useEffect(() => {
+    fetchMarketingData()
+    const interval = setInterval(fetchMarketingData, 5 * 60 * 1000)
+    return () => clearInterval(interval)
+  }, [fetchMarketingData])
+
+  useEffect(() => {
     fetchCommission()
     const interval = setInterval(fetchCommission, 5 * 60 * 1000)
     return () => clearInterval(interval)
@@ -194,7 +236,6 @@ export default function SalesPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Sales</h1>
@@ -203,7 +244,7 @@ export default function SalesPage() {
           </p>
         </div>
         <button
-          onClick={() => { fetchData(); fetchCommission() }}
+          onClick={() => { fetchData(); fetchMarketingData(); fetchCommission() }}
           className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-medium rounded-lg transition-colors border border-gray-700"
         >
           ↻ Refresh
@@ -216,7 +257,6 @@ export default function SalesPage() {
         </div>
       )}
 
-      {/* View Toggle */}
       <div className="flex gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1 w-fit">
         {VIEW_LABELS.map((label, i) => (
           <button
@@ -233,13 +273,43 @@ export default function SalesPage() {
         ))}
       </div>
 
-      {/* Team Overview */}
+      <section>
+        <div className="flex items-center justify-between mb-3 gap-4">
+          <div>
+            <h2 className="text-gray-400 text-xs font-semibold uppercase tracking-widest">
+              Marketing &amp; Leads
+            </h2>
+            <p className="text-gray-600 text-xs mt-1">GHL lead flow + 30-day closed-won deal size</p>
+          </div>
+        </div>
+
+        {marketingError ? (
+          <div className="bg-red-950 border border-red-800 rounded-lg px-4 py-3 text-red-300 text-sm">
+            ⚠️ Unable to load marketing KPIs: {marketingError}
+          </div>
+        ) : marketingLoading && !leadsData && !dealSizeData ? (
+          <div className="rounded-xl border border-gray-800 px-5 py-8 flex items-center justify-center gap-3" style={{ backgroundColor: '#111111' }}>
+            <div className="w-5 h-5 border-2 border-[#AE2BCF] border-t-transparent rounded-full animate-spin" />
+            <span className="text-gray-500 text-sm">Loading marketing and leads data…</span>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <MarketingMetricCard title="New Leads Today" value={leadsData?.newLeads?.today ?? '—'} subtitle="Contacts added today" />
+            <MarketingMetricCard title="New Leads This Week" value={leadsData?.newLeads?.week ?? '—'} subtitle="Contacts added in last 7 days" accent="#732FBA" />
+            <MarketingMetricCard title="New Leads This Month" value={leadsData?.newLeads?.month ?? '—'} subtitle="Contacts added in last 30 days" accent="#731494" />
+            <MarketingMetricCard title="Qualified Leads (SQL) Today" value={leadsData?.qualifiedLeads?.today ?? '—'} subtitle="Qualified opps created today" accent="#C19C46" />
+            <MarketingMetricCard title="Qualified Leads Week" value={leadsData?.qualifiedLeads?.week ?? '—'} subtitle="Qualified opps created in last 7 days" />
+            <MarketingMetricCard title="Average Deal Size" value={formatCurrency(dealSizeData?.avgDealSize)} subtitle="Closed won average · last 30 days" accent="#732FBA" />
+            <MarketingMetricCard title="Total Deals (last 30d)" value={dealSizeData?.totalDeals ?? '—'} subtitle="Closed won deals counted" accent="#731494" />
+          </div>
+        )}
+      </section>
+
       <section>
         <h2 className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-3">
           Team — Jesse + Briana
         </h2>
 
-        {/* Big feature: Agreements Closed */}
         <div className="mb-4">
           {(() => {
             const actual = team?.metrics?.['Agreements Closed']?.[period] ?? 0
@@ -256,7 +326,6 @@ export default function SalesPage() {
           })()}
         </div>
 
-        {/* Rest of primary metrics (skip Agreements Closed, already shown) */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {PRIMARY_METRICS.filter(m => m.key !== 'Agreements Closed').map(({ key, isRate }) => {
             const actual = team?.metrics?.[key]?.[period] ?? 0
@@ -276,10 +345,8 @@ export default function SalesPage() {
         </div>
       </section>
 
-      {/* Commission Tier Tracker */}
       <CommissionTierTracker data={commissionData} loading={commissionLoading} />
 
-      {/* Individual Reps — Jesse & Briana */}
       <section>
         <h2 className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-3">
           Individual Reps
@@ -298,7 +365,6 @@ export default function SalesPage() {
         </div>
       </section>
 
-      {/* Pia — Outbound */}
       <section>
         <h2 className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-3">
           Outbound Activity
@@ -306,7 +372,6 @@ export default function SalesPage() {
         <PiaCard repData={reps['Pia']} period={period} />
       </section>
 
-      {/* Deals Won — GHL closed won deals */}
       <section>
         <h2 className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-1">
           Deals Won
@@ -332,11 +397,8 @@ export default function SalesPage() {
                 </thead>
                 <tbody>
                   {(() => {
-                    // Combine known GAs + any unknown reps from GHL
                     const knownGAs = data?.growthAdvisors || ['Sebastian', 'Stefen', 'JC', 'Zu']
                     const byRep = ghlData?.byRep || {}
-
-                    // All reps to show: known GAs first, then any GHL reps not in that list
                     const unknownGHLReps = Object.keys(byRep).filter(r => !knownGAs.includes(r))
                     const allReps = [...knownGAs, ...unknownGHLReps]
 

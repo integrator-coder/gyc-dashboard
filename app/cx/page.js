@@ -62,10 +62,10 @@ function MiniProgressBar({ met, total }) {
 function McCard({ mcName, data }) {
   const pct = data.total > 0 ? (data.met / data.total) * 100 : 0
   const avatar = mcName === 'Unassigned' ? '?' : mcName[0]
-  const avatarBg = mcName === 'Unassigned' ? 'bg-gray-700 text-gray-400' : 'bg-teal-900 text-teal-300'
+  const avatarBg = mcName === 'Unassigned' ? 'bg-gray-700 text-gray-400' : 'bg-brand-p1 text-brand-p4'
 
   return (
-    <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+    <div className="rounded-xl p-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
       <div className="flex items-center gap-3 mb-3">
         <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${avatarBg}`}>
           {avatar}
@@ -83,13 +83,30 @@ function McCard({ mcName, data }) {
   )
 }
 
+function HealthBandStat({ label, icon, pct, count, colorClass }) {
+  return (
+    <div className="rounded-xl p-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">{icon} {label}</p>
+          <p className={`text-3xl font-bold ${colorClass}`}>{pct.toFixed(1)}%</p>
+        </div>
+        <div className="text-right">
+          <p className="text-white text-lg font-semibold">{count}</p>
+          <p className="text-gray-600 text-xs">clients</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     const entry = payload[0].payload
     return (
       <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm">
         <p className="text-gray-300 font-medium">{label}</p>
-        <p className="text-teal-400 font-bold">{payload[0].value.toFixed(1)}%</p>
+        <p className="text-brand-p4 font-bold">{payload[0].value.toFixed(1)}%</p>
         {entry.met !== undefined && (
           <p className="text-gray-500 text-xs">{entry.met} / {entry.total} clients met</p>
         )}
@@ -106,12 +123,14 @@ export default function CXPage() {
   const [data, setData] = useState(null)
   const [ghlData, setGhlData] = useState(null)
   const [zendeskData, setZendeskData] = useState(null)
+  const [healthData, setHealthData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [ghlLoading, setGhlLoading] = useState(true)
   const [zendeskLoading, setZendeskLoading] = useState(true)
+  const [healthLoading, setHealthLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [ghlPeriod, setGhlPeriod] = useState('month') // 'month' | 'year'
-  const [showAllNotMet, setShowAllNotMet] = useState(false)
+  const [healthError, setHealthError] = useState(null)
+  const [ghlPeriod, setGhlPeriod] = useState('month')
 
   const fetchCxData = useCallback(async () => {
     try {
@@ -124,6 +143,22 @@ export default function CXPage() {
       setError(err.message)
     } finally {
       setLoading(false)
+    }
+  }, [])
+
+  const fetchHealthData = useCallback(async () => {
+    setHealthLoading(true)
+    try {
+      const res = await fetch('/api/metrics/client-health')
+      const json = await res.json()
+      if (json.error) throw new Error(json.error)
+      setHealthData(json)
+      setHealthError(null)
+    } catch (err) {
+      setHealthError(err.message)
+      setHealthData(null)
+    } finally {
+      setHealthLoading(false)
     }
   }, [])
 
@@ -160,6 +195,12 @@ export default function CXPage() {
   }, [fetchCxData])
 
   useEffect(() => {
+    fetchHealthData()
+    const interval = setInterval(fetchHealthData, 5 * 60 * 1000)
+    return () => clearInterval(interval)
+  }, [fetchHealthData])
+
+  useEffect(() => {
     fetchGhlData()
   }, [fetchGhlData])
 
@@ -173,7 +214,7 @@ export default function CXPage() {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <div className="w-10 h-10 border-2 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-10 h-10 border-2 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-400">Loading CX data…</p>
         </div>
       </div>
@@ -196,15 +237,12 @@ export default function CXPage() {
     currentQuarterMonthBreakdown = {},
     quarterStats = {},
     byMc = {},
-    notMetThisQuarter = [],
-    unassigned = [],
     updatedAt
   } = data || {}
 
   const currentQStats = quarterStats[currentQuarter] || { met: 0, total: totalClients, pct: 0 }
   const notMetCount = currentQStats.total - currentQStats.met
 
-  // Build chart data for all 4 quarters
   const chartData = ['Q1', 'Q2', 'Q3', 'Q4'].map(q => ({
     quarter: q,
     pct: quarterStats[q]?.pct || 0,
@@ -214,16 +252,9 @@ export default function CXPage() {
     months: quarterStats[q]?.months?.join(', ') || ''
   }))
 
-  // Show only known active MCs, skip Unassigned and inactive
   const knownMCs = ['Sebastian', 'Stefen', 'JC', 'Zu']
   const mcOrder = knownMCs.filter(mc => byMc[mc])
 
-  // Not met table — show first 20 by default
-  const notMetVisible = showAllNotMet
-    ? notMetThisQuarter
-    : notMetThisQuarter.slice(0, 20)
-
-  // GHL upsell data filtered to GAs only
   const gaByRep = ghlData?.byRep
     ? Object.fromEntries(
         Object.entries(ghlData.byRep).filter(([rep]) => GROWTH_ADVISORS.includes(rep))
@@ -233,35 +264,123 @@ export default function CXPage() {
   const gaTotalDeals = Object.values(gaByRep).reduce((s, r) => s + (r.deals || 0), 0)
   const gaTotalValue = Object.values(gaByRep).reduce((s, r) => s + (r.value || 0), 0)
 
+  const contactsWithScores = healthData?.contactsWithScores ?? 0
+  const sampleSize = healthData?.sampleSize ?? 0
+  const coveragePct = sampleSize > 0 ? (contactsWithScores / sampleSize) * 100 : 0
+  const lowCoverage = coveragePct < 20
+  const healthSegments = [
+    { key: 'green', label: 'Green', icon: '🟢', pct: healthData?.greenPct ?? 0, count: healthData?.green ?? 0, color: 'text-green-400', bg: '#22c55e' },
+    { key: 'yellow', label: 'Yellow', icon: '🟡', pct: healthData?.yellowPct ?? 0, count: healthData?.yellow ?? 0, color: 'text-yellow-400', bg: '#eab308' },
+    { key: 'red', label: 'Red', icon: '🔴', pct: healthData?.redPct ?? 0, count: healthData?.red ?? 0, color: 'text-red-400', bg: '#ef4444' },
+  ]
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
 
-      {/* ── Header ─────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Client Experience</h1>
           <p className="text-gray-500 text-sm mt-0.5">
             {updatedAt ? `Updated ${formatUpdated(updatedAt)}` : 'Loading…'}
             {' · '}
-            <span className="text-teal-400 font-medium">{totalClients} active clients</span>
+            <span className="text-brand-p4 font-medium">{totalClients} active clients</span>
           </p>
         </div>
         <button
-          onClick={() => { setLoading(true); fetchCxData(); fetchGhlData(); fetchZendeskData() }}
+          onClick={() => { setLoading(true); fetchCxData(); fetchHealthData(); fetchGhlData(); fetchZendeskData() }}
           className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-medium rounded-lg transition-colors border border-gray-700"
         >
           ↻ Refresh
         </button>
       </div>
 
-      {/* ── Quarterly Summary Cards ─────────────────────────── */}
+      <section>
+        <div className="flex items-center justify-between mb-3 gap-4">
+          <div>
+            <h2 className="text-gray-400 text-xs font-semibold uppercase tracking-widest">Client Health</h2>
+            <p className="text-gray-600 text-xs mt-1">Health scores pulled from GHL custom fields</p>
+          </div>
+          {healthData?.updatedAt && (
+            <span className="text-gray-600 text-xs">Updated {formatUpdated(healthData.updatedAt)}</span>
+          )}
+        </div>
+
+        {healthError ? (
+          <div className="bg-red-950 border border-red-800 rounded-lg px-4 py-3 text-red-300 text-sm">
+            ⚠️ Unable to load client health: {healthError}
+          </div>
+        ) : healthLoading && !healthData ? (
+          <div className="rounded-xl border border-gray-800 px-5 py-8 flex items-center justify-center gap-3" style={{ backgroundColor: '#111111' }}>
+            <div className="w-5 h-5 border-2 border-brand border-t-transparent rounded-full animate-spin" />
+            <span className="text-gray-500 text-sm">Loading client health data…</span>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {healthSegments.map(segment => (
+                <HealthBandStat
+                  key={segment.key}
+                  label={segment.label}
+                  icon={segment.icon}
+                  pct={segment.pct}
+                  count={segment.count}
+                  colorClass={segment.color}
+                />
+              ))}
+            </div>
+
+            <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
+              <div className="flex items-center justify-between gap-4 mb-3">
+                <div>
+                  <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Health Score Coverage</p>
+                  <p className="text-white text-lg font-semibold">{contactsWithScores} of {sampleSize} clients have health scores.</p>
+                  <p className="text-gray-600 text-sm mt-1">
+                    {contactsWithScores} of {sampleSize} clients have health scores. Score more clients in GHL to get full coverage.
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-3xl font-bold text-brand-p4">{coveragePct.toFixed(1)}%</p>
+                  <p className="text-gray-600 text-xs">coverage</p>
+                </div>
+              </div>
+
+              <div className="h-4 bg-gray-800 rounded-full overflow-hidden flex">
+                {healthSegments.map(segment => (
+                  <div
+                    key={segment.key}
+                    className="h-full transition-all"
+                    style={{ width: `${segment.pct}%`, backgroundColor: segment.bg }}
+                    title={`${segment.label}: ${segment.pct.toFixed(1)}%`}
+                  />
+                ))}
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 mt-3 text-xs">
+                {healthSegments.map(segment => (
+                  <div key={segment.key} className="text-gray-500">
+                    <span className={segment.color}>{segment.icon} {segment.label}</span>
+                    <span className="text-gray-700 mx-1">·</span>
+                    <span>{segment.count} clients</span>
+                  </div>
+                ))}
+              </div>
+
+              {lowCoverage && (
+                <div className="mt-4 rounded-lg border border-yellow-800 bg-yellow-950/40 px-4 py-3 text-yellow-200 text-sm">
+                  Coverage is low ({coveragePct.toFixed(1)}%). Team should fill in client health scores in GHL so this dashboard reflects the full book of business.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </section>
+
       <section>
         <h2 className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-3">
           {currentQuarter} — Meeting Completion
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {/* Met this quarter */}
-          <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+          <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
             <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">Met This Quarter</p>
             <p className={`text-3xl font-bold ${completionTextColor(currentQStats.pct)}`}>
               {currentQStats.met}
@@ -269,8 +388,7 @@ export default function CXPage() {
             </p>
           </div>
 
-          {/* % Complete */}
-          <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+          <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
             <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">% Complete</p>
             <p className={`text-3xl font-bold mb-3 ${completionTextColor(currentQStats.pct)}`}>
               {currentQStats.pct.toFixed(1)}%
@@ -283,8 +401,7 @@ export default function CXPage() {
             </div>
           </div>
 
-          {/* Not yet met */}
-          <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+          <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
             <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">Not Yet Met</p>
             <p className={`text-3xl font-bold ${notMetCount > 0 ? 'text-red-400' : 'text-green-400'}`}>
               {notMetCount}
@@ -295,7 +412,6 @@ export default function CXPage() {
           </div>
         </div>
 
-        {/* Month-by-month breakdown within the quarter */}
         {Object.keys(currentQuarterMonthBreakdown).length > 0 && (
           <div className="mt-3 flex flex-wrap gap-3">
             {Object.entries(currentQuarterMonthBreakdown).map(([month, stats]) => (
@@ -312,7 +428,6 @@ export default function CXPage() {
         )}
       </section>
 
-      {/* ── By Growth Advisor ───────────────────────────────── */}
       {mcOrder.length > 0 && (
         <section>
           <h2 className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-3">
@@ -326,12 +441,11 @@ export default function CXPage() {
         </section>
       )}
 
-      {/* ── Quarterly Trend ─────────────────────────────────── */}
       <section>
         <h2 className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-3">
           Quarterly Trend — {new Date().getFullYear()}
         </h2>
-        <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+        <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={chartData} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
@@ -355,9 +469,9 @@ export default function CXPage() {
                     key={`cell-${index}`}
                     fill={
                       entry.isCurrent
-                        ? '#14b8a6'  // teal-500 for current quarter
+                        ? '#AE2BCF'
                         : entry.pct === 0
-                        ? '#1f2937'  // very dim for 0%
+                        ? '#1f2937'
                         : completionBarColor(entry.pct)
                     }
                     opacity={entry.pct === 0 && !entry.isCurrent ? 0.5 : 1}
@@ -369,11 +483,6 @@ export default function CXPage() {
         </div>
       </section>
 
-
-
-
-
-      {/* ── 🎫 Support (Zendesk) ────────────────────────────── */}
       <section>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-gray-400 text-xs font-semibold uppercase tracking-widest">
@@ -388,19 +497,15 @@ export default function CXPage() {
 
         {zendeskLoading && !zendeskData ? (
           <div className="bg-gray-900 rounded-xl border border-gray-800 px-5 py-10 flex items-center justify-center gap-3">
-            <div className="w-5 h-5 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-brand border-t-transparent rounded-full animate-spin" />
             <span className="text-gray-500 text-sm">Loading Zendesk data…</span>
           </div>
         ) : zendeskData ? (
           <div className="space-y-4">
-
-            {/* ── Queue Health Cards ── */}
             <div>
               <p className="text-gray-600 text-xs mb-2 uppercase tracking-wider">Queue Health</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-
-                {/* Active Queue */}
-                <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+                <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
                   <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">Active Queue</p>
                   <p className={`text-3xl font-bold ${
                     zendeskData.queue.total > 500
@@ -416,22 +521,19 @@ export default function CXPage() {
                   </p>
                 </div>
 
-                {/* New This Month */}
-                <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+                <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
                   <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">New This Month</p>
                   <p className="text-3xl font-bold text-white">{zendeskData.thisMonth.created}</p>
                   <p className="text-gray-600 text-xs mt-1">tickets created</p>
                 </div>
 
-                {/* Resolved This Month */}
-                <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+                <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
                   <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">Resolved This Month</p>
-                  <p className="text-3xl font-bold text-teal-400">{zendeskData.thisMonth.resolved}</p>
+                  <p className="text-3xl font-bold text-brand-p4">{zendeskData.thisMonth.resolved}</p>
                   <p className="text-gray-600 text-xs mt-1">tickets solved</p>
                 </div>
 
-                {/* Resolution Rate */}
-                <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+                <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
                   <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">Resolution Rate</p>
                   <p className={`text-3xl font-bold ${
                     zendeskData.thisMonth.resolutionRate >= 80
@@ -447,7 +549,6 @@ export default function CXPage() {
               </div>
             </div>
 
-            {/* ── Resolution Time Cards ── */}
             <div>
               <p className="text-gray-600 text-xs mb-2 uppercase tracking-wider">Resolution Time</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -456,17 +557,16 @@ export default function CXPage() {
                   { label: 'Median Resolution', value: zendeskData.resolutionTime.median },
                   { label: 'Mode Resolution', value: zendeskData.resolutionTime.mode },
                 ].map(({ label, value }) => (
-                  <div key={label} className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+                  <div key={label} className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
                     <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">{label}</p>
-                    <p className="text-3xl font-bold text-teal-400">
+                    <p className="text-3xl font-bold text-brand-p4">
                       {value >= 24
                         ? `${(value / 24).toFixed(1)}d`
                         : `${value}h`}
                     </p>
                   </div>
                 ))}
-                {/* Sample size */}
-                <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+                <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
                   <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">Sample Size</p>
                   <p className="text-3xl font-bold text-white">{zendeskData.resolutionTime.sampleSize}</p>
                   <p className="text-gray-600 text-xs mt-1">closed tickets</p>
@@ -474,11 +574,8 @@ export default function CXPage() {
               </div>
             </div>
 
-            {/* ── Charts Row ── */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-              {/* Resolution Time Distribution */}
-              <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+              <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
                 <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-3">Resolution Time Distribution</p>
                 {zendeskData.resolutionTime.buckets.length > 0 ? (
                   <ResponsiveContainer width="100%" height={220}>
@@ -509,7 +606,7 @@ export default function CXPage() {
                             return (
                               <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm">
                                 <p className="text-gray-300 font-medium">{label}</p>
-                                <p className="text-teal-400 font-bold">{count} tickets</p>
+                                <p className="text-brand-p4 font-bold">{count} tickets</p>
                                 <p className="text-gray-500 text-xs">{pct}% of total</p>
                               </div>
                             )
@@ -517,7 +614,6 @@ export default function CXPage() {
                           return null
                         }}
                       />
-                      {/* Mean reference line */}
                       {(() => {
                         const mean = zendeskData.resolutionTime.mean
                         const buckets = zendeskData.resolutionTime.buckets
@@ -531,7 +627,6 @@ export default function CXPage() {
                           />
                         ) : null
                       })()}
-                      {/* Median reference line */}
                       {(() => {
                         const median = zendeskData.resolutionTime.median
                         const buckets = zendeskData.resolutionTime.buckets
@@ -545,7 +640,7 @@ export default function CXPage() {
                           />
                         ) : null
                       })()}
-                      <Bar dataKey="count" fill="#14b8a6" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="count" fill="#AE2BCF" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
@@ -553,8 +648,7 @@ export default function CXPage() {
                 )}
               </div>
 
-              {/* Tickets by Type */}
-              <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+              <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
                 <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-3">Open Tickets by Type</p>
                 {(() => {
                   const typeLabels = {
@@ -598,14 +692,14 @@ export default function CXPage() {
                               return (
                                 <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm">
                                   <p className="text-gray-300 font-medium">{label}</p>
-                                  <p className="text-teal-400 font-bold">{payload[0].value} open</p>
+                                  <p className="text-brand-p4 font-bold">{payload[0].value} open</p>
                                 </div>
                               )
                             }
                             return null
                           }}
                         />
-                        <Bar dataKey="count" fill="#14b8a6" radius={[0, 4, 4, 0]} />
+                        <Bar dataKey="count" fill="#AE2BCF" radius={[0, 4, 4, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   )
@@ -613,7 +707,6 @@ export default function CXPage() {
               </div>
             </div>
 
-            {/* ── First Reply Time Cards ── */}
             {zendeskData.firstReplyTime && (
               <div>
                 <p className="text-gray-600 text-xs mb-2 uppercase tracking-wider">First Response Time</p>
@@ -638,7 +731,7 @@ export default function CXPage() {
                       ? 'text-yellow-400'
                       : 'text-red-400'
                     return (
-                      <div key={label} className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+                      <div key={label} className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
                         <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">{label}</p>
                         <p className={`text-3xl font-bold ${color}`}>{display}</p>
                         {value > 0 && (
@@ -647,7 +740,7 @@ export default function CXPage() {
                       </div>
                     )
                   })}
-                  <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+                  <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
                     <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">FRT Sample</p>
                     <p className="text-3xl font-bold text-white">{zendeskData.firstReplyTime.sampleSize}</p>
                     <p className="text-gray-600 text-xs mt-1">tickets measured</p>
@@ -656,11 +749,10 @@ export default function CXPage() {
               </div>
             )}
 
-            {/* ── SLA / Overdue ── */}
             <div>
               <p className="text-gray-600 text-xs mb-2 uppercase tracking-wider">SLA &amp; Overdue</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+                <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
                   <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">Overdue Tickets</p>
                   <p className={`text-3xl font-bold ${
                     (zendeskData.overdueTickets || 0) > 20
@@ -693,11 +785,10 @@ export default function CXPage() {
               </div>
             </div>
 
-            {/* ── Monthly Volume Trend ── */}
             {zendeskData.monthlyVolume && zendeskData.monthlyVolume.length > 0 && (
               <div>
                 <p className="text-gray-600 text-xs mb-2 uppercase tracking-wider">Ticket Volume — Last 12 Months</p>
-                <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+                <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart
                       data={zendeskData.monthlyVolume}
@@ -723,7 +814,7 @@ export default function CXPage() {
                             return (
                               <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm">
                                 <p className="text-gray-300 font-medium">{label}</p>
-                                <p className="text-teal-400 font-bold">{payload[0].value} tickets</p>
+                                <p className="text-brand-p4 font-bold">{payload[0].value} tickets</p>
                               </div>
                             )
                           }
@@ -736,7 +827,7 @@ export default function CXPage() {
                           return (
                             <Cell
                               key={`mv-${index}`}
-                              fill={isLatest ? '#14b8a6' : '#0f766e'}
+                              fill={isLatest ? '#AE2BCF' : '#731494'}
                               opacity={isLatest ? 1 : 0.75}
                             />
                           )
@@ -748,12 +839,9 @@ export default function CXPage() {
               </div>
             )}
 
-            {/* ── Per-Client Ticket Volume + By Growth Advisor ── */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-              {/* Tickets by Growth Advisor */}
               {zendeskData.assigneeLoads && zendeskData.assigneeLoads.length > 0 && (
-                <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+                <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
                   <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-4">Open Tickets by Growth Advisor</p>
                   <div className="space-y-3">
                     {(() => {
@@ -763,17 +851,17 @@ export default function CXPage() {
                         .sort((a, b) => b.openCount - a.openCount)
                         .map(({ name, openCount }) => {
                           const pct = (openCount / maxCount) * 100
-                          const barColor = openCount > 30 ? '#ef4444' : openCount > 15 ? '#eab308' : '#14b8a6'
+                          const barColor = openCount > 30 ? '#ef4444' : openCount > 15 ? '#eab308' : '#AE2BCF'
                           return (
                             <div key={name}>
                               <div className="flex items-center justify-between mb-1">
                                 <div className="flex items-center gap-2">
-                                  <span className="w-6 h-6 rounded-full bg-teal-900 flex items-center justify-center text-xs text-teal-300 font-bold shrink-0">
+                                  <span className="w-6 h-6 rounded-full bg-brand-p1 flex items-center justify-center text-xs text-brand-p4 font-bold shrink-0">
                                     {name[0]}
                                   </span>
                                   <span className="text-white text-sm font-medium">{name}</span>
                                 </div>
-                                <span className={`text-sm font-bold ${openCount > 30 ? 'text-red-400' : openCount > 15 ? 'text-yellow-400' : 'text-teal-400'}`}>
+                                <span className={`text-sm font-bold ${openCount > 30 ? 'text-red-400' : openCount > 15 ? 'text-yellow-400' : 'text-brand-p4'}`}>
                                   {openCount}
                                 </span>
                               </div>
@@ -791,9 +879,8 @@ export default function CXPage() {
                 </div>
               )}
 
-              {/* Per-client ticket volume (top orgs — churn risk) */}
               {zendeskData.orgTickets && zendeskData.orgTickets.length > 0 && (
-                <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+                <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
                   <div className="flex items-center justify-between mb-4">
                     <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">Top Clients by Ticket Volume</p>
                     <span className="text-gray-600 text-xs">churn risk signal</span>
@@ -838,13 +925,11 @@ export default function CXPage() {
         )}
       </section>
 
-      {/* ── 💰 Upsells — GAs Only ───────────────────────────── */}
       <section>
         <div className="flex items-center justify-between mb-1">
           <h2 className="text-gray-400 text-xs font-semibold uppercase tracking-widest">
             Upsells — Growth Advisors
           </h2>
-          {/* Period toggle */}
           <div className="flex gap-1 bg-gray-900 border border-gray-800 rounded-lg p-0.5">
             {[['month', 'This Month'], ['year', 'This Year']].map(([key, label]) => (
               <button
@@ -852,7 +937,7 @@ export default function CXPage() {
                 onClick={() => setGhlPeriod(key)}
                 className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                   ghlPeriod === key
-                    ? 'bg-teal-600 text-white'
+                    ? 'bg-brand-p300 text-white'
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
@@ -867,7 +952,7 @@ export default function CXPage() {
 
         {ghlLoading ? (
           <div className="bg-gray-900 rounded-xl border border-gray-800 px-5 py-8 flex items-center justify-center gap-3">
-            <div className="w-5 h-5 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-brand border-t-transparent rounded-full animate-spin" />
             <span className="text-gray-500 text-sm">Loading deals…</span>
           </div>
         ) : (
@@ -889,7 +974,7 @@ export default function CXPage() {
                     return (
                       <tr key={ga} className="border-b border-gray-800 last:border-0 hover:bg-gray-800/40">
                         <td className="px-4 py-3 text-white font-medium flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-teal-900 flex items-center justify-center text-xs text-teal-300 font-bold shrink-0">
+                          <span className="w-6 h-6 rounded-full bg-brand-p1 flex items-center justify-center text-xs text-brand-p4 font-bold shrink-0">
                             {ga[0]}
                           </span>
                           {ga}
@@ -897,7 +982,7 @@ export default function CXPage() {
                         <td className="text-right px-4 py-3 text-white font-semibold">
                           {ghlData ? deals : '—'}
                         </td>
-                        <td className="text-right px-4 py-3 text-teal-400 font-semibold">
+                        <td className="text-right px-4 py-3 text-brand-p4 font-semibold">
                           {ghlData ? formatCurrency(value) : '—'}
                         </td>
                       </tr>
@@ -907,7 +992,7 @@ export default function CXPage() {
                     <tr className="bg-gray-800/60">
                       <td className="px-4 py-3 text-gray-400 font-semibold text-xs uppercase tracking-wider">Total</td>
                       <td className="text-right px-4 py-3 text-white font-bold">{gaTotalDeals}</td>
-                      <td className="text-right px-4 py-3 text-teal-300 font-bold">{formatCurrency(gaTotalValue)}</td>
+                      <td className="text-right px-4 py-3 text-brand-p4 font-bold">{formatCurrency(gaTotalValue)}</td>
                     </tr>
                   )}
                 </tbody>
