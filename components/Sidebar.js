@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'react'
 const DASHBOARD_GROUP = {
   label: 'Dashboard',
   emoji: '📊',
+  defaultOpen: true,
   children: [
     {
       label: 'Leadership',
@@ -38,30 +39,28 @@ const DASHBOARD_GROUP = {
       emoji: '👥',
       items: [
         { label: 'CX Overview', emoji: '👥', href: '/cx' },
-        { label: 'Client Results', emoji: '📊', href: '/clients' },
+        { label: 'Client Results', emoji: '📊', href: '/client-results' },
         { label: 'Web Analytics', emoji: '📈', href: '/web-analytics' },
         { label: 'Helpdesk', emoji: '🌐', href: '/helpdesk' },
       ],
     },
-    {
-      label: 'Marketing',
-      emoji: '📣',
-      href: '/marketing',
-    },
-    {
-      label: 'Production',
-      emoji: '🔧',
-      href: '/production',
-    },
+    { label: 'Marketing', emoji: '📣', href: '/marketing' },
+    { label: 'Production', emoji: '🔧', href: '/production' },
   ],
 }
 
-const TEAM_PORTAL_ITEMS = [
-  { label: 'CX Handoffs', emoji: '🧾', href: '/cx-handoff' },
-  { label: 'Classify Calls', emoji: '🏷️', href: '/team/classify', roles: ['sales', 'ga', 'admin'] },
-  { label: 'CX Review & Q&A', emoji: '🧠', href: '/team/cx', roles: ['cx', 'admin'] },
-  { label: 'Recon & Intel', emoji: '🔍', href: '/team/recon', roles: ['recon', 'admin'] },
-]
+const TEAM_PORTAL_GROUP = {
+  label: 'Team Portal',
+  emoji: '🧩',
+  defaultOpen: true,
+  children: [
+    { label: 'CX Handoffs', emoji: '🧾', href: '/cx-handoff', roles: ['cx', 'admin'] },
+    { label: 'Client Intel', emoji: '🧠', href: '/clients', roles: ['ga', 'cx', 'admin'] },
+    { label: 'Classify Calls', emoji: '🏷️', href: '/team/classify', roles: ['sales', 'ga', 'admin'] },
+    { label: 'CX Review & Q&A', emoji: '🧠', href: '/team/cx', roles: ['cx', 'admin'] },
+    { label: 'Recon', emoji: '🔍', href: '/team/recon', roles: ['recon', 'admin'] },
+  ],
+}
 
 function hasRole(user, allowedRoles = []) {
   if (!allowedRoles.length) return true
@@ -69,9 +68,40 @@ function hasRole(user, allowedRoles = []) {
   return allowedRoles.some((role) => roles.has(String(role).toLowerCase()))
 }
 
-function DashboardGroup({ group, pathname }) {
-  const isChildActive = group.children.some((child) => child.href ? pathname === child.href : child.items?.some((item) => pathname === item.href))
-  const [manualOpen, setManualOpen] = useState(isChildActive)
+function itemIsActive(pathname, href) {
+  if (href === '/') return pathname === '/'
+  return pathname === href || pathname.startsWith(`${href}/`)
+}
+
+function groupHasActiveChild(group, pathname) {
+  return group.children.some((child) => child.href
+    ? itemIsActive(pathname, child.href)
+    : child.items?.some((item) => itemIsActive(pathname, item.href))
+  )
+}
+
+function GroupLink({ item, pathname }) {
+  const isActive = itemIsActive(pathname, item.href)
+  return (
+    <Link
+      href={item.href}
+      style={isActive ? {
+        backgroundColor: '#731494',
+        color: '#ffffff',
+        borderLeft: '3px solid #AE2BCF',
+        paddingLeft: '10px',
+      } : { color: '#9ca3af' }}
+      className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive ? '' : 'hover:bg-[#1a0a2e] hover:text-white'}`}
+    >
+      <span className="text-sm">{item.emoji}</span>
+      <span>{item.label}</span>
+    </Link>
+  )
+}
+
+function CollapsibleGroup({ group, pathname }) {
+  const isChildActive = groupHasActiveChild(group, pathname)
+  const [manualOpen, setManualOpen] = useState(group.defaultOpen ?? true)
   const open = isChildActive || manualOpen
 
   useEffect(() => {
@@ -96,23 +126,7 @@ function DashboardGroup({ group, pathname }) {
         <div className="ml-3 mt-2 space-y-3 border-l border-[#2a1a3e] pl-4">
           {group.children.map((child) => {
             if (child.href) {
-              const isActive = pathname === child.href
-              return (
-                <Link
-                  key={child.href}
-                  href={child.href}
-                  style={isActive ? {
-                    backgroundColor: '#731494',
-                    color: '#ffffff',
-                    borderLeft: '3px solid #AE2BCF',
-                    paddingLeft: '10px',
-                  } : { color: '#9ca3af' }}
-                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive ? '' : 'hover:bg-[#1a0a2e] hover:text-white'}`}
-                >
-                  <span className="text-sm">{child.emoji}</span>
-                  <span>{child.label}</span>
-                </Link>
-              )
+              return <GroupLink key={child.href} item={child} pathname={pathname} />
             }
 
             return (
@@ -122,25 +136,9 @@ function DashboardGroup({ group, pathname }) {
                   <span>{child.label}</span>
                 </div>
                 <div className="space-y-0.5">
-                  {child.items.map((item) => {
-                    const isActive = pathname === item.href
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        style={isActive ? {
-                          backgroundColor: '#731494',
-                          color: '#ffffff',
-                          borderLeft: '3px solid #AE2BCF',
-                          paddingLeft: '10px',
-                        } : { color: '#9ca3af' }}
-                        className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${isActive ? '' : 'hover:bg-[#1a0a2e] hover:text-white'} font-medium`}
-                      >
-                        <span className="text-sm">{item.emoji}</span>
-                        <span>{item.label}</span>
-                      </Link>
-                    )
-                  })}
+                  {child.items.map((item) => (
+                    <GroupLink key={item.href} item={item} pathname={pathname} />
+                  ))}
                 </div>
               </div>
             )
@@ -165,10 +163,10 @@ export default function Sidebar() {
     return () => { active = false }
   }, [pathname])
 
-  const teamPortalItems = useMemo(
-    () => TEAM_PORTAL_ITEMS.filter((item) => hasRole(session.user, item.roles)),
-    [session.user],
-  )
+  const teamPortalGroup = useMemo(() => ({
+    ...TEAM_PORTAL_GROUP,
+    children: TEAM_PORTAL_GROUP.children.filter((item) => hasRole(session.user, item.roles)),
+  }), [session.user])
 
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -188,33 +186,9 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-4">
-        <DashboardGroup group={DASHBOARD_GROUP} pathname={pathname} />
-
-        <div className="space-y-1">
-          <div className="px-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-violet-300/70">
-            Team Portal
-          </div>
-          {teamPortalItems.map((item) => {
-            const isActive = pathname === item.href
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                style={isActive ? {
-                  backgroundColor: '#731494',
-                  color: '#ffffff',
-                  borderLeft: '3px solid #AE2BCF',
-                  paddingLeft: '10px',
-                } : { color: '#9ca3af' }}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? '' : 'hover:bg-[#1a0a2e] hover:text-white'}`}
-              >
-                <span className="text-base">{item.emoji}</span>
-                {item.label}
-              </Link>
-            )
-          })}
-        </div>
+      <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
+        <CollapsibleGroup group={DASHBOARD_GROUP} pathname={pathname} />
+        <CollapsibleGroup group={teamPortalGroup} pathname={pathname} />
       </nav>
 
       <div className="px-5 py-4 space-y-3" style={{ borderTop: '1px solid #2a1a3e' }}>
