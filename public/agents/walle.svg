@@ -1,0 +1,29 @@
+<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+  <rect width="80" height="80" rx="16" fill="#1a0a2e"/>
+  <!-- Body -->
+  <rect x="22" y="36" width="36" height="28" rx="6" fill="#4b1d8f"/>
+  <rect x="22" y="36" width="36" height="28" rx="6" fill="none" stroke="#9333ea" stroke-width="2"/>
+  <!-- Head/neck -->
+  <rect x="28" y="20" width="24" height="20" rx="5" fill="#6d28d9"/>
+  <rect x="28" y="20" width="24" height="20" rx="5" fill="none" stroke="#c084fc" stroke-width="2"/>
+  <!-- Eyes -->
+  <circle cx="35" cy="29" r="5" fill="#111"/>
+  <circle cx="45" cy="29" r="5" fill="#111"/>
+  <circle cx="35" cy="29" r="3" fill="#a855f7"/>
+  <circle cx="45" cy="29" r="3" fill="#a855f7"/>
+  <circle cx="36" cy="28" r="1" fill="white"/>
+  <circle cx="46" cy="28" r="1" fill="white"/>
+  <!-- Chest screen -->
+  <rect x="28" y="44" width="24" height="12" rx="3" fill="#0f0a1a"/>
+  <rect x="30" y="46" width="8" height="2" rx="1" fill="#7c3aed"/>
+  <rect x="30" y="50" width="14" height="2" rx="1" fill="#6d28d9"/>
+  <rect x="30" y="54" width="10" height="2" rx="1" fill="#4c1d95"/>
+  <!-- Arms -->
+  <rect x="10" y="40" width="12" height="6" rx="3" fill="#6d28d9"/>
+  <rect x="58" y="40" width="12" height="6" rx="3" fill="#6d28d9"/>
+  <!-- Tracks/wheels -->
+  <rect x="22" y="64" width="36" height="8" rx="4" fill="#4c1d95"/>
+  <circle cx="30" cy="68" r="3" fill="#7c3aed"/>
+  <circle cx="40" cy="68" r="3" fill="#7c3aed"/>
+  <circle cx="50" cy="68" r="3" fill="#7c3aed"/>
+</svg>

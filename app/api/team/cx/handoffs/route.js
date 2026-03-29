@@ -6,7 +6,7 @@ import { pool } from '@/lib/pg'
 
 export async function GET() {
   try {
-    const auth = await requireApiUser(['cx', 'admin'])
+    const auth = await requireApiUser(['cx', 'admin', 'superadmin'])
     if (auth.error) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }

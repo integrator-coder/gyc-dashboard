@@ -6,7 +6,7 @@ import { getCxHandoffDetail, searchCxHandoffTranscriptSegments } from '@/lib/cx-
 
 export async function GET(request, { params }) {
   try {
-    const auth = await requireApiUser(['cx', 'admin'])
+    const auth = await requireApiUser(['cx', 'admin', 'superadmin'])
     if (auth.error) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }

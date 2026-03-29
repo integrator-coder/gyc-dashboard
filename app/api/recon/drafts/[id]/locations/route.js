@@ -6,7 +6,7 @@ import { requireApiUser } from '@/lib/auth'
 import { pickManualLocationFields, serializeReconLocation } from '@/lib/recon'
 
 export async function GET(_request, { params }) {
-  const auth = await requireApiUser(['admin', 'recon'])
+  const auth = await requireApiUser(['admin', 'recon', 'superadmin'])
   if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
   try {
@@ -27,7 +27,7 @@ export async function GET(_request, { params }) {
 }
 
 export async function POST(request, { params }) {
-  const auth = await requireApiUser(['admin', 'recon'])
+  const auth = await requireApiUser(['admin', 'recon', 'superadmin'])
   if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
   try {

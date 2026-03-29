@@ -4,6 +4,7 @@ const { PrismaClient } = require('@prisma/client')
 
 const prisma = new PrismaClient()
 
+const ORG_ID = 'default'
 const SUBDOMAIN = process.env.ZENDESK_SUBDOMAIN || 'gycawesome'
 const EMAIL = process.env.ZENDESK_EMAIL
 const TOKEN = process.env.ZENDESK_API_TOKEN
@@ -327,16 +328,16 @@ async function main() {
       firstReplyTimeMedian: frStats.median,
       firstReplyTimeSample: firstReplyMinutes.length,
       overdueTickets,
-      buckets: {
+      ZendeskResolutionBucket: {
         create: buckets
       },
-      monthlyVolumes: {
+      ZendeskMonthlyVolume: {
         create: monthlyVolumes
       },
-      assigneeLoads: {
+      ZendeskAssigneeLoad: {
         create: assigneeLoads
       },
-      orgTickets: {
+      ZendeskOrgTicket: {
         create: orgTickets
       },
     }

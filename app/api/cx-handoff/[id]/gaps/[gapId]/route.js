@@ -6,7 +6,7 @@ import { updateCxHandoffGap } from '@/lib/cx-handoff'
 
 export async function PATCH(request, { params }) {
   try {
-    const auth = await requireApiUser(['cx', 'admin'])
+    const auth = await requireApiUser(['cx', 'admin', 'superadmin'])
     if (auth.error) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }

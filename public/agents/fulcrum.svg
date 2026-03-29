@@ -1,0 +1,21 @@
+<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+  <rect width="80" height="80" rx="16" fill="#0d0010"/>
+  <!-- Helmet Mandalorian-style -->
+  <ellipse cx="40" cy="36" rx="20" ry="26" fill="#1f1035"/>
+  <ellipse cx="40" cy="36" rx="20" ry="26" fill="none" stroke="#d946ef" stroke-width="2"/>
+  <!-- Visor T-shape -->
+  <rect x="24" y="30" width="32" height="8" rx="3" fill="#111"/>
+  <rect x="24" y="30" width="32" height="8" rx="3" fill="none" stroke="#e879f9" stroke-width="1"/>
+  <rect x="34" y="22" width="12" height="10" rx="2" fill="#111"/>
+  <!-- Visor glow -->
+  <rect x="26" y="31" width="28" height="6" rx="2" fill="#4a0072" opacity="0.8"/>
+  <line x1="40" y1="31" x2="40" y2="37" stroke="#e879f9" stroke-width="0.5" opacity="0.6"/>
+  <!-- Shoulders -->
+  <ellipse cx="18" cy="56" rx="9" ry="6" fill="#2d1b4e"/>
+  <ellipse cx="62" cy="56" rx="9" ry="6" fill="#2d1b4e"/>
+  <!-- Body armor -->
+  <rect x="26" y="56" width="28" height="18" rx="4" fill="#1f1035"/>
+  <rect x="26" y="56" width="28" height="18" rx="4" fill="none" stroke="#d946ef" stroke-width="1.5"/>
+  <!-- Chest mark -->
+  <polygon points="40,60 44,68 36,68" fill="#9333ea"/>
+</svg>

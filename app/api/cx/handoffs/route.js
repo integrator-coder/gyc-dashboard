@@ -12,11 +12,11 @@ export async function GET() {
         h."repName",
         h."closedAt",
         COUNT(DISTINCT p.id)::int AS "promiseCount",
-        COUNT(DISTINCT e.id)::int AS "evidenceCount",
+        COUNT(DISTINCT hc."zoomCallId")::int AS "evidenceCount",
         COALESCE(jsonb_array_length(COALESCE(h."rawOutputJson"->'dataGaps', '[]'::jsonb)), 0)::int AS "dataGapCount"
       FROM "CXHandoff" h
       LEFT JOIN "PromiseLedgerItem" p ON p."handoffId" = h.id
-      LEFT JOIN "HandoffEvidence" e ON e."handoffId" = h.id
+      LEFT JOIN "CXHandoffCall" hc ON hc."handoffId" = h.id
       GROUP BY h.id
       ORDER BY h."closedAt" DESC
     `)

@@ -6,7 +6,7 @@ import { requireApiUser } from '@/lib/auth'
 import { normalizeGbpClaimed, normalizeGbpStatus, serializeReconLocation } from '@/lib/recon'
 
 export async function PATCH(request, { params }) {
-  const auth = await requireApiUser(['admin', 'recon'])
+  const auth = await requireApiUser(['admin', 'recon', 'superadmin'])
   if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
   try {

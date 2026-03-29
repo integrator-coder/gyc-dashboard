@@ -286,6 +286,11 @@ model ZoomCall {
   hostEmail            String?
   hostName             String?
   acronym              String?
+  ghlContactId         String?
+  ghlContactName       String?
+  ghlMatchConfidence   Float?
+  ghlMatchMethod       String?
+  ghlMatchCandidates   Json?
   ZoomTranscript       ZoomTranscript?
   CallAnalysis         CallAnalysis[]
   CXHandoffCall        CXHandoffCall[]

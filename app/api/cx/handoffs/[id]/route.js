@@ -28,7 +28,7 @@ export async function GET(_request, { params }) {
       return NextResponse.json({ error: 'Handoff not found' }, { status: 404 })
     }
 
-    const [promiseResult, evidenceResult] = await Promise.all([
+    const [promiseResult, zoomCallResult] = await Promise.all([
       pool.query(
         `SELECT id, "handoffId", "promiseText", category, owner, confidence, "riskFlag", "reviewStatus", "reviewComment", "evidenceSource", "evidenceLink", "createdAt"
          FROM "PromiseLedgerItem"
@@ -38,34 +38,37 @@ export async function GET(_request, { params }) {
       ),
       pool.query(
         `SELECT
-           e.id,
-           e."handoffId",
-           e.source,
-           e."sourceRef",
-           e."callDate",
-           e."callLink",
-           e."matchMethod",
-           e."matchConfidence",
-           e."createdAt",
+           zc.id,
+           zc."meetingId",
+           zc."meetingUuid",
+           zc."meetingTopic",
+           zc."startedAt",
+           zc."durationSecs",
+           zc."repName",
+           zc."clientName",
+           zc."callDate",
+           zc."callLink",
+           zc."matchMethod",
+           zc."matchConfidence",
+           zc."matchReasonCode",
+           zc."sourceRef",
+           zc.purposes,
+           zc."createdAt",
            COALESCE(
-             json_agg(
-               json_build_object(
-                 'id', z.id,
-                 'handoffEvidenceId', z."handoffEvidenceId",
-                 'meetingId', z."meetingId",
-                 'meetingTopic', z."meetingTopic",
-                 'startedAt', z."startedAt",
-                 'durationSecs', z."durationSecs",
-                 'vttRaw', z."vttRaw",
-                 'createdAt', z."createdAt",
-                 'segments', COALESCE(seg.segments, '[]'::json)
-               )
-               ORDER BY z."startedAt" NULLS LAST, z.id ASC
-             ) FILTER (WHERE z.id IS NOT NULL),
-             '[]'::json
-           ) AS transcripts
-         FROM "HandoffEvidence" e
-         LEFT JOIN "ZoomTranscript" z ON z."handoffEvidenceId" = e.id
+             json_build_object(
+               'id', zt.id,
+               'zoomCallId', zt."zoomCallId",
+               'vttRaw', zt."vttRaw",
+               'parsedAt', zt."parsedAt",
+               'createdAt', zt."createdAt",
+               'segments', COALESCE(seg.segments, '[]'::json)
+             ),
+             NULL
+           ) AS transcript,
+           COALESCE(ca.analysis, '[]'::json) AS analysis
+         FROM "CXHandoffCall" hc
+         JOIN "ZoomCall" zc ON zc.id = hc."zoomCallId"
+         LEFT JOIN "ZoomTranscript" zt ON zt."zoomCallId" = zc.id
          LEFT JOIN LATERAL (
            SELECT COALESCE(
              json_agg(
@@ -76,18 +79,36 @@ export async function GET(_request, { params }) {
                  'endMs', s."endMs",
                  'speaker', s.speaker,
                  'text', s.text,
-                 'tag', s.tag
+                 'tags', s.tags,
+                 'purposes', s.purposes,
+                 'createdAt', s."createdAt"
                )
-               ORDER BY s."startMs" ASC, s.id ASC
+               ORDER BY s."startMs" ASC
              ),
              '[]'::json
            ) AS segments
            FROM "ZoomTranscriptSegment" s
-           WHERE s."transcriptId" = z.id
+           WHERE s."transcriptId" = zt.id
          ) seg ON TRUE
-         WHERE e."handoffId" = $1
-         GROUP BY e.id
-         ORDER BY e."callDate" DESC NULLS LAST, e.id ASC`,
+         LEFT JOIN LATERAL (
+           SELECT COALESCE(
+             json_agg(
+               json_build_object(
+                 'id', c.id,
+                 'purpose', c.purpose,
+                 'analysisJson', c."analysisJson",
+                 'createdAt', c."createdAt",
+                 'updatedAt', c."updatedAt"
+               )
+               ORDER BY c.purpose ASC
+             ),
+             '[]'::json
+           ) AS analysis
+           FROM "CallAnalysis" c
+           WHERE c."zoomCallId" = zc.id
+         ) ca ON TRUE
+         WHERE hc."handoffId" = $1
+         ORDER BY zc."callDate" DESC NULLS LAST, zc."startedAt" DESC NULLS LAST, zc."createdAt" DESC`,
         [id]
       ),
     ])
@@ -98,29 +119,33 @@ export async function GET(_request, { params }) {
     const salesCalls = rawOutput.salesCalls || {}
     const salesCallRows = coerceArray(salesCalls.calls)
 
-    const zoomCalls = evidenceResult.rows
-      .filter((item) => item.source === 'Zoom')
-      .map((item) => {
-        const matchingCall = salesCallRows.find((call) => String(call.rowNumber) === String(item.sourceRef)) || null
-        const transcriptObjects = coerceArray(item.transcripts)
-        const bestTranscript = transcriptObjects[0] || null
-        const bestSegment = bestTranscript?.segments?.[0] || null
-        const transcriptSnippet = bestSegment
-          ? {
-              speaker: bestSegment.speaker,
-              text: bestSegment.text,
-              startMs: bestSegment.startMs,
-              endMs: bestSegment.endMs,
-            }
-          : null
+    const zoomCalls = zoomCallResult.rows.map((item) => {
+      const rowMatch = String(item.sourceRef || '').match(/activity-log:row:(\d+)/)
+      const sourceRowNumber = rowMatch ? Number(rowMatch[1]) : null
+      const matchingCall = sourceRowNumber
+        ? salesCallRows.find((call) => Number(call.rowNumber) === sourceRowNumber) || null
+        : null
+      const transcript = item.transcript && item.transcript.id ? item.transcript : null
+      const segments = coerceArray(transcript?.segments)
+      const bestSegment = segments.find((segment) => coerceArray(segment.tags).length) || segments[0] || null
+      const transcriptSnippet = bestSegment
+        ? {
+            speaker: bestSegment.speaker,
+            text: bestSegment.text,
+            startMs: bestSegment.startMs,
+            endMs: bestSegment.endMs,
+            tags: bestSegment.tags || [],
+          }
+        : null
 
-        return {
-          ...item,
-          salesCall: matchingCall,
-          transcripts: transcriptObjects,
-          transcriptSnippet,
-        }
-      })
+      return {
+        ...item,
+        sourceRowNumber,
+        salesCall: matchingCall,
+        transcripts: transcript ? [transcript] : [],
+        transcriptSnippet,
+      }
+    })
 
     return NextResponse.json({
       handoff: {
@@ -132,10 +157,7 @@ export async function GET(_request, { params }) {
         createdAt: handoff.createdAt,
         pipelinePhase: handoff.pipelinePhase,
         promiseLedgerItems: promiseResult.rows,
-        handoffEvidence: evidenceResult.rows.map((item) => ({
-          ...item,
-          transcripts: coerceArray(item.transcripts),
-        })),
+        handoffEvidence: zoomCalls,
         zoomCalls,
         zoomTranscripts: zoomCalls.flatMap((item) => item.transcripts),
         cxQuestions,

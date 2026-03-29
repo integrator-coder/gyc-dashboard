@@ -6,7 +6,7 @@ import { searchClientTranscriptForUser } from '@/lib/client-intel'
 
 export async function GET(request, { params }) {
   try {
-    const auth = await requireApiUser(['ga', 'cx', 'admin'])
+    const auth = await requireApiUser(['ga', 'cx', 'admin', 'superadmin'])
     if (auth.error) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }

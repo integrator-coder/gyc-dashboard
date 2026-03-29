@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   const snapshot = await prisma.asanaSnapshot.findFirst({
     orderBy: { syncedAt: 'desc' },
-    include: { assignees: { orderBy: { totalOpen: 'desc' } } },
+    include: { AsanaAssigneeLoad: { orderBy: { totalOpen: 'desc' } } },
   })
 
   if (!snapshot) {
@@ -22,7 +22,7 @@ export async function GET() {
     dueSoon:            snapshot.dueSoon,
     completedThisWeek:  snapshot.completedThisWeek,
     completedThisMonth: snapshot.completedThisMonth,
-    assignees: snapshot.assignees.map(a => ({
+    assignees: snapshot.AsanaAssigneeLoad.map(a => ({
       name:              a.name,
       email:             a.email,
       totalOpen:         a.totalOpen,

@@ -1,0 +1,22 @@
+<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+  <rect width="80" height="80" rx="16" fill="#030712"/>
+  <!-- Dome -->
+  <ellipse cx="40" cy="26" rx="18" ry="14" fill="#1d4ed8"/>
+  <ellipse cx="40" cy="26" rx="18" ry="14" fill="none" stroke="#60a5fa" stroke-width="2"/>
+  <!-- Body cylinder -->
+  <rect x="22" y="32" width="36" height="32" rx="6" fill="#1e3a8a"/>
+  <rect x="22" y="32" width="36" height="32" rx="6" fill="none" stroke="#3b82f6" stroke-width="2"/>
+  <!-- Center eye/lens -->
+  <circle cx="40" cy="24" r="6" fill="#111"/>
+  <circle cx="40" cy="24" r="4" fill="#2563eb"/>
+  <circle cx="40" cy="24" r="2" fill="#60a5fa"/>
+  <circle cx="41" cy="23" r="1" fill="white"/>
+  <!-- Body details -->
+  <rect x="28" y="38" width="10" height="8" rx="2" fill="#1d4ed8"/>
+  <rect x="42" y="38" width="10" height="8" rx="2" fill="#1d4ed8"/>
+  <rect x="30" y="50" width="20" height="4" rx="2" fill="#1d4ed8"/>
+  <!-- Legs -->
+  <rect x="26" y="60" width="8" height="12" rx="3" fill="#1e3a8a"/>
+  <rect x="46" y="60" width="8" height="12" rx="3" fill="#1e3a8a"/>
+  <rect x="36" y="62" width="8" height="10" rx="3" fill="#1e3a8a"/>
+</svg>

@@ -6,7 +6,7 @@ import { requireApiUser } from '@/lib/auth'
 import { deriveLocationsFromAutoData, serializeReconDraft } from '@/lib/recon'
 
 export async function GET() {
-  const auth = await requireApiUser(['admin', 'recon'])
+  const auth = await requireApiUser(['admin', 'recon', 'superadmin'])
   if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
   try {
@@ -28,7 +28,7 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  const auth = await requireApiUser(['admin', 'recon'])
+  const auth = await requireApiUser(['admin', 'recon', 'superadmin'])
   if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
   try {

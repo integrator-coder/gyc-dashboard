@@ -4,6 +4,6 @@ import { requireUser, serializeUser } from '@/lib/auth'
 export const dynamic = 'force-dynamic'
 
 export default async function Page() {
-  const user = await requireUser(['sales', 'ga', 'admin'])
+  const user = await requireUser(['sales', 'ga', 'admin', 'superadmin'])
   return <TeamClassifyPage user={serializeUser(user)} />
 }

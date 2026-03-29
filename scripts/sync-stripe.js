@@ -120,7 +120,9 @@ async function sync() {
     })
   }
 
-  const newCustomers = allSubscriptions.filter(s => s.created >= thirtyDaysAgo).length
+  // Count distinct customers (not subscriptions) — one client may have multiple subs
+  const newSubsWindow = allSubscriptions.filter(s => s.created >= thirtyDaysAgo)
+  const newCustomers = new Set(newSubsWindow.map(s => s.customer)).size
 
   // Clear old customer data and insert fresh
   console.log('Clearing old data...')

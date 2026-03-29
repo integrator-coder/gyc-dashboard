@@ -7,7 +7,7 @@ import { getRepAliases } from '@/lib/team'
 
 export async function PATCH(request, { params }) {
   try {
-    const auth = await requireApiUser(['sales', 'ga', 'cx', 'admin'])
+    const auth = await requireApiUser(['sales', 'ga', 'cx', 'admin', 'superadmin'])
     if (auth.error) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
