@@ -2,49 +2,103 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import {
-  Bar, BarChart, CartesianGrid, Cell, Legend,
-  Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Area, AreaChart,
+  Bar, BarChart,
+  CartesianGrid, Cell,
+  Legend,
+  Pie, PieChart,
+  ResponsiveContainer,
+  Tooltip, XAxis, YAxis,
 } from 'recharts'
 
-const PURPLE = '#AE2BCF'
-const VIOLET = '#731494'
-const GOLD = '#C19C46'
-const GRAY = '#4a3060'
-const PIE_COLORS = [PURPLE, VIOLET, GOLD, '#5b21b6', '#7c3aed', '#340B67', '#9333ea', '#3d1078']
+// ─── Brand palette ────────────────────────────────────────────────────────────
+const C = {
+  purple:  '#AE2BCF',
+  violet:  '#731494',
+  deep:    '#340B67',
+  gold:    '#C19C46',
+  gray:    '#4a3060',
+  slate:   '#6b7280',
+  bg:      '#111111',
+  border:  '#2a1a3e',
+  bgDeep:  '#1a0a2e',
+}
+
+// Service → colour mapping (consistent across all charts)
+const SERVICE_COLORS = {
+  'Website':              '#AE2BCF',
+  'Website Maintenance':  '#731494',
+  'Paid Media':           '#C19C46',
+  'Social Media':         '#5b21b6',
+  'SEO':                  '#22d3ee',
+  'SEO Core':             '#0e9aaa',
+  'Blueprint':            '#f59e0b',
+  'Blueprint + SEO':      '#d97706',
+  'Command':              '#10b981',
+  'CRM':                  '#3b82f6',
+  'Website + CRM':        '#2563eb',
+  'Website + SEO':        '#8b5cf6',
+  'S3':                   '#ec4899',
+  'Master':               '#ef4444',
+  'Staffing':             '#6b7280',
+  'Accelerator/Enrollment': '#78716c',
+  'Virtual Tour':         '#a78bfa',
+}
+function serviceColor(name) { return SERVICE_COLORS[name] || '#9ca3af' }
 
 function fmt$(v) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(Number(v || 0))
 }
 
-function StatCard({ label, value, sub, accent = PURPLE }) {
+// ─── Reusable UI pieces ───────────────────────────────────────────────────────
+function Card({ label, value, sub, accent = C.purple }) {
   return (
-    <div className="rounded-xl p-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
+    <div style={{ backgroundColor: C.bg, border: `1px solid ${C.border}` }} className="rounded-xl p-4">
       <div className="w-8 h-0.5 rounded-full mb-2" style={{ backgroundColor: accent }} />
-      <p className="text-gray-500 text-xs uppercase tracking-wider">{label}</p>
+      <p style={{ color: C.slate }} className="text-xs uppercase tracking-wider">{label}</p>
       <p className="text-2xl font-bold text-white mt-1">{value}</p>
-      {sub ? <p className="text-gray-600 text-xs mt-1">{sub}</p> : null}
+      {sub && <p style={{ color: '#4a5568' }} className="text-xs mt-1">{sub}</p>}
     </div>
   )
 }
 
-function SectionHeader({ title, sub }) {
+function Section({ title, sub, children }) {
   return (
-    <div className="mb-3">
-      <h2 className="text-gray-400 text-xs font-semibold uppercase tracking-widest">{title}</h2>
-      {sub ? <p className="text-gray-600 text-xs mt-0.5">{sub}</p> : null}
+    <section className="space-y-3">
+      <div>
+        <h2 style={{ color: '#9ca3af' }} className="text-xs font-semibold uppercase tracking-widest">{title}</h2>
+        {sub && <p style={{ color: '#4a5568' }} className="text-xs mt-0.5">{sub}</p>}
+      </div>
+      {children}
+    </section>
+  )
+}
+
+function Panel({ children, h }) {
+  return (
+    <div style={{ backgroundColor: C.bg, border: `1px solid ${C.border}` }} className="rounded-xl p-4">
+      <div style={h ? { height: h } : undefined}>{children}</div>
+    </div>
+  )
+}
+
+function Insight({ text }) {
+  return (
+    <div style={{ backgroundColor: C.bgDeep, border: `1px solid ${C.border}` }} className="rounded-xl p-4">
+      <p className="text-xs text-gray-400">{text}</p>
     </div>
   )
 }
 
 function DataTable({ columns, rows }) {
   return (
-    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
+    <div style={{ backgroundColor: C.bg, border: `1px solid ${C.border}` }} className="rounded-xl overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr style={{ borderBottom: '1px solid #2a1a3e' }}>
+            <tr style={{ borderBottom: `1px solid ${C.border}` }}>
               {columns.map((col) => (
-                <th key={col.key} className={`px-4 py-3 text-gray-500 text-xs uppercase tracking-wider font-semibold ${col.right ? 'text-right' : 'text-left'}`}>
+                <th key={col.key} className={`px-4 py-3 text-xs uppercase tracking-wider font-semibold ${col.right ? 'text-right' : 'text-left'}`} style={{ color: C.slate }}>
                   {col.label}
                 </th>
               ))}
@@ -52,7 +106,7 @@ function DataTable({ columns, rows }) {
           </thead>
           <tbody>
             {rows.map((row, i) => (
-              <tr key={i} style={{ borderBottom: i < rows.length - 1 ? '1px solid #1a0a2e' : 'none' }} className="hover:bg-white/5">
+              <tr key={i} style={{ borderBottom: i < rows.length - 1 ? `1px solid ${C.bgDeep}` : 'none' }} className="hover:bg-white/5">
                 {columns.map((col) => (
                   <td key={col.key} className={`px-4 py-2.5 text-gray-200 ${col.right ? 'text-right tabular-nums' : ''} ${col.bold ? 'font-semibold text-white' : ''}`}>
                     {col.render ? col.render(row[col.key], row) : (row[col.key] ?? '—')}
@@ -67,18 +121,34 @@ function DataTable({ columns, rows }) {
   )
 }
 
-function InsightBox({ text }) {
+const TOOLTIP_STYLE = { backgroundColor: C.bgDeep, border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 12 }
+
+// ─── Custom tooltip for stacked bars ─────────────────────────────────────────
+function StackedTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  const total = payload.reduce((s, p) => s + (p.value || 0), 0)
   return (
-    <div className="rounded-xl p-4" style={{ backgroundColor: '#1a0a2e', border: '1px solid #2a1a3e' }}>
-      <p className="text-xs text-gray-400">{text}</p>
+    <div style={TOOLTIP_STYLE} className="p-3 min-w-[160px]">
+      <p className="text-white font-semibold mb-2">{label}</p>
+      {[...payload].reverse().map((p) => p.value > 0 && (
+        <div key={p.dataKey} className="flex justify-between gap-4 text-xs">
+          <span style={{ color: p.fill }}>{p.name}</span>
+          <span className="text-gray-300 tabular-nums">{p.value}</span>
+        </div>
+      ))}
+      <div className="mt-1 pt-1 flex justify-between text-xs font-semibold border-t border-gray-700">
+        <span className="text-gray-400">Total</span>
+        <span className="text-white">{total}</span>
+      </div>
     </div>
   )
 }
 
+// ─── Main page ────────────────────────────────────────────────────────────────
 export default function SalesAnalysisPage() {
-  const [data, setData] = useState(null)
+  const [data,    setData]    = useState(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [error,   setError]   = useState(null)
   const [yearView, setYearView] = useState('overall')
 
   useEffect(() => {
@@ -95,77 +165,97 @@ export default function SalesAnalysisPage() {
     return () => { active = false }
   }, [])
 
+  // ── Scorecard view (controlled by year toggle) ────────────────────────────
   const view = data?.[yearView]
-
-  const topServiceBars = useMemo(() => (view?.byService || []).slice(0, 14).map((s) => ({
-    name: s.name.length > 20 ? s.name.slice(0, 18) + '…' : s.name,
-    fullName: s.name,
-    revenue: Math.round(s.revenue),
-    deals: s.count,
-  })), [view])
-
-  const lineItemBars = useMemo(() => (view?.lineItems || []).map((li) => ({
-    name: li.name,
-    count: li.count,
-  })), [view])
-
-  const sizeBars = useMemo(() => view?.bySize || [], [view])
-
-  const pifShift = useMemo(() => {
-    if (!data) return []
-    return [
-      { year: '2025', ...data.year2025.totals },
-      { year: '2026 YTD', ...data.year2026.totals },
-    ]
-  }, [data])
-
-  // Stripe by-year service heatmap data
-  const stripeYears = useMemo(() => data?.stripe?.byYear || [], [data])
-
-  // All unique service names across stripe years (for table columns)
-  const stripeServiceNames = useMemo(() => {
-    const names = new Set()
-    stripeYears.forEach((yr) => yr.services.forEach((s) => names.add(s.name)))
-    return [...names]
-  }, [stripeYears])
-
-  // Build stripe service table rows
-  const stripeServiceRows = useMemo(() => {
-    return stripeYears.map((yr) => {
-      const row = { year: yr.year, total: yr.total, active: yr.active }
-      yr.services.forEach((s) => { row[s.name] = s.count })
-      return row
-    })
-  }, [stripeYears])
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <div className="w-10 h-10 border-2 border-[#AE2BCF] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Building sales analysis — fetching Stripe history…</p>
-          <p className="text-gray-600 text-xs mt-1">This may take ~30s on first load</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) return <div className="text-red-300 p-4">⚠️ {error}</div>
-
-  const t = view?.totals || {}
+  const t    = view?.totals || {}
   const pifPct = t.count ? Math.round((t.pifCount / t.count) * 100) : 0
 
-  return (
-    <div className="max-w-7xl mx-auto space-y-8">
+  // Horizontal bar: revenue by package
+  const revBars = useMemo(() => (view?.byService || []).slice(0, 14).map((s) => ({
+    name:     s.name.length > 22 ? s.name.slice(0, 20) + '…' : s.name,
+    fullName: s.name,
+    revenue:  Math.round(s.revenue),
+    deals:    s.count,
+  })), [view])
 
-      {/* Header + Year Toggle */}
-      <div className="flex items-start justify-between">
+  // Individual service unit counts
+  const unitBars = useMemo(() => (view?.lineItems || []).map((li) => ({
+    name:  li.name,
+    count: li.count,
+    color: serviceColor(li.name),
+  })), [view])
+
+  // Sale-size distribution
+  const sizeBars = useMemo(() => view?.bySize || [], [view])
+
+  // PIF shift bars
+  const pifShift = useMemo(() => [
+    { year: '2025',       pif: data?.year2025?.totals?.pifCount || 0, monthly: data?.year2025?.totals?.monthlyCount || 0, count: data?.year2025?.totals?.count || 0 },
+    { year: '2026 YTD',   pif: data?.year2026?.totals?.pifCount || 0, monthly: data?.year2026?.totals?.monthlyCount || 0, count: data?.year2026?.totals?.count || 0 },
+  ], [data])
+
+  // ── Stripe historical charts ──────────────────────────────────────────────
+
+  // All unique service names that appear across years (sorted by total)
+  const stripeYears  = useMemo(() => data?.stripe?.byYear || [], [data])
+
+  const stripeServiceTotals = useMemo(() => {
+    const totals = {}
+    stripeYears.forEach((yr) => yr.services.forEach((s) => { totals[s.name] = (totals[s.name] || 0) + s.count }))
+    return Object.entries(totals).sort((a, b) => b[1] - a[1]).map(([name]) => name)
+  }, [stripeYears])
+
+  // Stacked bar data: one bar per year, each service stacked
+  const stripeStackedBars = useMemo(() => stripeYears.map((yr) => {
+    const row = { year: String(yr.year) }
+    yr.services.forEach((s) => { row[s.name] = s.count })
+    return row
+  }), [stripeYears])
+
+  // Area chart: website vs paid media vs seo/blueprint/command over years
+  const stripeEraLines = useMemo(() => stripeYears.map((yr) => {
+    const svcMap = Object.fromEntries(yr.services.map((s) => [s.name, s.count]))
+    return {
+      year:                  yr.year,
+      Website:               (svcMap['Website'] || 0) + (svcMap['Website Maintenance'] || 0),
+      'Paid Media':          svcMap['Paid Media'] || 0,
+      'Social Media':        svcMap['Social Media'] || 0,
+      'Modern Stack':        (svcMap['SEO'] || 0) + (svcMap['SEO Core'] || 0) + (svcMap['Blueprint'] || 0) + (svcMap['Blueprint + SEO'] || 0) + (svcMap['Command'] || 0) + (svcMap['CRM'] || 0),
+      'Accelerator/Legacy':  (svcMap['Accelerator/Enrollment'] || 0) + (svcMap['Staffing'] || 0) + (svcMap['Virtual Tour'] || 0),
+    }
+  }), [stripeYears])
+
+  // Retention cards
+  const retentionData = useMemo(() => stripeYears.map((yr) => ({
+    year:      yr.year,
+    total:     yr.total,
+    active:    yr.active,
+    pct:       yr.total > 0 ? Math.round((yr.active / yr.total) * 100) : 0,
+  })), [stripeYears])
+
+  if (loading) return (
+    <div className="flex items-center justify-center h-full">
+      <div className="text-center">
+        <div className="w-10 h-10 border-2 border-[#AE2BCF] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-gray-400">Building sales analysis…</p>
+        <p className="text-gray-600 text-xs mt-1">Fetching Stripe history — ~30s first load</p>
+      </div>
+    </div>
+  )
+
+  if (error) return <div className="text-red-300 p-6">⚠️ {error}</div>
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-10 pb-16">
+
+      {/* ── Header ──────────────────────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">Sales Analysis</h1>
-          <p className="text-gray-500 text-sm mt-1">What we sold, how many of each, deal size distribution, and the shift in how clients pay</p>
+          <p className="text-gray-500 text-sm mt-1">What we sold · how many · deal size distribution · how clients pay · how the business has shifted since 2022</p>
         </div>
         <div className="flex gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1">
-          {[['overall', '2025 + 2026'], ['year2025', '2025 Only'], ['year2026', '2026 YTD']].map(([key, label]) => (
+          {[['overall','2025 + 2026'],['year2025','2025 Only'],['year2026','2026 YTD']].map(([key,label]) => (
             <button key={key} onClick={() => setYearView(key)}
               className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-colors ${yearView === key ? 'brand-active text-white' : 'text-gray-400 hover:text-white'}`}>
               {label}
@@ -174,225 +264,278 @@ export default function SalesAnalysisPage() {
         </div>
       </div>
 
-      {/* Summary Cards */}
+      {/* ── Summary cards ───────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard label="Deals Closed" value={t.count ?? '—'} sub="From Sales Scorecard" />
-        <StatCard label="First Payment Sold" value={fmt$(t.revenue)} sub="Upfront new money" accent={VIOLET} />
-        <StatCard label="New MRR Added" value={fmt$(t.mrr)} sub="Monthly recurring" accent={GOLD} />
-        <StatCard label="PIF Rate" value={`${pifPct}%`} sub={`${t.pifCount} PIF · ${t.monthlyCount} monthly`} />
+        <Card label="Deals Closed"      value={t.count ?? '—'}      sub="From Sales Scorecard" />
+        <Card label="First Payment"     value={fmt$(t.revenue)}     sub="Upfront new money"       accent={C.violet} />
+        <Card label="New MRR Added"     value={fmt$(t.mrr)}         sub="Monthly recurring added" accent={C.gold} />
+        <Card label="PIF Rate"          value={`${pifPct}%`}        sub={`${t.pifCount} PIF · ${t.monthlyCount} monthly`} />
       </div>
 
-      {/* Revenue by Service + Sale Size */}
-      <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
-        <div className="xl:col-span-3">
-          <SectionHeader title="Revenue by Package / Service" sub="First payment per deal — top-level bundle names" />
-          <div className="rounded-xl p-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-            <ResponsiveContainer width="100%" height={340}>
-              <BarChart data={topServiceBars} layout="vertical" margin={{ left: 8, right: 24 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2a1a3e" horizontal={false} />
-                <XAxis type="number" stroke="#6b7280" tick={{ fontSize: 11 }} tickFormatter={(v) => `$${Math.round(v / 1000)}k`} />
-                <YAxis type="category" dataKey="name" stroke="#6b7280" tick={{ fontSize: 11 }} width={110} />
-                <Tooltip formatter={(val, _, props) => [fmt$(val), props.payload.fullName]}
-                  contentStyle={{ backgroundColor: '#1a0a2e', border: '1px solid #2a1a3e', borderRadius: 8, fontSize: 12 }} />
-                <Bar dataKey="revenue" name="Revenue" fill={PURPLE} radius={[0, 6, 6, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="xl:col-span-2 flex flex-col gap-6">
-          <div>
-            <SectionHeader title="Deal Size Distribution" />
-            <div className="rounded-xl p-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-              <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={sizeBars}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2a1a3e" />
-                  <XAxis dataKey="bucket" stroke="#6b7280" tick={{ fontSize: 10 }} />
-                  <YAxis stroke="#6b7280" tick={{ fontSize: 10 }} />
-                  <Tooltip contentStyle={{ backgroundColor: '#1a0a2e', border: '1px solid #2a1a3e', borderRadius: 8, fontSize: 12 }} />
-                  <Bar dataKey="count" name="Deals" fill={VIOLET} radius={[4, 4, 0, 0]} />
+      {/* ── Revenue by service + sale-size distribution ──────────────────────── */}
+      <Section title="Revenue by Package / Service" sub="First payment per deal — top-level bundle names from the Scorecard">
+        <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+          <div className="xl:col-span-3">
+            <Panel>
+              <ResponsiveContainer width="100%" height={340}>
+                <BarChart data={revBars} layout="vertical" margin={{ left: 8, right: 32 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={C.bgDeep} horizontal={false} />
+                  <XAxis type="number" stroke={C.slate} tick={{ fontSize: 11 }} tickFormatter={(v) => `$${Math.round(v/1000)}k`} />
+                  <YAxis type="category" dataKey="name" stroke={C.slate} tick={{ fontSize: 11 }} width={118} />
+                  <Tooltip formatter={(v, _, p) => [fmt$(v), p.payload.fullName]} contentStyle={TOOLTIP_STYLE} />
+                  <Bar dataKey="revenue" name="Revenue" radius={[0, 6, 6, 0]}>
+                    {revBars.map((entry) => <Cell key={entry.name} fill={serviceColor(entry.fullName)} />)}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
-            </div>
+            </Panel>
           </div>
-          <div>
-            <SectionHeader title="PIF vs Monthly" />
-            <div className="rounded-xl p-4 flex items-center gap-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-              <PieChart width={110} height={110}>
-                <Pie data={[{ value: t.pifCount || 0 }, { value: t.monthlyCount || 0 }]}
-                  dataKey="value" cx={52} cy={52} innerRadius={28} outerRadius={48} paddingAngle={3}>
-                  <Cell fill={PURPLE} /><Cell fill={GRAY} />
-                </Pie>
-              </PieChart>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ backgroundColor: PURPLE }} /><span className="text-gray-300">PIF: <strong className="text-white">{t.pifCount}</strong></span></div>
-                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ backgroundColor: GRAY }} /><span className="text-gray-300">Monthly: <strong className="text-white">{t.monthlyCount}</strong></span></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Individual Service Units + Service Detail Table */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <div>
-          <SectionHeader
-            title="Individual Services Sold (Unit Count)"
-            sub="Web+SEO+CRM counts as 1 website + 1 SEO + 1 CRM — total units of each service sold"
-          />
-          <div className="rounded-xl p-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={lineItemBars} layout="vertical" margin={{ left: 0, right: 24 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2a1a3e" horizontal={false} />
-                <XAxis type="number" stroke="#6b7280" tick={{ fontSize: 11 }} />
-                <YAxis type="category" dataKey="name" stroke="#6b7280" tick={{ fontSize: 12 }} width={90} />
-                <Tooltip contentStyle={{ backgroundColor: '#1a0a2e', border: '1px solid #2a1a3e', borderRadius: 8, fontSize: 12 }} />
-                <Bar dataKey="count" name="Units Sold" fill={GOLD} radius={[0, 6, 6, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        <div>
-          <SectionHeader title="By Year — Services Sold" sub="Line items per year from the Scorecard (2025 + 2026)" />
-          <div className="space-y-3">
-            {['2025', '2026'].map((yr) => {
-              const yrData = view?.byYear?.[yr]
-              if (!yrData?.lineItems) return null
-              return (
-                <div key={yr} className="rounded-xl p-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-                  <p className="text-white font-semibold mb-2">{yr}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(yrData.lineItems).sort((a, b) => b[1] - a[1]).map(([name, count]) => (
-                      <span key={name} className="px-2.5 py-1 rounded-full text-xs font-medium text-white" style={{ backgroundColor: '#2a1a3e' }}>
-                        {name} <span style={{ color: PURPLE }}>×{count}</span>
-                      </span>
-                    ))}
+          <div className="xl:col-span-2 flex flex-col gap-4">
+            <Panel>
+              <p className="text-gray-500 text-xs uppercase tracking-wider mb-3">Deal Size Distribution</p>
+              <ResponsiveContainer width="100%" height={165}>
+                <BarChart data={sizeBars}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={C.bgDeep} />
+                  <XAxis dataKey="bucket" stroke={C.slate} tick={{ fontSize: 10 }} />
+                  <YAxis stroke={C.slate} tick={{ fontSize: 10 }} />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} />
+                  <Bar dataKey="count" name="Deals" fill={C.violet} radius={[4,4,0,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </Panel>
+            <Panel>
+              <p className="text-gray-500 text-xs uppercase tracking-wider mb-3">PIF vs Monthly</p>
+              <div className="flex items-center gap-5">
+                <PieChart width={110} height={110}>
+                  <Pie data={[{v:t.pifCount||0},{v:t.monthlyCount||0}]} dataKey="v" cx={52} cy={52} innerRadius={28} outerRadius={50} paddingAngle={3}>
+                    <Cell fill={C.purple} /><Cell fill={C.gray} />
+                  </Pie>
+                </PieChart>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full shrink-0" style={{backgroundColor:C.purple}}/>
+                    <span className="text-gray-300">PIF <strong className="text-white">{t.pifCount}</strong> <span className="text-gray-500">({pifPct}%)</span></span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full shrink-0" style={{backgroundColor:C.gray}}/>
+                    <span className="text-gray-300">Monthly <strong className="text-white">{t.monthlyCount}</strong></span>
                   </div>
                 </div>
+              </div>
+            </Panel>
+          </div>
+        </div>
+      </Section>
+
+      {/* ── Individual service unit counts ───────────────────────────────────── */}
+      <Section
+        title="Individual Services Sold — Unit Count"
+        sub="Bundles decomposed: Web+SEO+CRM = 1 Website + 1 SEO + 1 CRM. Shows actual volume of each service delivered."
+      >
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <Panel>
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={unitBars} layout="vertical" margin={{ left: 0, right: 32 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={C.bgDeep} horizontal={false} />
+                <XAxis type="number" stroke={C.slate} tick={{ fontSize: 11 }} />
+                <YAxis type="category" dataKey="name" stroke={C.slate} tick={{ fontSize: 12 }} width={100} />
+                <Tooltip contentStyle={TOOLTIP_STYLE} />
+                <Bar dataKey="count" name="Units Sold" radius={[0, 6, 6, 0]}>
+                  {unitBars.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </Panel>
+          <div className="space-y-3">
+            {['2025','2026'].map((yr) => {
+              const yrData = view?.byYear?.[yr]
+              if (!yrData?.lineItems) return null
+              const items = Object.entries(yrData.lineItems).sort((a,b) => b[1]-a[1])
+              return (
+                <Panel key={yr}>
+                  <p className="text-white font-semibold mb-2">{yr} — services sold</p>
+                  <div className="flex flex-wrap gap-2">
+                    {items.map(([name,count]) => (
+                      <div key={name} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+                           style={{ backgroundColor: `${serviceColor(name)}22`, border: `1px solid ${serviceColor(name)}55` }}>
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: serviceColor(name) }} />
+                        <span className="text-gray-200">{name}</span>
+                        <span className="font-bold" style={{ color: serviceColor(name) }}>×{count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </Panel>
               )
             })}
           </div>
         </div>
-      </div>
+      </Section>
 
-      {/* Detailed service table */}
-      <section>
-        <SectionHeader title="Full Service Detail" sub="Every package/service with deal count, revenue, avg deal size, and payment type split" />
+      {/* ── Full service detail table ─────────────────────────────────────────── */}
+      <Section title="Full Service Detail Table" sub="Every package with deal count, revenue, avg deal, MRR, and payment type">
         <DataTable
           columns={[
-            { key: 'name', label: 'Service', bold: true },
-            { key: 'count', label: 'Deals', right: true },
-            { key: 'revenue', label: 'First Payment', right: true, render: (v) => fmt$(v) },
-            { key: 'avg', label: 'Avg Sale', right: true, render: (v) => fmt$(v) },
-            { key: 'mrr', label: 'MRR', right: true, render: (v) => fmt$(v) },
-            { key: 'pifCount', label: 'PIF', right: true },
-            { key: 'monthlyCount', label: 'Monthly', right: true },
+            { key:'name',         label:'Service',       bold: true },
+            { key:'count',        label:'Deals',         right: true },
+            { key:'revenue',      label:'First Payment', right: true, render:(v) => fmt$(v) },
+            { key:'avg',          label:'Avg Sale',      right: true, render:(v) => fmt$(v) },
+            { key:'mrr',          label:'MRR Added',     right: true, render:(v) => fmt$(v) },
+            { key:'pifCount',     label:'PIF',           right: true },
+            { key:'monthlyCount', label:'Monthly',       right: true },
           ]}
           rows={view?.byService || []}
         />
-      </section>
+      </Section>
 
-      {/* PIF Shift */}
-      <section>
-        <SectionHeader title="PIF vs Monthly Shift — 2025 → 2026" sub="One of the clearest signals of market behaviour change" />
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <div className="rounded-xl p-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={pifShift}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2a1a3e" />
-                <XAxis dataKey="year" stroke="#6b7280" tick={{ fontSize: 12 }} />
-                <YAxis stroke="#6b7280" tick={{ fontSize: 11 }} />
-                <Tooltip contentStyle={{ backgroundColor: '#1a0a2e', border: '1px solid #2a1a3e', borderRadius: 8, fontSize: 12 }} />
-                <Legend wrapperStyle={{ fontSize: 11, color: '#9ca3af' }} />
-                <Bar dataKey="pifCount" name="PIF" fill={PURPLE} radius={[4, 4, 0, 0]} stackId="a" />
-                <Bar dataKey="monthlyCount" name="Monthly" fill={GRAY} radius={[4, 4, 0, 0]} stackId="a" />
-              </BarChart>
-            </ResponsiveContainer>
+      {/* ── PIF Shift ────────────────────────────────────────────────────────── */}
+      <Section title="PIF vs Monthly Shift — 2025 → 2026 YTD" sub="How clients are choosing to pay is a market signal">
+        <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+          <div className="xl:col-span-2">
+            <Panel>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={pifShift} barSize={52}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={C.bgDeep} />
+                  <XAxis dataKey="year" stroke={C.slate} tick={{ fontSize: 13 }} />
+                  <YAxis stroke={C.slate} tick={{ fontSize: 11 }} />
+                  <Tooltip content={<StackedTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: 11, color: '#9ca3af' }} />
+                  <Bar dataKey="pif"     name="PIF"     fill={C.purple} stackId="a" radius={[0,0,0,0]} />
+                  <Bar dataKey="monthly" name="Monthly" fill={C.gray}   stackId="a" radius={[4,4,0,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </Panel>
           </div>
-          <div className="space-y-3">
+          <div className="xl:col-span-3 flex flex-col gap-3">
             {pifShift.map((row) => {
-              const pct = row.count > 0 ? Math.round((row.pifCount / row.count) * 100) : 0
+              const pct = row.count > 0 ? Math.round((row.pif / row.count) * 100) : 0
               return (
-                <div key={row.year} className="rounded-xl p-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-                  <div className="flex justify-between items-center mb-2">
+                <Panel key={row.year}>
+                  <div className="flex justify-between items-center mb-1">
                     <span className="text-white font-semibold">{row.year}</span>
-                    <span style={{ color: PURPLE }} className="font-bold text-lg">{pct}% PIF</span>
+                    <span className="font-bold text-xl" style={{ color: C.purple }}>{pct}% PIF</span>
                   </div>
-                  <div className="flex gap-4 text-sm text-gray-400">
-                    <span>{row.pifCount} paid-in-full</span>
-                    <span>{row.monthlyCount} monthly</span>
-                    <span>{row.count} total</span>
+                  <div className="flex gap-5 text-sm text-gray-500 mb-2">
+                    <span><strong className="text-white">{row.pif}</strong> paid-in-full</span>
+                    <span><strong className="text-white">{row.monthly}</strong> monthly</span>
+                    <span><strong className="text-white">{row.count}</strong> total</span>
                   </div>
-                  <div className="mt-2 h-2 rounded-full bg-gray-800 overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: PURPLE }} />
+                  <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: C.border }}>
+                    <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: C.purple }} />
                   </div>
-                </div>
+                </Panel>
               )
             })}
-            <InsightBox text="⚡ 13% PIF in 2025 → 53% PIF in 2026 YTD is a major signal. Possible reasons: (1) your team is presenting PIF more aggressively, (2) clients prefer to own the asset outright vs monthly commitment risk, (3) market shift toward childcare operators with more capital at decision time. Pair this with deal size trends to understand if PIF clients are buying more or less per deal." />
+            <Insight text="⚡ 13% PIF in 2025 → 53% PIF in 2026 YTD. Clients are either committing upfront more readily, or your team is positioning PIF more aggressively. Watch whether PIF clients have higher or lower deal sizes — if PIF deals are bigger, that's a compounding win." />
           </div>
         </div>
-      </section>
+      </Section>
 
-      {/* Stripe Historical */}
-      <section>
-        <SectionHeader title="Stripe — Client Acquisition & Services by Year (2022–2026)" sub="Subscription start dates from Stripe. Shows what GYC was actually selling in each era." />
-
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-4">
-          {stripeYears.map((yr) => (
-            <div key={yr.year} className="rounded-xl p-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <p className="text-white font-bold text-lg">{yr.year}</p>
-                  <p className="text-gray-500 text-xs">{yr.total} new subs · {yr.active} still active</p>
-                </div>
-                <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#2a1a3e', color: '#AE2BCF' }}>
-                  {yr.total > 0 ? Math.round((yr.active / yr.total) * 100) : 0}% retention
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {(yr.services || []).slice(0, 8).map((s) => (
-                  <span key={s.name} className="text-xs px-2 py-0.5 rounded-full text-gray-300" style={{ backgroundColor: '#1a0a2e', border: '1px solid #2a1a3e' }}>
-                    {s.name} <span style={{ color: GOLD }}>×{s.count}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
+      {/* ══════════════════════════════════════════════════════════════════════
+          STRIPE HISTORICAL — THE BUSINESS ERA STORY
+      ══════════════════════════════════════════════════════════════════════ */}
+      <div style={{ borderTop: `1px solid ${C.border}` }} className="pt-8">
+        <div className="mb-6">
+          <h2 className="text-white text-lg font-bold">GYC Business Model — The Era Shift (2022–2026)</h2>
+          <p className="text-gray-500 text-sm mt-1">Stripe subscription data reveals exactly when and how the product mix changed</p>
         </div>
 
-        <SectionHeader title="Services by Year — Stripe Detail Table" />
-        <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ borderBottom: '1px solid #2a1a3e' }}>
-                  <th className="px-4 py-3 text-left text-gray-500 text-xs uppercase tracking-wider">Year</th>
-                  <th className="px-4 py-3 text-right text-gray-500 text-xs uppercase tracking-wider">New Subs</th>
-                  {stripeServiceNames.slice(0, 10).map((n) => (
-                    <th key={n} className="px-3 py-3 text-right text-gray-500 text-xs uppercase tracking-wider whitespace-nowrap">{n}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {stripeServiceRows.map((row, i) => (
-                  <tr key={row.year} style={{ borderBottom: i < stripeServiceRows.length - 1 ? '1px solid #1a0a2e' : 'none' }} className="hover:bg-white/5">
-                    <td className="px-4 py-2.5 text-white font-semibold">{row.year}</td>
-                    <td className="px-4 py-2.5 text-right text-gray-200 tabular-nums">{row.total}</td>
-                    {stripeServiceNames.slice(0, 10).map((n) => (
-                      <td key={n} className="px-3 py-2.5 text-right tabular-nums" style={{ color: (row[n] || 0) > 0 ? '#AE2BCF' : '#2a1a3e' }}>
-                        {row[n] || '—'}
-                      </td>
+        {/* Era overview area chart */}
+        <Section title="Service Category Volume by Year" sub="5 era-based groupings — shows the business model pivot clearly">
+          <Panel>
+            <ResponsiveContainer width="100%" height={320}>
+              <AreaChart data={stripeEraLines} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={C.bgDeep} />
+                <XAxis dataKey="year" stroke={C.slate} tick={{ fontSize: 12 }} />
+                <YAxis stroke={C.slate} tick={{ fontSize: 11 }} />
+                <Tooltip contentStyle={TOOLTIP_STYLE} />
+                <Legend wrapperStyle={{ fontSize: 11, color: '#9ca3af', paddingTop: 8 }} />
+                <Area type="monotone" dataKey="Website"              name="Website & Maintenance"  stroke="#AE2BCF" fill="#AE2BCF33" strokeWidth={2} dot={{ r: 4 }} />
+                <Area type="monotone" dataKey="Paid Media"           name="Paid Media"              stroke={C.gold}   fill={`${C.gold}22`}  strokeWidth={2} dot={{ r: 4 }} />
+                <Area type="monotone" dataKey="Social Media"         name="Social Media"            stroke="#5b21b6"  fill="#5b21b622"  strokeWidth={2} dot={{ r: 4 }} />
+                <Area type="monotone" dataKey="Accelerator/Legacy"   name="Accelerator / Staffing"  stroke={C.slate}  fill={`${C.slate}22`} strokeWidth={2} dot={{ r: 4 }} />
+                <Area type="monotone" dataKey="Modern Stack"         name="SEO/Blueprint/Command"   stroke="#22d3ee"  fill="#22d3ee22"  strokeWidth={2.5} dot={{ r: 5 }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </Panel>
+        </Section>
+
+        {/* Stacked bar: raw service breakdown per year */}
+        <Section title="Services Sold by Year — Stacked" sub="Every service type stacked — see the mix shift year by year">
+          <Panel>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={stripeStackedBars} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={C.bgDeep} />
+                <XAxis dataKey="year" stroke={C.slate} tick={{ fontSize: 12 }} />
+                <YAxis stroke={C.slate} tick={{ fontSize: 11 }} />
+                <Tooltip content={<StackedTooltip />} />
+                <Legend wrapperStyle={{ fontSize: 11, color: '#9ca3af', paddingTop: 8 }} />
+                {stripeServiceTotals.slice(0, 12).map((name) => (
+                  <Bar key={name} dataKey={name} stackId="a" fill={serviceColor(name)} />
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+          </Panel>
+        </Section>
+
+        {/* Retention cards per cohort */}
+        <Section title="Client Cohort Retention" sub="Of all clients acquired that year, how many are still active today">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            {retentionData.map((yr) => (
+              <Panel key={yr.year}>
+                <p className="text-white font-bold text-lg">{yr.year}</p>
+                <p className="text-gray-500 text-xs mb-2">{yr.total} acquired</p>
+                <div className="relative h-2 rounded-full overflow-hidden mb-1" style={{ backgroundColor: C.border }}>
+                  <div className="h-full rounded-full" style={{ width: `${yr.pct}%`, backgroundColor: yr.pct > 50 ? C.purple : yr.pct > 20 ? C.gold : '#ef4444' }} />
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-400">{yr.active} active</span>
+                  <span className="font-bold" style={{ color: yr.pct > 50 ? C.purple : yr.pct > 20 ? C.gold : '#ef4444' }}>{yr.pct}%</span>
+                </div>
+              </Panel>
+            ))}
+          </div>
+          <Insight text="Retention drops sharply for 2022–2024 cohorts (old product era) — Social Media, Staffing, and Accelerator products had high churn. The 2026 cohort shows 88%+ retention on the current product stack. This validates the business model pivot." />
+        </Section>
+
+        {/* Stripe detail table */}
+        <Section title="Stripe Service Detail — All Years">
+          <div style={{ backgroundColor: C.bg, border: `1px solid ${C.border}` }} className="rounded-xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                    <th className="px-4 py-3 text-left text-xs uppercase tracking-wider font-semibold" style={{ color: C.slate }}>Year</th>
+                    <th className="px-4 py-3 text-right text-xs uppercase tracking-wider font-semibold" style={{ color: C.slate }}>Subs</th>
+                    <th className="px-4 py-3 text-right text-xs uppercase tracking-wider font-semibold" style={{ color: C.slate }}>Active</th>
+                    {stripeServiceTotals.slice(0, 10).map((name) => (
+                      <th key={name} className="px-3 py-3 text-right text-xs tracking-wider font-semibold whitespace-nowrap" style={{ color: serviceColor(name) }}>{name}</th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {stripeYears.map((yr, i) => {
+                    const svcMap = Object.fromEntries(yr.services.map((s) => [s.name, s.count]))
+                    return (
+                      <tr key={yr.year} style={{ borderBottom: i < stripeYears.length - 1 ? `1px solid ${C.bgDeep}` : 'none' }} className="hover:bg-white/5">
+                        <td className="px-4 py-2.5 text-white font-bold">{yr.year}</td>
+                        <td className="px-4 py-2.5 text-right text-gray-200 tabular-nums">{yr.total}</td>
+                        <td className="px-4 py-2.5 text-right text-gray-200 tabular-nums">{yr.active}</td>
+                        {stripeServiceTotals.slice(0, 10).map((name) => (
+                          <td key={name} className="px-3 py-2.5 text-right tabular-nums font-medium" style={{ color: (svcMap[name] || 0) > 0 ? serviceColor(name) : C.bgDeep }}>
+                            {svcMap[name] || '—'}
+                          </td>
+                        ))}
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        </Section>
 
-        <InsightBox text="⚠️ 2024–2025 show high 'Unknown' counts in Stripe — these are real active subscriptions from old product names (Boss Mode, Influence Enrollment System, Core Accelerator). Stripe shows the business model in 2022–2023 was heavily Website + Social Media + Staffing. The pivot to SEO / Blueprint / Command happened in 2025–2026. That shift is visible in the data." />
-      </section>
+        <Insight text="The numbers tell a clear story: 2022–2023 = Website + Social Media + Staffing agency. 2024 = pivot to Accelerator/Enrollment (high churn). 2025 = Paid Media surge + Website recovery. 2026 = modern stack takes hold — SEO, Blueprint, Command, CRM. Each era had different retention rates. The current product architecture is the strongest so far." />
+      </div>
 
     </div>
   )
