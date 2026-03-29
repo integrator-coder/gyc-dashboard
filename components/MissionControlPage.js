@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import BrandGuide from '@/components/BrandGuide'
 
 function fmtEpoch(epoch) {
   if (!epoch) return '—'
@@ -67,6 +68,7 @@ export default function MissionControlPage() {
             ['risk', 'Escalation Radar'],
             ['cost', 'Cost'],
             ['ideas', '💡 Idea Board'],
+            ['brand', '🏢 Brand Guide'],
           ].map(([key, label]) => (
             <button
               key={key}
@@ -381,6 +383,7 @@ export default function MissionControlPage() {
       )}
 
       {tab === 'ideas' && <IdeaBoard />}
+      {tab === 'brand' && <BrandGuide />}
     </div>
   )
 }

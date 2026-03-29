@@ -1,0 +1,90 @@
+{
+  "lastUpdated": "2026-03-29T14:00:00.000Z",
+  "updatedBy": "Wall·E",
+  "brand": {
+    "name": "Grow Your Childcare",
+    "shortName": "GYC",
+    "tagline": "Grow Your Childcare — Marketing That Works for Childcare Centers",
+    "mission": "Help childcare centers grow through smarter marketing, sales, and client experience."
+  },
+  "colors": {
+    "primary": [
+      { "name": "Deep Purple", "hex": "#340B67", "usage": "Backgrounds, footers, dark UI" },
+      { "name": "Purple", "hex": "#731494", "usage": "Headings, primary buttons, section accents" },
+      { "name": "Violet", "hex": "#732FBA", "usage": "Hover states, secondary elements" },
+      { "name": "Bright Violet", "hex": "#AE2BCF", "usage": "CTAs, highlights, active states, brand accent" }
+    ],
+    "secondary": [
+      { "name": "Gold / Champagne", "hex": "#C19C46", "usage": "Awards, premium callouts, contrast accents" }
+    ],
+    "neutral": [
+      { "name": "Black", "hex": "#000000", "usage": "Background base" },
+      { "name": "Off-White", "hex": "#F5F5F5", "usage": "Body text on dark backgrounds" },
+      { "name": "Gray", "hex": "#9CA3AF", "usage": "Secondary text, captions" }
+    ]
+  },
+  "typography": {
+    "primary": {
+      "family": "Avenir",
+      "fallbacks": ["Avenir Next", "Nunito Sans", "system-ui", "sans-serif"],
+      "usage": "All UI, headings, body copy"
+    },
+    "notes": "Avenir is the brand font. Always prefer it over system fonts in print/presentation contexts."
+  },
+  "voice": {
+    "tone": "Direct, confident, warm. Not corporate. Not casual.",
+    "audience": "Childcare center owners and directors — time-poor, results-focused, skeptical of agencies",
+    "doSay": [
+      "Grow your enrollment",
+      "Proven systems",
+      "We work alongside you",
+      "Results you can measure",
+      "Childcare-specific expertise"
+    ],
+    "dontSay": [
+      "Synergize",
+      "Best-in-class",
+      "We're passionate about...",
+      "Leverage (as a verb)",
+      "Game-changer"
+    ],
+    "writingRules": [
+      "Lead with the outcome, not the process",
+      "Use specific numbers when possible",
+      "Speak to the owner, not the industry",
+      "Short sentences. Active voice.",
+      "Avoid jargon unless the audience uses it themselves"
+    ]
+  },
+  "logo": {
+    "notes": "Upload logo files to /brand/logos/ using the media uploader below.",
+    "variants": [
+      { "name": "Primary — Full Color", "file": null, "usage": "Default use on white/light backgrounds" },
+      { "name": "Reversed — White", "file": null, "usage": "Dark backgrounds, presentations, video" },
+      { "name": "Icon Only", "file": null, "usage": "Favicons, social avatars, small placements" },
+      { "name": "Horizontal Lockup", "file": null, "usage": "Email headers, letterhead" }
+    ],
+    "clearspace": "Maintain clear space equal to the height of the G in GYC on all sides",
+    "dontDo": [
+      "Don't stretch or distort the logo",
+      "Don't place on busy backgrounds without a container",
+      "Don't use the logo in unapproved colors",
+      "Don't recreate the logo in other fonts"
+    ]
+  },
+  "templates": {
+    "notes": "Upload template files to /brand/templates/",
+    "items": []
+  },
+  "mediaLibrary": {
+    "notes": "Brand media, photography style guidelines, and approved assets",
+    "items": [],
+    "photoStyle": [
+      "Real childcare environments preferred over stock",
+      "Warm, natural lighting",
+      "Children's faces: ensure proper permissions before use",
+      "Team photos: professional but approachable, not overly formal",
+      "Brand colors should be present (clothing, backgrounds, or UI elements)"
+    ]
+  }
+}
