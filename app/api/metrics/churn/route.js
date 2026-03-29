@@ -1,10 +1,11 @@
+import { createGoogleAuth, SHEETS_READONLY } from '@/lib/google-auth'
 import { NextResponse } from 'next/server'
 import { google } from 'googleapis'
 
 const SHEET_ID = '1kLm6VWX_nlpUsFioKq6JEWLGka5Z3WCTgPUKY2C0Z6A'
 
 const auth = new google.auth.GoogleAuth({
-  keyFile: '/Users/toddthejedigmail.com/.openclaw/credentials/google-console.json',
+  keyFile: process.env.GOOGLE_CREDENTIALS_PATH || `${require('os').homedir()}/.openclaw/credentials/google-console.json`,
   scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
 })
 

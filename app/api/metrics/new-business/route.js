@@ -1,3 +1,4 @@
+import { createGoogleAuth, SHEETS_READONLY } from '@/lib/google-auth'
 import { NextResponse } from 'next/server'
 import { google } from 'googleapis'
 
@@ -6,7 +7,7 @@ const SHEET_ID = '1858s3B0oQ8YC4KEBDefJMc0WuD5nyjNIFxiQrqsuO-A'
 const MONTH_ORDER = ['January','February','March','April','May','June','July','August','September','October','November','December']
 
 const auth = new google.auth.GoogleAuth({
-  keyFile: '/Users/toddthejedigmail.com/.openclaw/credentials/google-console.json',
+  keyFile: process.env.GOOGLE_CREDENTIALS_PATH || `${require('os').homedir()}/.openclaw/credentials/google-console.json`,
   scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
 })
 

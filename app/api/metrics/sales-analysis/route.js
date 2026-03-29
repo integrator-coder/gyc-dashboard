@@ -1,3 +1,4 @@
+import { createGoogleAuth, SHEETS_READONLY } from '@/lib/google-auth'
 import { NextResponse } from 'next/server'
 import { google } from 'googleapis'
 import Stripe from 'stripe'
@@ -11,7 +12,7 @@ const pool = new Pool({ connectionString: process.env.NEON_DATABASE_URL, ssl: { 
 
 const SCORECARD_SHEET_ID = '1858s3B0oQ8YC4KEBDefJMc0WuD5nyjNIFxiQrqsuO-A'
 const auth = new google.auth.GoogleAuth({
-  keyFile: '/Users/toddthejedigmail.com/.openclaw/credentials/google-console.json',
+  keyFile: process.env.GOOGLE_CREDENTIALS_PATH || `${require('os').homedir()}/.openclaw/credentials/google-console.json`,
   scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
 })
 

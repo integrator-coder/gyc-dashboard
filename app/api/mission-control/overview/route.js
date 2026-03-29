@@ -8,7 +8,7 @@ import { requireApiUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
-const WORKSPACE = '/Users/toddthejedigmail.com/.openclaw/workspace'
+const WORKSPACE = process.env.OPENCLAW_WORKSPACE || `${process.env.HOME || require('os').homedir()}/.openclaw/workspace`
 const exec = promisify(execCb)
 
 async function getSecret(name) {
