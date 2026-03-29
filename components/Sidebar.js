@@ -32,6 +32,7 @@ const DASHBOARD_GROUP = {
       items: [
         { label: 'Sales Activity', emoji: '📞', href: '/sales-activity' },
         { label: 'New Business', emoji: '💵', href: '/new-business' },
+        { label: 'Sales Analysis', emoji: '🧮', href: '/sales-analysis' },
       ],
     },
     {
