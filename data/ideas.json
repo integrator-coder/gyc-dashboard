@@ -1,0 +1,123 @@
+[
+  {
+    "id": "idea-001",
+    "title": "Recon → Client Intel lifecycle wiring",
+    "description": "Auto-trigger Client Intel card when a Recon lead closes. Seamless handoff from prospecting to onboarding.",
+    "category": "product",
+    "status": "backlog",
+    "priority": "high",
+    "votes": 0,
+    "addedBy": "Wall·E",
+    "addedAt": "2026-03-29T14:00:00.000Z",
+    "tags": ["recon", "client-intel", "automation"]
+  },
+  {
+    "id": "idea-002",
+    "title": "Closed-deal auto-orchestration",
+    "description": "When a deal is marked closed-won in GHL, automatically kick off onboarding checklist, assign GA, create Zendesk org, and notify Lada.",
+    "category": "automation",
+    "status": "backlog",
+    "priority": "high",
+    "votes": 0,
+    "addedBy": "Wall·E",
+    "addedAt": "2026-03-29T14:00:00.000Z",
+    "tags": ["ghl", "onboarding", "automation"]
+  },
+  {
+    "id": "idea-003",
+    "title": "Friday — laptop travel node setup",
+    "description": "Set up Friday as a lightweight OpenClaw orchestrator on the MacBook. Command layer only — heavy workloads stay on Wall·E + Eve.",
+    "category": "infrastructure",
+    "status": "backlog",
+    "priority": "medium",
+    "votes": 0,
+    "addedBy": "Wall·E",
+    "addedAt": "2026-03-29T14:00:00.000Z",
+    "tags": ["friday", "laptop", "node"]
+  },
+  {
+    "id": "idea-004",
+    "title": "AI Sales Call Review module",
+    "description": "Automated Zoom call analysis — score calls, flag objections, surface coaching moments, feed into Bruce's duplication model.",
+    "category": "product",
+    "status": "backlog",
+    "priority": "high",
+    "votes": 0,
+    "addedBy": "Wall·E",
+    "addedAt": "2026-03-29T14:00:00.000Z",
+    "tags": ["m3", "sales", "ai", "zoom"]
+  },
+  {
+    "id": "idea-005",
+    "title": "AI Growth Advisor Call Review",
+    "description": "Same as sales call review but for GA client calls. Score call quality, identify at-risk clients, flag upsell moments.",
+    "category": "product",
+    "status": "backlog",
+    "priority": "medium",
+    "votes": 0,
+    "addedBy": "Wall·E",
+    "addedAt": "2026-03-29T14:00:00.000Z",
+    "tags": ["m3", "cx", "ai", "zoom"]
+  },
+  {
+    "id": "idea-006",
+    "title": "Slack Wave 1 cleanup",
+    "description": "Archive dead channels, consolidate #general noise, set up proper topic-based channels for the leaner team.",
+    "category": "ops",
+    "status": "backlog",
+    "priority": "medium",
+    "votes": 0,
+    "addedBy": "Wall·E",
+    "addedAt": "2026-03-29T14:00:00.000Z",
+    "tags": ["slack", "comms", "ops"]
+  },
+  {
+    "id": "idea-007",
+    "title": "Client Health Score → Portfolio KPI sheet",
+    "description": "R/Y/G health score for every active client with drivers and trend. Todd sees the full portfolio at a glance.",
+    "category": "product",
+    "status": "backlog",
+    "priority": "high",
+    "votes": 0,
+    "addedBy": "Wall·E",
+    "addedAt": "2026-03-29T14:00:00.000Z",
+    "tags": ["client-intel", "cx", "kpi"]
+  },
+  {
+    "id": "idea-008",
+    "title": "PandaDoc integration",
+    "description": "Pull contract data directly from PandaDoc — contract status, signed date, term, services. Replaces manual sheet entry.",
+    "category": "integration",
+    "status": "backlog",
+    "priority": "medium",
+    "votes": 0,
+    "addedBy": "Wall·E",
+    "addedAt": "2026-03-29T14:00:00.000Z",
+    "tags": ["pandadoc", "contracts", "integration"]
+  },
+  {
+    "id": "idea-009",
+    "title": "Meta Ads API connection",
+    "description": "Connect Meta Ads API for client campaign data. JC/Stefen/Lisa manage these — dashboard should show client ad performance.",
+    "category": "integration",
+    "status": "blocked",
+    "priority": "medium",
+    "votes": 0,
+    "addedBy": "Wall·E",
+    "addedAt": "2026-03-29T14:00:00.000Z",
+    "tags": ["meta", "ads", "integration"],
+    "blockedBy": "Waiting on Kaci meeting with Todd for Meta access setup"
+  },
+  {
+    "id": "idea-010",
+    "title": "Sales dashboard deployment to Vercel",
+    "description": "Move dashboard from localhost:3000 to Vercel production so team can access from anywhere without VPN.",
+    "category": "infrastructure",
+    "status": "backlog",
+    "priority": "medium",
+    "votes": 0,
+    "addedBy": "Wall·E",
+    "addedAt": "2026-03-29T14:00:00.000Z",
+    "tags": ["vercel", "deployment", "dashboard"]
+  }
+]

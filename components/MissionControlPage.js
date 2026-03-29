@@ -1,0 +1,698 @@
+'use client'
+
+import { useCallback, useEffect, useMemo, useState } from 'react'
+
+function fmtEpoch(epoch) {
+  if (!epoch) return '—'
+  return new Date(epoch * 1000).toLocaleString()
+}
+
+function fmtIso(value) {
+  if (!value) return '—'
+  return new Date(value).toLocaleString()
+}
+
+function Panel({ title, children }) {
+  return (
+    <section className="rounded-2xl border border-[var(--brand-border)] bg-black/20 p-5">
+      <h2 className="text-lg font-semibold text-white">{title}</h2>
+      <div className="mt-3">{children}</div>
+    </section>
+  )
+}
+
+export default function MissionControlPage() {
+  const [data, setData] = useState(null)
+  const [error, setError] = useState('')
+  const [tab, setTab] = useState('overview')
+  const [selectedTask, setSelectedTask] = useState(null)
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch('/api/mission-control/overview', { cache: 'no-store' })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to load mission control')
+      setData(json)
+      setError('')
+    } catch (err) {
+      setError(err.message)
+    }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const allTasks = useMemo(() => {
+    const cols = data?.taskBoard?.columns || {}
+    return Object.entries(cols).flatMap(([status, items]) => (items || []).map((item) => ({ ...item, column: status })))
+  }, [data])
+
+  const jobs = useMemo(() => (data?.jobs || []).slice(0, 200), [data])
+  const diary = useMemo(() => (data?.diary || []).slice(0, 400), [data])
+
+  return (
+    <div className="mx-auto max-w-[1600px] space-y-6">
+      <div className="rounded-[28px] border border-[var(--brand-border)] bg-[radial-gradient(circle_at_top,#35104d,transparent_38%),linear-gradient(180deg,rgba(20,12,26,0.98),rgba(10,10,10,1))] p-8 shadow-[0_0_60px_rgba(52,11,103,0.25)]">
+        <div className="text-sm font-semibold uppercase tracking-[0.24em] text-violet-300">Mission Control</div>
+        <h1 className="mt-2 text-3xl font-bold text-white">🛰️ GYC Operating System</h1>
+        <p className="mt-2 text-sm text-gray-300">Understand what is done, what is running, what is at risk, and what happens next.</p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {[
+            ['overview', 'Overview'],
+            ['agents', 'Agents'],
+            ['tasks', 'Task Board'],
+            ['jobs', 'Jobs History'],
+            ['diary', 'Daily Diary (90d)'],
+            ['links', 'Project Links'],
+            ['schedule', 'Scheduler'],
+            ['risk', 'Escalation Radar'],
+            ['cost', 'Cost'],
+            ['ideas', '💡 Idea Board'],
+          ].map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition ${tab === key ? 'border-violet-500/40 bg-violet-500/15 text-violet-100' : 'border-[var(--brand-border)] bg-black/20 text-gray-300 hover:text-white'}`}
+            >
+              {label}
+            </button>
+          ))}
+          <button onClick={load} className="ml-auto rounded-xl border border-[var(--brand-border)] px-4 py-2 text-sm font-medium text-gray-300 transition hover:border-violet-500/40 hover:bg-violet-500/10 hover:text-white">Refresh</button>
+        </div>
+        {error ? <div className="mt-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">{error}</div> : null}
+      </div>
+
+      {tab === 'overview' && (
+        <div className="grid gap-6 xl:grid-cols-3">
+          <Panel title="Now">
+            <div className="space-y-2 text-sm">
+              <div className="text-gray-300">In Progress Tasks: <span className="text-white font-semibold">{(data?.taskBoard?.columns?.inProgress || []).length}</span></div>
+              <div className="text-gray-300">Open Risk Clients: <span className="text-white font-semibold">{(data?.escalationRadar || []).filter((r) => r.riskBand === 'high').length}</span></div>
+              <div className="text-gray-300">Eve Sources Healthy: <span className="text-white font-semibold">{(data?.eveSync || []).filter((s) => s.status === 'success').length}/{(data?.eveSync || []).length}</span></div>
+            </div>
+          </Panel>
+          <Panel title="Top Blockers">
+            <ul className="list-disc space-y-1 pl-5 text-sm text-gray-200">
+              {(data?.scheduler || []).filter((s) => s.status !== 'ok').slice(0, 4).map((s) => <li key={s.id}>{s.finding}</li>)}
+            </ul>
+          </Panel>
+          <Panel title="Today’s Focus">
+            <ul className="list-disc space-y-1 pl-5 text-sm text-gray-200">
+              {(data?.taskBoard?.columns?.inProgress || []).map((t) => <li key={t.id}>{t.title}</li>)}
+            </ul>
+          </Panel>
+        </div>
+      )}
+
+      {tab === 'agents' && (
+        <Panel title="Agent Fleet">
+          {(() => {
+            const agents = data?.agents || []
+            const meta = {
+              'Wall·E':  { img: '/agents/walle.svg',   glow: '#7c3aed', bg: 'bg-violet-950/60',  border: 'border-violet-500/40' },
+              'Eve':     { img: '/agents/eve.svg',     glow: '#0891b2', bg: 'bg-cyan-950/60',    border: 'border-cyan-500/40'  },
+              'R2':      { img: '/agents/r2.svg',      glow: '#2563eb', bg: 'bg-blue-950/60',    border: 'border-blue-500/40'  },
+              'BB-8':    { img: '/agents/bb8.svg',     glow: '#d97706', bg: 'bg-orange-950/60',  border: 'border-orange-500/40'},
+              'Fulcrum': { img: '/agents/fulcrum.svg', glow: '#db2777', bg: 'bg-fuchsia-950/60', border: 'border-fuchsia-500/40'},
+              'Friday':  { img: '/agents/friday.svg',  glow: '#4f46e5', bg: 'bg-indigo-950/60',  border: 'border-indigo-500/40'},
+              'Chopper': { img: '/agents/chopper.svg', glow: '#0d9488', bg: 'bg-teal-950/60',    border: 'border-teal-500/40'  },
+            }
+
+            const statusPulse = (status) => {
+              if (status === 'working')   return 'bg-emerald-400 animate-pulse'
+              if (status === 'attention') return 'bg-amber-400 animate-pulse'
+              if (status === 'planned')   return 'bg-blue-400'
+              return 'bg-gray-600'
+            }
+
+            const AgentCard = ({ agent }) => {
+              const v = meta[agent.name] || { img: '', glow: '#7c3aed', bg: 'bg-violet-950/60', border: 'border-violet-500/40' }
+              const children = agents.filter((a) => a.reportsTo === agent.name)
+              const isBidi = ['Eve', 'Friday'].includes(agent.name)
+              const isWorker = agent.category === 'worker'
+              return (
+                <div className={`rounded-2xl border ${v.border} ${v.bg} ${isWorker ? 'border-dashed' : ''} p-3 text-sm transition hover:scale-[1.01]`}
+                  style={{ boxShadow: `0 0 24px ${v.glow}40` }}>
+                  <div className="flex gap-3">
+                    {v.img
+                      ? <img src={v.img} alt={agent.name} className="h-16 w-16 rounded-xl shrink-0 object-contain bg-black/30" />
+                      : <div className="h-16 w-16 rounded-xl shrink-0 bg-black/30 flex items-center justify-center text-2xl">🤖</div>
+                    }
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <div className="font-bold text-white">{agent.name}</div>
+                        <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${statusPulse(agent.status)}`} />
+                      </div>
+                      <div className="text-xs text-gray-300">{agent.role}</div>
+                      <div className="text-xs text-gray-400">{agent.node}</div>
+                      <div className="mt-1 text-xs text-gray-200 line-clamp-2">⚡ {agent.currentTask || 'Idle'}</div>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {isBidi && <span className="rounded-full bg-cyan-500/20 px-1.5 py-0.5 text-[10px] text-cyan-200">⇄ Wall·E</span>}
+                        {agent.reportsTo && !isBidi && <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] text-gray-300">↑ {agent.reportsTo}</span>}
+                        {children.map((c) => <span key={c.name} className="rounded-full bg-violet-500/20 px-1.5 py-0.5 text-[10px] text-violet-200">→ {c.name}</span>)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+
+            const roots = agents.filter((a) => !a.reportsTo)
+
+            const renderChildren = (parentName) => {
+              const children = agents.filter((a) => a.reportsTo === parentName)
+              if (!children.length) return null
+              return (
+                <div className="mt-3 grid grid-cols-2 gap-3 border-l-2 border-violet-500/30 pl-4 xl:grid-cols-3">
+                  {children.map((child) => (
+                    <div key={child.name}>
+                      <AgentCard agent={child} />
+                      {renderChildren(child.name)}
+                    </div>
+                  ))}
+                </div>
+              )
+            }
+
+            return (
+              <div className="rounded-2xl border border-[var(--brand-border)] bg-[radial-gradient(circle_at_top,#1c0930,transparent_55%),linear-gradient(180deg,#08060e,#030305)] p-6 space-y-6">
+                <div className="flex flex-wrap gap-4 text-xs text-gray-400">
+                  <span className="flex items-center gap-1.5"><span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" /> Working</span>
+                  <span className="flex items-center gap-1.5"><span className="inline-block h-2 w-2 rounded-full bg-amber-400 animate-pulse" /> Attention</span>
+                  <span className="flex items-center gap-1.5"><span className="inline-block h-2 w-2 rounded-full bg-blue-400" /> Planned</span>
+                  <span className="flex items-center gap-1.5"><span className="inline-block h-2 w-2 rounded-full bg-gray-600" /> Idle</span>
+                  <span className="ml-auto">⇄ two-way &nbsp;|&nbsp; → delegates &nbsp;|&nbsp; dashed = worker</span>
+                </div>
+                {roots.map((root) => (
+                  <div key={root.name}>
+                    <div className="max-w-xs">
+                      <AgentCard agent={root} />
+                    </div>
+                    {renderChildren(root.name)}
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
+        </Panel>
+      )}
+
+      {tab === 'tasks' && (
+        <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
+          <Panel title="Task Board">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {Object.entries(data?.taskBoard?.columns || {}).map(([column, items]) => (
+                <div key={column} className="rounded-xl border border-[var(--brand-border)] bg-black/20 p-3">
+                  <div className="text-xs uppercase tracking-wider text-violet-300">{column}</div>
+                  <div className="mt-2 space-y-2">
+                    {(items || []).map((item) => (
+                      <button key={item.id} onClick={() => setSelectedTask(item)} className="w-full rounded-lg border border-[var(--brand-border)] bg-black/30 p-2 text-left">
+                        <div className="text-sm text-white">{item.title}</div>
+                        <div className="mt-1 text-xs text-gray-400">{item.owner} • {item.priority}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Panel>
+
+          <Panel title="Task Detail">
+            {!selectedTask ? <div className="text-sm text-gray-400">Select a task to see detail and next steps.</div> : (
+              <div className="space-y-3 text-sm">
+                <div className="text-white font-semibold">{selectedTask.title}</div>
+                <div className="text-gray-300">{selectedTask.description || 'No description yet.'}</div>
+                <div className="text-xs text-gray-400">Owner: {selectedTask.owner} • Priority: {selectedTask.priority} • Project: {selectedTask.project || '—'}</div>
+                <div>
+                  <div className="text-xs uppercase tracking-wider text-gray-500">Next Steps</div>
+                  <ul className="mt-1 list-disc space-y-1 pl-5 text-gray-200">
+                    {(selectedTask.nextSteps || []).map((step) => <li key={step}>{step}</li>)}
+                  </ul>
+                </div>
+              </div>
+            )}
+          </Panel>
+        </div>
+      )}
+
+      {tab === 'jobs' && (
+        <Panel title="Past Jobs (90d view)">
+          <div className="space-y-2">
+            {jobs.map((job) => (
+              <div key={job.id} className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <div className="text-white">{job.title}</div>
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${job.status === 'success' ? 'bg-emerald-500/20 text-emerald-200' : 'bg-amber-500/20 text-amber-200'}`}>{job.status}</span>
+                </div>
+                <div className="mt-1 text-gray-300">{job.summary}</div>
+                <div className="mt-1 text-xs text-gray-500">{fmtIso(job.startedAt)} → {fmtIso(job.endedAt)} • Owner: {job.owner}</div>
+                {job.artifact ? <a href={job.artifact} className="mt-2 inline-block text-xs text-violet-300 hover:text-violet-200">Open artifact ↗</a> : null}
+              </div>
+            ))}
+          </div>
+        </Panel>
+      )}
+
+      {tab === 'diary' && (
+        <Panel title="Daily Diary (Everything, 90 days)">
+          <div className="max-h-[70vh] space-y-2 overflow-auto pr-1">
+            {diary.map((entry, idx) => (
+              <div key={`${entry.date}-${entry.time}-${idx}`} className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-3 text-sm">
+                <div className="text-xs text-gray-500">{entry.date} • {entry.time}</div>
+                <div className="mt-1 text-gray-200">{entry.note}</div>
+              </div>
+            ))}
+          </div>
+        </Panel>
+      )}
+
+      {tab === 'links' && (
+        <Panel title="Production Links (Projects)">
+          <div className="grid gap-3 md:grid-cols-2">
+            {(data?.projectLinks || []).map((link) => (
+              <a key={link.url} href={link.url} className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-3 text-sm hover:border-violet-500/40 hover:bg-violet-500/10">
+                <div className="text-white">{link.name}</div>
+                <div className="mt-1 text-xs text-gray-400">{link.domain} • {link.status}</div>
+                <div className="mt-2 text-xs text-violet-300">{link.url}</div>
+              </a>
+            ))}
+          </div>
+        </Panel>
+      )}
+
+      {tab === 'schedule' && (
+        <Panel title="Scheduler View">
+          <div className="grid gap-3 md:grid-cols-1 xl:grid-cols-3">
+            {(data?.scheduler || []).map((job) => (
+              <div key={job.id} className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-3 text-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="font-medium text-white">{job.id}</div>
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${job.status === 'ok' ? 'bg-emerald-500/20 text-emerald-200' : 'bg-amber-500/20 text-amber-200'}`}>{job.status}</span>
+                </div>
+                <div className="text-gray-400">{job.cadence}</div>
+                <div className="mt-2 text-xs text-violet-200">Last check: {fmtEpoch(job.lastCheckEpoch)}</div>
+                <div className="mt-3 rounded-lg border border-[var(--brand-border)] bg-black/20 p-2">
+                  <div className="text-[11px] uppercase tracking-wider text-gray-500">What we learned</div>
+                  <div className="mt-1 text-gray-200">{job.finding || 'No finding recorded.'}</div>
+                </div>
+                <div className="mt-2 rounded-lg border border-[var(--brand-border)] bg-black/20 p-2">
+                  <div className="text-[11px] uppercase tracking-wider text-gray-500">Follow-up</div>
+                  <div className="mt-1 text-gray-200">{job.followUp || 'None.'}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Panel>
+      )}
+
+      {tab === 'risk' && (
+        <Panel title="Escalation Radar (Multifactor)">
+          <div className="space-y-2">
+            {(data?.escalationRadar || []).length ? data.escalationRadar.map((r) => (
+              <div key={r.orgId} className="rounded-xl border border-[var(--brand-border)] bg-black/30 px-3 py-3 text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-white">{r.orgName || r.orgId}</div>
+                  <div className="flex items-center gap-2">
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${r.riskBand === 'high' ? 'bg-rose-500/20 text-rose-200' : r.riskBand === 'medium' ? 'bg-amber-500/20 text-amber-200' : 'bg-emerald-500/20 text-emerald-200'}`}>{r.riskBand} risk</span>
+                    <span className="text-violet-200">Score: {r.riskScore}</span>
+                  </div>
+                </div>
+                <div className="mt-1 text-xs text-gray-400">Open tickets: {r.openCount} • Acronym: {r.acronym || 'n/a'}</div>
+                {Array.isArray(r.flags) && r.flags.length ? (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {r.flags.slice(0, 4).map((f) => <span key={f} className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-200">{f}</span>)}
+                  </div>
+                ) : null}
+              </div>
+            )) : <div className="text-sm text-gray-400">No escalation rows found yet.</div>}
+          </div>
+        </Panel>
+      )}
+
+      {tab === 'cost' && (
+        <Panel title="Cost Monitor">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-3 text-sm">
+              <div className="text-white">Monthly Budget</div>
+              <div className="mt-1 text-violet-200">${data?.costMonitor?.budgetMonthly ?? 200}</div>
+              <div className="mt-1 text-xs text-gray-400">Thresholds: {(data?.costMonitor?.thresholds || []).join(', ')}</div>
+            </div>
+            <div className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-3 text-sm">
+              <div className="text-white">Anthropic MTD</div>
+              <div className="mt-1 text-rose-200">${Number(data?.costMonitor?.anthropic?.mtdUsd || 0).toFixed(2)}</div>
+              <div className="mt-1 text-xs text-gray-400">Live via cost_report API</div>
+            </div>
+            <div className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-3 text-sm">
+              <div className="text-white">Daily Run Rate</div>
+              <div className="mt-1 text-amber-200">${Number(data?.costMonitor?.anthropic?.runRateDaily || 0).toFixed(2)}/day</div>
+              <div className="mt-1 text-xs text-gray-400">Projected month-end based on current pace</div>
+            </div>
+            <div className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-3 text-sm">
+              <div className="text-white">Projected Month-End</div>
+              <div className="mt-1 text-amber-200">${Number(data?.costMonitor?.anthropic?.projectedMonthEndUsd || 0).toFixed(2)}</div>
+              <div className="mt-1 text-xs text-gray-400">{data?.costMonitor?.note || 'Cost feed pending.'}</div>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100">
+            {Number(data?.costMonitor?.anthropic?.mtdUsd || 0) > Number(data?.costMonitor?.budgetMonthly || 200)
+              ? 'Budget alert: spend is above monthly target. Sonnet-first + explicit Opus approval guardrails are now active.'
+              : 'Spend is within monthly budget threshold right now.'}
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <div className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-3 text-sm">
+              <div className="text-white">Active Routing Policy</div>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-gray-200">
+                <li>Default model: <span className="text-violet-200">{data?.costMonitor?.policy?.defaultModelPolicy || 'sonnet'}</span></li>
+                <li>Opus: <span className="text-violet-200">explicit approval required</span></li>
+                <li>Threshold guardrails: {Object.keys(data?.costMonitor?.policy?.thresholdGuardrails || {}).join(', ')}</li>
+              </ul>
+            </div>
+            <div className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-3 text-sm">
+              <div className="text-white">Thresholds Crossed</div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {(data?.costMonitor?.thresholdsCrossed || []).length
+                  ? data.costMonitor.thresholdsCrossed.map((t) => <span key={t} className="rounded-full border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 text-xs text-rose-200">${t}</span>)
+                  : <span className="text-gray-400">None</span>}
+              </div>
+            </div>
+          </div>
+        </Panel>
+      )}
+
+      {tab === 'ideas' && <IdeaBoard />}
+    </div>
+  )
+}
+
+// ─── Idea Board ───────────────────────────────────────────────────────────────
+const CATEGORIES = ['product', 'automation', 'integration', 'infrastructure', 'ops', 'other']
+const STATUSES   = ['backlog', 'in-progress', 'blocked', 'done', 'archived']
+const PRIORITIES = ['high', 'medium', 'low']
+
+const STATUS_STYLE = {
+  backlog:     'border-violet-500/30 bg-violet-500/10 text-violet-200',
+  'in-progress':'border-amber-500/30 bg-amber-500/10 text-amber-200',
+  blocked:     'border-rose-500/30 bg-rose-500/10 text-rose-200',
+  done:        'border-emerald-500/30 bg-emerald-500/10 text-emerald-200',
+  archived:    'border-gray-600/30 bg-gray-600/10 text-gray-500',
+}
+const PRIORITY_STYLE = {
+  high:   'text-rose-300',
+  medium: 'text-amber-300',
+  low:    'text-gray-400',
+}
+const PRIORITY_DOT = {
+  high:   '#f87171',
+  medium: '#fbbf24',
+  low:    '#6b7280',
+}
+const CATEGORY_EMOJI = {
+  product:        '🧩',
+  automation:     '⚡',
+  integration:    '🔌',
+  infrastructure: '🖥️',
+  ops:            '⚙️',
+  other:          '💬',
+}
+
+function IdeaCard({ idea, onVote, onStatusChange, onArchive, onDelete }) {
+  const [expanded, setExpanded] = useState(false)
+  if (idea.status === 'archived') return null
+
+  return (
+    <div className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-4 space-y-2 hover:border-violet-500/30 transition">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-2 min-w-0">
+          <span className="mt-0.5 shrink-0 text-base">{CATEGORY_EMOJI[idea.category] || '💬'}</span>
+          <div className="min-w-0">
+            <button onClick={() => setExpanded((e) => !e)} className="text-left text-sm font-semibold text-white hover:text-violet-300 transition">
+              {idea.title}
+            </button>
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              <span className={`rounded-full border px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide ${STATUS_STYLE[idea.status] || STATUS_STYLE.backlog}`}>
+                {idea.status}
+              </span>
+              <span className={`text-[11px] font-semibold uppercase ${PRIORITY_STYLE[idea.priority] || ''}`}>
+                ● {idea.priority}
+              </span>
+              <span className="text-[11px] text-gray-500 capitalize">{idea.category}</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => onVote(idea.id)}
+            className="flex items-center gap-1 rounded-lg border border-[var(--brand-border)] px-2 py-1 text-xs text-gray-300 hover:border-violet-500/40 hover:text-violet-200 transition"
+            title="Upvote"
+          >
+            👍 {idea.votes || 0}
+          </button>
+        </div>
+      </div>
+
+      {expanded && (
+        <div className="pt-1 space-y-3">
+          {idea.description && <p className="text-sm text-gray-300">{idea.description}</p>}
+          {idea.blockedBy && (
+            <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
+              🚧 Blocked: {idea.blockedBy}
+            </div>
+          )}
+          {idea.tags?.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {idea.tags.map((tag) => (
+                <span key={tag} className="rounded-full border border-[var(--brand-border)] bg-black/30 px-2 py-0.5 text-[11px] text-gray-400">#{tag}</span>
+              ))}
+            </div>
+          )}
+          <div className="flex flex-wrap gap-2 pt-1">
+            <select
+              value={idea.status}
+              onChange={(e) => onStatusChange(idea.id, e.target.value)}
+              className="rounded-lg border border-[var(--brand-border)] bg-black/40 px-2 py-1 text-xs text-gray-300 focus:outline-none focus:border-violet-500/40"
+            >
+              {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <button
+              onClick={() => onArchive(idea.id)}
+              className="rounded-lg border border-[var(--brand-border)] px-3 py-1 text-xs text-gray-400 hover:border-amber-500/30 hover:text-amber-200 transition"
+            >
+              Archive
+            </button>
+            <button
+              onClick={() => onDelete(idea.id)}
+              className="rounded-lg border border-rose-500/20 px-3 py-1 text-xs text-rose-400 hover:bg-rose-500/10 transition"
+            >
+              Delete
+            </button>
+          </div>
+          <p className="text-[11px] text-gray-600">Added by {idea.addedBy} · {new Date(idea.addedAt).toLocaleDateString()}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function IdeaBoard() {
+  const [ideas, setIdeas]         = useState([])
+  const [loading, setLoading]     = useState(true)
+  const [filter, setFilter]       = useState('all')
+  const [sortBy, setSortBy]       = useState('votes')
+  const [showAdd, setShowAdd]     = useState(false)
+  const [saving, setSaving]       = useState(false)
+  const [form, setForm]           = useState({
+    title: '', description: '', category: 'product', priority: 'medium', tags: '', blockedBy: '',
+  })
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/mission-control/ideas')
+      const json = await res.json()
+      setIdeas(json.ideas || [])
+    } catch {}
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  async function apiCall(body) {
+    const res = await fetch('/api/mission-control/ideas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    return res.json()
+  }
+
+  async function handleVote(id) {
+    await apiCall({ action: 'vote', id })
+    setIdeas((prev) => prev.map((i) => i.id === id ? { ...i, votes: (i.votes || 0) + 1 } : i))
+  }
+
+  async function handleStatusChange(id, value) {
+    await apiCall({ action: 'update_status', id, value })
+    setIdeas((prev) => prev.map((i) => i.id === id ? { ...i, status: value } : i))
+  }
+
+  async function handleArchive(id) {
+    await apiCall({ action: 'archive', id })
+    setIdeas((prev) => prev.map((i) => i.id === id ? { ...i, status: 'archived' } : i))
+  }
+
+  async function handleDelete(id) {
+    if (!confirm('Delete this idea?')) return
+    await apiCall({ action: 'delete', id })
+    setIdeas((prev) => prev.filter((i) => i.id !== id))
+  }
+
+  async function handleAdd(e) {
+    e.preventDefault()
+    setSaving(true)
+    const res = await apiCall({
+      action: 'add',
+      idea: {
+        ...form,
+        tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
+        addedBy: 'Todd',
+      },
+    })
+    if (res.ok) {
+      setIdeas((prev) => [res.idea, ...prev])
+      setForm({ title: '', description: '', category: 'product', priority: 'medium', tags: '', blockedBy: '' })
+      setShowAdd(false)
+    }
+    setSaving(false)
+  }
+
+  const visible = ideas
+    .filter((i) => i.status !== 'archived')
+    .filter((i) => filter === 'all' || i.status === filter || i.category === filter || i.priority === filter)
+    .sort((a, b) => {
+      if (sortBy === 'votes') return (b.votes || 0) - (a.votes || 0)
+      if (sortBy === 'priority') return PRIORITIES.indexOf(a.priority) - PRIORITIES.indexOf(b.priority)
+      if (sortBy === 'newest') return new Date(b.addedAt) - new Date(a.addedAt)
+      return 0
+    })
+
+  const counts = { total: ideas.filter((i) => i.status !== 'archived').length }
+  STATUSES.filter((s) => s !== 'archived').forEach((s) => { counts[s] = ideas.filter((i) => i.status === s).length })
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-white">💡 Idea Board</h2>
+          <p className="text-sm text-gray-400 mt-0.5">Future projects, features, and experiments — park ideas here, vote, and promote to the task board when ready.</p>
+        </div>
+        <button
+          onClick={() => setShowAdd((v) => !v)}
+          className="rounded-xl border border-violet-500/40 bg-violet-500/15 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-500/25 transition"
+        >
+          + Add Idea
+        </button>
+      </div>
+
+      {/* Status pills */}
+      <div className="flex flex-wrap gap-2">
+        {[['all', `All (${counts.total})`], ...STATUSES.filter((s) => s !== 'archived').map((s) => [s, `${s} (${counts[s] || 0})`])].map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setFilter(key)}
+            className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wider transition ${filter === key ? 'border-violet-500/40 bg-violet-500/15 text-violet-100' : 'border-[var(--brand-border)] bg-black/20 text-gray-400 hover:text-white'}`}
+          >
+            {label}
+          </button>
+        ))}
+        <div className="ml-auto flex items-center gap-2">
+          <span className="text-xs text-gray-500">Sort:</span>
+          {[['votes','Votes'],['priority','Priority'],['newest','Newest']].map(([key,label]) => (
+            <button key={key} onClick={() => setSortBy(key)}
+              className={`rounded-full border px-2.5 py-1 text-xs transition ${sortBy === key ? 'border-violet-500/40 text-violet-200' : 'border-[var(--brand-border)] text-gray-500 hover:text-gray-300'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Add form */}
+      {showAdd && (
+        <form onSubmit={handleAdd} className="rounded-xl border border-violet-500/30 bg-violet-500/5 p-4 space-y-3">
+          <p className="text-sm font-semibold text-violet-200">New Idea</p>
+          <input
+            required
+            value={form.title}
+            onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+            placeholder="Title *"
+            className="w-full rounded-lg border border-[var(--brand-border)] bg-black/40 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500/50"
+          />
+          <textarea
+            value={form.description}
+            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+            placeholder="Description (optional)"
+            rows={2}
+            className="w-full rounded-lg border border-[var(--brand-border)] bg-black/40 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500/50"
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">Category</label>
+              <select value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                className="w-full rounded-lg border border-[var(--brand-border)] bg-black/40 px-2 py-1.5 text-sm text-gray-300 focus:outline-none">
+                {CATEGORIES.map((c) => <option key={c} value={c}>{CATEGORY_EMOJI[c]} {c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">Priority</label>
+              <select value={form.priority} onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))}
+                className="w-full rounded-lg border border-[var(--brand-border)] bg-black/40 px-2 py-1.5 text-sm text-gray-300 focus:outline-none">
+                {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+          </div>
+          <input
+            value={form.tags}
+            onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
+            placeholder="Tags (comma-separated, e.g. sales, ai, ghl)"
+            className="w-full rounded-lg border border-[var(--brand-border)] bg-black/40 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500/50"
+          />
+          <input
+            value={form.blockedBy}
+            onChange={(e) => setForm((f) => ({ ...f, blockedBy: e.target.value }))}
+            placeholder="Blocked by (optional)"
+            className="w-full rounded-lg border border-[var(--brand-border)] bg-black/40 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500/50"
+          />
+          <div className="flex gap-2">
+            <button type="submit" disabled={saving}
+              className="rounded-xl border border-violet-500/40 bg-violet-500/15 px-4 py-1.5 text-sm font-medium text-violet-100 hover:bg-violet-500/25 transition disabled:opacity-50">
+              {saving ? 'Saving…' : 'Add Idea'}
+            </button>
+            <button type="button" onClick={() => setShowAdd(false)}
+              className="rounded-xl border border-[var(--brand-border)] px-4 py-1.5 text-sm text-gray-400 hover:text-white transition">
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Idea cards */}
+      {loading ? (
+        <div className="text-sm text-gray-400 py-8 text-center">Loading ideas…</div>
+      ) : visible.length === 0 ? (
+        <div className="rounded-xl border border-[var(--brand-border)] bg-black/20 px-5 py-10 text-center text-sm text-gray-500">
+          No ideas match that filter. <button onClick={() => setFilter('all')} className="text-violet-300 underline">Show all</button>
+        </div>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {visible.map((idea) => (
+            <IdeaCard
+              key={idea.id}
+              idea={idea}
+              onVote={handleVote}
+              onStatusChange={handleStatusChange}
+              onArchive={handleArchive}
+              onDelete={handleDelete}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
