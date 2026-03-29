@@ -156,6 +156,8 @@ export default function ClientIntelPage({ acronym, user }) {
   const clientInfo = data?.clientInfo || {}
   const contract = data?.contract || null
   const stripe = data?.stripe || null
+  const paymentHistory = data?.paymentHistory || []
+  const healthScore = data?.healthScore || clientInfo?.health || null
   const tickets = data?.zendeskTickets || []
   const filteredTickets = useMemo(() => {
     if (ticketFilter === 'all') return tickets
@@ -321,7 +323,13 @@ export default function ClientIntelPage({ acronym, user }) {
                   {(clientInfo.services || []).map((service) => (
                     <span key={service} className="rounded-full border border-[var(--brand-border)] bg-black/30 px-3 py-1.5 text-gray-200">{service}</span>
                   ))}
-                  <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-amber-200">Health: TBD</span>
+                  {healthScore ? (
+                    <span className={`rounded-full border px-3 py-1.5 font-semibold ${healthScore.band === 'green' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200' : healthScore.band === 'yellow' ? 'border-amber-500/30 bg-amber-500/10 text-amber-200' : 'border-rose-500/30 bg-rose-500/10 text-rose-200'}`}>
+                      {healthScore.band === 'green' ? '🟢' : healthScore.band === 'yellow' ? '🟡' : '🔴'} Health: {healthScore.band.charAt(0).toUpperCase() + healthScore.band.slice(1)}
+                    </span>
+                  ) : (
+                    <span className="rounded-full border border-gray-500/30 bg-gray-500/10 px-3 py-1.5 text-gray-400">Health: —</span>
+                  )}
                 </div>
               </div>
               <div className="grid w-full max-w-md grid-cols-2 gap-3">
@@ -338,6 +346,31 @@ export default function ClientIntelPage({ acronym, user }) {
       {activeTab === 'overview' && (
         <>
           <SectionCard eyebrow="Overview" title="Meeting-ready summary">
+            {healthScore && (
+              <div className={`mb-5 rounded-2xl border p-4 ${healthScore.band === 'green' ? 'border-emerald-500/30 bg-emerald-500/8' : healthScore.band === 'yellow' ? 'border-amber-500/30 bg-amber-500/8' : 'border-rose-500/40 bg-rose-500/10'}`}>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">{healthScore.band === 'green' ? '🟢' : healthScore.band === 'yellow' ? '🟡' : '🔴'}</span>
+                    <div>
+                      <div className={`text-lg font-bold ${healthScore.band === 'green' ? 'text-emerald-100' : healthScore.band === 'yellow' ? 'text-amber-100' : 'text-rose-100'}`}>
+                        Health: {healthScore.band.charAt(0).toUpperCase() + healthScore.band.slice(1)}
+                      </div>
+                      <div className="text-sm text-gray-400">{healthScore.flags?.length ? healthScore.flags.join(' · ') : 'No active risk flags'}</div>
+                    </div>
+                  </div>
+                  <div className="flex gap-4 text-sm text-gray-300">
+                    <span>{healthScore.openTickets} open tickets</span>
+                    <span>{healthScore.overdueTickets} overdue</span>
+                    {healthScore.latestConversion != null && <span>Conversion: {Math.round(healthScore.latestConversion * 100)}%</span>}
+                    {healthScore.conversionTrend != null && (
+                      <span className={healthScore.conversionTrend >= 0 ? 'text-emerald-300' : 'text-rose-300'}>
+                        {healthScore.conversionTrend >= 0 ? '↑' : '↓'} {Math.abs(Math.round(healthScore.conversionTrend * 100))}% MoM
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <StatCard label="Open + Pending Tickets" value={tickets.filter((t) => t.status === 'open' || t.status === 'pending').length} />
               <StatCard label="MRR" value={formatCurrency(stripe?.mrr || 0)} />
@@ -523,15 +556,50 @@ export default function ClientIntelPage({ acronym, user }) {
           </SectionCard>
 
           <SectionCard eyebrow="Agreements & Finance" title="Payments & billing history">
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 mb-5">
               <StatCard label="Current MRR" value={formatCurrency(stripe?.mrr || 0)} />
-              <StatCard label="Status" value={String(stripe?.status || 'active').replace(/^./, (m) => m.toUpperCase())} />
+              <StatCard label="Billing Status" value={
+                <span className={`${stripe?.status === 'active' ? 'text-emerald-300' : stripe?.status === 'past_due' ? 'text-rose-300' : 'text-gray-300'}`}>
+                  {String(stripe?.status || 'active').replace(/^./, (m) => m.toUpperCase())}
+                </span>
+              } />
               <StatCard label="Customer Since" value={formatDate(stripe?.createdAt)} />
-              <StatCard label="Stripe Customer" value={clientInfo.stripeCustomerId || '-'} />
+              <StatCard label="Invoices on file" value={paymentHistory.length || '—'} />
             </div>
-            <div className="mt-4 rounded-2xl border border-[var(--brand-border)] bg-black/20 p-4 text-sm text-gray-300">
-              Payment event-by-event history is the next wire-up (invoice/charge timeline). For now this tab shows current billing state and contract linkage.
-            </div>
+            {paymentHistory.length > 0 ? (
+              <div className="overflow-x-auto rounded-2xl border border-[var(--brand-border)]">
+                <table className="min-w-full divide-y divide-[var(--brand-border)] text-left text-sm">
+                  <thead className="bg-black/30 text-gray-400">
+                    <tr>
+                      <th className="px-4 py-3 font-medium">Date</th>
+                      <th className="px-4 py-3 font-medium">Description</th>
+                      <th className="px-4 py-3 font-medium text-right">Amount</th>
+                      <th className="px-4 py-3 font-medium">Status</th>
+                      <th className="px-4 py-3 font-medium"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--brand-border)] bg-black/10">
+                    {paymentHistory.map((inv) => (
+                      <tr key={inv.id} className={inv.status === 'uncollectible' || (!inv.paid && inv.status !== 'draft') ? 'bg-rose-500/5' : ''}>
+                        <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{formatDate(inv.date)}</td>
+                        <td className="px-4 py-3 text-white">{inv.description || 'Monthly subscription'}</td>
+                        <td className="px-4 py-3 text-right font-medium text-white">{formatCurrency(inv.amount)}</td>
+                        <td className="px-4 py-3">
+                          <span className={`rounded-full border px-2.5 py-1 text-xs font-medium uppercase ${inv.paid ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200' : inv.status === 'open' ? 'border-amber-500/30 bg-amber-500/10 text-amber-200' : 'border-gray-500/30 bg-gray-500/10 text-gray-300'}`}>
+                            {inv.paid ? 'Paid' : inv.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {inv.invoiceUrl && <a href={inv.invoiceUrl} target="_blank" rel="noreferrer" className="text-xs text-violet-300 hover:text-violet-200">View ↗</a>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <EmptyState>No payment history found in Stripe for this client.</EmptyState>
+            )}
           </SectionCard>
         </div>
       )}
