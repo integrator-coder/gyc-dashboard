@@ -40,7 +40,14 @@ export default function ClientBrowserPage({ user }) {
   const filteredClients = useMemo(() => {
     const needle = query.trim().toLowerCase()
     if (!needle) return clients
-    return clients.filter((client) => [client.name, client.acronym, client.repName].some((value) => String(value || '').toLowerCase().includes(needle)))
+    return clients.filter((client) => [
+      client.name,
+      client.acronym,
+      client.centerName,
+      client.ownerName,
+      client.gaName,
+      client.repName,
+    ].some((value) => String(value || '').toLowerCase().includes(needle)))
   }, [clients, query])
 
   return (
@@ -58,7 +65,7 @@ export default function ClientBrowserPage({ user }) {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="text-sm font-semibold uppercase tracking-[0.24em] text-gray-400">Client Browser</div>
-            <div className="mt-1 text-sm text-gray-500">Search by client name, acronym, or rep.</div>
+            <div className="mt-1 text-sm text-gray-500">Search by center name, acronym, owner, or growth advisor.</div>
           </div>
           <input
             value={query}
@@ -80,33 +87,43 @@ export default function ClientBrowserPage({ user }) {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {filteredClients.map((client) => (
-            <Link key={client.id} href={`/clients/${client.acronym}`} className="group rounded-3xl border border-[var(--brand-border)] bg-[radial-gradient(circle_at_top,#1a1024,transparent_50%),var(--brand-bg-card)] p-6 transition hover:border-violet-500/40 hover:bg-[radial-gradient(circle_at_top,#2a133e,transparent_55%),var(--brand-bg-card)] hover:shadow-[0_0_40px_rgba(115,20,148,0.15)]">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="text-xs font-semibold uppercase tracking-[0.24em] text-violet-300">Client Intel Card</div>
-                  <h2 className="mt-3 text-xl font-bold text-white transition group-hover:text-violet-100">{client.name || client.acronym}</h2>
-                </div>
-                <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-violet-200">{client.acronym}</span>
-              </div>
+          {filteredClients.map((client) => {
+            const centerName = client.centerName || client.companyName || client.name || client.acronym
+            const ownerName = client.ownerName || client.owner || client.contactName || client.name || 'Unknown'
+            const growthAdvisor = client.gaName || client.assignedGA || 'Unassigned'
 
-              <div className="mt-6 grid grid-cols-2 gap-3">
-                <div className="rounded-2xl border border-[var(--brand-border)] bg-black/20 px-4 py-3">
-                  <div className="text-xs uppercase tracking-wider text-gray-500">Rep</div>
-                  <div className="mt-1 text-sm font-semibold text-white">{client.repName || 'Unassigned'}</div>
+            return (
+              <Link key={client.id} href={`/clients/${client.acronym}`} className="group rounded-3xl border border-[var(--brand-border)] bg-[radial-gradient(circle_at_top,#1a1024,transparent_50%),var(--brand-bg-card)] p-6 transition hover:border-violet-500/40 hover:bg-[radial-gradient(circle_at_top,#2a133e,transparent_55%),var(--brand-bg-card)] hover:shadow-[0_0_40px_rgba(115,20,148,0.15)]">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-[0.24em] text-violet-300">Client Intel Card</div>
+                    <h2 className="mt-3 text-xl font-bold text-white transition group-hover:text-violet-100">{centerName}</h2>
+                  </div>
+                  <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-violet-200">{client.acronym}</span>
                 </div>
-                <div className="rounded-2xl border border-[var(--brand-border)] bg-black/20 px-4 py-3">
-                  <div className="text-xs uppercase tracking-wider text-gray-500">Call Count</div>
-                  <div className="mt-1 text-sm font-semibold text-white">{client.callCount || 0}</div>
-                </div>
-              </div>
 
-              <div className="mt-4 rounded-2xl border border-[var(--brand-border)] bg-black/20 px-4 py-3">
-                <div className="text-xs uppercase tracking-wider text-gray-500">Last Activity</div>
-                <div className="mt-1 text-sm font-semibold text-white">{formatDate(client.lastCallDate)}</div>
-              </div>
-            </Link>
-          ))}
+                <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-[var(--brand-border)] bg-black/20 px-4 py-3">
+                    <div className="text-xs uppercase tracking-wider text-gray-500">Client Center Name (Acronym)</div>
+                    <div className="mt-1 text-sm font-semibold text-white">{centerName} ({client.acronym})</div>
+                  </div>
+                  <div className="rounded-2xl border border-[var(--brand-border)] bg-black/20 px-4 py-3">
+                    <div className="text-xs uppercase tracking-wider text-gray-500">Owner's Name</div>
+                    <div className="mt-1 text-sm font-semibold text-white">{ownerName}</div>
+                  </div>
+                  <div className="rounded-2xl border border-[var(--brand-border)] bg-black/20 px-4 py-3">
+                    <div className="text-xs uppercase tracking-wider text-gray-500">Growth Advisor Name</div>
+                    <div className="mt-1 text-sm font-semibold text-white">{growthAdvisor}</div>
+                  </div>
+                </div>
+
+                <div className="mt-4 rounded-2xl border border-[var(--brand-border)] bg-black/20 px-4 py-3">
+                  <div className="text-xs uppercase tracking-wider text-gray-500">Last Activity</div>
+                  <div className="mt-1 text-sm font-semibold text-white">{formatDate(client.lastCallDate)}</div>
+                </div>
+              </Link>
+            )
+          })}
         </div>
       )}
     </div>
