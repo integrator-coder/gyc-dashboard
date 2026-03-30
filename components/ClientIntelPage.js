@@ -159,6 +159,11 @@ export default function ClientIntelPage({ acronym, user }) {
   const paymentHistory = data?.paymentHistory || []
   const healthScore = data?.healthScore || clientInfo?.health || null
   const tickets = data?.zendeskTickets || []
+  const ghlNotes = data?.ghlNotes || []
+  const ghlTasks = data?.ghlTasks || []
+  const cxHandoff = data?.cxHandoff || null
+  const promiseLedger = data?.promiseLedger || []
+  const cxDataGaps = data?.cxDataGaps || []
   const filteredTickets = useMemo(() => {
     if (ticketFilter === 'all') return tickets
     return tickets.filter((ticket) => String(ticket.status).toLowerCase() === ticketFilter)
@@ -290,6 +295,7 @@ export default function ClientIntelPage({ acronym, user }) {
           ['portfolio', 'Portfolio Performance'],
           ['finance', 'Agreements & Finance'],
           ['comms', 'Communications'],
+          ['internal', '🗂️ Internal Activity'],
         ].map(([key, label]) => (
           <button
             key={key}
@@ -698,6 +704,103 @@ export default function ClientIntelPage({ acronym, user }) {
               </div>
             )}
           </SectionCard>
+        </div>
+      )}
+
+      {activeTab === 'internal' && (
+        <div className="space-y-6">
+
+          {/* CX Handoff & Promise Ledger */}
+          <SectionCard eyebrow="Internal Activity" title="CX Handoff & Promises Made at Close">
+            {!cxHandoff ? (
+              <EmptyState>No CX handoff record found for this client yet.</EmptyState>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-3">
+                  <StatCard label="Closed By" value={cxHandoff.repName || '—'} />
+                  <StatCard label="Handoff Date" value={formatDate(cxHandoff.closedAt)} />
+                  <StatCard label="Assigned GA" value={cxHandoff.assignedGA || 'Unassigned'} />
+                </div>
+                {promiseLedger.length > 0 && (
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Promises Made at Close</div>
+                    <div className="space-y-2">
+                      {promiseLedger.map((p, i) => (
+                        <div key={i} className={`rounded-xl border p-3 text-sm ${p.riskFlag === 'high' ? 'border-rose-500/30 bg-rose-500/5' : 'border-[var(--brand-border)] bg-black/20'}`}>
+                          <div className="flex items-start justify-between gap-3">
+                            <p className="text-gray-200 flex-1">{p.promiseText}</p>
+                            <div className="flex flex-col items-end gap-1 shrink-0">
+                              {p.riskFlag === 'high' && <span className="rounded-full border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 text-[11px] text-rose-200">high risk</span>}
+                              <span className="text-[11px] text-gray-500">{p.confidence} confidence</span>
+                            </div>
+                          </div>
+                          <div className="mt-1.5 flex gap-3 text-[11px] text-gray-500">
+                            <span>Owner: {p.owner}</span>
+                            <span>Category: {p.category}</span>
+                            <span className={`font-medium ${p.reviewStatus === 'Pending Review' ? 'text-amber-400' : 'text-emerald-400'}`}>{p.reviewStatus}</span>
+                          </div>
+                          {p.reviewComment && <p className="mt-1 text-xs text-gray-400 italic">{p.reviewComment}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {cxDataGaps.length > 0 && (
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Known Data Gaps</div>
+                    <div className="space-y-1.5">
+                      {cxDataGaps.map((gap, i) => (
+                        <div key={i} className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs text-amber-200">
+                          <span className="font-medium">{gap.code}</span> — {gap.detail}
+                          {gap.source && <span className="ml-2 text-amber-400/60">[{gap.source}]</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </SectionCard>
+
+          {/* GHL Open Tasks */}
+          <SectionCard eyebrow="Internal Activity" title="GHL Tasks">
+            {!ghlTasks.length ? (
+              <EmptyState>No tasks in GHL for this client.</EmptyState>
+            ) : (
+              <div className="space-y-2">
+                {ghlTasks.map((task) => (
+                  <div key={task.id} className={`rounded-xl border p-3 text-sm flex items-start justify-between gap-3 ${task.completed ? 'border-gray-800 bg-black/10 opacity-60' : 'border-[var(--brand-border)] bg-black/20'}`}>
+                    <div>
+                      <p className={`font-medium ${task.completed ? 'line-through text-gray-500' : 'text-white'}`}>{task.title}</p>
+                      {task.dueDate && <p className="text-xs text-gray-500 mt-0.5">Due: {formatDate(task.dueDate)}</p>}
+                    </div>
+                    <span className={`rounded-full border px-2 py-0.5 text-[11px] shrink-0 ${task.completed ? 'border-emerald-500/30 text-emerald-300' : 'border-amber-500/30 text-amber-300'}`}>
+                      {task.completed ? 'Done' : 'Open'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </SectionCard>
+
+          {/* GHL Notes */}
+          <SectionCard eyebrow="Internal Activity" title="GHL Notes">
+            {!ghlNotes.length ? (
+              <EmptyState>No notes in GHL for this client.</EmptyState>
+            ) : (
+              <div className="space-y-3">
+                {ghlNotes.map((note) => (
+                  <div key={note.id} className="rounded-xl border border-[var(--brand-border)] bg-black/20 p-4">
+                    <div className="text-xs text-gray-500 mb-2">{note.createdAt ? formatDate(note.createdAt, true) : '—'}</div>
+                    <p className="text-sm text-gray-200 leading-relaxed whitespace-pre-wrap">
+                      {note.body.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </SectionCard>
+
         </div>
       )}
     </div>
