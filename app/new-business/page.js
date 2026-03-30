@@ -427,6 +427,48 @@ export default function NewBusinessPage() {
         <p className="text-gray-500 text-xs mb-4">Sales reps: Jesse, Pia, Briana, Matt, Lex (+ Sebastian in 2025) · Upsell reps: JC, Zu, Stefen, Todd, Travis, Kim (+ Sebastian in 2026)</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
+          <div className="rounded-xl border border-gray-800 bg-gray-950/60 p-4">
+            <p className="text-xs uppercase tracking-wider text-gray-400 mb-2">YTD 2026 First Payment Mix</p>
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: 'Sales', value: salesVsUpsells?.ytd2026?.Sales?.firstPayment || 0, color: TEAL },
+                    { name: 'Upsell', value: salesVsUpsells?.ytd2026?.Upsell?.firstPayment || 0, color: AMBER },
+                    { name: 'Unclassified', value: salesVsUpsells?.ytd2026?.Unclassified?.firstPayment || 0, color: '#6B7280' },
+                  ]}
+                  cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value"
+                  label={({ name, percent }) => `${name}: ${Math.round((percent || 0) * 100)}%`}
+                >
+                  {[
+                    { color: TEAL },
+                    { color: AMBER },
+                    { color: '#6B7280' },
+                  ].map((c, i) => <Cell key={i} fill={c.color} />)}
+                </Pie>
+                <Tooltip formatter={(v) => fmt$(v)} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="rounded-xl border border-gray-800 bg-gray-950/60 p-4">
+            <p className="text-xs uppercase tracking-wider text-gray-400 mb-2">2026 Monthly Distribution — Sales vs Upsells</p>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={salesVsUpsells?.byMonth2026 || []} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="month" tick={{ fill: '#9CA3AF', fontSize: 11 }} />
+                <YAxis tickFormatter={fmtK} tick={{ fill: '#9CA3AF', fontSize: 11 }} width={48} />
+                <Tooltip formatter={(v, n) => [fmt$(v), n]} />
+                <Legend wrapperStyle={{ color: '#9CA3AF', fontSize: 12 }} />
+                <Bar dataKey="salesFP" name="Sales" fill={TEAL} stackId="a" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="upsellFP" name="Upsell" fill={AMBER} stackId="a" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="unclassifiedFP" name="Unclassified" fill="#6B7280" stackId="a" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
           {[['YTD 2026', salesVsUpsells?.ytd2026], [`${summary.currentMonth} 2026`, salesVsUpsells?.thisMonth2026]].map(([label, block]) => (
             <div key={label} className="rounded-xl border border-gray-800 bg-gray-950/60 p-4">
               <p className="text-xs uppercase tracking-wider text-gray-400 mb-2">{label}</p>

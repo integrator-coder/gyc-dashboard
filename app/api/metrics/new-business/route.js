@@ -231,6 +231,38 @@ function summariseByDealType(deals) {
   return out
 }
 
+function summariseDealTypeByMonth(deals) {
+  const out = MONTH_ORDER.map((m) => ({
+    month: m.slice(0, 3),
+    salesFP: 0,
+    upsellFP: 0,
+    unclassifiedFP: 0,
+    salesCount: 0,
+    upsellCount: 0,
+    unclassifiedCount: 0,
+  }))
+
+  const idx = Object.fromEntries(MONTH_ORDER.map((m, i) => [m, i]))
+
+  for (const d of deals) {
+    const i = idx[d.month]
+    if (i == null) continue
+    const type = d.dealType || 'Unclassified'
+    if (type === 'Sales') {
+      out[i].salesFP += d.firstPayment || 0
+      out[i].salesCount += 1
+    } else if (type === 'Upsell') {
+      out[i].upsellFP += d.firstPayment || 0
+      out[i].upsellCount += 1
+    } else {
+      out[i].unclassifiedFP += d.firstPayment || 0
+      out[i].unclassifiedCount += 1
+    }
+  }
+
+  return out.filter((r) => (r.salesCount + r.upsellCount + r.unclassifiedCount) > 0)
+}
+
 export async function GET() {
   try {
     const client = await auth.getClient()
@@ -356,6 +388,7 @@ export async function GET() {
       firstPayment: vals.firstPayment,
       fullTerm: vals.fullTerm,
     })).sort((a, b) => b.firstPayment - a.firstPayment)
+    const splitMonthly26 = summariseDealTypeByMonth(deals26)
 
     return NextResponse.json({
       commissionTracker,
@@ -391,6 +424,7 @@ export async function GET() {
         ytd2026: splitYTD26,
         thisMonth2026: splitThisMonth26,
         byRep2026: splitByRep26,
+        byMonth2026: splitMonthly26,
       },
       updatedAt: new Date().toISOString(),
     })

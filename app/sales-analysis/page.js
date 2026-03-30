@@ -721,6 +721,45 @@ export default function SalesAnalysisPage() {
         sub="Historical rule-based split: Sales = Jesse/Pia/Briana · Upsells = JC/Zu/Stefen/Todd"
       >
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <Panel h={280}>
+            <p className="text-[11px] uppercase tracking-wider mb-2" style={{color:C.slate}}>First Payment Mix ($)</p>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={salesUpsellSummary.rows.map((r) => ({ name: r.type, value: r.firstPayment }))}
+                  dataKey="value"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={58}
+                  outerRadius={92}
+                  label={({ name, percent }) => `${name} ${Math.round((percent || 0) * 100)}%`}
+                >
+                  {salesUpsellSummary.rows.map((r) => (
+                    <Cell key={r.type} fill={r.type === 'Sales' ? C.purple : r.type === 'Upsell' ? C.gold : C.slate} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(v) => fmt$(v)} contentStyle={TOOLTIP_STYLE} />
+              </PieChart>
+            </ResponsiveContainer>
+          </Panel>
+
+          <Panel h={280}>
+            <p className="text-[11px] uppercase tracking-wider mb-2" style={{color:C.slate}}>First Payment by Rep (colored by type)</p>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={salesUpsellSummary.byRep} layout="vertical" margin={{ left: 8, right: 24 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={C.bgDeep} horizontal={false} />
+                <XAxis type="number" stroke={C.slate} tick={{ fontSize: 11 }} tickFormatter={(v) => `$${Math.round(v/1000)}k`} />
+                <YAxis type="category" dataKey="rep" stroke={C.slate} tick={{ fontSize: 11 }} width={90} />
+                <Tooltip formatter={(v, n) => [fmt$(v), n]} contentStyle={TOOLTIP_STYLE} />
+                <Bar dataKey="firstPayment" radius={[0,6,6,0]}>
+                  {salesUpsellSummary.byRep.map((r) => (
+                    <Cell key={r.rep} fill={r.type === 'Sales' ? C.purple : r.type === 'Upsell' ? C.gold : C.slate} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </Panel>
+
           <DataTable
             columns={[
               { key:'type',        label:'Type', bold: true },
