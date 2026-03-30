@@ -58,21 +58,12 @@ export default function LeadershipPage() {
 
   useEffect(() => {
     let active = true
-    Promise.all([
-      fetch('/api/metrics/finance').then(r => r.json()),
-      fetch('/api/metrics/churn').then(r => r.json()),
-      fetch('/api/metrics/dunning').then(r => r.json()),
-      fetch('/api/metrics/sales').then(r => r.json()),
-      fetch('/api/metrics/ghl-leads').then(r => r.json()),
-      fetch('/api/metrics/deal-size').then(r => r.json()),
-      fetch('/api/metrics/new-business').then(r => r.json()),
-      fetch('/api/metrics/sales-analysis').then(r => r.json()),
-      fetch('/api/metrics/client-health').then(r => r.json()),
-      fetch('/api/metrics/cx').then(r => r.json()),
-    ])
-      .then(([finance, churn, dunning, sales, leads, dealSize, newBusiness, salesAnalysis, clientHealth, cx]) => {
+    fetch('/api/metrics/leadership')
+      .then((r) => r.json())
+      .then((bundle) => {
         if (!active) return
-        setData({ finance, churn, dunning, sales, leads, dealSize, newBusiness, salesAnalysis, clientHealth, cx })
+        if (bundle.error) throw new Error(bundle.error)
+        setData(bundle)
       })
       .catch((e) => active && setError(e.message))
       .finally(() => active && setLoading(false))
@@ -147,6 +138,9 @@ export default function LeadershipPage() {
         <div>
           <h1 className="text-2xl font-bold text-white">Leadership Board</h1>
           <p className="text-sm text-gray-500">Cross-sectional command view — finance, churn, risk, growth, CX, and commercial mix</p>
+          {data?.snapshot?.asOf && (
+            <p className="text-xs text-gray-600 mt-1">Snapshot: {new Date(data.snapshot.asOf).toLocaleString()} · {data.snapshot.source}</p>
+          )}
         </div>
       </div>
 
