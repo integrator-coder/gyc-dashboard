@@ -263,6 +263,39 @@ function summariseDealTypeByMonth(deals) {
   return out.filter((r) => (r.salesCount + r.upsellCount + r.unclassifiedCount) > 0)
 }
 
+function summariseServiceByDealType(deals) {
+  const out = {}
+  for (const d of deals) {
+    const service = d.service || 'Unknown'
+    const type = d.dealType || 'Unclassified'
+    if (!out[service]) {
+      out[service] = {
+        service,
+        salesFP: 0,
+        upsellFP: 0,
+        unclassifiedFP: 0,
+        salesDeals: 0,
+        upsellDeals: 0,
+        unclassifiedDeals: 0,
+      }
+    }
+    if (type === 'Sales') {
+      out[service].salesFP += d.firstPayment || 0
+      out[service].salesDeals += 1
+    } else if (type === 'Upsell') {
+      out[service].upsellFP += d.firstPayment || 0
+      out[service].upsellDeals += 1
+    } else {
+      out[service].unclassifiedFP += d.firstPayment || 0
+      out[service].unclassifiedDeals += 1
+    }
+  }
+
+  return Object.values(out)
+    .map((r) => ({ ...r, totalFP: r.salesFP + r.upsellFP + r.unclassifiedFP }))
+    .sort((a, b) => b.totalFP - a.totalFP)
+}
+
 export async function GET() {
   try {
     const client = await auth.getClient()
@@ -389,6 +422,7 @@ export async function GET() {
       fullTerm: vals.fullTerm,
     })).sort((a, b) => b.firstPayment - a.firstPayment)
     const splitMonthly26 = summariseDealTypeByMonth(deals26)
+    const splitByService26 = summariseServiceByDealType(deals26)
 
     return NextResponse.json({
       commissionTracker,
@@ -425,6 +459,7 @@ export async function GET() {
         thisMonth2026: splitThisMonth26,
         byRep2026: splitByRep26,
         byMonth2026: splitMonthly26,
+        byService2026: splitByService26,
       },
       updatedAt: new Date().toISOString(),
     })

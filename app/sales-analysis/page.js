@@ -314,6 +314,20 @@ export default function SalesAnalysisPage() {
     }
   }, [filteredDeals])
 
+  const serviceByTypeBars = useMemo(() => {
+    const map = {}
+    for (const d of filteredDeals) {
+      const service = d.service || 'Unknown'
+      const type = d.dealType || classifyDealType(d.rep, d.year)
+      if (!map[service]) map[service] = { service, salesFP: 0, upsellFP: 0, unclassifiedFP: 0, total: 0 }
+      if (type === 'Sales') map[service].salesFP += Number(d.firstPayment || 0)
+      else if (type === 'Upsell') map[service].upsellFP += Number(d.firstPayment || 0)
+      else map[service].unclassifiedFP += Number(d.firstPayment || 0)
+      map[service].total += Number(d.firstPayment || 0)
+    }
+    return Object.values(map).sort((a, b) => b.total - a.total).slice(0, 12)
+  }, [filteredDeals])
+
   const t = view?.totals || {}
   const pifPct = t.count ? Math.round((t.pifCount / t.count) * 100) : 0
 
@@ -756,6 +770,22 @@ export default function SalesAnalysisPage() {
                     <Cell key={r.rep} fill={r.type === 'Sales' ? C.purple : r.type === 'Upsell' ? C.gold : C.slate} />
                   ))}
                 </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </Panel>
+
+          <Panel h={300}>
+            <p className="text-[11px] uppercase tracking-wider mb-2" style={{color:C.slate}}>Service by Sale vs Upsell (Top 12 by first payment)</p>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={serviceByTypeBars} margin={{ left: 8, right: 24 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={C.bgDeep} />
+                <XAxis dataKey="service" stroke={C.slate} tick={{ fontSize: 10 }} interval={0} angle={-20} textAnchor="end" height={52} />
+                <YAxis stroke={C.slate} tick={{ fontSize: 11 }} tickFormatter={(v) => `$${Math.round(v/1000)}k`} />
+                <Tooltip formatter={(v) => [fmt$(v), '']} contentStyle={TOOLTIP_STYLE} />
+                <Legend wrapperStyle={{ fontSize: 11, color: '#9ca3af' }} />
+                <Bar dataKey="salesFP" name="Sales" fill={C.purple} stackId="svc" radius={[0,0,0,0]} />
+                <Bar dataKey="upsellFP" name="Upsell" fill={C.gold} stackId="svc" radius={[0,0,0,0]} />
+                <Bar dataKey="unclassifiedFP" name="Unclassified" fill={C.slate} stackId="svc" radius={[4,4,0,0]} />
               </BarChart>
             </ResponsiveContainer>
           </Panel>

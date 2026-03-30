@@ -525,6 +525,22 @@ export default function NewBusinessPage() {
             </tbody>
           </table>
         </div>
+
+        <div className="mt-5 rounded-xl border border-gray-800 bg-gray-950/60 p-4">
+          <p className="text-xs uppercase tracking-wider text-gray-400 mb-2">Service by Sale vs Upsell (2026)</p>
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={(salesVsUpsells?.byService2026 || []).slice(0, 10)} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis dataKey="service" tick={{ fill: '#9CA3AF', fontSize: 10 }} interval={0} angle={-20} textAnchor="end" height={52} />
+              <YAxis tickFormatter={fmtK} tick={{ fill: '#9CA3AF', fontSize: 11 }} width={48} />
+              <Tooltip formatter={(v) => fmt$(v)} />
+              <Legend wrapperStyle={{ color: '#9CA3AF', fontSize: 12 }} />
+              <Bar dataKey="salesFP" name="Sales" fill={TEAL} stackId="a" radius={[0, 0, 0, 0]} />
+              <Bar dataKey="upsellFP" name="Upsell" fill={AMBER} stackId="a" radius={[0, 0, 0, 0]} />
+              <Bar dataKey="unclassifiedFP" name="Unclassified" fill="#6B7280" stackId="a" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Recent Deals */}
