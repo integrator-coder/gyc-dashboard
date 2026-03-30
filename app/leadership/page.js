@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import {
   ResponsiveContainer,
   BarChart, Bar,
@@ -32,11 +33,19 @@ function Card({ label, value, sub, tone = 'default' }) {
   )
 }
 
-function Panel({ title, sub, children }) {
+function Panel({ title, sub, children, href, tone = 'neutral' }) {
+  const rail = tone === 'good' ? '#22c55e' : tone === 'warn' ? '#f59e0b' : tone === 'bad' ? '#ef4444' : '#732FBA'
   return (
-    <div className="rounded-xl border border-[#2a1a3e] bg-[#111111] p-5">
-      <h3 className="text-white font-semibold">{title}</h3>
-      {sub && <p className="text-xs text-gray-500 mt-0.5 mb-3">{sub}</p>}
+    <div className="rounded-xl border border-[#2a1a3e] bg-[#111111] p-5" style={{ boxShadow: `inset 3px 0 0 ${rail}` }}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-white font-semibold">{title}</h3>
+          {sub && <p className="text-xs text-gray-500 mt-0.5 mb-3">{sub}</p>}
+        </div>
+        {href && (
+          <Link href={href} className="text-xs text-violet-300 hover:text-violet-100 whitespace-nowrap">Open →</Link>
+        )}
+      </div>
       {children}
     </div>
   )
@@ -102,6 +111,13 @@ export default function LeadershipPage() {
     const currentQ = cx.currentQuarter || 'Q1'
     const qStats = (cx.quarterStats || {})[currentQ] || { met: 0, total: 0, pct: 0 }
 
+    const alerts = {
+      churn: Number(latestChurn?.churnPct || 0) > 3 ? 'bad' : Number(latestChurn?.churnPct || 0) > 2 ? 'warn' : 'good',
+      dunning: Number(data.dunning?.summary?.pastDueCount || 0) > 10 ? 'bad' : Number(data.dunning?.summary?.pastDueCount || 0) > 0 ? 'warn' : 'good',
+      cash: todayCash < avg7 * 0.6 ? 'warn' : 'good',
+      cx: Number(qStats?.pct || 0) < 50 ? 'bad' : Number(qStats?.pct || 0) < 80 ? 'warn' : 'good',
+    }
+
     return {
       metrics,
       todayCash,
@@ -111,6 +127,7 @@ export default function LeadershipPage() {
       nrr: churn.nrr || {},
       serviceByType,
       qStats,
+      alerts,
     }
   }, [data])
 
@@ -118,7 +135,7 @@ export default function LeadershipPage() {
   if (error) return <div className="text-red-400 p-6">Error: {error}</div>
 
   const { finance, churn, dunning, sales, leads, dealSize, newBusiness, clientHealth } = data
-  const { metrics, todayCash, yesterdayCash, avg7, latestChurn, nrr, serviceByType, qStats } = derived
+  const { metrics, todayCash, yesterdayCash, avg7, latestChurn, nrr, serviceByType, qStats, alerts } = derived
 
   const dailyCashChart = (finance?.dailyRevenue || []).map(d => ({ label: new Date(d.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), amount: d.amount }))
   const newMoneyChart = (newBusiness?.monthlyComparison || []).map(m => ({ month: m.month, y2026: m['2026'] || 0, y2025: m['2025'] || 0 }))
@@ -131,6 +148,19 @@ export default function LeadershipPage() {
           <h1 className="text-2xl font-bold text-white">Leadership Board</h1>
           <p className="text-sm text-gray-500">Cross-sectional command view — finance, churn, risk, growth, CX, and commercial mix</p>
         </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {[
+          ['Cash Velocity', alerts?.cash],
+          ['Churn Pressure', alerts?.churn],
+          ['Dunning Risk', alerts?.dunning],
+          ['CX Completion', alerts?.cx],
+        ].map(([name, state]) => (
+          <span key={name} className={`text-xs px-2.5 py-1 rounded-full border ${state === 'good' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : state === 'warn' ? 'border-amber-500/30 bg-amber-500/10 text-amber-300' : 'border-rose-500/30 bg-rose-500/10 text-rose-300'}`}>
+            {name}: {state === 'good' ? 'Stable' : state === 'warn' ? 'Watch' : 'Action'}
+          </span>
+        ))}
       </div>
 
       {/* Finance Topline */}
@@ -186,7 +216,7 @@ export default function LeadershipPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <Panel title="Projected MRR Renewals" sub="From New Business renewal forecast">
+        <Panel title="Projected MRR Renewals" sub="From New Business renewal forecast" href="/new-business" tone="neutral">
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={renewalsChart}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
