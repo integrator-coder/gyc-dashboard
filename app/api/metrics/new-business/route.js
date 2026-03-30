@@ -23,19 +23,27 @@ async function readTab(sheets, tab, range) {
 
 const REP_ALIASES = {
   'Seb': 'Sebastian',
-  'Zu/Bruce': 'Zu',
-  'zu': 'Zu',
   'seb': 'Sebastian',
+  'Sebastian': 'Sebastian',
+  'Zu/Bruce': 'Zu',
+  'Zu / Bruce': 'Zu',
+  'Zu/Seb': 'Zu',
+  'Zu / Seb': 'Zu',
+  'zu': 'Zu',
   'jesse': 'Jesse',
   'briana': 'Briana',
   'jc': 'JC',
   'pia': 'Pia',
   'stefen': 'Stefen',
   'todd': 'Todd',
+  'travis': 'Travis',
+  'lex': 'Lex',
+  'kim': 'Kim',
+  'matt': 'Matt',
 }
 
-const PROSPECT_REPS = new Set(['Jesse', 'Pia', 'Briana'])
-const UPSELL_REPS = new Set(['JC', 'Zu', 'Stefen', 'Todd'])
+const SALES_REPS = new Set(['Jesse', 'Pia', 'Briana', 'Matt', 'Lex'])
+const UPSELL_REPS = new Set(['JC', 'Zu', 'Stefen', 'Todd', 'Travis', 'Kim'])
 
 function normaliseRep(raw) {
   if (!raw) return 'Unknown'
@@ -43,15 +51,19 @@ function normaliseRep(raw) {
   return REP_ALIASES[trimmed] || REP_ALIASES[trimmed.toLowerCase()] || trimmed
 }
 
-function classifyDealType(rep) {
-  if (PROSPECT_REPS.has(rep)) return 'Sales'
+function classifyDealType(rep, year) {
+  // Year-specific rule from Todd: Sebastian = Sales in 2025, Upsell in 2026+
+  if (rep === 'Sebastian') return Number(year) >= 2026 ? 'Upsell' : 'Sales'
+
+  if (SALES_REPS.has(rep)) return 'Sales'
   if (UPSELL_REPS.has(rep)) return 'Upsell'
   return 'Unclassified'
 }
 
-function parseDeals(rows) {
+function parseDeals(rows, yearLabel) {
   return rows.slice(1).filter(r => r[5]).map(r => {
     const rep = normaliseRep(r[13])
+    const year = Number(yearLabel) || new Date(r[5]).getFullYear()
     return {
       client:       r[0]  || '',
       name:         r[1]  || '',
@@ -67,7 +79,8 @@ function parseDeals(rows) {
       pif:          (r[11] || '').toString().trim().toUpperCase() === 'Y',
       renewalAmount: Number(r[12]) || 0,
       rep,
-      dealType: classifyDealType(rep),
+      year,
+      dealType: classifyDealType(rep, year),
     }
   })
 }
@@ -228,8 +241,8 @@ export async function GET() {
       readTab(sheets, '2025 Details', 'A1:R400'),
     ])
 
-    const deals26 = parseDeals(rows26)
-    const deals25 = parseDeals(rows25)
+    const deals26 = parseDeals(rows26, 2026)
+    const deals25 = parseDeals(rows25, 2025)
 
     const now = new Date()
     const currentMonth = MONTH_ORDER[now.getMonth()]
@@ -338,7 +351,7 @@ export async function GET() {
     const splitThisMonth26 = summariseByDealType(thisMonthDeals26)
     const splitByRep26 = Object.entries(summariseByRep(deals26)).map(([rep, vals]) => ({
       rep,
-      type: classifyDealType(rep),
+      type: classifyDealType(rep, 2026),
       deals: vals.count,
       firstPayment: vals.firstPayment,
       fullTerm: vals.fullTerm,

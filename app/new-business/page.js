@@ -424,7 +424,7 @@ export default function NewBusinessPage() {
       {/* Sales vs Upsells Split */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
         <h2 className="text-white font-semibold mb-1">Sales vs Upsells (Historical Rule-Based Split)</h2>
-        <p className="text-gray-500 text-xs mb-4">Sales reps: Jesse, Pia, Briana · Upsell reps: JC, Zu, Stefen, Todd</p>
+        <p className="text-gray-500 text-xs mb-4">Sales reps: Jesse, Pia, Briana, Matt, Lex (+ Sebastian in 2025) · Upsell reps: JC, Zu, Stefen, Todd, Travis, Kim (+ Sebastian in 2026)</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
           {[['YTD 2026', salesVsUpsells?.ytd2026], [`${summary.currentMonth} 2026`, salesVsUpsells?.thisMonth2026]].map(([label, block]) => (

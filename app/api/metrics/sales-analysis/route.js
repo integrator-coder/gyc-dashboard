@@ -18,19 +18,27 @@ const auth = new google.auth.GoogleAuth({
 
 const REP_ALIASES = {
   'Seb': 'Sebastian',
-  'Zu/Bruce': 'Zu',
-  'zu': 'Zu',
   'seb': 'Sebastian',
+  'Sebastian': 'Sebastian',
+  'Zu/Bruce': 'Zu',
+  'Zu / Bruce': 'Zu',
+  'Zu/Seb': 'Zu',
+  'Zu / Seb': 'Zu',
+  'zu': 'Zu',
   'jesse': 'Jesse',
   'briana': 'Briana',
   'jc': 'JC',
   'pia': 'Pia',
   'stefen': 'Stefen',
   'todd': 'Todd',
+  'travis': 'Travis',
+  'lex': 'Lex',
+  'kim': 'Kim',
+  'matt': 'Matt',
 }
 
-const PROSPECT_REPS = new Set(['Jesse', 'Pia', 'Briana'])
-const UPSELL_REPS = new Set(['JC', 'Zu', 'Stefen', 'Todd'])
+const SALES_REPS = new Set(['Jesse', 'Pia', 'Briana', 'Matt', 'Lex'])
+const UPSELL_REPS = new Set(['JC', 'Zu', 'Stefen', 'Todd', 'Travis', 'Kim'])
 
 function normaliseRep(raw) {
   if (!raw) return 'Unknown'
@@ -38,8 +46,9 @@ function normaliseRep(raw) {
   return REP_ALIASES[trimmed] || REP_ALIASES[trimmed.toLowerCase()] || trimmed
 }
 
-function classifyDealType(rep) {
-  if (PROSPECT_REPS.has(rep)) return 'Sales'
+function classifyDealType(rep, year) {
+  if (rep === 'Sebastian') return Number(year) >= 2026 ? 'Upsell' : 'Sales'
+  if (SALES_REPS.has(rep)) return 'Sales'
   if (UPSELL_REPS.has(rep)) return 'Upsell'
   return 'Unclassified'
 }
@@ -146,19 +155,20 @@ function parseDetailRows(rows, yearLabel) {
   return rows.slice(1).filter((r) => r[5]).map((r) => {
     const dateObj = parseSheetDate(r[5])
     const rep = normaliseRep(r[13])
+    const year = dateObj ? dateObj.getFullYear() : Number(yearLabel)
     return {
       yearLabel,
       service: String(r[2] || '').trim(),
       date: r[5],
       dateObj: dateObj ? dateObj.toISOString() : null,
-      year: dateObj ? dateObj.getFullYear() : Number(yearLabel),
+      year,
       month: dateObj ? dateObj.getMonth() + 1 : null,        // 1-12
       monthName: dateObj ? MONTH_NAMES[dateObj.getMonth()] : null,
       firstPayment: Number(r[6]) || 0,
       mrr: Number(r[7]) || 0,
       pif: String(r[11] || '').trim().toUpperCase() === 'Y',
       rep,
-      dealType: classifyDealType(rep),
+      dealType: classifyDealType(rep, year),
     }
   })
 }

@@ -50,11 +50,12 @@ function fmt$(v) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(Number(v || 0))
 }
 
-const PROSPECT_REPS = new Set(['Jesse', 'Pia', 'Briana'])
-const UPSELL_REPS = new Set(['JC', 'Zu', 'Stefen', 'Todd'])
+const SALES_REPS = new Set(['Jesse', 'Pia', 'Briana', 'Matt', 'Lex'])
+const UPSELL_REPS = new Set(['JC', 'Zu', 'Stefen', 'Todd', 'Travis', 'Kim'])
 
-function classifyDealType(rep) {
-  if (PROSPECT_REPS.has(rep)) return 'Sales'
+function classifyDealType(rep, year) {
+  if (rep === 'Sebastian') return Number(year) >= 2026 ? 'Upsell' : 'Sales'
+  if (SALES_REPS.has(rep)) return 'Sales'
   if (UPSELL_REPS.has(rep)) return 'Upsell'
   return 'Unclassified'
 }
@@ -296,7 +297,7 @@ export default function SalesAnalysisPage() {
     const byRep = {}
 
     for (const d of filteredDeals) {
-      const type = classifyDealType(d.rep)
+      const type = d.dealType || classifyDealType(d.rep, d.year)
       base[type].deals += 1
       base[type].firstPayment += Number(d.firstPayment || 0)
       base[type].mrr += Number(d.mrr || 0)
