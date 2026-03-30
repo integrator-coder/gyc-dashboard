@@ -144,12 +144,76 @@ function StackedTooltip({ active, payload, label }) {
   )
 }
 
+// ─── Analyse raw deals with filter ───────────────────────────────────────────
+function analyseDeals(deals) {
+  const SALE_SIZE_BUCKETS = [
+    { label: '<$500', min: 0, max: 500 },
+    { label: '$500–$999', min: 500, max: 1000 },
+    { label: '$1k–$1.9k', min: 1000, max: 2000 },
+    { label: '$2k–$4.9k', min: 2000, max: 5000 },
+    { label: '$5k+', min: 5000, max: Infinity },
+  ]
+  function bucket(v) { return SALE_SIZE_BUCKETS.find(b => v >= b.min && v < b.max)?.label || '$5k+' }
+  function normSvc(s) {
+    const t = String(s||'').toLowerCase()
+    if (t.includes('web')||t.includes('site')) return 'Website'
+    if (t.includes('seo')) return 'SEO'
+    if (t.includes('paid')||t.includes('ads')||t.includes('media')) return 'Paid Media'
+    if (t.includes('crm')) return 'CRM'
+    if (t.includes('blueprint')) return 'Blueprint'
+    if (t.includes('command')) return 'Command'
+    if (t.includes('master')) return 'Master'
+    if (t.includes('s3')) return 'S3'
+    return s
+  }
+  function splitItems(svc) {
+    const raw = String(svc||'').trim()
+    const parts = raw.replace(/\s*\+\s*/g,'+').split('+').map(p=>p.trim()).filter(Boolean)
+    return (parts.length > 1 ? parts : [raw]).map(normSvc).filter(Boolean)
+  }
+
+  const byService = {}, bySize = {}, lineItems = {}
+  SALE_SIZE_BUCKETS.forEach(b => { bySize[b.label] = { count:0, revenue:0 } })
+
+  for (const d of deals) {
+    const svc = d.service || 'Unknown'
+    const amt = d.firstPayment || 0
+    if (!byService[svc]) byService[svc] = { count:0, revenue:0, avg:0, mrr:0, pifCount:0, monthlyCount:0 }
+    byService[svc].count++; byService[svc].revenue += amt; byService[svc].mrr += d.mrr||0
+    if (d.pif) byService[svc].pifCount++; else byService[svc].monthlyCount++
+    bySize[bucket(amt)].count++; bySize[bucket(amt)].revenue += amt
+    for (const comp of splitItems(svc)) {
+      if (!lineItems[comp]) lineItems[comp] = { count:0, revenue:0 }
+      lineItems[comp].count++; lineItems[comp].revenue += amt
+    }
+  }
+  for (const k of Object.keys(byService)) {
+    byService[k].avg = byService[k].count ? Math.round(byService[k].revenue / byService[k].count) : 0
+  }
+  const totals = deals.reduce((a,d) => {
+    a.count++; a.revenue += d.firstPayment||0; a.mrr += d.mrr||0
+    if (d.pif) a.pifCount++; else a.monthlyCount++
+    return a
+  }, { count:0, revenue:0, mrr:0, pifCount:0, monthlyCount:0 })
+  const sort = (obj, fn) => Object.entries(obj).sort((a,b)=>fn(b[1])-fn(a[1])).map(([name,val])=>({name,...val}))
+  return {
+    totals,
+    byService: sort(byService, v=>v.revenue),
+    bySize: Object.entries(bySize).map(([bucket,val])=>({bucket,...val})),
+    lineItems: sort(lineItems, v=>v.count),
+  }
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
+// Filter modes: 'overall' | 'year2025' | 'year2026' | 'YYYY-MM' (specific month) | 'range:YYYY-MM:YYYY-MM'
 export default function SalesAnalysisPage() {
   const [data,    setData]    = useState(null)
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState(null)
-  const [yearView, setYearView] = useState('overall')
+  const [filterMode, setFilterMode] = useState('overall')
+  const [rangeStart, setRangeStart] = useState('')
+  const [rangeEnd,   setRangeEnd]   = useState('')
+  const [showMonthPicker, setShowMonthPicker] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -159,15 +223,43 @@ export default function SalesAnalysisPage() {
         if (!active) return
         if (json.error) throw new Error(json.error)
         setData(json)
+        // pre-set range to full available span
+        if (json.availableMonths?.length) {
+          setRangeStart(json.availableMonths[0].key)
+          setRangeEnd(json.availableMonths[json.availableMonths.length-1].key)
+        }
       })
       .catch((e) => setError(e.message))
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [])
 
-  // ── Scorecard view (controlled by year toggle) ────────────────────────────
-  const view = data?.[yearView]
-  const t    = view?.totals || {}
+  // ── Derive the current view from raw deals + filterMode ─────────────────
+  const view = useMemo(() => {
+    if (!data) return null
+    const raw = data.rawDeals || []
+
+    let filtered = raw
+    if (filterMode === 'year2025') {
+      filtered = raw.filter(d => d.year === 2025)
+    } else if (filterMode === 'year2026') {
+      filtered = raw.filter(d => d.year === 2026)
+    } else if (filterMode.match(/^\d{4}-\d{2}$/)) {
+      const [yr, mo] = filterMode.split('-').map(Number)
+      filtered = raw.filter(d => d.year === yr && d.month === mo)
+    } else if (filterMode === 'range' && rangeStart && rangeEnd) {
+      filtered = raw.filter(d => {
+        if (!d.year || !d.month) return false
+        const key = `${d.year}-${String(d.month).padStart(2,'0')}`
+        return key >= rangeStart && key <= rangeEnd
+      })
+    }
+    // 'overall' = all raw deals
+
+    return analyseDeals(filtered)
+  }, [data, filterMode, rangeStart, rangeEnd])
+
+  const t = view?.totals || {}
   const pifPct = t.count ? Math.round((t.pifCount / t.count) * 100) : 0
 
   // Horizontal bar: revenue by package
@@ -188,11 +280,18 @@ export default function SalesAnalysisPage() {
   // Sale-size distribution
   const sizeBars = useMemo(() => view?.bySize || [], [view])
 
-  // PIF shift bars
-  const pifShift = useMemo(() => [
-    { year: '2025',       pif: data?.year2025?.totals?.pifCount || 0, monthly: data?.year2025?.totals?.monthlyCount || 0, count: data?.year2025?.totals?.count || 0 },
-    { year: '2026 YTD',   pif: data?.year2026?.totals?.pifCount || 0, monthly: data?.year2026?.totals?.monthlyCount || 0, count: data?.year2026?.totals?.count || 0 },
-  ], [data])
+  // PIF shift bars — always compare 2025 vs 2026 regardless of filter
+  const pifShift = useMemo(() => {
+    const raw = data?.rawDeals || []
+    const d25 = raw.filter(d=>d.year===2025)
+    const d26 = raw.filter(d=>d.year===2026)
+    const s25 = analyseDeals(d25).totals
+    const s26 = analyseDeals(d26).totals
+    return [
+      { year: '2025',     pif: s25.pifCount, monthly: s25.monthlyCount, count: s25.count },
+      { year: '2026 YTD', pif: s26.pifCount, monthly: s26.monthlyCount, count: s26.count },
+    ]
+  }, [data])
 
   // ── Stripe historical charts ──────────────────────────────────────────────
 
@@ -254,14 +353,113 @@ export default function SalesAnalysisPage() {
           <h1 className="text-2xl font-bold text-white">Sales Analysis</h1>
           <p className="text-gray-500 text-sm mt-1">What we sold · how many · deal size distribution · how clients pay · how the business has shifted since 2022</p>
         </div>
-        <div className="flex gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1">
-          {[['overall','2025 + 2026'],['year2025','2025 Only'],['year2026','2026 YTD']].map(([key,label]) => (
-            <button key={key} onClick={() => setYearView(key)}
-              className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-colors ${yearView === key ? 'brand-active text-white' : 'text-gray-400 hover:text-white'}`}>
+      </div>
+
+      {/* ── Filter bar ───────────────────────────────────────────────────────── */}
+      <div className="space-y-3">
+        {/* Quick presets */}
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-gray-500 text-xs uppercase tracking-wider">Period:</span>
+          {[
+            ['overall', 'All Time'],
+            ['year2025', '2025'],
+            ['year2026', '2026 YTD'],
+            ['range', 'Date Range'],
+          ].map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => { setFilterMode(key === 'range' ? 'range' : key); if (key !== 'range') setShowMonthPicker(false) }}
+              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                (key === 'range' ? filterMode === 'range' || filterMode.match(/^\d{4}-\d{2}$/) : filterMode === key)
+                  ? 'border-violet-500/40 bg-violet-500/15 text-violet-100'
+                  : 'border-[var(--brand-border)] bg-black/20 text-gray-400 hover:text-white'
+              }`}
+            >
               {label}
             </button>
           ))}
+
+          {/* Individual months */}
+          <button
+            onClick={() => setShowMonthPicker(v => !v)}
+            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+              filterMode.match(/^\d{4}-\d{2}$/)
+                ? 'border-[#C19C46]/40 bg-[#C19C46]/10 text-[#C19C46]'
+                : 'border-[var(--brand-border)] bg-black/20 text-gray-400 hover:text-white'
+            }`}
+          >
+            {filterMode.match(/^\d{4}-\d{2}$/)
+              ? (data?.availableMonths?.find(m => m.key === filterMode)?.label || 'Month')
+              : 'Pick Month ▾'}
+          </button>
         </div>
+
+        {/* Month picker */}
+        {showMonthPicker && (
+          <div style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }} className="rounded-xl p-4">
+            <div className="flex flex-wrap gap-2">
+              {(data?.availableMonths || []).map((m) => (
+                <button
+                  key={m.key}
+                  onClick={() => { setFilterMode(m.key); setShowMonthPicker(false) }}
+                  className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
+                    filterMode === m.key
+                      ? 'border-[#C19C46]/50 bg-[#C19C46]/15 text-[#C19C46]'
+                      : 'border-[var(--brand-border)] text-gray-400 hover:text-white hover:border-violet-500/30'
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Range picker */}
+        {filterMode === 'range' && (
+          <div style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }} className="rounded-xl p-4 flex flex-wrap items-center gap-4">
+            <span className="text-gray-400 text-sm">From</span>
+            <select
+              value={rangeStart}
+              onChange={(e) => setRangeStart(e.target.value)}
+              style={{ backgroundColor: '#0a0a0a', border: '1px solid #2a1a3e' }}
+              className="rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-violet-500/40"
+            >
+              {(data?.availableMonths || []).map(m => (
+                <option key={m.key} value={m.key}>{m.label}</option>
+              ))}
+            </select>
+            <span className="text-gray-400 text-sm">to</span>
+            <select
+              value={rangeEnd}
+              onChange={(e) => setRangeEnd(e.target.value)}
+              style={{ backgroundColor: '#0a0a0a', border: '1px solid #2a1a3e' }}
+              className="rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-violet-500/40"
+            >
+              {(data?.availableMonths || []).map(m => (
+                <option key={m.key} value={m.key}>{m.label}</option>
+              ))}
+            </select>
+            <span className="text-gray-500 text-xs">
+              {t.count} deals in range
+            </span>
+          </div>
+        )}
+
+        {/* Active filter label */}
+        {(filterMode !== 'overall') && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-600">Showing:</span>
+            <span className="text-xs font-medium" style={{ color: '#AE2BCF' }}>
+              {filterMode === 'year2025' ? '2025 only'
+                : filterMode === 'year2026' ? '2026 YTD'
+                : filterMode === 'range' ? `${rangeStart} → ${rangeEnd}`
+                : (data?.availableMonths?.find(m => m.key === filterMode)?.label || filterMode)}
+            </span>
+            <span className="text-gray-600 text-xs">— {t.count} deals, {new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(t.revenue)}</span>
+            <button onClick={() => setFilterMode('overall')} className="text-xs text-gray-600 hover:text-gray-300 transition ml-1">✕ clear</button>
+          </div>
+        )}
       </div>
 
       {/* ── Summary cards ───────────────────────────────────────────────────── */}
@@ -348,9 +546,28 @@ export default function SalesAnalysisPage() {
           </Panel>
           <div className="space-y-3">
             {['2025','2026'].map((yr) => {
-              const yrData = view?.byYear?.[yr]
-              if (!yrData?.lineItems) return null
-              const items = Object.entries(yrData.lineItems).sort((a,b) => b[1]-a[1])
+              // Build line items from raw deals filtered to this year (always show year breakdown)
+              const raw = data?.rawDeals || []
+              const yearDeals = raw.filter(d => String(d.year) === yr)
+              if (!yearDeals.length) return null
+              const li = {}
+              function normSvc(s) {
+                const t = String(s||'').toLowerCase()
+                if (t.includes('web')||t.includes('site')) return 'Website'
+                if (t.includes('seo')) return 'SEO'
+                if (t.includes('paid')||t.includes('ads')) return 'Paid Media'
+                if (t.includes('crm')) return 'CRM'
+                if (t.includes('blueprint')) return 'Blueprint'
+                if (t.includes('command')) return 'Command'
+                if (t.includes('master')) return 'Master'
+                if (t.includes('s3')) return 'S3'
+                return s
+              }
+              for (const d of yearDeals) {
+                const parts = d.service?.replace(/\s*\+\s*/g,'+').split('+').map(p=>p.trim()).filter(Boolean) || [d.service]
+                for (const p of parts) { const n = normSvc(p); if (!li[n]) li[n]=0; li[n]++ }
+              }
+              const items = Object.entries(li).sort((a,b) => b[1]-a[1])
               return (
                 <Panel key={yr}>
                   <p className="text-white font-semibold mb-2">{yr} — services sold</p>

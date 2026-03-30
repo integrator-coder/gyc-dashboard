@@ -94,16 +94,43 @@ async function readTab(sheets, tab, range = 'A1:R1200') {
   return res.data.values || []
 }
 
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
+
+function parseSheetDate(raw) {
+  if (!raw) return null
+  // Formats: "Mar 27, 2026" or "3/27/26" or "3/27/2026"
+  const s = String(raw).trim()
+  // Try "Mon DD, YYYY"
+  let d = new Date(s)
+  if (!isNaN(d.getTime())) return d
+  // Try M/D/YY
+  const parts = s.split('/')
+  if (parts.length === 3) {
+    const [m, day, y] = parts
+    const year = Number(y) < 100 ? 2000 + Number(y) : Number(y)
+    d = new Date(year, Number(m) - 1, Number(day))
+    if (!isNaN(d.getTime())) return d
+  }
+  return null
+}
+
 function parseDetailRows(rows, yearLabel) {
-  return rows.slice(1).filter((r) => r[5]).map((r) => ({
-    yearLabel,
-    service: String(r[2] || '').trim(),
-    date: r[5],
-    firstPayment: Number(r[6]) || 0,
-    mrr: Number(r[7]) || 0,
-    pif: String(r[11] || '').trim().toUpperCase() === 'Y',
-    rep: String(r[13] || '').trim() || 'Unknown',
-  }))
+  return rows.slice(1).filter((r) => r[5]).map((r) => {
+    const dateObj = parseSheetDate(r[5])
+    return {
+      yearLabel,
+      service: String(r[2] || '').trim(),
+      date: r[5],
+      dateObj: dateObj ? dateObj.toISOString() : null,
+      year: dateObj ? dateObj.getFullYear() : Number(yearLabel),
+      month: dateObj ? dateObj.getMonth() + 1 : null,        // 1-12
+      monthName: dateObj ? MONTH_NAMES[dateObj.getMonth()] : null,
+      firstPayment: Number(r[6]) || 0,
+      mrr: Number(r[7]) || 0,
+      pif: String(r[11] || '').trim().toUpperCase() === 'Y',
+      rep: String(r[13] || '').trim() || 'Unknown',
+    }
+  })
 }
 
 function analyseDeals(deals) {
@@ -264,10 +291,27 @@ export async function GET() {
     const y2025 = analyseDeals(deals2025)
     const y2026 = analyseDeals(deals2026)
 
+    // Build available months from all deals (for the month picker)
+    const monthSet = new Map()
+    for (const d of allDeals) {
+      if (d.year && d.month) {
+        const key = `${d.year}-${String(d.month).padStart(2, '0')}`
+        if (!monthSet.has(key)) {
+          monthSet.set(key, { key, year: d.year, month: d.month, label: `${d.monthName} ${d.year}` })
+        }
+      }
+    }
+    const availableMonths = [...monthSet.values()].sort((a, b) => a.key.localeCompare(b.key))
+
     return NextResponse.json({
       overall,
       year2025: y2025,
       year2026: y2026,
+      // Raw deals for client-side filtering by month/range
+      rawDeals: allDeals.map(({ service, dateObj, year, month, monthName, yearLabel, firstPayment, mrr, pif, rep }) => ({
+        service, dateObj, year, month, monthName, yearLabel, firstPayment, mrr, pif, rep,
+      })),
+      availableMonths,
       stripe: stripeHistory,
       updatedAt: new Date().toISOString(),
     })
