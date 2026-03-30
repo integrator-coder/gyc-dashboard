@@ -280,16 +280,20 @@ export default function SalesAnalysisPage() {
   // Sale-size distribution
   const sizeBars = useMemo(() => view?.bySize || [], [view])
 
-  // PIF shift bars — always compare 2025 vs 2026 regardless of filter
+  // PIF shift bars — always compare 2025 vs 2026 regardless of filter, include revenue split
   const pifShift = useMemo(() => {
     const raw = data?.rawDeals || []
-    const d25 = raw.filter(d=>d.year===2025)
-    const d26 = raw.filter(d=>d.year===2026)
-    const s25 = analyseDeals(d25).totals
-    const s26 = analyseDeals(d26).totals
+    const calc = (deals) => {
+      const t = analyseDeals(deals).totals
+      const pifRev = deals.filter(d=>d.pif).reduce((s,d)=>s+(d.firstPayment||0),0)
+      const mthRev = deals.filter(d=>!d.pif).reduce((s,d)=>s+(d.firstPayment||0),0)
+      return { ...t, pifRevenue: pifRev, monthlyRevenue: mthRev }
+    }
+    const s25 = calc(raw.filter(d=>d.year===2025))
+    const s26 = calc(raw.filter(d=>d.year===2026))
     return [
-      { year: '2025',     pif: s25.pifCount, monthly: s25.monthlyCount, count: s25.count },
-      { year: '2026 YTD', pif: s26.pifCount, monthly: s26.monthlyCount, count: s26.count },
+      { year: '2025',     pif: s25.pifCount, monthly: s25.monthlyCount, count: s25.count, pifRevenue: s25.pifRevenue, monthlyRevenue: s25.monthlyRevenue },
+      { year: '2026 YTD', pif: s26.pifCount, monthly: s26.monthlyCount, count: s26.count, pifRevenue: s26.pifRevenue, monthlyRevenue: s26.monthlyRevenue },
     ]
   }, [data])
 
@@ -464,24 +468,31 @@ export default function SalesAnalysisPage() {
 
       {/* ── Summary cards ───────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card label="Deals Closed"      value={t.count ?? '—'}      sub="From Sales Scorecard" />
-        <Card label="First Payment"     value={fmt$(t.revenue)}     sub="Upfront new money"       accent={C.violet} />
-        <Card label="New MRR Added"     value={fmt$(t.mrr)}         sub="Monthly recurring added" accent={C.gold} />
-        <Card label="PIF Rate"          value={`${pifPct}%`}        sub={`${t.pifCount} PIF · ${t.monthlyCount} monthly`} />
+        <Card label="Deals Closed"           value={t.count ?? '—'}  sub="# of deals (not $)" />
+        <Card label="First Payment Collected" value={fmt$(t.revenue)} sub={`PIF + first month · ${t.pifCount} PIF, ${t.monthlyCount} monthly`} accent={C.violet} />
+        <Card label="New MRR Added"           value={fmt$(t.mrr)}     sub="Monthly recurring value (monthly deals only)" accent={C.gold} />
+        <Card label="PIF Rate"                value={`${pifPct}%`}    sub={`${t.pifCount} paid-in-full · ${t.monthlyCount} monthly subscriptions`} />
       </div>
 
-      {/* ── Revenue by service + sale-size distribution ──────────────────────── */}
-      <Section title="Revenue by Package / Service" sub="First payment per deal — top-level bundle names from the Scorecard">
+      {/* ── Revenue by service ──────────────────────────────────────────────── */}
+      <Section
+        title="First Payment by Package / Service"
+        sub="Dollar value collected at signing — includes PIF lump sums and first monthly payment. Not MRR."
+      >
         <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
           <div className="xl:col-span-3">
             <Panel>
+              <p className="text-[11px] uppercase tracking-wider mb-2" style={{color:C.slate}}>First payment ($) by service — PIF shown in purple, Monthly in violet</p>
               <ResponsiveContainer width="100%" height={340}>
                 <BarChart data={revBars} layout="vertical" margin={{ left: 8, right: 32 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={C.bgDeep} horizontal={false} />
-                  <XAxis type="number" stroke={C.slate} tick={{ fontSize: 11 }} tickFormatter={(v) => `$${Math.round(v/1000)}k`} />
+                  <XAxis type="number" stroke={C.slate} tick={{ fontSize: 11 }} tickFormatter={(v) => `$${Math.round(v/1000)}k`} label={{ value: 'First Payment ($)', position: 'insideBottom', offset: -2, fill: C.slate, fontSize: 10 }} />
                   <YAxis type="category" dataKey="name" stroke={C.slate} tick={{ fontSize: 11 }} width={118} />
-                  <Tooltip formatter={(v, _, p) => [fmt$(v), p.payload.fullName]} contentStyle={TOOLTIP_STYLE} />
-                  <Bar dataKey="revenue" name="Revenue" radius={[0, 6, 6, 0]}>
+                  <Tooltip
+                    formatter={(v, name, p) => [fmt$(v), `${p.payload.fullName} — First Payment`]}
+                    contentStyle={TOOLTIP_STYLE}
+                  />
+                  <Bar dataKey="revenue" name="First Payment ($)" radius={[0, 6, 6, 0]}>
                     {revBars.map((entry) => <Cell key={entry.name} fill={serviceColor(entry.fullName)} />)}
                   </Bar>
                 </BarChart>
@@ -489,35 +500,70 @@ export default function SalesAnalysisPage() {
             </Panel>
           </div>
           <div className="xl:col-span-2 flex flex-col gap-4">
+            {/* Deal size by count */}
             <Panel>
-              <p className="text-gray-500 text-xs uppercase tracking-wider mb-3">Deal Size Distribution</p>
-              <ResponsiveContainer width="100%" height={165}>
+              <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Deal Size Distribution</p>
+              <p className="text-[11px] text-gray-600 mb-3">Number of deals (not $) in each size bracket</p>
+              <ResponsiveContainer width="100%" height={150}>
                 <BarChart data={sizeBars}>
                   <CartesianGrid strokeDasharray="3 3" stroke={C.bgDeep} />
                   <XAxis dataKey="bucket" stroke={C.slate} tick={{ fontSize: 10 }} />
-                  <YAxis stroke={C.slate} tick={{ fontSize: 10 }} />
-                  <Tooltip contentStyle={TOOLTIP_STYLE} />
-                  <Bar dataKey="count" name="Deals" fill={C.violet} radius={[4,4,0,0]} />
+                  <YAxis stroke={C.slate} tick={{ fontSize: 10 }} label={{ value: '# Deals', angle: -90, position: 'insideLeft', fill: C.slate, fontSize: 9 }} />
+                  <Tooltip formatter={(v) => [`${v} deals`, '# Deals']} contentStyle={TOOLTIP_STYLE} />
+                  <Bar dataKey="count" name="# Deals" fill={C.violet} radius={[4,4,0,0]} />
                 </BarChart>
               </ResponsiveContainer>
             </Panel>
+            {/* PIF vs Monthly — BOTH count and revenue */}
             <Panel>
-              <p className="text-gray-500 text-xs uppercase tracking-wider mb-3">PIF vs Monthly</p>
-              <div className="flex items-center gap-5">
-                <PieChart width={110} height={110}>
-                  <Pie data={[{v:t.pifCount||0},{v:t.monthlyCount||0}]} dataKey="v" cx={52} cy={52} innerRadius={28} outerRadius={50} paddingAngle={3}>
-                    <Cell fill={C.purple} /><Cell fill={C.gray} />
-                  </Pie>
-                </PieChart>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full shrink-0" style={{backgroundColor:C.purple}}/>
-                    <span className="text-gray-300">PIF <strong className="text-white">{t.pifCount}</strong> <span className="text-gray-500">({pifPct}%)</span></span>
+              <p className="text-gray-500 text-xs uppercase tracking-wider mb-3">PIF vs Monthly — Count & Revenue</p>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-[11px] text-gray-500 mb-1">Deal count</p>
+                  <div className="flex items-center gap-5">
+                    <PieChart width={80} height={80}>
+                      <Pie data={[{v:t.pifCount||0},{v:t.monthlyCount||0}]} dataKey="v" cx={38} cy={38} innerRadius={20} outerRadius={36} paddingAngle={3}>
+                        <Cell fill={C.purple} /><Cell fill={C.gray} />
+                      </Pie>
+                    </PieChart>
+                    <div className="space-y-1 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full" style={{backgroundColor:C.purple}}/>
+                        <span className="text-gray-300">PIF: <strong className="text-white">{t.pifCount}</strong> deals ({pifPct}%)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full" style={{backgroundColor:C.gray}}/>
+                        <span className="text-gray-300">Monthly: <strong className="text-white">{t.monthlyCount}</strong> deals</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full shrink-0" style={{backgroundColor:C.gray}}/>
-                    <span className="text-gray-300">Monthly <strong className="text-white">{t.monthlyCount}</strong></span>
-                  </div>
+                </div>
+                <div style={{borderTop:`1px solid ${C.border}`}} className="pt-3">
+                  <p className="text-[11px] text-gray-500 mb-1">First payment collected ($)</p>
+                  {(() => {
+                    const raw = data?.rawDeals || []
+                    let pifRev = 0, mthRev = 0
+                    const filt = filterMode === 'overall' ? raw
+                      : filterMode === 'year2025' ? raw.filter(d=>d.year===2025)
+                      : filterMode === 'year2026' ? raw.filter(d=>d.year===2026)
+                      : filterMode.match(/^\d{4}-\d{2}$/) ? raw.filter(d=>`${d.year}-${String(d.month).padStart(2,'0')}` === filterMode)
+                      : filterMode === 'range' ? raw.filter(d => { const k=`${d.year}-${String(d.month).padStart(2,'0')}`; return k >= rangeStart && k <= rangeEnd })
+                      : raw
+                    for (const d of filt) { if (d.pif) pifRev += d.firstPayment||0; else mthRev += d.firstPayment||0 }
+                    const total = pifRev + mthRev || 1
+                    const pifRevPct = Math.round(pifRev/total*100)
+                    return (
+                      <div>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span style={{color:C.purple}}>PIF {fmt$(pifRev)} ({pifRevPct}%)</span>
+                          <span style={{color:C.slate}}>Monthly {fmt$(mthRev)}</span>
+                        </div>
+                        <div className="h-3 rounded-full overflow-hidden" style={{backgroundColor:C.border}}>
+                          <div className="h-full rounded-full" style={{width:`${pifRevPct}%`,backgroundColor:C.purple}}/>
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
             </Panel>
@@ -527,18 +573,19 @@ export default function SalesAnalysisPage() {
 
       {/* ── Individual service unit counts ───────────────────────────────────── */}
       <Section
-        title="Individual Services Sold — Unit Count"
-        sub="Bundles decomposed: Web+SEO+CRM = 1 Website + 1 SEO + 1 CRM. Shows actual volume of each service delivered."
+        title="Individual Services Sold — Unit Count (not $)"
+        sub="Bundles decomposed: Web+SEO+CRM = 1 Website + 1 SEO + 1 CRM. Each bar = number of times that service was sold, regardless of price."
       >
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <Panel>
+            <p className="text-[11px] uppercase tracking-wider mb-2" style={{color:C.slate}}>Units sold (count) — not revenue</p>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={unitBars} layout="vertical" margin={{ left: 0, right: 32 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={C.bgDeep} horizontal={false} />
-                <XAxis type="number" stroke={C.slate} tick={{ fontSize: 11 }} />
+                <XAxis type="number" stroke={C.slate} tick={{ fontSize: 11 }} label={{ value: '# Units Sold', position: 'insideBottom', offset: -2, fill: C.slate, fontSize: 10 }} />
                 <YAxis type="category" dataKey="name" stroke={C.slate} tick={{ fontSize: 12 }} width={100} />
-                <Tooltip contentStyle={TOOLTIP_STYLE} />
-                <Bar dataKey="count" name="Units Sold" radius={[0, 6, 6, 0]}>
+                <Tooltip formatter={(v) => [`${v} units`, 'Units Sold (count)']} contentStyle={TOOLTIP_STYLE} />
+                <Bar dataKey="count" name="Units Sold (count)" radius={[0, 6, 6, 0]}>
                   {unitBars.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
                 </Bar>
               </BarChart>
@@ -589,35 +636,53 @@ export default function SalesAnalysisPage() {
       </Section>
 
       {/* ── Full service detail table ─────────────────────────────────────────── */}
-      <Section title="Full Service Detail Table" sub="Every package with deal count, revenue, avg deal, MRR, and payment type">
+      <Section
+        title="Full Service Detail Table"
+        sub="Deals = # of deals closed. First Payment = $ collected at signing (PIF lump sum OR first monthly payment). MRR = ongoing monthly value from monthly deals only."
+      >
         <DataTable
           columns={[
-            { key:'name',         label:'Service',       bold: true },
-            { key:'count',        label:'Deals',         right: true },
-            { key:'revenue',      label:'First Payment', right: true, render:(v) => fmt$(v) },
-            { key:'avg',          label:'Avg Sale',      right: true, render:(v) => fmt$(v) },
-            { key:'mrr',          label:'MRR Added',     right: true, render:(v) => fmt$(v) },
-            { key:'pifCount',     label:'PIF',           right: true },
-            { key:'monthlyCount', label:'Monthly',       right: true },
+            { key:'name',         label:'Service / Package',    bold: true },
+            { key:'count',        label:'# Deals',              right: true },
+            { key:'revenue',      label:'First Payment ($)',     right: true, render:(v) => fmt$(v) },
+            { key:'avg',          label:'Avg First Payment',     right: true, render:(v) => fmt$(v) },
+            { key:'mrr',          label:'MRR Added ($/mo)',      right: true, render:(v) => fmt$(v) },
+            { key:'pifCount',     label:'PIF Deals',             right: true },
+            { key:'monthlyCount', label:'Monthly Deals',         right: true },
           ]}
           rows={view?.byService || []}
         />
       </Section>
 
       {/* ── PIF Shift ────────────────────────────────────────────────────────── */}
-      <Section title="PIF vs Monthly Shift — 2025 → 2026 YTD" sub="How clients are choosing to pay is a market signal">
+      <Section title="PIF vs Monthly Shift — 2025 → 2026 YTD" sub="How clients are choosing to pay is a market signal — shown as both deal count and first payment revenue">
         <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
-          <div className="xl:col-span-2">
+          <div className="xl:col-span-2 space-y-3">
             <Panel>
-              <ResponsiveContainer width="100%" height={220}>
+              <p className="text-[11px] uppercase tracking-wider mb-2" style={{color:C.slate}}>Deal count (# deals, not $)</p>
+              <ResponsiveContainer width="100%" height={180}>
                 <BarChart data={pifShift} barSize={52}>
                   <CartesianGrid strokeDasharray="3 3" stroke={C.bgDeep} />
-                  <XAxis dataKey="year" stroke={C.slate} tick={{ fontSize: 13 }} />
-                  <YAxis stroke={C.slate} tick={{ fontSize: 11 }} />
-                  <Tooltip content={<StackedTooltip />} />
+                  <XAxis dataKey="year" stroke={C.slate} tick={{ fontSize: 12 }} />
+                  <YAxis stroke={C.slate} tick={{ fontSize: 11 }} label={{ value:'# Deals', angle:-90, position:'insideLeft', fill:C.slate, fontSize:9 }} />
+                  <Tooltip formatter={(v, name) => [`${v} deals`, name]} contentStyle={TOOLTIP_STYLE} />
                   <Legend wrapperStyle={{ fontSize: 11, color: '#9ca3af' }} />
-                  <Bar dataKey="pif"     name="PIF"     fill={C.purple} stackId="a" radius={[0,0,0,0]} />
-                  <Bar dataKey="monthly" name="Monthly" fill={C.gray}   stackId="a" radius={[4,4,0,0]} />
+                  <Bar dataKey="pif"     name="PIF (deals)"     fill={C.purple} stackId="a" radius={[0,0,0,0]} />
+                  <Bar dataKey="monthly" name="Monthly (deals)"  fill={C.gray}   stackId="a" radius={[4,4,0,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </Panel>
+            <Panel>
+              <p className="text-[11px] uppercase tracking-wider mb-2" style={{color:C.slate}}>First payment revenue ($) — PIF vs monthly</p>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={pifShift} barSize={52}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={C.bgDeep} />
+                  <XAxis dataKey="year" stroke={C.slate} tick={{ fontSize: 12 }} />
+                  <YAxis stroke={C.slate} tick={{ fontSize: 11 }} tickFormatter={(v) => `$${Math.round(v/1000)}k`} />
+                  <Tooltip formatter={(v) => [fmt$(v), '']} contentStyle={TOOLTIP_STYLE} />
+                  <Legend wrapperStyle={{ fontSize: 11, color: '#9ca3af' }} />
+                  <Bar dataKey="pifRevenue"     name="PIF Revenue ($)"     fill={C.purple} stackId="b" radius={[0,0,0,0]} />
+                  <Bar dataKey="monthlyRevenue" name="Monthly Revenue ($)"  fill={C.gray}   stackId="b" radius={[4,4,0,0]} />
                 </BarChart>
               </ResponsiveContainer>
             </Panel>
@@ -625,24 +690,34 @@ export default function SalesAnalysisPage() {
           <div className="xl:col-span-3 flex flex-col gap-3">
             {pifShift.map((row) => {
               const pct = row.count > 0 ? Math.round((row.pif / row.count) * 100) : 0
+              const revTotal = (row.pifRevenue || 0) + (row.monthlyRevenue || 0)
+              const revPct = revTotal > 0 ? Math.round((row.pifRevenue||0) / revTotal * 100) : 0
               return (
                 <Panel key={row.year}>
-                  <div className="flex justify-between items-center mb-1">
+                  <div className="flex justify-between items-center mb-2">
                     <span className="text-white font-semibold">{row.year}</span>
-                    <span className="font-bold text-xl" style={{ color: C.purple }}>{pct}% PIF</span>
+                    <span className="font-bold text-xl" style={{ color: C.purple }}>{pct}% PIF deals</span>
                   </div>
-                  <div className="flex gap-5 text-sm text-gray-500 mb-2">
-                    <span><strong className="text-white">{row.pif}</strong> paid-in-full</span>
-                    <span><strong className="text-white">{row.monthly}</strong> monthly</span>
-                    <span><strong className="text-white">{row.count}</strong> total</span>
-                  </div>
-                  <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: C.border }}>
-                    <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: C.purple }} />
+                  <div className="grid grid-cols-2 gap-4 text-xs text-gray-500 mb-3">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wider mb-1" style={{color:C.slate}}>Deal count</p>
+                      <p><strong className="text-white">{row.pif}</strong> PIF · <strong className="text-white">{row.monthly}</strong> monthly · <span className="text-gray-400">{row.count} total</span></p>
+                      <div className="mt-1.5 h-2 rounded-full overflow-hidden" style={{ backgroundColor: C.border }}>
+                        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: C.purple }} />
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wider mb-1" style={{color:C.slate}}>First payment revenue</p>
+                      <p><strong className="text-white">{fmt$(row.pifRevenue||0)}</strong> PIF · <strong className="text-white">{fmt$(row.monthlyRevenue||0)}</strong> monthly</p>
+                      <div className="mt-1.5 h-2 rounded-full overflow-hidden" style={{ backgroundColor: C.border }}>
+                        <div className="h-full rounded-full" style={{ width: `${revPct}%`, backgroundColor: C.purple }} />
+                      </div>
+                    </div>
                   </div>
                 </Panel>
               )
             })}
-            <Insight text="⚡ 13% PIF in 2025 → 53% PIF in 2026 YTD. Clients are either committing upfront more readily, or your team is positioning PIF more aggressively. Watch whether PIF clients have higher or lower deal sizes — if PIF deals are bigger, that's a compounding win." />
+            <Insight text="⚡ 13% PIF in 2025 → 53% PIF in 2026 YTD by deal count. The revenue shift is even more dramatic — PIF deals tend to be larger, so PIF's share of first-payment revenue is typically higher than its share of deal count." />
           </div>
         </div>
       </Section>
