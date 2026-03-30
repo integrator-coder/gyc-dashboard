@@ -320,10 +320,11 @@ export default function ClientIntelPage({ acronym, user }) {
                   <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-4 py-2 text-sm font-semibold uppercase tracking-wider text-violet-100">{clientInfo.acronym || acronym}</span>
                 </div>
                 <div className="mt-4 flex flex-wrap gap-3 text-sm text-gray-300">
-                  <span>GA assigned: {clientInfo.assignedGA || 'JC Flores'} - Briana covering</span>
-                  <span>Contract: {contract ? `${contract.contractType} - ${contract.programLevel}` : 'Blueprint - Own Your Zip Code'}</span>
-                  <span>MRR: {formatCurrency(stripe?.mrr || 3723.7)}</span>
-                  <span>Client since: {formatDate(clientInfo.clientSince || contract?.signedAt)}</span>
+                  <span>Owner: {clientInfo.ownerName || '—'}</span>
+                  <span>GA assigned: {clientInfo.assignedGA || 'Unassigned'}</span>
+                  <span>Contract: {contract ? `${contract.contractType} - ${contract.programLevel}` : '—'}</span>
+                  <span>MRR: {stripe?.mrr != null ? formatCurrency(stripe.mrr) : '—'}</span>
+                  <span>Client since: {formatDate(clientInfo.clientSince || contract?.signedAt || stripe?.createdAt)}</span>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2 text-sm">
                   {(clientInfo.services || []).map((service) => (
@@ -557,7 +558,11 @@ export default function ClientIntelPage({ acronym, user }) {
                 <StatCard label="Term" value={contract?.termMonths ? `${contract.termMonths} months` : '-'} />
                 <StatCard label="Cancellation" value={contract?.cancellationNoticeDays ? `${contract.cancellationNoticeDays}-day notice` : '-'} />
               </div>
-              <a href={contract?.pdfPath || '/contracts/IGK-BONMM-6XGJS-FYREN-CBCT5.pdf'} target="_blank" rel="noreferrer" className="inline-flex rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-2 text-sm font-medium text-violet-200 transition hover:border-violet-400/50 hover:text-white">Download contract PDF ↗</a>
+              {contract?.pdfPath ? (
+                <a href={contract.pdfPath} target="_blank" rel="noreferrer" className="inline-flex rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-2 text-sm font-medium text-violet-200 transition hover:border-violet-400/50 hover:text-white">Download contract PDF ↗</a>
+              ) : (
+                <span className="inline-flex rounded-xl border border-[var(--brand-border)] bg-black/20 px-4 py-2 text-sm text-gray-400">Contract PDF not on file</span>
+              )
             </div>
           </SectionCard>
 
