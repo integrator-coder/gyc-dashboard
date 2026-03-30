@@ -562,7 +562,7 @@ export default function ClientIntelPage({ acronym, user }) {
                 <a href={contract.pdfPath} target="_blank" rel="noreferrer" className="inline-flex rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-2 text-sm font-medium text-violet-200 transition hover:border-violet-400/50 hover:text-white">Download contract PDF ↗</a>
               ) : (
                 <span className="inline-flex rounded-xl border border-[var(--brand-border)] bg-black/20 px-4 py-2 text-sm text-gray-400">Contract PDF not on file</span>
-              )
+              )}
             </div>
           </SectionCard>
 
