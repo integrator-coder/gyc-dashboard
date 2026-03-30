@@ -314,11 +314,18 @@ export default function NewBusinessPage() {
           if (!upcoming.length) return null
           return (
             <div className="mt-4 border border-amber-900/50 bg-amber-950/30 rounded-lg p-3">
-              <p className="text-amber-400 text-xs font-semibold mb-2">⚠️ Renewal amounts not yet entered — these months are understated:</p>
+              <p className="text-amber-300 text-sm font-semibold mb-1">⚠️ Why this warning appears</p>
+              <p className="text-amber-200/90 text-xs leading-relaxed mb-2">
+                This chart forecasts renewal MRR for PIF deals at their renewal month (based on term length). If a PIF deal has no renewal amount entered,
+                that renewal month will show lower projected MRR than reality.
+              </p>
+              <p className="text-amber-200/80 text-xs mb-3">
+                In other words: these months are <span className="font-semibold">understated</span> until renewal values are filled in on the source sales sheet.
+              </p>
               <div className="flex flex-wrap gap-3">
                 {upcoming.map(([mo, data]) => (
                   <span key={mo} className="text-xs text-amber-300 bg-amber-950 px-2 py-1 rounded">
-                    {mo}: {data.count} deal{data.count > 1 ? 's' : ''} · {fmt$(data.fp)} PIF
+                    {mo}: {data.count} deal{data.count > 1 ? 's' : ''} missing renewal · {fmt$(data.fp)} PIF first-payment value
                   </span>
                 ))}
               </div>
