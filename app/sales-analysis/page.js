@@ -178,9 +178,10 @@ function analyseDeals(deals) {
   for (const d of deals) {
     const svc = d.service || 'Unknown'
     const amt = d.firstPayment || 0
-    if (!byService[svc]) byService[svc] = { count:0, revenue:0, avg:0, mrr:0, pifCount:0, monthlyCount:0 }
+    if (!byService[svc]) byService[svc] = { count:0, revenue:0, avg:0, mrr:0, pifCount:0, monthlyCount:0, pifRevenue:0, monthlyRevenue:0 }
     byService[svc].count++; byService[svc].revenue += amt; byService[svc].mrr += d.mrr||0
-    if (d.pif) byService[svc].pifCount++; else byService[svc].monthlyCount++
+    if (d.pif) { byService[svc].pifCount++; byService[svc].pifRevenue += amt }
+    else { byService[svc].monthlyCount++; byService[svc].monthlyRevenue += amt }
     bySize[bucket(amt)].count++; bySize[bucket(amt)].revenue += amt
     for (const comp of splitItems(svc)) {
       if (!lineItems[comp]) lineItems[comp] = { count:0, revenue:0 }
@@ -264,10 +265,15 @@ export default function SalesAnalysisPage() {
 
   // Horizontal bar: revenue by package
   const revBars = useMemo(() => (view?.byService || []).slice(0, 14).map((s) => ({
-    name:     s.name.length > 22 ? s.name.slice(0, 20) + '…' : s.name,
-    fullName: s.name,
-    revenue:  Math.round(s.revenue),
-    deals:    s.count,
+    name:           s.name.length > 22 ? s.name.slice(0, 20) + '…' : s.name,
+    fullName:       s.name,
+    revenue:        Math.round(s.revenue),
+    pifRevenue:     Math.round(s.pifRevenue || 0),
+    monthlyRevenue: Math.round(s.monthlyRevenue || 0),
+    deals:          s.count,
+    pifDeals:       s.pifCount,
+    monthlyDeals:   s.monthlyCount,
+    mrr:            Math.round(s.mrr || 0),
   })), [view])
 
   // Individual service unit counts
@@ -482,19 +488,39 @@ export default function SalesAnalysisPage() {
         <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
           <div className="xl:col-span-3">
             <Panel>
-              <p className="text-[11px] uppercase tracking-wider mb-2" style={{color:C.slate}}>First payment ($) by service — PIF shown in purple, Monthly in violet</p>
-              <ResponsiveContainer width="100%" height={340}>
+              <div className="flex items-center gap-4 mb-3">
+                <p className="text-[11px] uppercase tracking-wider" style={{color:C.slate}}>First payment by service — stacked PIF vs Monthly</p>
+                <div className="flex items-center gap-3 ml-auto text-[11px]">
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block" style={{backgroundColor:C.purple}}/> PIF ($)</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block" style={{backgroundColor:C.gray}}/> Monthly first payment ($)</span>
+                </div>
+              </div>
+              <ResponsiveContainer width="100%" height={360}>
                 <BarChart data={revBars} layout="vertical" margin={{ left: 8, right: 32 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={C.bgDeep} horizontal={false} />
-                  <XAxis type="number" stroke={C.slate} tick={{ fontSize: 11 }} tickFormatter={(v) => `$${Math.round(v/1000)}k`} label={{ value: 'First Payment ($)', position: 'insideBottom', offset: -2, fill: C.slate, fontSize: 10 }} />
+                  <XAxis type="number" stroke={C.slate} tick={{ fontSize: 11 }} tickFormatter={(v) => `$${Math.round(v/1000)}k`} />
                   <YAxis type="category" dataKey="name" stroke={C.slate} tick={{ fontSize: 11 }} width={118} />
                   <Tooltip
-                    formatter={(v, name, p) => [fmt$(v), `${p.payload.fullName} — First Payment`]}
                     contentStyle={TOOLTIP_STYLE}
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null
+                      const d = payload[0]?.payload
+                      return (
+                        <div style={TOOLTIP_STYLE} className="p-3 space-y-1 min-w-[200px]">
+                          <p className="text-white font-semibold text-sm">{d?.fullName}</p>
+                          <p className="text-[11px] text-gray-400">{d?.deals} deals ({d?.pifDeals} PIF · {d?.monthlyDeals} monthly)</p>
+                          <div className="pt-1 border-t border-gray-700 space-y-1">
+                            <div className="flex justify-between text-xs"><span style={{color:C.purple}}>PIF revenue</span><span className="text-white font-medium">{fmt$(d?.pifRevenue)}</span></div>
+                            <div className="flex justify-between text-xs"><span style={{color:C.slate}}>Monthly first payment</span><span className="text-white font-medium">{fmt$(d?.monthlyRevenue)}</span></div>
+                            <div className="flex justify-between text-xs font-semibold border-t border-gray-700 pt-1"><span className="text-gray-400">Total first payment</span><span className="text-white">{fmt$(d?.revenue)}</span></div>
+                            {d?.mrr > 0 && <div className="flex justify-between text-xs"><span style={{color:C.gold}}>MRR added</span><span style={{color:C.gold}}>{fmt$(d?.mrr)}/mo</span></div>}
+                          </div>
+                        </div>
+                      )
+                    }}
                   />
-                  <Bar dataKey="revenue" name="First Payment ($)" radius={[0, 6, 6, 0]}>
-                    {revBars.map((entry) => <Cell key={entry.name} fill={serviceColor(entry.fullName)} />)}
-                  </Bar>
+                  <Bar dataKey="pifRevenue"     name="PIF ($)"              fill={C.purple} stackId="rev" radius={[0,0,0,0]} />
+                  <Bar dataKey="monthlyRevenue" name="Monthly first pmt ($)" fill={C.gray}   stackId="rev" radius={[0,6,6,0]} />
                 </BarChart>
               </ResponsiveContainer>
             </Panel>
