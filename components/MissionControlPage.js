@@ -357,9 +357,14 @@ export default function MissionControlPage() {
         <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
           <Panel title="Task Board">
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {Object.entries(data?.taskBoard?.columns || {}).map(([column, items]) => (
+              {Object.entries(data?.taskBoard?.columns || {}).sort(([a], [b]) => {
+                const order = ['backlog', 'inProgress', 'review', 'done']
+                return (order.indexOf(a) ?? 99) - (order.indexOf(b) ?? 99)
+              }).map(([column, items]) => (
                 <div key={column} className="rounded-xl border border-[var(--brand-border)] bg-black/20 p-3">
-                  <div className="text-xs uppercase tracking-wider text-violet-300">{column}</div>
+                  <div className="text-xs uppercase tracking-wider text-violet-300">
+                    {{ backlog: 'Backlog', inProgress: 'In Progress', review: 'Review', done: 'Done' }[column] || column}
+                  </div>
                   <div className="mt-2 space-y-2">
                     {(items || []).map((item) => (
                       <button key={item.id} onClick={() => setSelectedTask(item)} className="w-full rounded-lg border border-[var(--brand-border)] bg-black/30 p-2 text-left">
