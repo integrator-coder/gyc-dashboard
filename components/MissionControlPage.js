@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import BrandGuide from '@/components/BrandGuide'
+import FulcrumIntel from '@/components/FulcrumIntel'
+import ClientHealthMonitor from '@/components/ClientHealthMonitor'
 
 function fmtEpoch(epoch) {
   if (!epoch) return '—'
@@ -307,6 +309,8 @@ export default function MissionControlPage() {
             ['cost', 'Cost'],
             ['ideas', '💡 Idea Board'],
             ['brand', '🏢 Brand Guide'],
+            ['intel', '🔭 Fulcrum Intel'],
+            ['health', '🏥 Client Health'],
           ].map(([key, label]) => (
             <button
               key={key}
@@ -535,6 +539,8 @@ export default function MissionControlPage() {
 
       {tab === 'ideas' && <IdeaBoard />}
       {tab === 'brand' && <BrandGuide />}
+      {tab === 'intel' && <FulcrumIntel />}
+      {tab === 'health' && <ClientHealthMonitor />}
     </div>
   )
 }
