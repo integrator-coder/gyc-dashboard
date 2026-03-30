@@ -28,6 +28,22 @@ function isFresh(asOf) {
   return ageMs < SNAPSHOT_MAX_AGE_HOURS * 60 * 60 * 1000
 }
 
+function buildSourceHealth(payload) {
+  const sources = ['finance', 'churn', 'dunning', 'sales', 'leads', 'dealSize', 'newBusiness', 'salesAnalysis', 'clientHealth', 'cx']
+  const out = {}
+  for (const key of sources) {
+    const block = payload[key] || {}
+    const asOf = block.updatedAt || block.syncedAt || block.lastSync?.syncedAt || null
+    out[key] = {
+      ok: !block.error,
+      asOf,
+      stale: asOf ? (Date.now() - new Date(asOf).getTime()) > 24 * 60 * 60 * 1000 : false,
+      error: block.error || null,
+    }
+  }
+  return out
+}
+
 async function fetchLiveBundle(origin) {
   const endpoints = {
     finance: '/api/metrics/finance',
@@ -48,7 +64,12 @@ async function fetchLiveBundle(origin) {
     return [k, json]
   }))
 
-  return Object.fromEntries(entries)
+  const payload = Object.fromEntries(entries)
+  payload.meta = {
+    sourceHealth: buildSourceHealth(payload),
+    staleSourceCount: Object.values(buildSourceHealth(payload)).filter(s => s.stale).length,
+  }
+  return payload
 }
 
 export async function GET(req) {
