@@ -16,6 +16,34 @@ const auth = new google.auth.GoogleAuth({
   scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
 })
 
+const REP_ALIASES = {
+  'Seb': 'Sebastian',
+  'Zu/Bruce': 'Zu',
+  'zu': 'Zu',
+  'seb': 'Sebastian',
+  'jesse': 'Jesse',
+  'briana': 'Briana',
+  'jc': 'JC',
+  'pia': 'Pia',
+  'stefen': 'Stefen',
+  'todd': 'Todd',
+}
+
+const PROSPECT_REPS = new Set(['Jesse', 'Pia', 'Briana'])
+const UPSELL_REPS = new Set(['JC', 'Zu', 'Stefen', 'Todd'])
+
+function normaliseRep(raw) {
+  if (!raw) return 'Unknown'
+  const trimmed = String(raw).trim()
+  return REP_ALIASES[trimmed] || REP_ALIASES[trimmed.toLowerCase()] || trimmed
+}
+
+function classifyDealType(rep) {
+  if (PROSPECT_REPS.has(rep)) return 'Sales'
+  if (UPSELL_REPS.has(rep)) return 'Upsell'
+  return 'Unclassified'
+}
+
 const SALE_SIZE_BUCKETS = [
   { label: '<$500', min: 0, max: 500 },
   { label: '$500–$999', min: 500, max: 1000 },
@@ -117,6 +145,7 @@ function parseSheetDate(raw) {
 function parseDetailRows(rows, yearLabel) {
   return rows.slice(1).filter((r) => r[5]).map((r) => {
     const dateObj = parseSheetDate(r[5])
+    const rep = normaliseRep(r[13])
     return {
       yearLabel,
       service: String(r[2] || '').trim(),
@@ -128,7 +157,8 @@ function parseDetailRows(rows, yearLabel) {
       firstPayment: Number(r[6]) || 0,
       mrr: Number(r[7]) || 0,
       pif: String(r[11] || '').trim().toUpperCase() === 'Y',
-      rep: String(r[13] || '').trim() || 'Unknown',
+      rep,
+      dealType: classifyDealType(rep),
     }
   })
 }
@@ -308,8 +338,8 @@ export async function GET() {
       year2025: y2025,
       year2026: y2026,
       // Raw deals for client-side filtering by month/range
-      rawDeals: allDeals.map(({ service, dateObj, year, month, monthName, yearLabel, firstPayment, mrr, pif, rep }) => ({
-        service, dateObj, year, month, monthName, yearLabel, firstPayment, mrr, pif, rep,
+      rawDeals: allDeals.map(({ service, dateObj, year, month, monthName, yearLabel, firstPayment, mrr, pif, rep, dealType }) => ({
+        service, dateObj, year, month, monthName, yearLabel, firstPayment, mrr, pif, rep, dealType,
       })),
       availableMonths,
       stripe: stripeHistory,

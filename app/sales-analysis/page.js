@@ -50,6 +50,15 @@ function fmt$(v) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(Number(v || 0))
 }
 
+const PROSPECT_REPS = new Set(['Jesse', 'Pia', 'Briana'])
+const UPSELL_REPS = new Set(['JC', 'Zu', 'Stefen', 'Todd'])
+
+function classifyDealType(rep) {
+  if (PROSPECT_REPS.has(rep)) return 'Sales'
+  if (UPSELL_REPS.has(rep)) return 'Upsell'
+  return 'Unclassified'
+}
+
 // ─── Reusable UI pieces ───────────────────────────────────────────────────────
 function Card({ label, value, sub, accent = C.purple }) {
   return (
@@ -259,6 +268,50 @@ export default function SalesAnalysisPage() {
 
     return analyseDeals(filtered)
   }, [data, filterMode, rangeStart, rangeEnd])
+
+  const filteredDeals = useMemo(() => {
+    const raw = data?.rawDeals || []
+    if (filterMode === 'year2025') return raw.filter(d => d.year === 2025)
+    if (filterMode === 'year2026') return raw.filter(d => d.year === 2026)
+    if (filterMode.match(/^\d{4}-\d{2}$/)) {
+      const [yr, mo] = filterMode.split('-').map(Number)
+      return raw.filter(d => d.year === yr && d.month === mo)
+    }
+    if (filterMode === 'range' && rangeStart && rangeEnd) {
+      return raw.filter(d => {
+        if (!d.year || !d.month) return false
+        const key = `${d.year}-${String(d.month).padStart(2,'0')}`
+        return key >= rangeStart && key <= rangeEnd
+      })
+    }
+    return raw
+  }, [data, filterMode, rangeStart, rangeEnd])
+
+  const salesUpsellSummary = useMemo(() => {
+    const base = {
+      Sales: { deals: 0, firstPayment: 0, mrr: 0 },
+      Upsell: { deals: 0, firstPayment: 0, mrr: 0 },
+      Unclassified: { deals: 0, firstPayment: 0, mrr: 0 },
+    }
+    const byRep = {}
+
+    for (const d of filteredDeals) {
+      const type = classifyDealType(d.rep)
+      base[type].deals += 1
+      base[type].firstPayment += Number(d.firstPayment || 0)
+      base[type].mrr += Number(d.mrr || 0)
+
+      if (!byRep[d.rep]) byRep[d.rep] = { rep: d.rep, type, deals: 0, firstPayment: 0, mrr: 0 }
+      byRep[d.rep].deals += 1
+      byRep[d.rep].firstPayment += Number(d.firstPayment || 0)
+      byRep[d.rep].mrr += Number(d.mrr || 0)
+    }
+
+    return {
+      rows: Object.entries(base).map(([type, v]) => ({ type, ...v })),
+      byRep: Object.values(byRep).sort((a, b) => b.firstPayment - a.firstPayment),
+    }
+  }, [filteredDeals])
 
   const t = view?.totals || {}
   const pifPct = t.count ? Math.round((t.pifCount / t.count) * 100) : 0
@@ -658,6 +711,35 @@ export default function SalesAnalysisPage() {
               )
             })}
           </div>
+        </div>
+      </Section>
+
+      {/* ── Sales vs Upsells split ────────────────────────────────────────────── */}
+      <Section
+        title="Sales vs Upsells (Current Filter)"
+        sub="Historical rule-based split: Sales = Jesse/Pia/Briana · Upsells = JC/Zu/Stefen/Todd"
+      >
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <DataTable
+            columns={[
+              { key:'type',        label:'Type', bold: true },
+              { key:'deals',       label:'# Deals', right: true },
+              { key:'firstPayment',label:'First Payment ($)', right: true, render:(v)=>fmt$(v) },
+              { key:'mrr',         label:'MRR Added ($/mo)', right: true, render:(v)=>fmt$(v) },
+            ]}
+            rows={salesUpsellSummary.rows}
+          />
+
+          <DataTable
+            columns={[
+              { key:'rep',         label:'Rep', bold: true },
+              { key:'type',        label:'Type' },
+              { key:'deals',       label:'# Deals', right: true },
+              { key:'firstPayment',label:'First Payment ($)', right: true, render:(v)=>fmt$(v) },
+              { key:'mrr',         label:'MRR Added ($/mo)', right: true, render:(v)=>fmt$(v) },
+            ]}
+            rows={salesUpsellSummary.byRep}
+          />
         </div>
       </Section>
 

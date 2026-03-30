@@ -73,7 +73,7 @@ export default function NewBusinessPage() {
     <div className="text-red-400 p-6">Error: {error || data.error}</div>
   )
 
-  const { summary, monthlyComparison, repYTD, repThisMonth, repPifYTD, repPifMonth, recentDeals, renewalProjection, missingRenewal, commissionTracker } = data
+  const { summary, monthlyComparison, repYTD, repThisMonth, repPifYTD, repPifMonth, recentDeals, renewalProjection, missingRenewal, commissionTracker, salesVsUpsells } = data
   const { pif, mrr } = summary
 
   // Rep leaderboard
@@ -421,6 +421,70 @@ export default function NewBusinessPage() {
         )
       })()}
 
+      {/* Sales vs Upsells Split */}
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+        <h2 className="text-white font-semibold mb-1">Sales vs Upsells (Historical Rule-Based Split)</h2>
+        <p className="text-gray-500 text-xs mb-4">Sales reps: Jesse, Pia, Briana · Upsell reps: JC, Zu, Stefen, Todd</p>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
+          {[['YTD 2026', salesVsUpsells?.ytd2026], [`${summary.currentMonth} 2026`, salesVsUpsells?.thisMonth2026]].map(([label, block]) => (
+            <div key={label} className="rounded-xl border border-gray-800 bg-gray-950/60 p-4">
+              <p className="text-xs uppercase tracking-wider text-gray-400 mb-2">{label}</p>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-gray-500 text-xs uppercase border-b border-gray-800">
+                    <th className="text-left pb-2">Type</th>
+                    <th className="text-right pb-2">Deals</th>
+                    <th className="text-right pb-2">First Payment</th>
+                    <th className="text-right pb-2">MRR</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800">
+                  {['Sales', 'Upsell', 'Unclassified'].map((type) => {
+                    const row = block?.[type] || { count: 0, firstPayment: 0, mrr: 0 }
+                    return (
+                      <tr key={type}>
+                        <td className="py-2 text-gray-200">{type}</td>
+                        <td className="py-2 text-right text-white tabular-nums">{row.count || 0}</td>
+                        <td className="py-2 text-right text-white tabular-nums">{fmt$(row.firstPayment || 0)}</td>
+                        <td className="py-2 text-right text-gray-300 tabular-nums">{fmt$(row.mrr || 0)}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ))}
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-gray-400 text-xs uppercase border-b border-gray-800">
+                <th className="text-left pb-2 pr-4">Rep</th>
+                <th className="text-left pb-2 pr-4">Type</th>
+                <th className="text-right pb-2 pr-4">Deals</th>
+                <th className="text-right pb-2 pr-4">First Payment</th>
+                <th className="text-right pb-2">Full Term</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-800">
+              {(salesVsUpsells?.byRep2026 || []).map((r) => (
+                <tr key={r.rep} className="hover:bg-gray-800/50">
+                  <td className="py-2.5 pr-4 text-white font-medium">{r.rep}</td>
+                  <td className="py-2.5 pr-4">
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${r.type === 'Sales' ? 'text-teal-300 bg-teal-950' : r.type === 'Upsell' ? 'text-amber-300 bg-amber-950' : 'text-gray-300 bg-gray-800'}`}>{r.type}</span>
+                  </td>
+                  <td className="py-2.5 pr-4 text-right text-gray-300">{r.deals}</td>
+                  <td className="py-2.5 pr-4 text-right text-white">{fmt$(r.firstPayment)}</td>
+                  <td className="py-2.5 text-right text-gray-400">{fmt$(r.fullTerm)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Recent Deals */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
         <h2 className="text-white font-semibold mb-4">Recent Deals</h2>
@@ -432,6 +496,7 @@ export default function NewBusinessPage() {
                 <th className="text-left pb-2 pr-4">Client</th>
                 <th className="text-left pb-2 pr-4">Service</th>
                 <th className="text-left pb-2 pr-4">Rep</th>
+                <th className="text-left pb-2 pr-4">Type</th>
                 <th className="text-center pb-2 pr-4">PIF</th>
                 <th className="text-right pb-2 pr-4">First Payment</th>
                 <th className="text-right pb-2">Full Term</th>
@@ -445,6 +510,9 @@ export default function NewBusinessPage() {
                   <td className="py-2.5 pr-4 text-gray-300">{deal.service}</td>
                   <td className="py-2.5 pr-4">
                     <span className="text-teal-400 text-xs font-medium px-2 py-0.5 bg-teal-950 rounded-full">{deal.rep}</span>
+                  </td>
+                  <td className="py-2.5 pr-4">
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${deal.dealType === 'Sales' ? 'text-teal-300 bg-teal-950' : deal.dealType === 'Upsell' ? 'text-amber-300 bg-amber-950' : 'text-gray-300 bg-gray-800'}`}>{deal.dealType || 'Unclassified'}</span>
                   </td>
                   <td className="py-2.5 pr-4 text-center">
                     {deal.pif ? <span className="text-amber-400 text-xs font-bold">PIF</span> : <span className="text-gray-600 text-xs">—</span>}

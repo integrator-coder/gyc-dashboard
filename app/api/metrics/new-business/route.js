@@ -30,31 +30,46 @@ const REP_ALIASES = {
   'briana': 'Briana',
   'jc': 'JC',
   'pia': 'Pia',
+  'stefen': 'Stefen',
+  'todd': 'Todd',
 }
+
+const PROSPECT_REPS = new Set(['Jesse', 'Pia', 'Briana'])
+const UPSELL_REPS = new Set(['JC', 'Zu', 'Stefen', 'Todd'])
 
 function normaliseRep(raw) {
   if (!raw) return 'Unknown'
   const trimmed = raw.trim()
-  return REP_ALIASES[trimmed] || trimmed
+  return REP_ALIASES[trimmed] || REP_ALIASES[trimmed.toLowerCase()] || trimmed
+}
+
+function classifyDealType(rep) {
+  if (PROSPECT_REPS.has(rep)) return 'Sales'
+  if (UPSELL_REPS.has(rep)) return 'Upsell'
+  return 'Unclassified'
 }
 
 function parseDeals(rows) {
-  return rows.slice(1).filter(r => r[5]).map(r => ({
-    client:       r[0]  || '',
-    name:         r[1]  || '',
-    service:      r[2]  || '',
-    quarter:      r[3]  || '',
-    month:        r[4]  || '',
-    date:         r[5]  || '',
-    firstPayment: Number(r[6])  || 0,
-    mrr:          Number(r[7])  || 0,
-    term:         Number(r[8])  || 0,
-    fullTerm:     Number(r[9])  || 0,
-    firstYear:    Number(r[10]) || 0,
-    pif:          (r[11] || '').toString().trim().toUpperCase() === 'Y',
-    renewalAmount: Number(r[12]) || 0,
-    rep:          normaliseRep(r[13]),
-  }))
+  return rows.slice(1).filter(r => r[5]).map(r => {
+    const rep = normaliseRep(r[13])
+    return {
+      client:       r[0]  || '',
+      name:         r[1]  || '',
+      service:      r[2]  || '',
+      quarter:      r[3]  || '',
+      month:        r[4]  || '',
+      date:         r[5]  || '',
+      firstPayment: Number(r[6])  || 0,
+      mrr:          Number(r[7])  || 0,
+      term:         Number(r[8])  || 0,
+      fullTerm:     Number(r[9])  || 0,
+      firstYear:    Number(r[10]) || 0,
+      pif:          (r[11] || '').toString().trim().toUpperCase() === 'Y',
+      renewalAmount: Number(r[12]) || 0,
+      rep,
+      dealType: classifyDealType(rep),
+    }
+  })
 }
 
 function summariseByMonth(deals) {
@@ -183,6 +198,26 @@ function summariseByRep(deals) {
   return byRep
 }
 
+function summariseByDealType(deals) {
+  const out = {
+    Sales: { count: 0, firstPayment: 0, mrr: 0, pifCount: 0, monthlyCount: 0 },
+    Upsell: { count: 0, firstPayment: 0, mrr: 0, pifCount: 0, monthlyCount: 0 },
+    Unclassified: { count: 0, firstPayment: 0, mrr: 0, pifCount: 0, monthlyCount: 0 },
+  }
+
+  for (const d of deals) {
+    const type = d.dealType || 'Unclassified'
+    if (!out[type]) out[type] = { count: 0, firstPayment: 0, mrr: 0, pifCount: 0, monthlyCount: 0 }
+    out[type].count++
+    out[type].firstPayment += d.firstPayment || 0
+    out[type].mrr += d.mrr || 0
+    if (d.pif) out[type].pifCount++
+    else out[type].monthlyCount++
+  }
+
+  return out
+}
+
 export async function GET() {
   try {
     const client = await auth.getClient()
@@ -299,6 +334,16 @@ export async function GET() {
 
     const commissionTracker = buildCommissionTracker(deals26, currentMonth)
 
+    const splitYTD26 = summariseByDealType(deals26)
+    const splitThisMonth26 = summariseByDealType(thisMonthDeals26)
+    const splitByRep26 = Object.entries(summariseByRep(deals26)).map(([rep, vals]) => ({
+      rep,
+      type: classifyDealType(rep),
+      deals: vals.count,
+      firstPayment: vals.firstPayment,
+      fullTerm: vals.fullTerm,
+    })).sort((a, b) => b.firstPayment - a.firstPayment)
+
     return NextResponse.json({
       commissionTracker,
       summary: {
@@ -329,6 +374,11 @@ export async function GET() {
       recentDeals: recent,
       renewalProjection,
       missingRenewal,
+      salesVsUpsells: {
+        ytd2026: splitYTD26,
+        thisMonth2026: splitThisMonth26,
+        byRep2026: splitByRep26,
+      },
       updatedAt: new Date().toISOString(),
     })
   } catch (err) {
