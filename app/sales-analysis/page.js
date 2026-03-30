@@ -757,23 +757,6 @@ export default function SalesAnalysisPage() {
             </ResponsiveContainer>
           </Panel>
 
-          <Panel h={280}>
-            <p className="text-[11px] uppercase tracking-wider mb-2" style={{color:C.slate}}>First Payment by Rep (colored by type)</p>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={salesUpsellSummary.byRep} layout="vertical" margin={{ left: 8, right: 24 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.bgDeep} horizontal={false} />
-                <XAxis type="number" stroke={C.slate} tick={{ fontSize: 11 }} tickFormatter={(v) => `$${Math.round(v/1000)}k`} />
-                <YAxis type="category" dataKey="rep" stroke={C.slate} tick={{ fontSize: 11 }} width={90} />
-                <Tooltip formatter={(v, n) => [fmt$(v), n]} contentStyle={TOOLTIP_STYLE} />
-                <Bar dataKey="firstPayment" radius={[0,6,6,0]}>
-                  {salesUpsellSummary.byRep.map((r) => (
-                    <Cell key={r.rep} fill={r.type === 'Sales' ? C.purple : r.type === 'Upsell' ? C.gold : C.slate} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </Panel>
-
           <Panel h={300}>
             <p className="text-[11px] uppercase tracking-wider mb-2" style={{color:C.slate}}>Service by Sale vs Upsell (Top 12 by first payment)</p>
             <ResponsiveContainer width="100%" height="100%">
