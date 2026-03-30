@@ -273,6 +273,24 @@ async function analyseStripeHistory() {
   // Analyse subs
   const byYear = {}
   const linesByYear = {}
+  const revenueByYear = {}
+
+  function monthlyEquivalentFromItem(item) {
+    const price = item?.price
+    const recurring = price?.recurring
+    const qty = Number(item?.quantity || 1)
+    const unit = Number(price?.unit_amount || 0) / 100
+    if (!unit || !recurring?.interval) return 0
+
+    const interval = recurring.interval
+    const intervalCount = Number(recurring.interval_count || 1)
+
+    if (interval === 'month') return (unit * qty) / intervalCount
+    if (interval === 'year') return (unit * qty) / (12 * intervalCount)
+    if (interval === 'week') return (unit * qty) * (52 / 12) / intervalCount
+    if (interval === 'day') return (unit * qty) * 30 / intervalCount
+    return 0
+  }
 
   for (const sub of rawSubs) {
     const yr = new Date(sub.created * 1000).getFullYear()
@@ -281,6 +299,7 @@ async function analyseStripeHistory() {
     if (sub.status === 'active') byYear[yr].active++
     if (sub.status === 'canceled') byYear[yr].canceled++
     if (!linesByYear[yr]) linesByYear[yr] = {}
+    if (!revenueByYear[yr]) revenueByYear[yr] = {}
 
     for (const item of sub.items.data) {
       const rawName = priceMap[item.price?.id] || 'Unknown'
@@ -288,6 +307,10 @@ async function analyseStripeHistory() {
       if (!cat) continue
       if (!linesByYear[yr][cat]) linesByYear[yr][cat] = 0
       linesByYear[yr][cat]++
+
+      const monthlyEq = monthlyEquivalentFromItem(item)
+      if (!revenueByYear[yr][cat]) revenueByYear[yr][cat] = 0
+      revenueByYear[yr][cat] += monthlyEq
     }
   }
 
@@ -296,6 +319,7 @@ async function analyseStripeHistory() {
       year: Number(year),
       ...stats,
       services: Object.entries(linesByYear[year] || {}).sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count })),
+      servicesRevenue: Object.entries(revenueByYear[year] || {}).sort((a, b) => b[1] - a[1]).map(([name, revenue]) => ({ name, revenue: Number(revenue.toFixed(2)) })),
     })),
     allYearsLineItems: Object.entries(
       Object.values(linesByYear).reduce((acc, yearMap) => {

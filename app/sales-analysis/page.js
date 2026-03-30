@@ -402,6 +402,18 @@ export default function SalesAnalysisPage() {
     }
   }), [stripeYears])
 
+  const stripeEraRevenueLines = useMemo(() => stripeYears.map((yr) => {
+    const svcMap = Object.fromEntries((yr.servicesRevenue || []).map((s) => [s.name, s.revenue]))
+    return {
+      year:                  yr.year,
+      Website:               (svcMap['Website'] || 0) + (svcMap['Website Maintenance'] || 0),
+      'Paid Media':          svcMap['Paid Media'] || 0,
+      'Social Media':        svcMap['Social Media'] || 0,
+      'Modern Stack':        (svcMap['SEO'] || 0) + (svcMap['SEO Core'] || 0) + (svcMap['Blueprint'] || 0) + (svcMap['Blueprint + SEO'] || 0) + (svcMap['Command'] || 0) + (svcMap['CRM'] || 0),
+      'Accelerator/Legacy':  (svcMap['Accelerator/Enrollment'] || 0) + (svcMap['Staffing'] || 0) + (svcMap['Virtual Tour'] || 0),
+    }
+  }), [stripeYears])
+
   // Retention cards
   const retentionData = useMemo(() => stripeYears.map((yr) => ({
     year:      yr.year,
@@ -901,6 +913,25 @@ export default function SalesAnalysisPage() {
                 <XAxis dataKey="year" stroke={C.slate} tick={{ fontSize: 12 }} />
                 <YAxis stroke={C.slate} tick={{ fontSize: 11 }} />
                 <Tooltip contentStyle={TOOLTIP_STYLE} />
+                <Legend wrapperStyle={{ fontSize: 11, color: '#9ca3af', paddingTop: 8 }} />
+                <Area type="monotone" dataKey="Website"              name="Website & Maintenance"  stroke="#AE2BCF" fill="#AE2BCF33" strokeWidth={2} dot={{ r: 4 }} />
+                <Area type="monotone" dataKey="Paid Media"           name="Paid Media"              stroke={C.gold}   fill={`${C.gold}22`}  strokeWidth={2} dot={{ r: 4 }} />
+                <Area type="monotone" dataKey="Social Media"         name="Social Media"            stroke="#5b21b6"  fill="#5b21b622"  strokeWidth={2} dot={{ r: 4 }} />
+                <Area type="monotone" dataKey="Accelerator/Legacy"   name="Accelerator / Staffing"  stroke={C.slate}  fill={`${C.slate}22`} strokeWidth={2} dot={{ r: 4 }} />
+                <Area type="monotone" dataKey="Modern Stack"         name="SEO/Blueprint/Command"   stroke="#22d3ee"  fill="#22d3ee22"  strokeWidth={2.5} dot={{ r: 5 }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </Panel>
+        </Section>
+
+        <Section title="Service Category Revenue by Year" sub="Estimated monthly-equivalent revenue at sale (MRR-equivalent), grouped into the same 5 categories">
+          <Panel>
+            <ResponsiveContainer width="100%" height={320}>
+              <AreaChart data={stripeEraRevenueLines} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={C.bgDeep} />
+                <XAxis dataKey="year" stroke={C.slate} tick={{ fontSize: 12 }} />
+                <YAxis stroke={C.slate} tick={{ fontSize: 11 }} tickFormatter={(v) => `$${Math.round(v/1000)}k`} />
+                <Tooltip formatter={(v) => [fmt$(v), '']} contentStyle={TOOLTIP_STYLE} />
                 <Legend wrapperStyle={{ fontSize: 11, color: '#9ca3af', paddingTop: 8 }} />
                 <Area type="monotone" dataKey="Website"              name="Website & Maintenance"  stroke="#AE2BCF" fill="#AE2BCF33" strokeWidth={2} dot={{ r: 4 }} />
                 <Area type="monotone" dataKey="Paid Media"           name="Paid Media"              stroke={C.gold}   fill={`${C.gold}22`}  strokeWidth={2} dot={{ r: 4 }} />
