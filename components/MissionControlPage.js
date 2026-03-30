@@ -13,6 +13,244 @@ function fmtIso(value) {
   return new Date(value).toLocaleString()
 }
 
+// ─── Agent Org Chart ────────────────────────────────────────────────────────
+const AGENT_META = {
+  'Wall·E':  { img: '/agents/walle.svg',   glow: '#7c3aed', border: '#7c3aed', bg: '#1e0b40' },
+  'Eve':     { img: '/agents/eve.svg',     glow: '#0891b2', border: '#0891b2', bg: '#051e2b' },
+  'R2':      { img: '/agents/r2.svg',      glow: '#2563eb', border: '#2563eb', bg: '#061229' },
+  'BB-8':    { img: '/agents/bb8.svg',     glow: '#d97706', border: '#d97706', bg: '#1f1005' },
+  'Fulcrum': { img: '/agents/fulcrum.svg', glow: '#db2777', border: '#db2777', bg: '#200820' },
+  'Friday':  { img: '/agents/friday.svg',  glow: '#4f46e5', border: '#4f46e5', bg: '#0d0b2e' },
+  'Chopper': { img: '/agents/chopper.svg', glow: '#0d9488', border: '#0d9488', bg: '#04191a' },
+}
+
+function statusDot(status) {
+  if (status === 'working')   return '#34d399'
+  if (status === 'attention') return '#fbbf24'
+  if (status === 'planned')   return '#60a5fa'
+  return '#374151'
+}
+
+function AgentCard({ agent, size = 'md' }) {
+  const m = AGENT_META[agent.name] || { img: '', glow: '#7c3aed', border: '#7c3aed', bg: '#1e0b40' }
+  const isWorker = agent.category === 'worker'
+  const w = size === 'lg' ? 176 : size === 'sm' ? 136 : 152
+
+  return (
+    <div
+      style={{
+        width: w,
+        backgroundColor: m.bg,
+        border: `${isWorker ? '1px dashed' : '1px solid'} ${m.border}55`,
+        boxShadow: `0 0 28px ${m.glow}35`,
+        borderRadius: 16,
+        padding: size === 'sm' ? '8px 10px' : '10px 12px',
+        position: 'relative',
+      }}
+    >
+      {/* Status dot */}
+      <div style={{
+        position: 'absolute', top: 8, right: 8,
+        width: 9, height: 9, borderRadius: '50%',
+        backgroundColor: statusDot(agent.status),
+        boxShadow: agent.status === 'working' ? `0 0 6px ${statusDot(agent.status)}` : 'none',
+      }} />
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+        {m.img
+          ? <img src={m.img} alt={agent.name} style={{ width: size === 'sm' ? 32 : 40, height: size === 'sm' ? 32 : 40, borderRadius: 8, objectFit: 'contain', background: 'rgba(0,0,0,0.4)', flexShrink: 0 }} />
+          : <div style={{ width: 40, height: 40, borderRadius: 8, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🤖</div>
+        }
+        <div style={{ minWidth: 0 }}>
+          <div style={{ color: '#fff', fontWeight: 700, fontSize: size === 'sm' ? 12 : 13, lineHeight: 1.2 }}>{agent.name}</div>
+          <div style={{ color: '#9ca3af', fontSize: 10, lineHeight: 1.3, marginTop: 1 }}>{agent.node}</div>
+        </div>
+      </div>
+
+      <div style={{ color: '#c4b5fd', fontSize: 10, marginBottom: 3, lineHeight: 1.3 }}>{agent.role}</div>
+      {agent.currentTask && (
+        <div style={{ color: '#6b7280', fontSize: 10, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          ⚡ {agent.currentTask}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// SVG connector line between two DOM-positioned elements
+function OrgLine({ x1, y1, x2, y2, color = '#4a3060', dashed = false }) {
+  const mx = (x1 + x2) / 2
+  const my = (y1 + y2) / 2
+  const path = `M ${x1} ${y1} C ${x1} ${my}, ${x2} ${my}, ${x2} ${y2}`
+  return (
+    <path
+      d={path}
+      stroke={color}
+      strokeWidth={1.5}
+      fill="none"
+      strokeDasharray={dashed ? '4 3' : undefined}
+      opacity={0.6}
+    />
+  )
+}
+
+function AgentOrgChart({ agents }) {
+  // Fixed layout coordinates (centre-x, top-y) for each agent
+  // Canvas: ~900px wide, rows at y=0, 220, 440
+  const CARD_W = { lg: 176, md: 152, sm: 136 }
+  const CARD_H = { lg: 110, md: 100, sm: 90 }
+
+  // Row 0 — Todd (human, no card) at centre
+  // Row 1 — Wall·E (centre) + Friday (right peer)
+  // Row 2 — R2 (left of Wall·E), Eve (right of Wall·E)
+  // Row 3 — BB-8, Fulcrum (under Eve) · Chopper (future, under Eve, planned)
+
+  const CANVAS_W = 900
+  const ROW_Y = [0, 140, 300, 460]
+
+  // Positions: { name: { cx, cy } } where cx = centre-x, cy = top of card
+  const pos = {
+    'Todd':    { cx: CANVAS_W / 2,       cy: ROW_Y[0], size: null },  // just an anchor label
+    'Wall·E':  { cx: CANVAS_W / 2 - 60,  cy: ROW_Y[1], size: 'lg' },
+    'Friday':  { cx: CANVAS_W / 2 + 200, cy: ROW_Y[1], size: 'md', note: 'Travel Orchestrator' },
+    'R2':      { cx: CANVAS_W / 2 - 220, cy: ROW_Y[2], size: 'md' },
+    'Eve':     { cx: CANVAS_W / 2 + 20,  cy: ROW_Y[2], size: 'md' },
+    'BB-8':    { cx: CANVAS_W / 2 - 60,  cy: ROW_Y[3], size: 'sm' },
+    'Fulcrum': { cx: CANVAS_W / 2 + 120, cy: ROW_Y[3], size: 'sm' },
+    'Chopper': { cx: CANVAS_W / 2 - 180, cy: ROW_Y[3], size: 'sm', planned: true },
+    'Agent-X': { cx: CANVAS_W / 2 + 280, cy: ROW_Y[1], size: 'sm', planned: true, name: '+ Node', note: 'Future mini' },
+  }
+
+  // Connection pairs: [from, to, style]
+  const connections = [
+    // Todd → Wall·E (solid purple)
+    ['Todd', 'Wall·E', { color: '#7c3aed' }],
+    // Todd → Friday (dashed indigo, peer)
+    ['Todd', 'Friday', { color: '#4f46e5', dashed: true }],
+    // Wall·E ↔ Friday (bidirectional, dashed)
+    ['Wall·E', 'Friday', { color: '#6d28d9', dashed: true }],
+    // Wall·E → R2
+    ['Wall·E', 'R2', { color: '#2563eb' }],
+    // Wall·E → Eve (orchestrates)
+    ['Wall·E', 'Eve', { color: '#0891b2' }],
+    // Eve → BB-8
+    ['Eve', 'BB-8', { color: '#d97706' }],
+    // Eve → Fulcrum
+    ['Eve', 'Fulcrum', { color: '#db2777' }],
+    // Eve → Chopper (planned)
+    ['Eve', 'Chopper', { color: '#0d9488', dashed: true }],
+  ]
+
+  const agentByName = {}
+  for (const a of agents) agentByName[a.name] = a
+
+  // Card bottom-centre: cx, top-y + height
+  function cardAnchor(name, edge = 'bottom') {
+    const p = pos[name]
+    if (!p) return null
+    const sz = p.size || 'md'
+    const h = CARD_H[sz] || 100
+    const w = CARD_W[sz] || 152
+    if (edge === 'bottom') return { x: p.cx, y: p.cy + h }
+    if (edge === 'top')    return { x: p.cx, y: p.cy }
+    if (edge === 'left')   return { x: p.cx - w/2, y: p.cy + h/2 }
+    if (edge === 'right')  return { x: p.cx + w/2, y: p.cy + h/2 }
+    return { x: p.cx, y: p.cy + h/2 }
+  }
+
+  // For connections: use bottom of parent, top of child
+  function getEdges(fromName, toName) {
+    const fp = pos[fromName], tp = pos[toName]
+    if (!fp || !tp) return null
+    const from = cardAnchor(fromName, 'bottom')
+    const to   = cardAnchor(toName,   'top')
+    return { x1: from.x, y1: from.y, x2: to.x, y2: to.y }
+  }
+
+  const CANVAS_H = ROW_Y[3] + 110
+
+  return (
+    <div style={{ background: 'radial-gradient(circle at 50% 20%, #1c0930, transparent 60%), linear-gradient(180deg,#08060e,#030305)', borderRadius: 20, border: '1px solid #2a1a3e', padding: '24px 16px 32px', overflowX: 'auto' }}>
+      {/* Legend */}
+      <div style={{ display: 'flex', gap: 20, marginBottom: 20, flexWrap: 'wrap', fontSize: 11, color: '#6b7280' }}>
+        <span style={{ display:'flex',alignItems:'center',gap:6 }}><span style={{width:20,height:2,background:'#7c3aed',display:'inline-block'}}/> Reports to Todd</span>
+        <span style={{ display:'flex',alignItems:'center',gap:6 }}><span style={{width:20,height:2,background:'#6d28d9',borderTop:'2px dashed #6d28d9',display:'inline-block'}}/> Peer coordination</span>
+        <span style={{ display:'flex',alignItems:'center',gap:6 }}><span style={{width:20,height:2,background:'#0891b2',display:'inline-block'}}/> Orchestrates</span>
+        <span style={{ display:'flex',alignItems:'center',gap:6 }}><span style={{width:16,height:16,borderRadius:4,border:'1px dashed #6b7280',display:'inline-block'}}/> Planned / not yet live</span>
+        <span style={{ display:'flex',alignItems:'center',gap:6 }}><span style={{width:8,height:8,borderRadius:'50%',background:'#34d399',display:'inline-block'}}/> Working</span>
+        <span style={{ display:'flex',alignItems:'center',gap:6 }}><span style={{width:8,height:8,borderRadius:'50%',background:'#374151',display:'inline-block'}}/> Idle</span>
+      </div>
+
+      <div style={{ position: 'relative', width: CANVAS_W, height: CANVAS_H, margin: '0 auto' }}>
+        {/* SVG lines layer */}
+        <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'visible', pointerEvents: 'none' }}>
+          {connections.map(([from, to, opts], i) => {
+            const edges = getEdges(from, to)
+            if (!edges) return null
+            return <OrgLine key={i} {...edges} color={opts.color} dashed={opts.dashed} />
+          })}
+          {/* Wall·E ↔ Friday horizontal bidirectional arrow */}
+        </svg>
+
+        {/* Todd label at top centre */}
+        <div style={{
+          position: 'absolute',
+          left: pos['Todd'].cx - 50,
+          top: pos['Todd'].cy,
+          width: 100,
+          textAlign: 'center',
+          color: '#c4b5fd',
+          fontSize: 12,
+          fontWeight: 700,
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+          padding: '6px 12px',
+          background: '#1e0b40',
+          border: '1px solid #7c3aed44',
+          borderRadius: 8,
+        }}>
+          👤 Todd
+        </div>
+
+        {/* Agent cards */}
+        {Object.entries(pos).filter(([name]) => name !== 'Todd' && name !== 'Agent-X').map(([name, p]) => {
+          const agent = agentByName[name] || { name, role: p.note || '—', node: '—', status: 'planned', category: p.planned ? 'planned' : 'main', currentTask: p.planned ? 'Not yet set up' : null }
+          const w = CARD_W[p.size || 'md'] || 152
+          return (
+            <div key={name} style={{ position: 'absolute', left: p.cx - w/2, top: p.cy }}>
+              <AgentCard agent={agent} size={p.size || 'md'} />
+              {p.note && !agentByName[name] && (
+                <div style={{ textAlign: 'center', color: '#6b7280', fontSize: 10, marginTop: 4 }}>{p.note}</div>
+              )}
+              {p.note && agentByName[name] && (
+                <div style={{ textAlign: 'center', color: '#4f46e5', fontSize: 10, marginTop: 4 }}>{p.note}</div>
+              )}
+            </div>
+          )
+        })}
+
+        {/* Future node slot */}
+        {(() => {
+          const p = pos['Agent-X']
+          return (
+            <div style={{ position: 'absolute', left: p.cx - CARD_W.sm/2, top: p.cy }}>
+              <div style={{
+                width: CARD_W.sm, padding: '10px 12px', borderRadius: 12,
+                border: '1px dashed #374151', background: '#0a0a0a',
+                textAlign: 'center', color: '#374151',
+              }}>
+                <div style={{ fontSize: 20, marginBottom: 4 }}>＋</div>
+                <div style={{ fontSize: 11, fontWeight: 600 }}>Future Node</div>
+                <div style={{ fontSize: 10, marginTop: 2 }}>Mini Mac · Planned</div>
+              </div>
+            </div>
+          )
+        })()}
+      </div>
+    </div>
+  )
+}
+
 function Panel({ title, children }) {
   return (
     <section className="rounded-2xl border border-[var(--brand-border)] bg-black/20 p-5">
@@ -107,94 +345,7 @@ export default function MissionControlPage() {
 
       {tab === 'agents' && (
         <Panel title="Agent Fleet">
-          {(() => {
-            const agents = data?.agents || []
-            const meta = {
-              'Wall·E':  { img: '/agents/walle.svg',   glow: '#7c3aed', bg: 'bg-violet-950/60',  border: 'border-violet-500/40' },
-              'Eve':     { img: '/agents/eve.svg',     glow: '#0891b2', bg: 'bg-cyan-950/60',    border: 'border-cyan-500/40'  },
-              'R2':      { img: '/agents/r2.svg',      glow: '#2563eb', bg: 'bg-blue-950/60',    border: 'border-blue-500/40'  },
-              'BB-8':    { img: '/agents/bb8.svg',     glow: '#d97706', bg: 'bg-orange-950/60',  border: 'border-orange-500/40'},
-              'Fulcrum': { img: '/agents/fulcrum.svg', glow: '#db2777', bg: 'bg-fuchsia-950/60', border: 'border-fuchsia-500/40'},
-              'Friday':  { img: '/agents/friday.svg',  glow: '#4f46e5', bg: 'bg-indigo-950/60',  border: 'border-indigo-500/40'},
-              'Chopper': { img: '/agents/chopper.svg', glow: '#0d9488', bg: 'bg-teal-950/60',    border: 'border-teal-500/40'  },
-            }
-
-            const statusPulse = (status) => {
-              if (status === 'working')   return 'bg-emerald-400 animate-pulse'
-              if (status === 'attention') return 'bg-amber-400 animate-pulse'
-              if (status === 'planned')   return 'bg-blue-400'
-              return 'bg-gray-600'
-            }
-
-            const AgentCard = ({ agent }) => {
-              const v = meta[agent.name] || { img: '', glow: '#7c3aed', bg: 'bg-violet-950/60', border: 'border-violet-500/40' }
-              const children = agents.filter((a) => a.reportsTo === agent.name)
-              const isBidi = ['Eve', 'Friday'].includes(agent.name)
-              const isWorker = agent.category === 'worker'
-              return (
-                <div className={`rounded-2xl border ${v.border} ${v.bg} ${isWorker ? 'border-dashed' : ''} p-3 text-sm transition hover:scale-[1.01]`}
-                  style={{ boxShadow: `0 0 24px ${v.glow}40` }}>
-                  <div className="flex gap-3">
-                    {v.img
-                      ? <img src={v.img} alt={agent.name} className="h-16 w-16 rounded-xl shrink-0 object-contain bg-black/30" />
-                      : <div className="h-16 w-16 rounded-xl shrink-0 bg-black/30 flex items-center justify-center text-2xl">🤖</div>
-                    }
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <div className="font-bold text-white">{agent.name}</div>
-                        <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${statusPulse(agent.status)}`} />
-                      </div>
-                      <div className="text-xs text-gray-300">{agent.role}</div>
-                      <div className="text-xs text-gray-400">{agent.node}</div>
-                      <div className="mt-1 text-xs text-gray-200 line-clamp-2">⚡ {agent.currentTask || 'Idle'}</div>
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {isBidi && <span className="rounded-full bg-cyan-500/20 px-1.5 py-0.5 text-[10px] text-cyan-200">⇄ Wall·E</span>}
-                        {agent.reportsTo && !isBidi && <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] text-gray-300">↑ {agent.reportsTo}</span>}
-                        {children.map((c) => <span key={c.name} className="rounded-full bg-violet-500/20 px-1.5 py-0.5 text-[10px] text-violet-200">→ {c.name}</span>)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )
-            }
-
-            const roots = agents.filter((a) => !a.reportsTo)
-
-            const renderChildren = (parentName) => {
-              const children = agents.filter((a) => a.reportsTo === parentName)
-              if (!children.length) return null
-              return (
-                <div className="mt-3 grid grid-cols-2 gap-3 border-l-2 border-violet-500/30 pl-4 xl:grid-cols-3">
-                  {children.map((child) => (
-                    <div key={child.name}>
-                      <AgentCard agent={child} />
-                      {renderChildren(child.name)}
-                    </div>
-                  ))}
-                </div>
-              )
-            }
-
-            return (
-              <div className="rounded-2xl border border-[var(--brand-border)] bg-[radial-gradient(circle_at_top,#1c0930,transparent_55%),linear-gradient(180deg,#08060e,#030305)] p-6 space-y-6">
-                <div className="flex flex-wrap gap-4 text-xs text-gray-400">
-                  <span className="flex items-center gap-1.5"><span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" /> Working</span>
-                  <span className="flex items-center gap-1.5"><span className="inline-block h-2 w-2 rounded-full bg-amber-400 animate-pulse" /> Attention</span>
-                  <span className="flex items-center gap-1.5"><span className="inline-block h-2 w-2 rounded-full bg-blue-400" /> Planned</span>
-                  <span className="flex items-center gap-1.5"><span className="inline-block h-2 w-2 rounded-full bg-gray-600" /> Idle</span>
-                  <span className="ml-auto">⇄ two-way &nbsp;|&nbsp; → delegates &nbsp;|&nbsp; dashed = worker</span>
-                </div>
-                {roots.map((root) => (
-                  <div key={root.name}>
-                    <div className="max-w-xs">
-                      <AgentCard agent={root} />
-                    </div>
-                    {renderChildren(root.name)}
-                  </div>
-                ))}
-              </div>
-            )
-          })()}
+          <AgentOrgChart agents={data?.agents || []} />
         </Panel>
       )}
 
