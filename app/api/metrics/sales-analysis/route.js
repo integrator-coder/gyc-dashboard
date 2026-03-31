@@ -166,6 +166,7 @@ function parseDetailRows(rows, yearLabel) {
       monthName: dateObj ? MONTH_NAMES[dateObj.getMonth()] : null,
       firstPayment: Number(r[6]) || 0,
       mrr: Number(r[7]) || 0,
+      fullTerm: Number(r[9]) || 0,
       pif: String(r[11] || '').trim().toUpperCase() === 'Y',
       rep,
       dealType: classifyDealType(rep, year),
@@ -372,8 +373,8 @@ export async function GET() {
       year2025: y2025,
       year2026: y2026,
       // Raw deals for client-side filtering by month/range
-      rawDeals: allDeals.map(({ service, dateObj, year, month, monthName, yearLabel, firstPayment, mrr, pif, rep, dealType }) => ({
-        service, dateObj, year, month, monthName, yearLabel, firstPayment, mrr, pif, rep, dealType,
+      rawDeals: allDeals.map(({ service, dateObj, year, month, monthName, yearLabel, firstPayment, mrr, pif, rep, dealType, fullTerm }) => ({
+        service, dateObj, year, month, monthName, yearLabel, firstPayment, mrr, pif, rep, dealType, fullTerm,
       })),
       availableMonths,
       stripe: stripeHistory,

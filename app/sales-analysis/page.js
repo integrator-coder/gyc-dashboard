@@ -188,8 +188,9 @@ function analyseDeals(deals) {
   for (const d of deals) {
     const svc = d.service || 'Unknown'
     const amt = d.firstPayment || 0
-    if (!byService[svc]) byService[svc] = { count:0, revenue:0, avg:0, mrr:0, pifCount:0, monthlyCount:0, pifRevenue:0, monthlyRevenue:0 }
+    if (!byService[svc]) byService[svc] = { count:0, revenue:0, avg:0, mrr:0, pifCount:0, monthlyCount:0, pifRevenue:0, monthlyRevenue:0, fullTerm:0 }
     byService[svc].count++; byService[svc].revenue += amt; byService[svc].mrr += d.mrr||0
+    byService[svc].fullTerm += d.fullTerm || 0
     if (d.pif) { byService[svc].pifCount++; byService[svc].pifRevenue += amt }
     else { byService[svc].monthlyCount++; byService[svc].monthlyRevenue += amt }
     bySize[bucket(amt)].count++; bySize[bucket(amt)].revenue += amt
@@ -202,10 +203,10 @@ function analyseDeals(deals) {
     byService[k].avg = byService[k].count ? Math.round(byService[k].revenue / byService[k].count) : 0
   }
   const totals = deals.reduce((a,d) => {
-    a.count++; a.revenue += d.firstPayment||0; a.mrr += d.mrr||0
+    a.count++; a.revenue += d.firstPayment||0; a.mrr += d.mrr||0; a.fullTerm += d.fullTerm||0
     if (d.pif) a.pifCount++; else a.monthlyCount++
     return a
-  }, { count:0, revenue:0, mrr:0, pifCount:0, monthlyCount:0 })
+  }, { count:0, revenue:0, mrr:0, pifCount:0, monthlyCount:0, fullTerm:0 })
   const sort = (obj, fn) => Object.entries(obj).sort((a,b)=>fn(b[1])-fn(a[1])).map(([name,val])=>({name,...val}))
   return {
     totals,
@@ -557,10 +558,10 @@ export default function SalesAnalysisPage() {
 
       {/* ── Summary cards ───────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card label="Deals Closed"           value={t.count ?? '—'}  sub="# of deals (not $)" />
-        <Card label="First Payment Collected" value={fmt$(t.revenue)} sub={`PIF + first month · ${t.pifCount} PIF, ${t.monthlyCount} monthly`} accent={C.violet} />
-        <Card label="New MRR Added"           value={fmt$(t.mrr)}     sub="Monthly recurring value (monthly deals only)" accent={C.gold} />
-        <Card label="PIF Rate"                value={`${pifPct}%`}    sub={`${t.pifCount} paid-in-full · ${t.monthlyCount} monthly subscriptions`} />
+        <Card label="Deals Closed"              value={t.count ?? '—'}   sub="# of deals (not $)" />
+        <Card label="Contract Value (Full Term)" value={fmt$(t.fullTerm)} sub="Normalized across PIF + monthly" accent={C.purple} />
+        <Card label="Cash at Signing"            value={fmt$(t.revenue)}  sub={`PIF + first month · ${t.pifCount} PIF, ${t.monthlyCount} monthly`} accent={C.violet} />
+        <Card label="New MRR Added"              value={fmt$(t.mrr)}      sub="Monthly recurring value (monthly deals only)" accent={C.gold} />
       </div>
 
       {/* ── Revenue by service ──────────────────────────────────────────────── */}
@@ -814,13 +815,14 @@ export default function SalesAnalysisPage() {
       {/* ── Full service detail table ─────────────────────────────────────────── */}
       <Section
         title="Full Service Detail Table"
-        sub="Deals = # of deals closed. First Payment = $ collected at signing (PIF lump sum OR first monthly payment). MRR = ongoing monthly value from monthly deals only."
+        sub="Deals = # of deals closed. Contract Value = full term normalized (PIF total ÷ term). Cash at Signing = first payment collected. MRR = ongoing monthly value from monthly deals only."
       >
         <DataTable
           columns={[
             { key:'name',         label:'Service / Package',    bold: true },
             { key:'count',        label:'# Deals',              right: true },
-            { key:'revenue',      label:'First Payment ($)',     right: true, render:(v) => fmt$(v) },
+            { key:'fullTerm',     label:'Contract Value',        right: true, render:(v) => fmt$(v) },
+            { key:'revenue',      label:'Cash at Signing',       right: true, render:(v) => fmt$(v) },
             { key:'avg',          label:'Avg First Payment',     right: true, render:(v) => fmt$(v) },
             { key:'mrr',          label:'MRR Added ($/mo)',      right: true, render:(v) => fmt$(v) },
             { key:'pifCount',     label:'PIF Deals',             right: true },

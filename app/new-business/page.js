@@ -122,7 +122,7 @@ export default function NewBusinessPage() {
       <div>
         <h1 className="text-2xl font-bold text-white">New Business</h1>
         <p className="text-gray-400 text-sm mt-1">
-          First payments · MRR · PIF breakdown · Updated {new Date(data.updatedAt).toLocaleTimeString()}
+          Contract value · MRR · PIF breakdown · Updated {new Date(data.updatedAt).toLocaleTimeString()}
         </p>
         {data?.snapshot?.asOf && (
           <p className="text-xs text-gray-600 mt-1">Data as of {new Date(data.snapshot.asOf).toLocaleString()} · {data.snapshot.source}</p>
@@ -131,19 +131,19 @@ export default function NewBusinessPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <KpiCard label="YTD New Money" value={fmt$(summary.ytdFirstPayment)} sub={`${summary.ytdDeals} deals`} highlight />
-        <KpiCard label={`${summary.currentMonth} New Money`} value={fmt$(summary.thisMonthFirstPayment)} sub={`${summary.thisMonthDeals} deals`} />
+        <KpiCard label="YTD Contract Value" value={fmt$(summary.ytdFullTerm)} sub={`${summary.ytdDeals} deals · full term normalized`} highlight />
+        <KpiCard label="Q1 YoY Growth" value={summary.yoyPctFullTerm != null ? `${summary.yoyPctFullTerm >= 0 ? '+' : ''}${Math.round(summary.yoyPctFullTerm)}%` : '—'} sub={`${fmt$(summary.q1FullTerm25 || 0)} → ${fmt$(summary.q1FullTerm26 || 0)}`} />
+        <KpiCard label="Cash at Signing (YTD)" value={fmt$(summary.ytdFirstPayment)} sub="First payments collected" />
         <KpiCard label="Avg Deal Size" value={fmt$(summary.ytdAvgDeal)} sub="YTD avg first payment" />
-        <KpiCard label="Q1 YoY Growth" value={summary.yoyPct != null ? `+${Math.round(summary.yoyPct)}%` : '—'} sub={`${fmt$(summary.q1_2025)} → ${fmt$(summary.q1_2026)}`} />
         <KpiCard label={`${summary.currentMonth} New MRR`} value={fmt$(summary.thisMonthMRR)} sub="Recurring portion only" />
       </div>
 
-      {/* Row 2 — YoY First Payment + YoY Deal Count */}
+      {/* Row 2 — YoY Contract Value + YoY Deal Count */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* YoY First Payment Bar Chart */}
+        {/* YoY Contract Value Bar Chart (primary — Full Term) */}
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-          <h2 className="text-white font-semibold mb-1">New Money — 2026 vs 2025</h2>
-          <p className="text-gray-500 text-xs mb-4">First payments by month</p>
+          <h2 className="text-white font-semibold mb-1">Contract Value — 2026 vs 2025</h2>
+          <p className="text-gray-500 text-xs mb-4">Full term value by month (PIF ÷ term normalized to annual)</p>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={monthlyComparison} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -151,8 +151,8 @@ export default function NewBusinessPage() {
               <YAxis tickFormatter={fmtK} tick={{ fill: '#9CA3AF', fontSize: 11 }} width={48} />
               <Tooltip content={<BarTip />} />
               <Legend wrapperStyle={{ color: '#9CA3AF', fontSize: 12 }} />
-              <Bar dataKey="2026" fill={TEAL} radius={[4,4,0,0]} />
-              <Bar dataKey="2025" fill={GRAY} radius={[4,4,0,0]} />
+              <Bar dataKey="fullTerm26" name="2026 Contract Value" fill={TEAL} radius={[4,4,0,0]} />
+              <Bar dataKey="fullTerm25" name="2025 Contract Value" fill={GRAY} radius={[4,4,0,0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -180,6 +180,23 @@ export default function NewBusinessPage() {
             </BarChart>
           </ResponsiveContainer>
         </div>
+      </div>
+
+      {/* Row 2b — Cash at Signing (secondary chart) */}
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+        <h2 className="text-white font-semibold mb-1">Cash at Signing — 2026 vs 2025</h2>
+        <p className="text-gray-500 text-xs mb-4">First payments collected by month (PIF lump sum or first monthly payment)</p>
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart data={monthlyComparison} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+            <XAxis dataKey="month" tick={{ fill: '#9CA3AF', fontSize: 11 }} />
+            <YAxis tickFormatter={fmtK} tick={{ fill: '#9CA3AF', fontSize: 11 }} width={48} />
+            <Tooltip content={<BarTip />} />
+            <Legend wrapperStyle={{ color: '#9CA3AF', fontSize: 12 }} />
+            <Bar dataKey="2026" name="2026 Cash at Signing" fill={TEAL} radius={[4,4,0,0]} />
+            <Bar dataKey="2025" name="2025 Cash at Signing" fill={GRAY} radius={[4,4,0,0]} />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
 
       {/* Row 3 — PIF Section */}

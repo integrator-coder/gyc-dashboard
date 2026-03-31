@@ -88,13 +88,18 @@ function parseDeals(rows, yearLabel) {
 function summariseByMonth(deals) {
   const byMonth = {}
   for (const d of deals) {
-    if (!byMonth[d.month]) byMonth[d.month] = { firstPayment: 0, mrr: 0, count: 0, pifFP: 0, pifCount: 0, recurFP: 0, recurCount: 0 }
+    if (!byMonth[d.month]) byMonth[d.month] = {
+      firstPayment: 0, mrr: 0, count: 0, fullTerm: 0,
+      pifFP: 0, pifCount: 0, pifFullTerm: 0,
+      recurFP: 0, recurCount: 0, recurFullTerm: 0
+    }
     const m = byMonth[d.month]
     m.firstPayment += d.firstPayment
+    m.fullTerm += d.fullTerm
     m.mrr += d.mrr
     m.count++
-    if (d.pif) { m.pifFP += d.firstPayment; m.pifCount++ }
-    else        { m.recurFP += d.firstPayment; m.recurCount++ }
+    if (d.pif) { m.pifFP += d.firstPayment; m.pifCount++; m.pifFullTerm += d.fullTerm }
+    else        { m.recurFP += d.firstPayment; m.recurCount++; m.recurFullTerm += d.fullTerm }
   }
   return byMonth
 }
@@ -321,6 +326,8 @@ export async function GET() {
       month: m.slice(0, 3),
       '2026': monthly26[m]?.firstPayment || 0,
       '2025': monthly25[m]?.firstPayment || 0,
+      fullTerm26: monthly26[m]?.fullTerm || 0,
+      fullTerm25: monthly25[m]?.fullTerm || 0,
       count26: monthly26[m]?.count || 0,
       count25: monthly25[m]?.count || 0,
       mrr26: monthly26[m]?.mrr || 0,
@@ -401,6 +408,12 @@ export async function GET() {
     const q1_25 = deals25.filter(d => q1Months.includes(d.month)).reduce((s, d) => s + d.firstPayment, 0)
     const yoyPct = q1_25 > 0 ? ((q1_26 - q1_25) / q1_25) * 100 : null
 
+    // Full Term YoY
+    const ytdFullTerm = deals26.reduce((s, d) => s + d.fullTerm, 0)
+    const q1FullTerm26 = deals26.filter(d => q1Months.includes(d.month)).reduce((s, d) => s + d.fullTerm, 0)
+    const q1FullTerm25 = deals25.filter(d => q1Months.includes(d.month)).reduce((s, d) => s + d.fullTerm, 0)
+    const yoyPctFullTerm = q1FullTerm25 > 0 ? ((q1FullTerm26 - q1FullTerm25) / q1FullTerm25) * 100 : null
+
     // This month
     const thisMonthFP = monthly26[currentMonth]?.firstPayment || 0
     const thisMonthCount = monthly26[currentMonth]?.count || 0
@@ -436,6 +449,10 @@ export async function GET() {
         q1_2026: q1_26,
         q1_2025: q1_25,
         yoyPct,
+        ytdFullTerm,
+        q1FullTerm26,
+        q1FullTerm25,
+        yoyPctFullTerm,
         currentMonth,
         pif: {
           fp26: pifFP26, count26: pifDeals26.length, pct26: ytdFP > 0 ? pifFP26 / ytdFP * 100 : 0,
