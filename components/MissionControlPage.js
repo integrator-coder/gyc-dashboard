@@ -30,6 +30,7 @@ const AGENT_META = {
   'Sentinel':  { img: '', glow: '#7e22ce', border: '#7e22ce', bg: '#190730' },
   'Mini-2':    { img: '', glow: '#374151', border: '#374151', bg: '#0a0a0a' },
   'Axiom':     { img: '', glow: '#0d9488', border: '#0d9488', bg: '#021a18' },
+  'Lens':      { img: '', glow: '#f59e0b', border: '#f59e0b', bg: '#1c0f00' },
   'Monday':    { img: '', glow: '#2563eb', border: '#2563eb', bg: '#04102a' },
   'Scribe':    { img: '', glow: '#c2410c', border: '#c2410c', bg: '#1c0800' },
   'Arbiter':   { img: '', glow: '#7c3aed', border: '#7c3aed', bg: '#1e0b40' },
@@ -230,21 +231,23 @@ function AgentOrgChart({ agents }) {
     'Eve':       { cx: COL.D,   cy: ROW_Y[1], size: 'xl' },
     'Friday':    { cx: COL.E,   cy: ROW_Y[1], size: 'md', planned: true },
     // Row 2 — first-level workers per cluster
-    'Axiom':     { cx: COL.A,   cy: ROW_Y[2], size: 'sm', planned: true },
+    'Axiom':     { cx: COL.A,   cy: ROW_Y[2], size: 'sm' },           // LIVE on Mac Mini
     'R2':        { cx: COL.B,   cy: ROW_Y[2], size: 'md' },
     'Relay':     { cx: COL.C,   cy: ROW_Y[2], size: 'sm' },
     'BB-8':      { cx: COL.D,   cy: ROW_Y[2], size: 'sm' },
     'Chopper':   { cx: COL.E,   cy: ROW_Y[2], size: 'sm', planned: true },
     // Row 3
-    'Monday':    { cx: COL.A,   cy: ROW_Y[3], size: 'sm', planned: true },
+    'Lens':      { cx: COL.A,   cy: ROW_Y[3], size: 'sm' },           // LIVE on Mac Mini
     'Guardian':  { cx: COL.B,   cy: ROW_Y[3], size: 'sm' },
     'Validator': { cx: COL.C,   cy: ROW_Y[3], size: 'sm' },
     'Fulcrum':   { cx: COL.D,   cy: ROW_Y[3], size: 'sm' },
     // Row 4
-    'Scribe':    { cx: COL.A,   cy: ROW_Y[4], size: 'sm', planned: true },
+    'Monday':    { cx: COL.A,   cy: ROW_Y[4], size: 'sm', planned: true },
     'Sentinel':  { cx: COL.D,   cy: ROW_Y[4], size: 'sm' },
     // Row 5
-    'Arbiter':   { cx: COL.A,   cy: ROW_Y[5], size: 'sm', planned: true },
+    'Scribe':    { cx: COL.A,   cy: ROW_Y[5], size: 'sm', planned: true },
+    // Row 6 (if needed)
+    'Arbiter':   { cx: COL.A,   cy: 1230,     size: 'sm', planned: true },
   }
 
   const connections = [
@@ -266,7 +269,8 @@ function AgentOrgChart({ agents }) {
     // Friday worker
     ['Friday',  'Chopper',   { color: '#4f46e5', dashed: true }],
     // Mini-2 planned cluster
-    ['Mini-2',  'Axiom',     { color: '#0d9488', dashed: true }],
+    ['Wall·E',  'Axiom',     { color: '#0d9488' }],
+    ['Wall·E',  'Lens',      { color: '#f59e0b' }],
     ['Mini-2',  'Monday',    { color: '#2563eb', dashed: true }],
     ['Mini-2',  'Scribe',    { color: '#c2410c', dashed: true }],
     ['Mini-2',  'Arbiter',   { color: '#7c3aed', dashed: true }],
@@ -298,7 +302,7 @@ function AgentOrgChart({ agents }) {
     return { x1: from.x, y1: from.y, x2: to.x, y2: to.y }
   }
 
-  const CANVAS_H = ROW_Y[5] + 160
+  const CANVAS_H = 1400
 
   return (
     <div style={{ background: 'radial-gradient(circle at 50% 20%, #1c0930, transparent 60%), linear-gradient(180deg,#08060e,#030305)', borderRadius: 20, border: '1px solid #2a1a3e', padding: '24px 16px 32px', overflowX: 'auto' }}>
