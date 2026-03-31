@@ -17,13 +17,17 @@ function fmtIso(value) {
 
 // ─── Agent Org Chart ────────────────────────────────────────────────────────
 const AGENT_META = {
-  'Wall·E':  { img: '/agents/walle.svg',   glow: '#7c3aed', border: '#7c3aed', bg: '#1e0b40' },
-  'Eve':     { img: '/agents/eve.svg',     glow: '#0891b2', border: '#0891b2', bg: '#051e2b' },
-  'R2':      { img: '/agents/r2.svg',      glow: '#2563eb', border: '#2563eb', bg: '#061229' },
-  'BB-8':    { img: '/agents/bb8.svg',     glow: '#d97706', border: '#d97706', bg: '#1f1005' },
-  'Fulcrum': { img: '/agents/fulcrum.svg', glow: '#db2777', border: '#db2777', bg: '#200820' },
-  'Friday':  { img: '/agents/friday.svg',  glow: '#4f46e5', border: '#4f46e5', bg: '#0d0b2e' },
-  'Chopper': { img: '/agents/chopper.svg', glow: '#0d9488', border: '#0d9488', bg: '#04191a' },
+  'Wall·E':    { img: '/agents/walle.svg',     glow: '#7c3aed', border: '#7c3aed', bg: '#1e0b40' },
+  'Eve':       { img: '/agents/eve.svg',       glow: '#0891b2', border: '#0891b2', bg: '#051e2b' },
+  'R2':        { img: '/agents/r2.svg',        glow: '#2563eb', border: '#2563eb', bg: '#061229' },
+  'BB-8':      { img: '/agents/bb8.svg',       glow: '#d97706', border: '#d97706', bg: '#1f1005' },
+  'Fulcrum':   { img: '/agents/fulcrum.svg',   glow: '#db2777', border: '#db2777', bg: '#200820' },
+  'Friday':    { img: '/agents/friday.svg',    glow: '#4f46e5', border: '#4f46e5', bg: '#0d0b2e' },
+  'Chopper':   { img: '/agents/chopper.svg',   glow: '#0d9488', border: '#0d9488', bg: '#04191a' },
+  'Relay':     { img: '', glow: '#16a34a', border: '#16a34a', bg: '#031507' },
+  'Validator': { img: '', glow: '#ca8a04', border: '#ca8a04', bg: '#1a1202' },
+  'Guardian':  { img: '', glow: '#dc2626', border: '#dc2626', bg: '#1f0505' },
+  'Sentinel':  { img: '', glow: '#7e22ce', border: '#7e22ce', bg: '#190730' },
 }
 
 function statusDot(status) {
@@ -107,40 +111,45 @@ function AgentOrgChart({ agents }) {
   // Row 2 — R2 (left of Wall·E), Eve (right of Wall·E)
   // Row 3 — BB-8, Fulcrum (under Eve) · Chopper (future, under Eve, planned)
 
-  const CANVAS_W = 900
-  const ROW_Y = [0, 140, 300, 460]
+  const CANVAS_W = 980
+  const ROW_Y = [0, 130, 280, 430, 580]
 
-  // Positions: { name: { cx, cy } } where cx = centre-x, cy = top of card
+  // Layout:
+  // Row 0 — Todd (anchor label, no card)
+  // Row 1 — Wall·E (centre-left) | Friday (deferred, right)
+  // Row 2 — R2 (far left) | Eve (centre) | Relay (right) | Validator (far right)
+  // Row 3 — BB-8 | Fulcrum | Sentinel (under Eve) | Guardian (under Wall·E side)
+  // Row 4 — Chopper (future, under Eve, planned)
+
   const pos = {
-    'Todd':    { cx: CANVAS_W / 2,       cy: ROW_Y[0], size: null },  // just an anchor label
-    'Wall·E':  { cx: CANVAS_W / 2 - 60,  cy: ROW_Y[1], size: 'lg' },
-    'Friday':  { cx: CANVAS_W / 2 + 200, cy: ROW_Y[1], size: 'md', note: 'Travel Orchestrator' },
-    'R2':      { cx: CANVAS_W / 2 - 220, cy: ROW_Y[2], size: 'md' },
-    'Eve':     { cx: CANVAS_W / 2 + 20,  cy: ROW_Y[2], size: 'md' },
-    'BB-8':    { cx: CANVAS_W / 2 - 60,  cy: ROW_Y[3], size: 'sm' },
-    'Fulcrum': { cx: CANVAS_W / 2 + 120, cy: ROW_Y[3], size: 'sm' },
-    'Chopper': { cx: CANVAS_W / 2 - 180, cy: ROW_Y[3], size: 'sm', planned: true },
-    'Agent-X': { cx: CANVAS_W / 2 + 280, cy: ROW_Y[1], size: 'sm', planned: true, name: '+ Node', note: 'Future mini' },
+    'Todd':      { cx: CANVAS_W / 2,        cy: ROW_Y[0], size: null },
+    'Wall·E':    { cx: CANVAS_W / 2 - 80,   cy: ROW_Y[1], size: 'lg' },
+    'Friday':    { cx: CANVAS_W / 2 + 310,  cy: ROW_Y[1], size: 'md', planned: true },
+    'R2':        { cx: CANVAS_W / 2 - 380,  cy: ROW_Y[2], size: 'md' },
+    'Eve':       { cx: CANVAS_W / 2 - 60,   cy: ROW_Y[2], size: 'md' },
+    'Relay':     { cx: CANVAS_W / 2 + 160,  cy: ROW_Y[2], size: 'sm' },
+    'Validator': { cx: CANVAS_W / 2 + 330,  cy: ROW_Y[2], size: 'sm' },
+    'Guardian':  { cx: CANVAS_W / 2 - 250,  cy: ROW_Y[3], size: 'sm' },
+    'BB-8':      { cx: CANVAS_W / 2 - 80,   cy: ROW_Y[3], size: 'sm' },
+    'Fulcrum':   { cx: CANVAS_W / 2 + 80,   cy: ROW_Y[3], size: 'sm' },
+    'Sentinel':  { cx: CANVAS_W / 2 + 240,  cy: ROW_Y[3], size: 'sm' },
+    'Chopper':   { cx: CANVAS_W / 2 + 80,   cy: ROW_Y[4], size: 'sm', planned: true },
   }
 
   // Connection pairs: [from, to, style]
   const connections = [
-    // Todd → Wall·E (solid purple)
-    ['Todd', 'Wall·E', { color: '#7c3aed' }],
-    // Todd → Friday (dashed indigo, peer)
-    ['Todd', 'Friday', { color: '#4f46e5', dashed: true }],
-    // Wall·E ↔ Friday (bidirectional, dashed)
-    ['Wall·E', 'Friday', { color: '#6d28d9', dashed: true }],
-    // Wall·E → R2
-    ['Wall·E', 'R2', { color: '#2563eb' }],
-    // Wall·E → Eve (orchestrates)
-    ['Wall·E', 'Eve', { color: '#0891b2' }],
-    // Eve → BB-8
-    ['Eve', 'BB-8', { color: '#d97706' }],
-    // Eve → Fulcrum
-    ['Eve', 'Fulcrum', { color: '#db2777' }],
-    // Eve → Chopper (planned)
-    ['Eve', 'Chopper', { color: '#0d9488', dashed: true }],
+    ['Todd',    'Wall·E',    { color: '#7c3aed' }],
+    ['Todd',    'Friday',    { color: '#4f46e5', dashed: true }],
+    ['Wall·E',  'Friday',    { color: '#6d28d9', dashed: true }],
+    ['Wall·E',  'R2',        { color: '#2563eb' }],
+    ['Wall·E',  'Eve',       { color: '#0891b2' }],
+    ['Wall·E',  'Relay',     { color: '#16a34a' }],
+    ['Wall·E',  'Validator', { color: '#ca8a04' }],
+    ['Wall·E',  'Guardian',  { color: '#dc2626' }],
+    ['Eve',     'BB-8',      { color: '#d97706' }],
+    ['Eve',     'Fulcrum',   { color: '#db2777' }],
+    ['Eve',     'Sentinel',  { color: '#7e22ce' }],
+    ['Eve',     'Chopper',   { color: '#0d9488', dashed: true }],
   ]
 
   const agentByName = {}
@@ -169,7 +178,7 @@ function AgentOrgChart({ agents }) {
     return { x1: from.x, y1: from.y, x2: to.x, y2: to.y }
   }
 
-  const CANVAS_H = ROW_Y[3] + 110
+  const CANVAS_H = ROW_Y[4] + 110
 
   return (
     <div style={{ background: 'radial-gradient(circle at 50% 20%, #1c0930, transparent 60%), linear-gradient(180deg,#08060e,#030305)', borderRadius: 20, border: '1px solid #2a1a3e', padding: '24px 16px 32px', overflowX: 'auto' }}>
