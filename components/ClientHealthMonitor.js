@@ -49,7 +49,7 @@ export default function ClientHealthMonitor() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/metrics/intel-snapshot')
+      const res = await fetch('/api/mission-control/client-health')
       const json = await res.json()
       if (json.error) throw new Error(json.error)
       setData(json)
@@ -62,10 +62,9 @@ export default function ClientHealthMonitor() {
   if (loading) return <div className="text-sm text-gray-400 py-8 text-center">Loading client health data…</div>
   if (error) return <div className="text-rose-300 text-sm">⚠️ {error}</div>
 
-  // intel-snapshot wraps client health under clientHealth key
-  const healthData = data?.clientHealth || data
+  const healthData = data
   const ov = healthData?.overview || {}
-  const snapshotAsOf = data?.snapshot?.asOf || null
+  const snapshotAsOf = null
 
   return (
     <div className="space-y-6">
