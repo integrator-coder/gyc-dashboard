@@ -5,6 +5,8 @@ const endpoints = [
   '/api/metrics/leadership?refresh=1',
   '/api/metrics/intel-snapshot?refresh=1',
   '/api/metrics/recon-snapshot?refresh=1',
+  '/api/metrics/sales-analysis-snapshot?refresh=1',
+  '/api/metrics/new-business-snapshot?refresh=1',
 ]
 
 async function run() {

@@ -60,7 +60,7 @@ export default function NewBusinessPage() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    fetch('/api/metrics/new-business')
+    fetch('/api/metrics/new-business-snapshot')
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false) })
       .catch(e => { setError(e.message); setLoading(false) })
@@ -124,6 +124,9 @@ export default function NewBusinessPage() {
         <p className="text-gray-400 text-sm mt-1">
           First payments · MRR · PIF breakdown · Updated {new Date(data.updatedAt).toLocaleTimeString()}
         </p>
+        {data?.snapshot?.asOf && (
+          <p className="text-xs text-gray-600 mt-1">Data as of {new Date(data.snapshot.asOf).toLocaleString()} · {data.snapshot.source}</p>
+        )}
       </div>
 
       {/* KPI Cards */}

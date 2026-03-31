@@ -228,7 +228,7 @@ export default function SalesAnalysisPage() {
 
   useEffect(() => {
     let active = true
-    fetch('/api/metrics/sales-analysis')
+    fetch('/api/metrics/sales-analysis-snapshot')
       .then((r) => r.json())
       .then((json) => {
         if (!active) return
@@ -442,6 +442,9 @@ export default function SalesAnalysisPage() {
         <div>
           <h1 className="text-2xl font-bold text-white">Sales Analysis</h1>
           <p className="text-gray-500 text-sm mt-1">What we sold · how many · deal size distribution · how clients pay · how the business has shifted since 2022</p>
+          {data?.snapshot?.asOf && (
+            <p className="text-xs text-gray-600 mt-1">Data as of {new Date(data.snapshot.asOf).toLocaleString()} · {data.snapshot.source}</p>
+          )}
         </div>
       </div>
 
