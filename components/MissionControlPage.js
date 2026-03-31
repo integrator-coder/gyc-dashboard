@@ -29,6 +29,10 @@ const AGENT_META = {
   'Guardian':  { img: '', glow: '#dc2626', border: '#dc2626', bg: '#1f0505' },
   'Sentinel':  { img: '', glow: '#7e22ce', border: '#7e22ce', bg: '#190730' },
   'Mini-2':    { img: '', glow: '#374151', border: '#374151', bg: '#0a0a0a' },
+  'Axiom':     { img: '', glow: '#0d9488', border: '#0d9488', bg: '#021a18' },
+  'Monday':    { img: '', glow: '#2563eb', border: '#2563eb', bg: '#04102a' },
+  'Scribe':    { img: '', glow: '#c2410c', border: '#c2410c', bg: '#1c0800' },
+  'Arbiter':   { img: '', glow: '#7c3aed', border: '#7c3aed', bg: '#1e0b40' },
 }
 
 function statusDot(status) {
@@ -64,7 +68,28 @@ const AGENT_MODEL = {
   'Sentinel':  'Claude Haiku',
   'Friday':    'TBD',
   'Chopper':   'TBD',
-  'Mini-2':    'TBD',
+  'Axiom':     'Claude Sonnet',
+  'Monday':    'Claude Haiku',
+  'Scribe':    'Claude Haiku',
+  'Arbiter':   'Claude Haiku',
+}
+
+const AGENT_RESPONSIBILITIES = {
+  'Wall·E':    ['Orchestration + strategy', 'Daily ops with Todd', 'Agent task routing', 'Decision gate'],
+  'Eve':       ['Stripe / Sheets / GHL sync', 'Neon DB writes', 'Scheduled data pipeline', 'Source-of-truth layer'],
+  'R2':        ['Dashboard features', 'Script + automation builds', 'API integrations', 'Bug fixes'],
+  'BB-8':      ['Eve-side code builds', 'Sync script maintenance', 'Mac Studio tooling'],
+  'Fulcrum':   ['Strategic research memos', 'Client portfolio signals', 'Competitive intel', 'Upsell opportunity scans'],
+  'Guardian':  ['Agent heartbeat monitoring', 'Cron job error detection', 'Fleet health alerts'],
+  'Relay':     ['Task routing + assignment', 'Progress summaries', 'Status reporting to Wall·E'],
+  'Validator': ['Build validation', 'Smoke test execution', 'Pre-release QA gate'],
+  'Sentinel':  ['Security posture checks', 'Snapshot freshness validation', 'Data integrity monitoring'],
+  'Friday':    ['Laptop node orchestrator', 'Travel / remote ops', 'Interaction interface'],
+  'Chopper':   ['Friday worker', 'Lightweight task execution', 'Remote utility tasks'],
+  'Axiom':     ['CMO-level portfolio intel', 'Growth opportunity scanning', 'Client health trend analysis', 'Strategic recommendations'],
+  'Monday':    ['M3 client dashboard reads', 'Client-facing data serving', 'Portal query isolation'],
+  'Scribe':    ['Report generation', 'Proposal + doc writing', 'Meeting prep output', 'Formatted deliverables'],
+  'Arbiter':   ['Inter-agent escalation routing', 'Unresolved task triage', 'Fleet routing at scale'],
 }
 
 function AgentCard({ agent, size = 'md' }) {
@@ -73,6 +98,7 @@ function AgentCard({ agent, size = 'md' }) {
   const d = CARD_DIMS[size] || CARD_DIMS.md
   const sl = STATUS_LABEL[agent.status] || STATUS_LABEL.idle
   const model = AGENT_MODEL[agent.name] || null
+  const responsibilities = AGENT_RESPONSIBILITIES[agent.name] || []
 
   return (
     <div style={{
@@ -124,9 +150,21 @@ function AgentCard({ agent, size = 'md' }) {
         )}
       </div>
 
+      {/* Responsibilities */}
+      {responsibilities.length > 0 && (
+        <div style={{ borderTop: '1px solid #1a1a2e', paddingTop: 6, marginTop: 4 }}>
+          {responsibilities.slice(0, size === 'xl' ? 4 : 3).map((r, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 5, marginBottom: 2 }}>
+              <span style={{ color: isPlanned ? '#374151' : m.glow, fontSize: 9, marginTop: 1, flexShrink: 0 }}>▸</span>
+              <span style={{ color: isPlanned ? '#4b5563' : '#9ca3af', fontSize: 9.5, lineHeight: 1.4 }}>{r}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Current task */}
       {agent.currentTask && !isPlanned && (
-        <div style={{ color: '#4b5563', fontSize: 10, lineHeight: 1.4, marginTop: 2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', borderTop: '1px solid #1f1f2e', paddingTop: 5 }}>
+        <div style={{ color: '#4b5563', fontSize: 10, lineHeight: 1.4, marginTop: 5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', borderTop: '1px solid #1f1f2e', paddingTop: 5 }}>
           ⚡ {agent.currentTask}
         </div>
       )}
@@ -165,46 +203,56 @@ function AgentOrgChart({ agents }) {
 
   // Clean grid layout — generous spacing prevents ALL overlap
   // Mac Mini cluster: left half. Mac Studio cluster: right half. Friday: far right.
-  const CANVAS_W = 1600
   const ROW_Y    = [0, 180, 400, 610, 820]
 
-  // Mac Mini column cluster (x < 750)
-  const MINI2_CX    = 120   // planned future Mini
-  const R2_CX       = 310   // R2 under Wall·E left
-  const WALLE_CX    = 510   // Wall·E main node
-  const GUARDIAN_CX = 310   // Guardian under Wall·E, same col as R2
-  const RELAY_CX    = 680   // Relay right of Wall·E
-  const VALIDATOR_CX= 850   // Validator further right
+  // Mac Mini cluster (x 100-700)
+  const MINI2_CX    = 120   // planned Mini-2 main node
+  const WALLE_CX    = 470   // Wall·E main node
+  const R2_CX       = 230   // R2
+  const RELAY_CX    = 410   // Relay
+  const VALIDATOR_CX= 600   // Validator
+  const GUARDIAN_CX = 230   // Guardian (row 3, same column as R2)
 
-  // Mac Studio column cluster (x 950-1300)
-  const EVE_CX      = 1020  // Eve main node
-  const BB8_CX      = 900   // BB-8 left of Eve
-  const FULCRUM_CX  = 1060  // Fulcrum under Eve
-  const SENTINEL_CX = 1220  // Sentinel right of Fulcrum
+  // Mac Studio cluster (x 900-1250)
+  const EVE_CX      = 960   // Eve main node
+  const BB8_CX      = 800   // BB-8 left of Eve
+  const FULCRUM_CX  = 960   // Fulcrum under Eve
+  const SENTINEL_CX = 1130  // Sentinel right of Fulcrum
 
-  // Friday / Chopper far right (x 1400+)
-  const FRIDAY_CX   = 1450  // Friday
-  const CHOPPER_CX  = 1450  // Chopper under Friday
+  // Mini-2 planned cluster (x 1350-1700) — below Mini-2 card
+  const AXIOM_CX    = 1350  // Axiom (CMO)
+  const MONDAY_CX   = 1510  // Monday (client dash)
+  const SCRIBE_CX   = 1350  // Scribe (row 3)
+  const ARBITER_CX  = 1510  // Arbiter (row 3)
+
+  // Friday / Chopper far right (x 1750+)
+  const FRIDAY_CX   = 1750
+  const CHOPPER_CX  = 1750
 
   const TODD_CX = Math.round((WALLE_CX + FRIDAY_CX) / 2)
 
-  // Row 2 Mac Mini workers: R2, Relay, Validator all left of Eve (well clear of x=900+)
-  // Row 3 Mac Mini workers: Guardian same group, Mac Studio workers to the right
+  const CANVAS_W = 1950
   const pos = {
     'Todd':      { cx: TODD_CX,    cy: ROW_Y[0], size: null },
+    // Row 1 — main nodes
     'Mini-2':    { cx: MINI2_CX,   cy: ROW_Y[1], size: 'sm', planned: true },
     'Wall·E':    { cx: WALLE_CX,   cy: ROW_Y[1], size: 'xl' },
     'Friday':    { cx: FRIDAY_CX,  cy: ROW_Y[1], size: 'md', planned: true },
-    // Row 2 — Mac Mini workers stay LEFT of 800; Eve and Studio right of 950
-    'R2':        { cx: 290,        cy: ROW_Y[2], size: 'md' },
-    'Relay':     { cx: 490,        cy: ROW_Y[2], size: 'sm' },
-    'Validator': { cx: 660,        cy: ROW_Y[2], size: 'sm' },
+    // Row 2 — workers (Mac Mini < 700, Studio 800-1200, Mini-2 cluster 1350+)
+    'R2':        { cx: R2_CX,      cy: ROW_Y[2], size: 'md' },
+    'Relay':     { cx: RELAY_CX,   cy: ROW_Y[2], size: 'sm' },
+    'Validator': { cx: VALIDATOR_CX,cy: ROW_Y[2], size: 'sm' },
     'Eve':       { cx: EVE_CX,     cy: ROW_Y[2], size: 'xl' },
-    // Row 3 — Guardian with Mac Mini cluster, Eve workers to the right
-    'Guardian':  { cx: 490,        cy: ROW_Y[3], size: 'sm' },
+    'Axiom':     { cx: AXIOM_CX,   cy: ROW_Y[2], size: 'sm', planned: true },
+    'Monday':    { cx: MONDAY_CX,  cy: ROW_Y[2], size: 'sm', planned: true },
+    // Row 3 — Row 3 workers
+    'Guardian':  { cx: GUARDIAN_CX,cy: ROW_Y[3], size: 'sm' },
     'BB-8':      { cx: BB8_CX,     cy: ROW_Y[3], size: 'sm' },
     'Fulcrum':   { cx: FULCRUM_CX, cy: ROW_Y[3], size: 'sm' },
     'Sentinel':  { cx: SENTINEL_CX,cy: ROW_Y[3], size: 'sm' },
+    'Scribe':    { cx: SCRIBE_CX,  cy: ROW_Y[3], size: 'sm', planned: true },
+    'Arbiter':   { cx: ARBITER_CX, cy: ROW_Y[3], size: 'sm', planned: true },
+    // Row 4
     'Chopper':   { cx: CHOPPER_CX, cy: ROW_Y[4], size: 'sm', planned: true },
   }
 
@@ -217,11 +265,15 @@ function AgentOrgChart({ agents }) {
     ['Wall·E',  'Relay',     { color: '#16a34a' }],
     ['Wall·E',  'Validator', { color: '#ca8a04' }],
     ['Wall·E',  'Guardian',  { color: '#dc2626' }],
+    ['Wall·E',  'Friday',    { color: '#6d28d9', dashed: true }],
     ['Eve',     'BB-8',      { color: '#d97706' }],
     ['Eve',     'Fulcrum',   { color: '#db2777' }],
     ['Eve',     'Sentinel',  { color: '#7e22ce' }],
     ['Friday',  'Chopper',   { color: '#4f46e5', dashed: true }],
-    ['Wall·E',  'Friday',    { color: '#6d28d9', dashed: true }],
+    ['Mini-2',  'Axiom',     { color: '#0d9488', dashed: true }],
+    ['Mini-2',  'Monday',    { color: '#2563eb', dashed: true }],
+    ['Mini-2',  'Scribe',    { color: '#c2410c', dashed: true }],
+    ['Mini-2',  'Arbiter',   { color: '#7c3aed', dashed: true }],
   ]
 
   const agentByName = {}
@@ -297,10 +349,17 @@ function AgentOrgChart({ agents }) {
 
         {/* Agent cards */}
         {Object.entries(pos).filter(([name]) => name !== 'Todd').map(([name, p]) => {
-          const defaultRole = name === 'Mini-2'
-            ? 'Client-Facing Analytics + M3 Productization'
-            : p.note || '—'
-          const agent = agentByName[name] || { name, role: defaultRole, node: name === 'Mini-2' ? 'Mac Mini (planned)' : '—', status: 'planned', category: 'planned', currentTask: name === 'Mini-2' ? 'Scale milestone not yet reached' : 'Not yet set up' }
+          const PLANNED_META = {
+            'Mini-2':  { role: 'Mac Mini #2 — M3 Client Node',             node: 'Mac Mini (planned)' },
+            'Axiom':   { role: 'CMO Intelligence',                          node: 'Mac Mini #2 (planned)' },
+            'Monday':  { role: 'M3 Client Dashboard',                       node: 'Mac Mini #2 (planned)' },
+            'Scribe':  { role: 'Report + Document Generation',              node: 'Mac Mini #2 (planned)' },
+            'Arbiter': { role: 'Escalation + Inter-Agent Routing',          node: 'Mac Mini #2 (planned)' },
+            'Friday':  { role: 'Laptop Orchestrator',                       node: 'Laptop (pending)' },
+            'Chopper': { role: 'Friday Worker',                             node: 'Laptop (pending)' },
+          }
+          const pm = PLANNED_META[name] || { role: p.note || '—', node: '—' }
+          const agent = agentByName[name] || { name, role: pm.role, node: pm.node, status: 'planned', category: 'planned', currentTask: null }
           const w = CARD_W[p.size || 'md'] || 152
           return (
             <div key={name} style={{ position: 'absolute', left: p.cx - w/2, top: p.cy }}>
