@@ -240,23 +240,18 @@ function AgentOrgChart({ agents }) {
           )
         })}
 
-        {/* Future node slot */}
-        {(() => {
-          const p = pos['Agent-X']
-          return (
-            <div style={{ position: 'absolute', left: p.cx - CARD_W.sm/2, top: p.cy }}>
-              <div style={{
-                width: CARD_W.sm, padding: '10px 12px', borderRadius: 12,
-                border: '1px dashed #374151', background: '#0a0a0a',
-                textAlign: 'center', color: '#374151',
-              }}>
-                <div style={{ fontSize: 20, marginBottom: 4 }}>＋</div>
-                <div style={{ fontSize: 11, fontWeight: 600 }}>Future Node</div>
-                <div style={{ fontSize: 10, marginTop: 2 }}>Mini Mac · Planned</div>
-              </div>
-            </div>
-          )
-        })()}
+        {/* Future node slot — Laptop */}
+        <div style={{ position: 'absolute', left: CANVAS_W - CARD_W.sm - 16, top: ROW_Y[1] }}>
+          <div style={{
+            width: CARD_W.sm, padding: '10px 12px', borderRadius: 12,
+            border: '1px dashed #374151', background: '#0a0a0a',
+            textAlign: 'center', color: '#374151',
+          }}>
+            <div style={{ fontSize: 20, marginBottom: 4 }}>＋</div>
+            <div style={{ fontSize: 11, fontWeight: 600 }}>Friday + Chopper</div>
+            <div style={{ fontSize: 10, marginTop: 2 }}>Laptop · Pending</div>
+          </div>
+        </div>
       </div>
     </div>
   )
