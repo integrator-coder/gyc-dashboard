@@ -483,6 +483,57 @@ export default function MissionControlPage() {
 
       {tab === 'agents' && (
         <Panel title="Agent Fleet">
+
+          {/* Fleet description */}
+          <div className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-5 mb-6">
+            <div className="flex flex-wrap gap-4 items-start justify-between">
+              <div className="max-w-2xl">
+                <div className="text-xs font-semibold uppercase tracking-widest text-violet-300 mb-1">The GYC AI Network</div>
+                <p className="text-white font-semibold text-base mb-2">A coordinated fleet of specialized AI agents operating 24/7 to grow GYC.</p>
+                <p className="text-sm text-gray-400 leading-relaxed">
+                  Each agent has a defined role, a dedicated workspace, and a chain of command. Together they handle data intelligence, 
+                  build automation, call analysis, security monitoring, and client service delivery — while Wall·E orchestrates strategy 
+                  and keeps Todd informed. As GYC scales into M3, this fleet scales with it.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 shrink-0">
+                {[
+                  { label: 'Live Agents', value: `${(data?.agents || []).filter(a => a.status !== 'planned').length}`, color: '#34d399' },
+                  { label: 'Planned', value: `${(data?.agents || []).filter(a => a.status === 'planned').length}`, color: '#60a5fa' },
+                  { label: 'Nodes Active', value: '2', color: '#AE2BCF' },
+                  { label: 'Nodes Planned', value: '2', color: '#374151' },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className="rounded-lg border border-[var(--brand-border)] bg-black/20 px-4 py-3 text-center">
+                    <div style={{ color }} className="text-2xl font-bold">{value}</div>
+                    <div className="text-[11px] text-gray-500 mt-0.5 uppercase tracking-wider">{label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Node breakdown */}
+            <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {[
+                { name: 'GYC-Integrator-Claw', type: 'Mac Mini (2024)', status: 'live', agents: 'Wall·E, Athena, R2, Axiom, Lens, Echo, C3PO, Ratchet', color: '#7c3aed' },
+                { name: 'GYC-Data-Claw', type: 'Mac Studio (M2 Max)', status: 'live', agents: 'Eve, BB-8, Fulcrum, Vision', color: '#0891b2' },
+                { name: 'Laptop', type: 'Portable Node', status: 'pending', agents: 'Friday, Chopper', color: '#374151' },
+                { name: 'GYC-Growth-Claw', type: 'Mac Mini #2 (planned)', status: 'planned', agents: 'Monday, Scribe, Arbiter', color: '#374151' },
+              ].map(({ name, type, status, agents, color }) => (
+                <div key={name} className="rounded-lg border border-[var(--brand-border)] bg-black/20 p-3"
+                  style={{ borderLeftWidth: 3, borderLeftColor: color, borderLeftStyle: 'solid' }}>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <div className="text-white text-xs font-bold">{name}</div>
+                    <span className={`text-[10px] rounded-full px-2 py-0.5 font-semibold ${status === 'live' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-gray-700 text-gray-400'}`}>
+                      {status === 'live' ? '● Live' : '○ Planned'}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-gray-500 mb-1">{type}</div>
+                  <div className="text-[11px] text-gray-400">{agents}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <AgentOrgChart agents={data?.agents || []} />
         </Panel>
       )}
