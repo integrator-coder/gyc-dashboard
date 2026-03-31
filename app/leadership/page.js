@@ -55,6 +55,7 @@ export default function LeadershipPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [data, setData] = useState({})
+  const [newMoneyMetric, setNewMoneyMetric] = useState('contractValue')
 
   useEffect(() => {
     let active = true
@@ -129,8 +130,43 @@ export default function LeadershipPage() {
   const { metrics, todayCash, yesterdayCash, avg7, latestChurn, nrr, serviceByType, qStats, alerts } = derived
 
   const dailyCashChart = (finance?.dailyRevenue || []).map(d => ({ label: new Date(d.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), amount: d.amount }))
-  const newMoneyChart = (newBusiness?.monthlyComparison || []).map(m => ({ month: m.month, y2026: m['2026'] || 0, y2025: m['2025'] || 0 }))
+  const newMoneyChart = (newBusiness?.monthlyComparison || []).map(m => ({
+    month: m.month,
+    contractValue26: m.fullTerm26 || 0,
+    contractValue25: m.fullTerm25 || 0,
+    cashAtSigning26: m['2026'] || 0,
+    cashAtSigning25: m['2025'] || 0,
+    mrr26: m.mrr26 || 0,
+  }))
   const renewalsChart = newBusiness?.renewalProjection || []
+
+  const newMoneyMetricConfig = {
+    contractValue: {
+      leftKey: 'contractValue26',
+      rightKey: 'contractValue25',
+      leftName: '2026 Contract Value',
+      rightName: '2025 Contract Value',
+      leftColor: '#14B8A6',
+      rightColor: '#374151',
+    },
+    cashAtSigning: {
+      leftKey: 'cashAtSigning26',
+      rightKey: 'cashAtSigning25',
+      leftName: '2026 Cash at Signing',
+      rightName: '2025 Cash at Signing',
+      leftColor: '#AE2BCF',
+      rightColor: '#6B7280',
+    },
+    mrr: {
+      leftKey: 'mrr26',
+      rightKey: null,
+      leftName: '2026 New MRR',
+      rightName: null,
+      leftColor: '#F59E0B',
+      rightColor: null,
+    },
+  }
+  const selectedNewMoneyMetric = newMoneyMetricConfig[newMoneyMetric] || newMoneyMetricConfig.contractValue
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -171,6 +207,13 @@ export default function LeadershipPage() {
         <Card label="Yesterday" value={fmt$(yesterdayCash)} sub={`7d avg ${fmt$(avg7)}`} />
       </div>
 
+      {/* New Business KPIs */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card label="YTD Contract Value" value={fmt$(newBusiness?.summary?.ytdFullTerm || 0)} sub="Full term — normalized PIF + monthly" />
+        <Card label="Cash at Signing (YTD)" value={fmt$(newBusiness?.summary?.ytdFirstPayment || 0)} sub="First payments collected at close" />
+        <Card label="New MRR Added (YTD)" value={fmt$(newBusiness?.summary?.mrr?.ytd26 || 0)} sub="Monthly recurring value from new deals" />
+      </div>
+
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <Panel title="Daily Cash Collected (30d)" sub="Finance cash velocity">
           <ResponsiveContainer width="100%" height={240}>
@@ -184,16 +227,31 @@ export default function LeadershipPage() {
           </ResponsiveContainer>
         </Panel>
 
-        <Panel title="New Money by Month" sub="New Business comparison 2026 vs 2025">
-          <ResponsiveContainer width="100%" height={240}>
+        <Panel title="New Money by Month" sub={selectedNewMoneyMetric.leftName + ' vs ' + (selectedNewMoneyMetric.rightName || 'prior year')} href="/new-business">
+          {/* Metric toggle */}
+          <div className="flex gap-1.5 mb-3 flex-wrap">
+            {[
+              ['contractValue', 'Contract Value (YoY)', 'Best for year-over-year comparison — normalizes PIF and monthly'],
+              ['cashAtSigning', 'Cash at Signing', 'Cash collected at close — shows PIF impact on cash flow'],
+              ['mrr', 'New MRR', 'Monthly recurring value added — the compounding engine'],
+            ].map(([key, label, tip]) => (
+              <button key={key} title={tip} onClick={() => setNewMoneyMetric(key)}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition ${newMoneyMetric === key ? 'border-teal-500/40 bg-teal-500/15 text-teal-200' : 'border-[#2a1a3e] text-gray-400 hover:text-white'}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <ResponsiveContainer width="100%" height={210}>
             <BarChart data={newMoneyChart}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
               <XAxis dataKey="month" tick={{ fill: '#9CA3AF', fontSize: 11 }} />
               <YAxis tickFormatter={(v) => `$${Math.round(v/1000)}k`} tick={{ fill: '#9CA3AF', fontSize: 11 }} />
               <Tooltip formatter={(v) => fmt$(v)} />
               <Legend />
-              <Bar dataKey="y2026" name="2026" fill="#14B8A6" radius={[4,4,0,0]} />
-              <Bar dataKey="y2025" name="2025" fill="#374151" radius={[4,4,0,0]} />
+              <Bar dataKey={selectedNewMoneyMetric.leftKey} name={selectedNewMoneyMetric.leftName} fill={selectedNewMoneyMetric.leftColor} radius={[4,4,0,0]} />
+              {selectedNewMoneyMetric.rightKey && (
+                <Bar dataKey={selectedNewMoneyMetric.rightKey} name={selectedNewMoneyMetric.rightName} fill={selectedNewMoneyMetric.rightColor} radius={[4,4,0,0]} />
+              )}
             </BarChart>
           </ResponsiveContainer>
         </Panel>
