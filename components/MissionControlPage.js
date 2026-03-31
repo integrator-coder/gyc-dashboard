@@ -38,69 +38,96 @@ function statusDot(status) {
   return '#374151'
 }
 
+const CARD_DIMS = {
+  xl: { w: 220, h: 155, pad: '14px 16px', emoji: 28, avatar: 54, nameSize: 15 },
+  lg: { w: 185, h: 130, pad: '12px 14px', emoji: 24, avatar: 44, nameSize: 13 },
+  md: { w: 165, h: 120, pad: '10px 12px', emoji: 22, avatar: 40, nameSize: 13 },
+  sm: { w: 150, h: 110, pad: '10px 12px', emoji: 20, avatar: 36, nameSize: 12 },
+}
+
+const STATUS_LABEL = {
+  working:   { text: 'Working',         color: '#34d399' },
+  attention: { text: 'Needs Attention', color: '#fbbf24' },
+  planned:   { text: 'Pending Setup',   color: '#60a5fa' },
+  idle:      { text: 'Idle',            color: '#6b7280' },
+}
+
+const AGENT_MODEL = {
+  'Wall·E':    'Claude Sonnet',
+  'Eve':       'GPT-5.3-Codex',
+  'R2':        'GPT-5.4',
+  'BB-8':      'GPT-5.3-Codex',
+  'Fulcrum':   'Claude Haiku',
+  'Guardian':  'Claude Haiku',
+  'Relay':     'Claude Haiku',
+  'Validator': 'Claude Haiku',
+  'Sentinel':  'Claude Haiku',
+  'Friday':    'TBD',
+  'Chopper':   'TBD',
+  'Mini-2':    'TBD',
+}
+
 function AgentCard({ agent, size = 'md' }) {
   const m = AGENT_META[agent.name] || { img: '', glow: '#7c3aed', border: '#7c3aed', bg: '#1e0b40' }
-  const isWorker = agent.category === 'worker'
-  const w = size === 'xl' ? 210 : size === 'lg' ? 176 : size === 'sm' ? 136 : 152
+  const isPlanned = agent.status === 'planned'
+  const d = CARD_DIMS[size] || CARD_DIMS.md
+  const sl = STATUS_LABEL[agent.status] || STATUS_LABEL.idle
+  const model = AGENT_MODEL[agent.name] || null
 
   return (
-    <div
-      style={{
-        width: w,
-        backgroundColor: m.bg,
-        border: `${isWorker ? '1px dashed' : '1px solid'} ${m.border}55`,
-        boxShadow: `0 0 28px ${m.glow}35`,
-        borderRadius: 16,
-        padding: size === 'sm' ? '8px 10px' : '10px 12px',
-        position: 'relative',
-      }}
-    >
-      {/* Status dot */}
-      <div style={{
-        position: 'absolute', top: 8, right: 8,
-        width: 9, height: 9, borderRadius: '50%',
-        backgroundColor: statusDot(agent.status),
-        boxShadow: agent.status === 'working' ? `0 0 6px ${statusDot(agent.status)}` : 'none',
-      }} />
+    <div style={{
+      width: d.w,
+      minHeight: d.h,
+      backgroundColor: isPlanned ? '#0a0a0a' : m.bg,
+      border: `${isPlanned ? '1px dashed #374151' : `1px solid ${m.border}66`}`,
+      boxShadow: isPlanned ? 'none' : `0 0 32px ${m.glow}30`,
+      borderRadius: 14,
+      padding: d.pad,
+      position: 'relative',
+      opacity: isPlanned ? 0.65 : 1,
+    }}>
+      {/* Status glow strip at top */}
+      {!isPlanned && (
+        <div style={{
+          position: 'absolute', top: 0, left: 16, right: 16, height: 2,
+          background: `linear-gradient(90deg, transparent, ${m.glow}, transparent)`,
+          borderRadius: 2,
+        }} />
+      )}
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+      {/* Name + avatar row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         {m.img
-          ? <img src={m.img} alt={agent.name} style={{ width: size === 'xl' ? 52 : size === 'sm' ? 32 : 40, height: size === 'xl' ? 52 : size === 'sm' ? 32 : 40, borderRadius: 10, objectFit: 'contain', background: 'rgba(0,0,0,0.4)', flexShrink: 0 }} />
-          : <div style={{ width: size === 'xl' ? 52 : 40, height: size === 'xl' ? 52 : 40, borderRadius: 10, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: size === 'xl' ? 26 : 20 }}>🤖</div>
+          ? <img src={m.img} alt={agent.name} style={{ width: d.avatar, height: d.avatar, borderRadius: 8, objectFit: 'contain', background: 'rgba(0,0,0,0.5)', flexShrink: 0, border: `1px solid ${m.border}44` }} />
+          : <div style={{ width: d.avatar, height: d.avatar, borderRadius: 8, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: d.emoji, flexShrink: 0, border: `1px solid ${isPlanned ? '#374151' : m.border+'44'}` }}>🤖</div>
         }
         <div style={{ minWidth: 0 }}>
-          <div style={{ color: '#fff', fontWeight: 700, fontSize: size === 'xl' ? 15 : size === 'sm' ? 12 : 13, lineHeight: 1.2 }}>{agent.name}</div>
-          <div style={{ color: '#9ca3af', fontSize: 10, lineHeight: 1.3, marginTop: 1 }}>{agent.node}</div>
-          {size === 'xl' && <div style={{ color: '#7c3aed', fontSize: 9, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 2 }}>Main Node</div>}
+          <div style={{ color: isPlanned ? '#6b7280' : '#fff', fontWeight: 700, fontSize: d.nameSize, lineHeight: 1.2 }}>{agent.name}</div>
+          <div style={{ color: '#6b7280', fontSize: 10, lineHeight: 1.3, marginTop: 2 }}>{agent.node}</div>
+          {size === 'xl' && !isPlanned && (
+            <div style={{ color: m.glow, fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 2 }}>● Main Node</div>
+          )}
         </div>
       </div>
 
-      <div style={{ color: '#c4b5fd', fontSize: 10, marginBottom: 4, lineHeight: 1.3 }}>{agent.role}</div>
+      {/* Role */}
+      <div style={{ color: isPlanned ? '#4b5563' : '#c4b5fd', fontSize: 10, marginBottom: 6, lineHeight: 1.4, fontWeight: 500 }}>{agent.role}</div>
 
-      {/* Status label */}
-      <div style={{
-        display: 'inline-flex', alignItems: 'center', gap: 4,
-        fontSize: 10, fontWeight: 600, marginBottom: 4,
-        color: agent.status === 'working' ? '#34d399'
-             : agent.status === 'attention' ? '#fbbf24'
-             : agent.status === 'planned' ? '#60a5fa'
-             : '#6b7280',
-      }}>
-        <span style={{
-          width: 6, height: 6, borderRadius: '50%',
-          backgroundColor: statusDot(agent.status),
-          display: 'inline-block',
-          boxShadow: agent.status === 'working' ? `0 0 5px ${statusDot(agent.status)}` : 'none',
-        }} />
-        {agent.status === 'working' ? 'Working'
-         : agent.status === 'attention' ? 'Needs Attention'
-         : agent.status === 'planned' ? 'Pending Setup'
-         : 'Idle'}
+      {/* Status + model row */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4, marginBottom: agent.currentTask && !isPlanned ? 6 : 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 600, color: sl.color }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: sl.color, display: 'inline-block', boxShadow: agent.status === 'working' ? `0 0 5px ${sl.color}` : 'none' }} />
+          {sl.text}
+        </div>
+        {model && (
+          <div style={{ color: '#374151', fontSize: 9, fontWeight: 500, textAlign: 'right' }}>{model}</div>
+        )}
       </div>
 
-      {agent.currentTask && agent.status !== 'planned' && (
-        <div style={{ color: '#6b7280', fontSize: 10, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-          {agent.currentTask}
+      {/* Current task */}
+      {agent.currentTask && !isPlanned && (
+        <div style={{ color: '#4b5563', fontSize: 10, lineHeight: 1.4, marginTop: 2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', borderTop: '1px solid #1f1f2e', paddingTop: 5 }}>
+          ⚡ {agent.currentTask}
         </div>
       )}
     </div>
@@ -136,54 +163,56 @@ function AgentOrgChart({ agents }) {
   // Row 2 — R2 (left of Wall·E), Eve (right of Wall·E)
   // Row 3 — BB-8, Fulcrum (under Eve) · Chopper (future, under Eve, planned)
 
-  // Canvas is wide enough to prevent all overlap
-  // Two separate columns: Mac Mini side (left) and Mac Studio side (right)
-  // Friday + Chopper on far right, Mini-2 on far left
-  const CANVAS_W = 1300
-  const ROW_Y = [0, 160, 340, 510, 680]
+  // Clean grid layout — generous spacing prevents ALL overlap
+  // Mac Mini cluster: left half. Mac Studio cluster: right half. Friday: far right.
+  const CANVAS_W = 1600
+  const ROW_Y    = [0, 180, 400, 610, 820]
 
-  // Column anchors
-  const LEFT_COL  = 200  // Mini-2 area
-  const MID_LEFT  = 380  // R2, Guardian
-  const WALLE_CX  = 530  // Wall·E (Mac Mini main)
-  const MID_RIGHT = 720  // Eve (Mac Studio main)
-  const RIGHT_1   = 880  // BB-8, Fulcrum
-  const RIGHT_2   = 1020 // Relay, Sentinel
-  const RIGHT_3   = 1130 // Validator
-  const FAR_RIGHT = 1150 // Friday
-  const FAR_FAR   = 1130 // Chopper (under Friday)
-  const TODD_CX   = Math.round((WALLE_CX + FAR_RIGHT) / 2)
+  // Mac Mini column cluster (x < 750)
+  const MINI2_CX    = 120   // planned future Mini
+  const R2_CX       = 310   // R2 under Wall·E left
+  const WALLE_CX    = 510   // Wall·E main node
+  const GUARDIAN_CX = 310   // Guardian under Wall·E, same col as R2
+  const RELAY_CX    = 680   // Relay right of Wall·E
+  const VALIDATOR_CX= 850   // Validator further right
+
+  // Mac Studio column cluster (x 950-1300)
+  const EVE_CX      = 1020  // Eve main node
+  const BB8_CX      = 900   // BB-8 left of Eve
+  const FULCRUM_CX  = 1060  // Fulcrum under Eve
+  const SENTINEL_CX = 1220  // Sentinel right of Fulcrum
+
+  // Friday / Chopper far right (x 1400+)
+  const FRIDAY_CX   = 1450  // Friday
+  const CHOPPER_CX  = 1450  // Chopper under Friday
+
+  const TODD_CX = Math.round((WALLE_CX + FRIDAY_CX) / 2)
 
   const pos = {
-    'Todd':      { cx: TODD_CX,   cy: ROW_Y[0], size: null },
-    // Row 1 — main nodes + planned
-    'Mini-2':    { cx: LEFT_COL,  cy: ROW_Y[1], size: 'sm', planned: true },
-    'Wall·E':    { cx: WALLE_CX,  cy: ROW_Y[1], size: 'xl' },
-    'Friday':    { cx: FAR_RIGHT, cy: ROW_Y[1], size: 'md', planned: true },
-    // Row 2 — Mac Mini workers (left of Wall·E) + Mac Studio main (right)
-    'R2':        { cx: MID_LEFT,  cy: ROW_Y[2], size: 'md' },
-    'Eve':       { cx: MID_RIGHT, cy: ROW_Y[2], size: 'xl' },
-    'Relay':     { cx: RIGHT_2,   cy: ROW_Y[2], size: 'sm' },
-    'Validator': { cx: RIGHT_3,   cy: ROW_Y[2], size: 'sm' },
-    // Row 3 — Guardian under Wall·E, Eve workers
-    'Guardian':  { cx: WALLE_CX,  cy: ROW_Y[3], size: 'sm' },
-    'BB-8':      { cx: RIGHT_1,   cy: ROW_Y[3], size: 'sm' },
-    'Fulcrum':   { cx: MID_RIGHT, cy: ROW_Y[3], size: 'sm' },
-    'Sentinel':  { cx: RIGHT_2,   cy: ROW_Y[3], size: 'sm' },
-    // Row 4 — Chopper under Friday
-    'Chopper':   { cx: FAR_RIGHT, cy: ROW_Y[4], size: 'sm', planned: true },
+    'Todd':      { cx: TODD_CX,    cy: ROW_Y[0], size: null },
+    'Mini-2':    { cx: MINI2_CX,   cy: ROW_Y[1], size: 'sm', planned: true },
+    'Wall·E':    { cx: WALLE_CX,   cy: ROW_Y[1], size: 'xl' },
+    'Friday':    { cx: FRIDAY_CX,  cy: ROW_Y[1], size: 'md', planned: true },
+    'R2':        { cx: R2_CX,      cy: ROW_Y[2], size: 'md' },
+    'Eve':       { cx: EVE_CX,     cy: ROW_Y[2], size: 'xl' },
+    'Relay':     { cx: RELAY_CX,   cy: ROW_Y[2], size: 'sm' },
+    'Validator': { cx: VALIDATOR_CX,cy: ROW_Y[2], size: 'sm' },
+    'Guardian':  { cx: GUARDIAN_CX,cy: ROW_Y[3], size: 'sm' },
+    'BB-8':      { cx: BB8_CX,     cy: ROW_Y[3], size: 'sm' },
+    'Fulcrum':   { cx: FULCRUM_CX, cy: ROW_Y[3], size: 'sm' },
+    'Sentinel':  { cx: SENTINEL_CX,cy: ROW_Y[3], size: 'sm' },
+    'Chopper':   { cx: CHOPPER_CX, cy: ROW_Y[4], size: 'sm', planned: true },
   }
 
-  // Connection pairs: [from, to, style]
   const connections = [
     ['Todd',    'Wall·E',    { color: '#7c3aed' }],
     ['Todd',    'Friday',    { color: '#4f46e5', dashed: true }],
     ['Todd',    'Mini-2',    { color: '#374151', dashed: true }],
     ['Wall·E',  'R2',        { color: '#2563eb' }],
     ['Wall·E',  'Eve',       { color: '#0891b2' }],
-    ['Wall·E',  'Guardian',  { color: '#dc2626' }],
     ['Wall·E',  'Relay',     { color: '#16a34a' }],
     ['Wall·E',  'Validator', { color: '#ca8a04' }],
+    ['Wall·E',  'Guardian',  { color: '#dc2626' }],
     ['Eve',     'BB-8',      { color: '#d97706' }],
     ['Eve',     'Fulcrum',   { color: '#db2777' }],
     ['Eve',     'Sentinel',  { color: '#7e22ce' }],
@@ -217,7 +246,7 @@ function AgentOrgChart({ agents }) {
     return { x1: from.x, y1: from.y, x2: to.x, y2: to.y }
   }
 
-  const CANVAS_H = ROW_Y[4] + 130
+  const CANVAS_H = ROW_Y[4] + 160
 
   return (
     <div style={{ background: 'radial-gradient(circle at 50% 20%, #1c0930, transparent 60%), linear-gradient(180deg,#08060e,#030305)', borderRadius: 20, border: '1px solid #2a1a3e', padding: '24px 16px 32px', overflowX: 'auto' }}>
