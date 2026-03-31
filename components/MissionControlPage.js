@@ -203,73 +203,69 @@ function AgentOrgChart({ agents }) {
 
   // Clean grid layout — generous spacing prevents ALL overlap
   // Mac Mini cluster: left half. Mac Studio cluster: right half. Friday: far right.
-  const ROW_Y    = [0, 180, 400, 610, 820]
+  // ─── Layout philosophy ────────────────────────────────────────────────────
+  // Five vertical columns, each cluster owns its column, no overlap possible.
+  // Row heights are generous. Wall·E at top centre.
+  //
+  //  Col A (x≈120)   Col B (x≈370)   Col C (x≈650)  Col D (x≈950)  Col E (x≈1250)
+  //  Mini-2 (plan)   [gap]            Wall·E ★        Eve ★           Friday (plan)
+  //  Axiom (plan)    R2               Relay            BB-8            Chopper (plan)
+  //  Monday (plan)   Guardian         Validator        Fulcrum         —
+  //  Scribe (plan)   —                —                Sentinel        —
+  //  Arbiter (plan)  —                —                —               —
+  //
+  // Todd label sits above Wall·E.
 
-  // Mac Mini cluster (x 100-700)
-  const MINI2_CX    = 120   // planned Mini-2 main node
-  const WALLE_CX    = 470   // Wall·E main node
-  const R2_CX       = 230   // R2
-  const RELAY_CX    = 410   // Relay
-  const VALIDATOR_CX= 600   // Validator
-  const GUARDIAN_CX = 230   // Guardian (row 3, same column as R2)
+  const COL = { A: 120, B: 380, C: 650, D: 980, E: 1270 }
+  const ROW_Y = [0, 170, 390, 600, 810, 1020]
+  const CANVAS_W = 1450
 
-  // Mac Studio cluster (x 900-1250)
-  const EVE_CX      = 960   // Eve main node
-  const BB8_CX      = 800   // BB-8 left of Eve
-  const FULCRUM_CX  = 960   // Fulcrum under Eve
-  const SENTINEL_CX = 1130  // Sentinel right of Fulcrum
+  const TODD_CX = COL.C  // Todd directly above Wall·E
 
-  // Mini-2 planned cluster (x 1350-1700) — below Mini-2 card
-  const AXIOM_CX    = 1350  // Axiom (CMO)
-  const MONDAY_CX   = 1510  // Monday (client dash)
-  const SCRIBE_CX   = 1350  // Scribe (row 3)
-  const ARBITER_CX  = 1510  // Arbiter (row 3)
-
-  // Friday / Chopper far right (x 1750+)
-  const FRIDAY_CX   = 1750
-  const CHOPPER_CX  = 1750
-
-  const TODD_CX = Math.round((WALLE_CX + FRIDAY_CX) / 2)
-
-  const CANVAS_W = 1950
   const pos = {
-    'Todd':      { cx: TODD_CX,    cy: ROW_Y[0], size: null },
-    // Row 1 — main nodes
-    'Mini-2':    { cx: MINI2_CX,   cy: ROW_Y[1], size: 'sm', planned: true },
-    'Wall·E':    { cx: WALLE_CX,   cy: ROW_Y[1], size: 'xl' },
-    'Friday':    { cx: FRIDAY_CX,  cy: ROW_Y[1], size: 'md', planned: true },
-    // Row 2 — workers (Mac Mini < 700, Studio 800-1200, Mini-2 cluster 1350+)
-    'R2':        { cx: R2_CX,      cy: ROW_Y[2], size: 'md' },
-    'Relay':     { cx: RELAY_CX,   cy: ROW_Y[2], size: 'sm' },
-    'Validator': { cx: VALIDATOR_CX,cy: ROW_Y[2], size: 'sm' },
-    'Eve':       { cx: EVE_CX,     cy: ROW_Y[2], size: 'xl' },
-    'Axiom':     { cx: AXIOM_CX,   cy: ROW_Y[2], size: 'sm', planned: true },
-    'Monday':    { cx: MONDAY_CX,  cy: ROW_Y[2], size: 'sm', planned: true },
-    // Row 3 — Row 3 workers
-    'Guardian':  { cx: GUARDIAN_CX,cy: ROW_Y[3], size: 'sm' },
-    'BB-8':      { cx: BB8_CX,     cy: ROW_Y[3], size: 'sm' },
-    'Fulcrum':   { cx: FULCRUM_CX, cy: ROW_Y[3], size: 'sm' },
-    'Sentinel':  { cx: SENTINEL_CX,cy: ROW_Y[3], size: 'sm' },
-    'Scribe':    { cx: SCRIBE_CX,  cy: ROW_Y[3], size: 'sm', planned: true },
-    'Arbiter':   { cx: ARBITER_CX, cy: ROW_Y[3], size: 'sm', planned: true },
+    'Todd':      { cx: TODD_CX, cy: ROW_Y[0], size: null },
+    // Row 1 — main nodes only
+    'Mini-2':    { cx: COL.A,   cy: ROW_Y[1], size: 'sm', planned: true },
+    'Wall·E':    { cx: COL.C,   cy: ROW_Y[1], size: 'xl' },
+    'Eve':       { cx: COL.D,   cy: ROW_Y[1], size: 'xl' },
+    'Friday':    { cx: COL.E,   cy: ROW_Y[1], size: 'md', planned: true },
+    // Row 2 — first-level workers per cluster
+    'Axiom':     { cx: COL.A,   cy: ROW_Y[2], size: 'sm', planned: true },
+    'R2':        { cx: COL.B,   cy: ROW_Y[2], size: 'md' },
+    'Relay':     { cx: COL.C,   cy: ROW_Y[2], size: 'sm' },
+    'BB-8':      { cx: COL.D,   cy: ROW_Y[2], size: 'sm' },
+    'Chopper':   { cx: COL.E,   cy: ROW_Y[2], size: 'sm', planned: true },
+    // Row 3
+    'Monday':    { cx: COL.A,   cy: ROW_Y[3], size: 'sm', planned: true },
+    'Guardian':  { cx: COL.B,   cy: ROW_Y[3], size: 'sm' },
+    'Validator': { cx: COL.C,   cy: ROW_Y[3], size: 'sm' },
+    'Fulcrum':   { cx: COL.D,   cy: ROW_Y[3], size: 'sm' },
     // Row 4
-    'Chopper':   { cx: CHOPPER_CX, cy: ROW_Y[4], size: 'sm', planned: true },
+    'Scribe':    { cx: COL.A,   cy: ROW_Y[4], size: 'sm', planned: true },
+    'Sentinel':  { cx: COL.D,   cy: ROW_Y[4], size: 'sm' },
+    // Row 5
+    'Arbiter':   { cx: COL.A,   cy: ROW_Y[5], size: 'sm', planned: true },
   }
 
   const connections = [
+    // Todd → Wall·E (primary), Todd → Eve (secondary direct), Todd → peers
     ['Todd',    'Wall·E',    { color: '#7c3aed' }],
-    ['Todd',    'Friday',    { color: '#4f46e5', dashed: true }],
     ['Todd',    'Mini-2',    { color: '#374151', dashed: true }],
-    ['Wall·E',  'R2',        { color: '#2563eb' }],
+    ['Todd',    'Friday',    { color: '#4f46e5', dashed: true }],
+    // Wall·E orchestrates
     ['Wall·E',  'Eve',       { color: '#0891b2' }],
+    ['Wall·E',  'R2',        { color: '#2563eb' }],
     ['Wall·E',  'Relay',     { color: '#16a34a' }],
-    ['Wall·E',  'Validator', { color: '#ca8a04' }],
     ['Wall·E',  'Guardian',  { color: '#dc2626' }],
+    ['Wall·E',  'Validator', { color: '#ca8a04' }],
     ['Wall·E',  'Friday',    { color: '#6d28d9', dashed: true }],
+    // Eve workers
     ['Eve',     'BB-8',      { color: '#d97706' }],
     ['Eve',     'Fulcrum',   { color: '#db2777' }],
     ['Eve',     'Sentinel',  { color: '#7e22ce' }],
+    // Friday worker
     ['Friday',  'Chopper',   { color: '#4f46e5', dashed: true }],
+    // Mini-2 planned cluster
     ['Mini-2',  'Axiom',     { color: '#0d9488', dashed: true }],
     ['Mini-2',  'Monday',    { color: '#2563eb', dashed: true }],
     ['Mini-2',  'Scribe',    { color: '#c2410c', dashed: true }],
@@ -302,7 +298,7 @@ function AgentOrgChart({ agents }) {
     return { x1: from.x, y1: from.y, x2: to.x, y2: to.y }
   }
 
-  const CANVAS_H = ROW_Y[4] + 160
+  const CANVAS_H = ROW_Y[5] + 160
 
   return (
     <div style={{ background: 'radial-gradient(circle at 50% 20%, #1c0930, transparent 60%), linear-gradient(180deg,#08060e,#030305)', borderRadius: 20, border: '1px solid #2a1a3e', padding: '24px 16px 32px', overflowX: 'auto' }}>
