@@ -128,11 +128,13 @@ async function upsertDeals(client, deals) {
 
     const res = await client.query(
       `INSERT INTO "SalesDeal"
-         ("yearLabel","dealDate","clientName",service,quarter,month,
+         ("tenantId","sourceSystem","yearLabel","dealDate","clientName",service,quarter,month,
           "firstPayment",mrr,term,"fullTerm","firstYear",pif,"renewalAmount",rep,"dealType")
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
        ON CONFLICT ("yearLabel","dealDate","clientName",service,rep) DO NOTHING`,
       [
+        'gyc',
+        'google-sheets',
         d.yearLabel,
         dealDate,
         d.clientName,
