@@ -41,7 +41,7 @@ function statusDot(status) {
 function AgentCard({ agent, size = 'md' }) {
   const m = AGENT_META[agent.name] || { img: '', glow: '#7c3aed', border: '#7c3aed', bg: '#1e0b40' }
   const isWorker = agent.category === 'worker'
-  const w = size === 'lg' ? 176 : size === 'sm' ? 136 : 152
+  const w = size === 'xl' ? 210 : size === 'lg' ? 176 : size === 'sm' ? 136 : 152
 
   return (
     <div
@@ -65,12 +65,13 @@ function AgentCard({ agent, size = 'md' }) {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
         {m.img
-          ? <img src={m.img} alt={agent.name} style={{ width: size === 'sm' ? 32 : 40, height: size === 'sm' ? 32 : 40, borderRadius: 8, objectFit: 'contain', background: 'rgba(0,0,0,0.4)', flexShrink: 0 }} />
-          : <div style={{ width: 40, height: 40, borderRadius: 8, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🤖</div>
+          ? <img src={m.img} alt={agent.name} style={{ width: size === 'xl' ? 52 : size === 'sm' ? 32 : 40, height: size === 'xl' ? 52 : size === 'sm' ? 32 : 40, borderRadius: 10, objectFit: 'contain', background: 'rgba(0,0,0,0.4)', flexShrink: 0 }} />
+          : <div style={{ width: size === 'xl' ? 52 : 40, height: size === 'xl' ? 52 : 40, borderRadius: 10, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: size === 'xl' ? 26 : 20 }}>🤖</div>
         }
         <div style={{ minWidth: 0 }}>
-          <div style={{ color: '#fff', fontWeight: 700, fontSize: size === 'sm' ? 12 : 13, lineHeight: 1.2 }}>{agent.name}</div>
+          <div style={{ color: '#fff', fontWeight: 700, fontSize: size === 'xl' ? 15 : size === 'sm' ? 12 : 13, lineHeight: 1.2 }}>{agent.name}</div>
           <div style={{ color: '#9ca3af', fontSize: 10, lineHeight: 1.3, marginTop: 1 }}>{agent.node}</div>
+          {size === 'xl' && <div style={{ color: '#7c3aed', fontSize: 9, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 2 }}>Main Node</div>}
         </div>
       </div>
 
@@ -127,8 +128,8 @@ function OrgLine({ x1, y1, x2, y2, color = '#4a3060', dashed = false }) {
 function AgentOrgChart({ agents }) {
   // Fixed layout coordinates (centre-x, top-y) for each agent
   // Canvas: ~900px wide, rows at y=0, 220, 440
-  const CARD_W = { lg: 176, md: 152, sm: 136 }
-  const CARD_H = { lg: 110, md: 100, sm: 90 }
+  const CARD_W = { xl: 210, lg: 176, md: 152, sm: 136 }
+  const CARD_H = { xl: 130, lg: 110, md: 100, sm: 90 }
 
   // Row 0 — Todd (human, no card) at centre
   // Row 1 — Wall·E (centre) + Friday (right peer)
@@ -147,10 +148,10 @@ function AgentOrgChart({ agents }) {
 
   const pos = {
     'Todd':      { cx: CANVAS_W / 2,        cy: ROW_Y[0], size: null },
-    'Wall·E':    { cx: CANVAS_W / 2 - 80,   cy: ROW_Y[1], size: 'lg' },
+    'Wall·E':    { cx: CANVAS_W / 2 - 80,   cy: ROW_Y[1], size: 'xl' },
     'Friday':    { cx: CANVAS_W / 2 + 310,  cy: ROW_Y[1], size: 'md', planned: true },
     'R2':        { cx: CANVAS_W / 2 - 380,  cy: ROW_Y[2], size: 'md' },
-    'Eve':       { cx: CANVAS_W / 2 - 60,   cy: ROW_Y[2], size: 'md' },
+    'Eve':       { cx: CANVAS_W / 2 - 60,   cy: ROW_Y[2], size: 'xl' },
     'Relay':     { cx: CANVAS_W / 2 + 160,  cy: ROW_Y[2], size: 'sm' },
     'Validator': { cx: CANVAS_W / 2 + 330,  cy: ROW_Y[2], size: 'sm' },
     'Guardian':  { cx: CANVAS_W / 2 - 250,  cy: ROW_Y[3], size: 'sm' },
