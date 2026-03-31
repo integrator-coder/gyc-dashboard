@@ -188,16 +188,20 @@ function AgentOrgChart({ agents }) {
 
   const TODD_CX = Math.round((WALLE_CX + FRIDAY_CX) / 2)
 
+  // Row 2 Mac Mini workers: R2, Relay, Validator all left of Eve (well clear of x=900+)
+  // Row 3 Mac Mini workers: Guardian same group, Mac Studio workers to the right
   const pos = {
     'Todd':      { cx: TODD_CX,    cy: ROW_Y[0], size: null },
     'Mini-2':    { cx: MINI2_CX,   cy: ROW_Y[1], size: 'sm', planned: true },
     'Wall·E':    { cx: WALLE_CX,   cy: ROW_Y[1], size: 'xl' },
     'Friday':    { cx: FRIDAY_CX,  cy: ROW_Y[1], size: 'md', planned: true },
-    'R2':        { cx: R2_CX,      cy: ROW_Y[2], size: 'md' },
+    // Row 2 — Mac Mini workers stay LEFT of 800; Eve and Studio right of 950
+    'R2':        { cx: 290,        cy: ROW_Y[2], size: 'md' },
+    'Relay':     { cx: 490,        cy: ROW_Y[2], size: 'sm' },
+    'Validator': { cx: 660,        cy: ROW_Y[2], size: 'sm' },
     'Eve':       { cx: EVE_CX,     cy: ROW_Y[2], size: 'xl' },
-    'Relay':     { cx: RELAY_CX,   cy: ROW_Y[2], size: 'sm' },
-    'Validator': { cx: VALIDATOR_CX,cy: ROW_Y[2], size: 'sm' },
-    'Guardian':  { cx: GUARDIAN_CX,cy: ROW_Y[3], size: 'sm' },
+    // Row 3 — Guardian with Mac Mini cluster, Eve workers to the right
+    'Guardian':  { cx: 490,        cy: ROW_Y[3], size: 'sm' },
     'BB-8':      { cx: BB8_CX,     cy: ROW_Y[3], size: 'sm' },
     'Fulcrum':   { cx: FULCRUM_CX, cy: ROW_Y[3], size: 'sm' },
     'Sentinel':  { cx: SENTINEL_CX,cy: ROW_Y[3], size: 'sm' },
