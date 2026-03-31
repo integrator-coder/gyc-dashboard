@@ -24,11 +24,12 @@ const AGENT_META = {
   'Fulcrum':   { img: '/agents/fulcrum.svg',   glow: '#db2777', border: '#db2777', bg: '#200820' },
   'Friday':    { img: '/agents/friday.svg',    glow: '#4f46e5', border: '#4f46e5', bg: '#0d0b2e' },
   'Chopper':   { img: '/agents/chopper.svg',   glow: '#0d9488', border: '#0d9488', bg: '#04191a' },
-  'Relay':     { img: '', glow: '#16a34a', border: '#16a34a', bg: '#031507' },
-  'Validator': { img: '', glow: '#ca8a04', border: '#ca8a04', bg: '#1a1202' },
-  'Guardian':  { img: '', glow: '#dc2626', border: '#dc2626', bg: '#1f0505' },
-  'Sentinel':  { img: '', glow: '#7e22ce', border: '#7e22ce', bg: '#190730' },
+  'Echo':     { img: '', glow: '#16a34a', border: '#16a34a', bg: '#031507' },
+  'C3PO': { img: '', glow: '#ca8a04', border: '#ca8a04', bg: '#1a1202' },
+  'Ratchet':  { img: '', glow: '#dc2626', border: '#dc2626', bg: '#1f0505' },
+  'Vision':  { img: '', glow: '#7e22ce', border: '#7e22ce', bg: '#190730' },
   'Mini-2':    { img: '', glow: '#374151', border: '#374151', bg: '#0a0a0a' },
+  'Athena':    { img: '', glow: '#9333ea', border: '#9333ea', bg: '#1a0533' },
   'Axiom':     { img: '', glow: '#0d9488', border: '#0d9488', bg: '#021a18' },
   'Lens':      { img: '', glow: '#f59e0b', border: '#f59e0b', bg: '#1c0f00' },
   'Monday':    { img: '', glow: '#2563eb', border: '#2563eb', bg: '#04102a' },
@@ -58,39 +59,43 @@ const STATUS_LABEL = {
 }
 
 const AGENT_MODEL = {
-  'Wall·E':    'Claude Sonnet',
-  'Eve':       'GPT-5.3-Codex',
-  'R2':        'GPT-5.4',
-  'BB-8':      'GPT-5.3-Codex',
-  'Fulcrum':   'Claude Haiku',
-  'Guardian':  'Claude Haiku',
-  'Relay':     'Claude Haiku',
-  'Validator': 'Claude Haiku',
-  'Sentinel':  'Claude Haiku',
-  'Friday':    'TBD',
-  'Chopper':   'TBD',
-  'Axiom':     'Claude Sonnet',
-  'Monday':    'Claude Haiku',
-  'Scribe':    'Claude Haiku',
-  'Arbiter':   'Claude Haiku',
+  'Wall·E':  'Claude Sonnet',
+  'Eve':     'GPT-5.3-Codex',
+  'R2':      'GPT-5.4',
+  'Athena':  'Claude Opus',
+  'Axiom':   'Claude Haiku',
+  'Lens':    'Claude Haiku',
+  'Echo':    'Claude Haiku',
+  'C3PO':   'Claude Haiku',
+  'Ratchet': 'Claude Haiku',
+  'BB-8':    'GPT-5.3-Codex',
+  'Fulcrum': 'Claude Haiku',
+  'Vision':  'Claude Haiku',
+  'Friday':  'TBD',
+  'Chopper': 'TBD',
+  'Monday':  'Claude Haiku',
+  'Scribe':  'Claude Haiku',
+  'Arbiter': 'Claude Haiku',
 }
 
 const AGENT_RESPONSIBILITIES = {
-  'Wall·E':    ['Orchestration + strategy', 'Daily ops with Todd', 'Agent task routing', 'Decision gate'],
-  'Eve':       ['Stripe / Sheets / GHL sync', 'Neon DB writes', 'Scheduled data pipeline', 'Source-of-truth layer'],
-  'R2':        ['Dashboard features', 'Script + automation builds', 'API integrations', 'Bug fixes'],
-  'BB-8':      ['Eve-side code builds', 'Sync script maintenance', 'Mac Studio tooling'],
-  'Fulcrum':   ['Strategic research memos', 'Client portfolio signals', 'Competitive intel', 'Upsell opportunity scans'],
-  'Guardian':  ['Agent heartbeat monitoring', 'Cron job error detection', 'Fleet health alerts'],
-  'Relay':     ['Task routing + assignment', 'Progress summaries', 'Status reporting to Wall·E'],
-  'Validator': ['Build validation', 'Smoke test execution', 'Pre-release QA gate'],
-  'Sentinel':  ['Security posture checks', 'Snapshot freshness validation', 'Data integrity monitoring'],
-  'Friday':    ['Laptop node orchestrator', 'Travel / remote ops', 'Interaction interface'],
-  'Chopper':   ['Friday worker', 'Lightweight task execution', 'Remote utility tasks'],
-  'Axiom':     ['CMO-level portfolio intel', 'Growth opportunity scanning', 'Client health trend analysis', 'Strategic recommendations'],
-  'Monday':    ['M3 client dashboard reads', 'Client-facing data serving', 'Portal query isolation'],
-  'Scribe':    ['Report generation', 'Proposal + doc writing', 'Meeting prep output', 'Formatted deliverables'],
-  'Arbiter':   ['Inter-agent escalation routing', 'Unresolved task triage', 'Fleet routing at scale'],
+  'Wall·E':  ['Primary orchestrator for all GYC AI operations', 'Manages agent fleet task routing and coordination', 'Strategy, planning, and daily decision-making with Todd', 'Bridges all data, tools, and agents into coherent output', 'The human-facing intelligence layer — everything routes through here'],
+  'Eve':     ['Runs all scheduled data sync jobs (Stripe, GHL, Zendesk, Sheets)', 'Writes all raw and normalized data into Neon PostgreSQL', 'Owns the data pipeline — source of truth for every dashboard metric', 'Runs independently on Mac Studio for reliability isolation', 'Eve writes, Wall·E reads — clean data ownership separation'],
+  'R2':      ['Builds and maintains GYC KPI dashboard and Team Portal', 'Executes all coding: features, scripts, API integrations, bug fixes', 'Handles Next.js, Prisma, Neon, Recharts, Tailwind stack', 'Receives task specs from Wall·E, delivers working code', 'Primary implementation engine for all Mac Mini software'],
+  'Athena':  ['Reserved for deep analysis requiring maximum reasoning depth', 'Handles complex multi-variable decisions and long-form synthesis', 'Engaged sparingly — highest cost model, highest quality output', 'Wall·E escalates to Athena when standard reasoning is insufficient', 'Strategic advisory layer — never for routine tasks'],
+  'Axiom':   ['Daily business intelligence sweeps against live Neon data', 'Detects churn risk, billing failures, and at-risk client signals early', 'Identifies upsell opportunities from active client engagement patterns', 'Monitors sales velocity, close rate trends, and rep performance shifts', 'Writes actionable memos to Wall·E — the CMO-level radar system'],
+  'Lens':    ['Processes every new Zoom sales and GA call transcript daily', 'Scores rep performance: talk/listen ratio, objection handling, commitment close', 'Detects recurring objection patterns and conversion blockers across calls', 'Writes per-rep coaching notes and weekly team performance summaries', 'Feeds structured analysis into Neon for Client Intel and M3 call review'],
+  'Echo':    ['Routes task assignments across the entire agent fleet', 'Tracks task status and completion for all active agents', 'Generates concise progress summaries for Wall·E to relay to Todd', 'Maintains the task log and flags stalled or blocked work early', 'Coordination layer — keeps the fleet moving without Wall·E micromanaging'],
+  'C3PO':   ['Validates all builds before they are marked user-facing or deployed', 'Runs smoke tests, build checks, and regression scans on new code', 'Reviews code diffs for obvious bugs, broken routes, or regressions', 'Returns structured pass/fail reports with failure details to Wall·E', 'The release gate — nothing ships without C3PO sign-off'],
+  'Ratchet': ['Monitors heartbeat and status of every agent in the fleet', 'Scans cron job history for errors, missed runs, or degraded patterns', 'Detects offline agents, stuck tasks, and escalating failure patterns', 'Alerts Wall·E with actionable fleet health summaries daily', 'The fleet immune system — catches problems before Todd ever notices them'],
+  'BB-8':    ['Eve\'s dedicated coding agent running on Mac Studio', 'Builds and maintains all sync scripts, pipeline jobs, and Eve-side tooling', 'Handles Mac Studio automations and data transformation scripts', 'Works in concert with Eve — BB-8 builds the tools that Eve runs', 'Mirrors R2\'s role but scoped entirely to the data infrastructure layer'],
+  'Fulcrum': ['Researches the external landscape: competitors, industry trends, best practices', 'Produces structured research memos with evidence and GYC-specific implications', 'Covers: childcare marketing, AI tooling, sales benchmarks, growth playbooks', 'Rotates through topic library on a defined cadence — no topic goes stale', 'The strategic antenna — keeps GYC\'s knowledge current with what\'s happening outside'],
+  'Vision':  ['Runs scheduled security posture audits on both Mac Mini and Mac Studio', 'Validates snapshot freshness — ensures no dashboard is ever showing stale data', 'Monitors for anomalous processes, failed auth attempts, or unexpected changes', 'Detects data integrity issues: mismatched counts, broken syncs, schema drift', 'The security and data quality enforcer — silent until something is wrong'],
+  'Friday':  ['Laptop-based orchestrator for remote and travel operations (planned)', 'Manages a lightweight agent cluster when Todd is away from base nodes', 'Handles mobile-first interactions and time-sensitive routing decisions', 'Coordinates handoff with Wall·E when returning to base', 'Ensures GYC operations continue uninterrupted regardless of Todd\'s location'],
+  'Chopper': ['Friday\'s execution worker running on the laptop node (planned)', 'Handles lightweight task execution in remote and travel contexts', 'Runs scripts, lookups, and quick responses under Friday\'s direction', 'Built lean and fast for laptop hardware constraints', 'The mobile utility agent — reliable and low-resource on the go'],
+  'Monday':  ['Serves all client-facing M3 dashboard reads for external tenants (planned)', 'Handles per-client data requests filtered strictly by tenant ID', 'Isolates client-portal query load completely from internal GYC ops', 'Manages M3 caching, refresh cycles, and client-specific data views', 'Eve writes the data in — Monday serves it out to GYC\'s paying clients'],
+  'Scribe':  ['Generates client-facing monthly performance reports and GA summaries (planned)', 'Writes structured proposals, meeting prep documents, and deliverables on demand', 'Transforms raw Neon data into readable, branded client-facing language', 'Runs Growth Advisor meeting briefs and post-meeting follow-up summaries', 'Turns the AI network\'s intelligence into polished human-readable output'],
+  'Arbiter': ['Manages inter-agent routing and task escalation at scale (planned)', 'Dispatches incoming tasks to the correct agent based on routing rules', 'Handles escalation chains when agents flag unresolved or blocked issues', 'Maintains and updates the routing rules table under Wall·E\'s direction', 'As the fleet grows to serve external M3 clients, Arbiter becomes the load balancer'],
 }
 
 function AgentCard({ agent, size = 'md' }) {
@@ -233,17 +238,17 @@ function AgentOrgChart({ agents }) {
     // Row 2 — first-level workers per cluster
     'Axiom':     { cx: COL.A,   cy: ROW_Y[2], size: 'sm' },           // LIVE on Mac Mini
     'R2':        { cx: COL.B,   cy: ROW_Y[2], size: 'md' },
-    'Relay':     { cx: COL.C,   cy: ROW_Y[2], size: 'sm' },
+    'Echo':     { cx: COL.C,   cy: ROW_Y[2], size: 'sm' },
     'BB-8':      { cx: COL.D,   cy: ROW_Y[2], size: 'sm' },
     'Chopper':   { cx: COL.E,   cy: ROW_Y[2], size: 'sm', planned: true },
     // Row 3
     'Lens':      { cx: COL.A,   cy: ROW_Y[3], size: 'sm' },           // LIVE on Mac Mini
-    'Guardian':  { cx: COL.B,   cy: ROW_Y[3], size: 'sm' },
-    'Validator': { cx: COL.C,   cy: ROW_Y[3], size: 'sm' },
+    'Ratchet':  { cx: COL.B,   cy: ROW_Y[3], size: 'sm' },
+    'C3PO': { cx: COL.C,   cy: ROW_Y[3], size: 'sm' },
     'Fulcrum':   { cx: COL.D,   cy: ROW_Y[3], size: 'sm' },
     // Row 4
     'Monday':    { cx: COL.A,   cy: ROW_Y[4], size: 'sm', planned: true },
-    'Sentinel':  { cx: COL.D,   cy: ROW_Y[4], size: 'sm' },
+    'Vision':  { cx: COL.D,   cy: ROW_Y[4], size: 'sm' },
     // Row 5
     'Scribe':    { cx: COL.A,   cy: ROW_Y[5], size: 'sm', planned: true },
     // Row 6 (if needed)
@@ -258,14 +263,14 @@ function AgentOrgChart({ agents }) {
     // Wall·E orchestrates
     ['Wall·E',  'Eve',       { color: '#0891b2' }],
     ['Wall·E',  'R2',        { color: '#2563eb' }],
-    ['Wall·E',  'Relay',     { color: '#16a34a' }],
-    ['Wall·E',  'Guardian',  { color: '#dc2626' }],
-    ['Wall·E',  'Validator', { color: '#ca8a04' }],
+    ['Wall·E',  'Echo',     { color: '#16a34a' }],
+    ['Wall·E',  'Ratchet',  { color: '#dc2626' }],
+    ['Wall·E',  'C3PO', { color: '#ca8a04' }],
     ['Wall·E',  'Friday',    { color: '#6d28d9', dashed: true }],
     // Eve workers
     ['Eve',     'BB-8',      { color: '#d97706' }],
     ['Eve',     'Fulcrum',   { color: '#db2777' }],
-    ['Eve',     'Sentinel',  { color: '#7e22ce' }],
+    ['Eve',     'Vision',  { color: '#7e22ce' }],
     // Friday worker
     ['Friday',  'Chopper',   { color: '#4f46e5', dashed: true }],
     // Mini-2 planned cluster
@@ -350,7 +355,7 @@ function AgentOrgChart({ agents }) {
         {/* Agent cards */}
         {Object.entries(pos).filter(([name]) => name !== 'Todd').map(([name, p]) => {
           const PLANNED_META = {
-            'Mini-2':  { role: 'Mac Mini #2 — M3 Client Node',             node: 'Mac Mini (planned)' },
+            'Mini-2':  { role: 'GYC-Growth-Claw · M3 Client Engine',       node: 'Mac Mini #2 (planned)' },
             'Axiom':   { role: 'CMO Intelligence',                          node: 'Mac Mini #2 (planned)' },
             'Monday':  { role: 'M3 Client Dashboard',                       node: 'Mac Mini #2 (planned)' },
             'Scribe':  { role: 'Report + Document Generation',              node: 'Mac Mini #2 (planned)' },
