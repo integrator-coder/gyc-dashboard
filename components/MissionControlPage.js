@@ -28,6 +28,7 @@ const AGENT_META = {
   'Validator': { img: '', glow: '#ca8a04', border: '#ca8a04', bg: '#1a1202' },
   'Guardian':  { img: '', glow: '#dc2626', border: '#dc2626', bg: '#1f0505' },
   'Sentinel':  { img: '', glow: '#7e22ce', border: '#7e22ce', bg: '#190730' },
+  'Mini-2':    { img: '', glow: '#374151', border: '#374151', bg: '#0a0a0a' },
 }
 
 function statusDot(status) {
@@ -156,13 +157,15 @@ function AgentOrgChart({ agents }) {
     'BB-8':      { cx: CANVAS_W / 2 - 80,   cy: ROW_Y[3], size: 'sm' },
     'Fulcrum':   { cx: CANVAS_W / 2 + 80,   cy: ROW_Y[3], size: 'sm' },
     'Sentinel':  { cx: CANVAS_W / 2 + 240,  cy: ROW_Y[3], size: 'sm' },
-    'Chopper':   { cx: CANVAS_W / 2 + 310,  cy: ROW_Y[4], size: 'sm', planned: true },
+    'Chopper':   { cx: CANVAS_W / 2 + 420,  cy: ROW_Y[4], size: 'sm', planned: true },
+    'Mini-2':    { cx: CANVAS_W / 2 - 420,  cy: ROW_Y[1], size: 'sm', planned: true },
   }
 
   // Connection pairs: [from, to, style]
   const connections = [
     ['Todd',    'Wall·E',    { color: '#7c3aed' }],
     ['Todd',    'Friday',    { color: '#4f46e5', dashed: true }],
+    ['Todd',    'Mini-2',    { color: '#374151', dashed: true }],
     ['Wall·E',  'Friday',    { color: '#6d28d9', dashed: true }],
     ['Wall·E',  'R2',        { color: '#2563eb' }],
     ['Wall·E',  'Eve',       { color: '#0891b2' }],
@@ -247,8 +250,11 @@ function AgentOrgChart({ agents }) {
         </div>
 
         {/* Agent cards */}
-        {Object.entries(pos).filter(([name]) => name !== 'Todd' && name !== 'Agent-X').map(([name, p]) => {
-          const agent = agentByName[name] || { name, role: p.note || '—', node: '—', status: 'planned', category: p.planned ? 'planned' : 'main', currentTask: p.planned ? 'Not yet set up' : null }
+        {Object.entries(pos).filter(([name]) => name !== 'Todd').map(([name, p]) => {
+          const defaultRole = name === 'Mini-2'
+            ? 'Client-Facing Analytics + M3 Productization'
+            : p.note || '—'
+          const agent = agentByName[name] || { name, role: defaultRole, node: name === 'Mini-2' ? 'Mac Mini (planned)' : '—', status: 'planned', category: 'planned', currentTask: name === 'Mini-2' ? 'Scale milestone not yet reached' : 'Not yet set up' }
           const w = CARD_W[p.size || 'md'] || 152
           return (
             <div key={name} style={{ position: 'absolute', left: p.cx - w/2, top: p.cy }}>
