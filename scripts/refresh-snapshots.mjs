@@ -7,6 +7,9 @@ const endpoints = [
   '/api/metrics/recon-snapshot?refresh=1',
   '/api/metrics/sales-analysis-snapshot?refresh=1',
   '/api/metrics/new-business-snapshot?refresh=1',
+  '/api/metrics/sales-activity-snapshot?refresh=1',
+  '/api/metrics/web-analytics-snapshot?refresh=1',
+  '/api/metrics/production-snapshot?refresh=1',
 ]
 
 async function run() {

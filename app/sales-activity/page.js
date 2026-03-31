@@ -147,7 +147,7 @@ export default function SalesPage() {
   const fetchData = useCallback(async () => {
     try {
       const [salesRes, ghlRes] = await Promise.all([
-        fetch('/api/metrics/sales'),
+        fetch('/api/metrics/sales-activity-snapshot'),
         fetch(`/api/metrics/ghl?period=${period}`)
       ])
       const [json, ghlJson] = await Promise.all([salesRes.json(), ghlRes.json()])
@@ -242,6 +242,9 @@ export default function SalesPage() {
           <p className="text-gray-500 text-sm mt-0.5">
             {data?.updatedAt ? `Updated ${formatUpdated(data.updatedAt)}` : 'Loading…'}
           </p>
+          {data?.snapshot?.asOf && (
+            <p className="text-xs text-gray-600 mt-1">Data as of {new Date(data.snapshot.asOf).toLocaleString()} · {data.snapshot.source}</p>
+          )}
         </div>
         <button
           onClick={() => { fetchData(); fetchMarketingData(); fetchCommission() }}

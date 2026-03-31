@@ -19,7 +19,7 @@ export default function WebAnalyticsPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/metrics/ga-overview').then(r => r.json()),
+      fetch('/api/metrics/web-analytics-snapshot').then(r => r.json()),
       fetch('/api/metrics/ga-historical').then(r => r.json()),
     ]).then(([overview, hist]) => {
       setData(overview)
@@ -75,6 +75,9 @@ export default function WebAnalyticsPage() {
       <div>
         <h1 className="text-2xl font-bold text-white">Web Analytics</h1>
         <p className="text-gray-400 text-sm mt-1">{clientCount} active clients · Last 30 days · Synced {lastSync ? new Date(lastSync).toLocaleDateString() : '—'}</p>
+        {data?.snapshot?.asOf && (
+          <p className="text-xs text-gray-600 mt-1">Data as of {new Date(data.snapshot.asOf).toLocaleString()} · {data.snapshot.source}</p>
+        )}
       </div>
 
       {/* Portfolio KPIs */}

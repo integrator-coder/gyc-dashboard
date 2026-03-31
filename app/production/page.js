@@ -91,7 +91,7 @@ export default function ProductionPage() {
   const fetchData = useCallback(async () => {
     try {
       const [productionRes, historyRes] = await Promise.all([
-        fetch('/api/metrics/production'),
+        fetch('/api/metrics/production-snapshot'),
         fetch('/api/metrics/production-history'),
       ])
 
@@ -198,6 +198,9 @@ export default function ProductionPage() {
           <p className="text-gray-500 text-sm mt-0.5">
             {lastUpdated ? `Updated ${formatUpdated(lastUpdated)}` : 'Loading…'}
           </p>
+          {productionData?.snapshot?.asOf && (
+            <p className="text-xs text-gray-600 mt-1">Data as of {new Date(productionData.snapshot.asOf).toLocaleString()} · {productionData.snapshot.source}</p>
+          )}
         </div>
         <button
           onClick={() => {
