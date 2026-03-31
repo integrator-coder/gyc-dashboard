@@ -107,17 +107,18 @@ function AgentCard({ agent, size = 'md' }) {
 
 // SVG connector line between two DOM-positioned elements
 function OrgLine({ x1, y1, x2, y2, color = '#4a3060', dashed = false }) {
-  const mx = (x1 + x2) / 2
-  const my = (y1 + y2) / 2
-  const path = `M ${x1} ${y1} C ${x1} ${my}, ${x2} ${my}, ${x2} ${y2}`
+  // Straight elbow: vertical down from parent, horizontal to child x, vertical down to child
+  const midY = y1 + Math.round((y2 - y1) / 2)
+  const path = `M ${x1} ${y1} L ${x1} ${midY} L ${x2} ${midY} L ${x2} ${y2}`
   return (
     <path
       d={path}
       stroke={color}
       strokeWidth={1.5}
       fill="none"
-      strokeDasharray={dashed ? '4 3' : undefined}
-      opacity={0.6}
+      strokeLinejoin="miter"
+      strokeDasharray={dashed ? '5 3' : undefined}
+      opacity={0.65}
     />
   )
 }
@@ -155,7 +156,7 @@ function AgentOrgChart({ agents }) {
     'BB-8':      { cx: CANVAS_W / 2 - 80,   cy: ROW_Y[3], size: 'sm' },
     'Fulcrum':   { cx: CANVAS_W / 2 + 80,   cy: ROW_Y[3], size: 'sm' },
     'Sentinel':  { cx: CANVAS_W / 2 + 240,  cy: ROW_Y[3], size: 'sm' },
-    'Chopper':   { cx: CANVAS_W / 2 + 80,   cy: ROW_Y[4], size: 'sm', planned: true },
+    'Chopper':   { cx: CANVAS_W / 2 + 310,  cy: ROW_Y[4], size: 'sm', planned: true },
   }
 
   // Connection pairs: [from, to, style]
@@ -171,7 +172,7 @@ function AgentOrgChart({ agents }) {
     ['Eve',     'BB-8',      { color: '#d97706' }],
     ['Eve',     'Fulcrum',   { color: '#db2777' }],
     ['Eve',     'Sentinel',  { color: '#7e22ce' }],
-    ['Eve',     'Chopper',   { color: '#0d9488', dashed: true }],
+    ['Friday',  'Chopper',   { color: '#4f46e5', dashed: true }],
   ]
 
   const agentByName = {}
