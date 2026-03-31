@@ -29,7 +29,7 @@ const AGENT_META = {
   'Ratchet':  { img: '', glow: '#dc2626', border: '#dc2626', bg: '#1f0505' },
   'Vision':  { img: '', glow: '#7e22ce', border: '#7e22ce', bg: '#190730' },
   'Mini-2':    { img: '', glow: '#374151', border: '#374151', bg: '#0a0a0a' },
-  'Athena':    { img: '', glow: '#9333ea', border: '#9333ea', bg: '#1a0533' },
+  'Yoda':    { img: '', glow: '#9333ea', border: '#9333ea', bg: '#1a0533' },
   'Axiom':     { img: '', glow: '#0d9488', border: '#0d9488', bg: '#021a18' },
   'Lens':      { img: '', glow: '#f59e0b', border: '#f59e0b', bg: '#1c0f00' },
   'Monday':    { img: '', glow: '#2563eb', border: '#2563eb', bg: '#04102a' },
@@ -62,7 +62,7 @@ const AGENT_MODEL = {
   'Wall·E':  'Claude Sonnet',
   'Eve':     'GPT-5.3-Codex',
   'R2':      'GPT-5.4',
-  'Athena':  'Claude Opus',
+  'Yoda':  'Claude Opus',
   'Axiom':   'Claude Haiku',
   'Lens':    'Claude Haiku',
   'Echo':    'Claude Haiku',
@@ -82,7 +82,7 @@ const AGENT_RESPONSIBILITIES = {
   'Wall·E':  ['Primary orchestrator for all GYC AI operations', 'Manages agent fleet task routing and coordination', 'Strategy, planning, and daily decision-making with Todd', 'Bridges all data, tools, and agents into coherent output', 'The human-facing intelligence layer — everything routes through here'],
   'Eve':     ['Runs all scheduled data sync jobs (Stripe, GHL, Zendesk, Sheets)', 'Writes all raw and normalized data into Neon PostgreSQL', 'Owns the data pipeline — source of truth for every dashboard metric', 'Runs independently on Mac Studio for reliability isolation', 'Eve writes, Wall·E reads — clean data ownership separation'],
   'R2':      ['Builds and maintains GYC KPI dashboard and Team Portal', 'Executes all coding: features, scripts, API integrations, bug fixes', 'Handles Next.js, Prisma, Neon, Recharts, Tailwind stack', 'Receives task specs from Wall·E, delivers working code', 'Primary implementation engine for all Mac Mini software'],
-  'Athena':  ['Reserved for deep analysis requiring maximum reasoning depth', 'Handles complex multi-variable decisions and long-form synthesis', 'Engaged sparingly — highest cost model, highest quality output', 'Wall·E escalates to Athena when standard reasoning is insufficient', 'Strategic advisory layer — never for routine tasks'],
+  'Yoda':  ['Reserved for deep analysis requiring maximum reasoning depth', 'Handles complex multi-variable decisions and long-form synthesis', 'Engaged sparingly — highest cost model, highest quality output', 'Wall·E escalates to Athena when standard reasoning is insufficient', 'Strategic advisory layer — never for routine tasks'],
   'Axiom':   ['Daily business intelligence sweeps against live Neon data', 'Detects churn risk, billing failures, and at-risk client signals early', 'Identifies upsell opportunities from active client engagement patterns', 'Monitors sales velocity, close rate trends, and rep performance shifts', 'Writes actionable memos to Wall·E — the CMO-level radar system'],
   'Lens':    ['Processes every new Zoom sales and GA call transcript daily', 'Scores rep performance: talk/listen ratio, objection handling, commitment close', 'Detects recurring objection patterns and conversion blockers across calls', 'Writes per-rep coaching notes and weekly team performance summaries', 'Feeds structured analysis into Neon for Client Intel and M3 call review'],
   'Echo':    ['Routes task assignments across the entire agent fleet', 'Tracks task status and completion for all active agents', 'Generates concise progress summaries for Wall·E to relay to Todd', 'Maintains the task log and flags stalled or blocked work early', 'Coordination layer — keeps the fleet moving without Wall·E micromanaging'],
@@ -239,6 +239,7 @@ function AgentOrgChart({ agents }) {
   const pos = {
     'Todd':      { cx: TODD_CX, cy: R0, size: null },
     'Mini-2':    { cx: COL.A,   cy: R1, size: 'sm', planned: true },
+    'Yoda':      { cx: COL.B,   cy: R1, size: 'sm' },
     'Wall·E':    { cx: COL.C,   cy: R1, size: 'xl' },
     'Eve':       { cx: COL.D,   cy: R1, size: 'xl' },
     'Friday':    { cx: COL.E,   cy: R1, size: 'md', planned: true },
@@ -264,6 +265,7 @@ function AgentOrgChart({ agents }) {
     ['Todd',    'Friday',    { color: '#4f46e5', dashed: true }],
     // Wall·E orchestrates
     ['Wall·E',  'Eve',       { color: '#0891b2' }],
+    ['Wall·E',  'Yoda',      { color: '#9333ea', dashed: true }],
     ['Wall·E',  'R2',        { color: '#2563eb' }],
     ['Wall·E',  'Echo',     { color: '#16a34a' }],
     ['Wall·E',  'Ratchet',  { color: '#dc2626' }],
@@ -514,7 +516,7 @@ export default function MissionControlPage() {
             {/* Node breakdown */}
             <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
               {[
-                { name: 'GYC-Integrator-Claw', type: 'Mac Mini (2024)', status: 'live', agents: 'Wall·E, Athena, R2, Axiom, Lens, Echo, C3PO, Ratchet', color: '#7c3aed' },
+                { name: 'GYC-Integrator-Claw', type: 'Mac Mini (2024)', status: 'live', agents: 'Wall·E, Yoda, R2, Axiom, Lens, Echo, C3PO, Ratchet', color: '#7c3aed' },
                 { name: 'GYC-Data-Claw', type: 'Mac Studio (M2 Max)', status: 'live', agents: 'Eve, BB-8, Fulcrum, Vision', color: '#0891b2' },
                 { name: 'Laptop', type: 'Portable Node', status: 'pending', agents: 'Friday, Chopper', color: '#374151' },
                 { name: 'GYC-Growth-Claw', type: 'Mac Mini #2 (planned)', status: 'planned', agents: 'Monday, Scribe, Arbiter', color: '#374151' },
