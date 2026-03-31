@@ -227,21 +227,20 @@ export default function LeadershipPage() {
           </ResponsiveContainer>
         </Panel>
 
-        <Panel title="New Money by Month" sub={selectedNewMoneyMetric.leftName + ' vs ' + (selectedNewMoneyMetric.rightName || 'prior year')} href="/new-business">
-          {/* Metric toggle */}
+        <Panel title="New Money by Month" sub="Toggle between contract value, cash at signing, and new MRR">
           <div className="flex gap-1.5 mb-3 flex-wrap">
             {[
-              ['contractValue', 'Contract Value (YoY)', 'Best for year-over-year comparison — normalizes PIF and monthly'],
-              ['cashAtSigning', 'Cash at Signing', 'Cash collected at close — shows PIF impact on cash flow'],
-              ['mrr', 'New MRR', 'Monthly recurring value added — the compounding engine'],
-            ].map(([key, label, tip]) => (
-              <button key={key} title={tip} onClick={() => setNewMoneyMetric(key)}
+              ['contractValue', 'Contract Value'],
+              ['cashAtSigning', 'Cash at Signing'],
+              ['mrr', 'New MRR'],
+            ].map(([key, label]) => (
+              <button key={key} onClick={() => setNewMoneyMetric(key)}
                 className={`rounded-full border px-3 py-1 text-xs font-medium transition ${newMoneyMetric === key ? 'border-teal-500/40 bg-teal-500/15 text-teal-200' : 'border-[#2a1a3e] text-gray-400 hover:text-white'}`}>
                 {label}
               </button>
             ))}
           </div>
-          <ResponsiveContainer width="100%" height={210}>
+          <ResponsiveContainer width="100%" height={240}>
             <BarChart data={newMoneyChart}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
               <XAxis dataKey="month" tick={{ fill: '#9CA3AF', fontSize: 11 }} />
