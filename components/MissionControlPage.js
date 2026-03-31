@@ -73,10 +73,32 @@ function AgentCard({ agent, size = 'md' }) {
         </div>
       </div>
 
-      <div style={{ color: '#c4b5fd', fontSize: 10, marginBottom: 3, lineHeight: 1.3 }}>{agent.role}</div>
-      {agent.currentTask && (
+      <div style={{ color: '#c4b5fd', fontSize: 10, marginBottom: 4, lineHeight: 1.3 }}>{agent.role}</div>
+
+      {/* Status label */}
+      <div style={{
+        display: 'inline-flex', alignItems: 'center', gap: 4,
+        fontSize: 10, fontWeight: 600, marginBottom: 4,
+        color: agent.status === 'working' ? '#34d399'
+             : agent.status === 'attention' ? '#fbbf24'
+             : agent.status === 'planned' ? '#60a5fa'
+             : '#6b7280',
+      }}>
+        <span style={{
+          width: 6, height: 6, borderRadius: '50%',
+          backgroundColor: statusDot(agent.status),
+          display: 'inline-block',
+          boxShadow: agent.status === 'working' ? `0 0 5px ${statusDot(agent.status)}` : 'none',
+        }} />
+        {agent.status === 'working' ? 'Working'
+         : agent.status === 'attention' ? 'Needs Attention'
+         : agent.status === 'planned' ? 'Pending Setup'
+         : 'Idle'}
+      </div>
+
+      {agent.currentTask && agent.status !== 'planned' && (
         <div style={{ color: '#6b7280', fontSize: 10, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-          ⚡ {agent.currentTask}
+          {agent.currentTask}
         </div>
       )}
     </div>
@@ -240,18 +262,7 @@ function AgentOrgChart({ agents }) {
           )
         })}
 
-        {/* Future node slot — Laptop */}
-        <div style={{ position: 'absolute', left: CANVAS_W - CARD_W.sm - 16, top: ROW_Y[1] }}>
-          <div style={{
-            width: CARD_W.sm, padding: '10px 12px', borderRadius: 12,
-            border: '1px dashed #374151', background: '#0a0a0a',
-            textAlign: 'center', color: '#374151',
-          }}>
-            <div style={{ fontSize: 20, marginBottom: 4 }}>＋</div>
-            <div style={{ fontSize: 11, fontWeight: 600 }}>Friday + Chopper</div>
-            <div style={{ fontSize: 10, marginTop: 2 }}>Laptop · Pending</div>
-          </div>
-        </div>
+
       </div>
     </div>
   )
