@@ -86,7 +86,7 @@ export default function FulcrumIntel() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/mission-control/intel')
+      const res = await fetch('/api/metrics/intel-snapshot')
       setData(await res.json())
     } catch {}
     setLoading(false)
@@ -96,8 +96,9 @@ export default function FulcrumIntel() {
 
   if (loading) return <div className="text-sm text-gray-400 py-8 text-center">Loading intel feed…</div>
 
-  const memos = data?.memos || []
-  const digest = data?.digest || []
+  const memos = data?.missionIntel?.memos || data?.memos || []
+  const digest = data?.missionIntel?.digest || data?.digest || []
+  const snapshotAsOf = data?.snapshot?.asOf || null
 
   return (
     <div className="space-y-6">
@@ -105,6 +106,7 @@ export default function FulcrumIntel() {
         <div>
           <h2 className="text-xl font-bold text-white">🔭 Fulcrum Intel Feed</h2>
           <p className="text-sm text-gray-400 mt-0.5">Strategic memos from Fulcrum — portfolio health, competitive signals, upsell opportunities, and risk flags. Runs every 6 hours on weekdays.</p>
+          {snapshotAsOf && <p className="text-[11px] text-gray-600 mt-1">Snapshot as of {new Date(snapshotAsOf).toLocaleString()}</p>}
         </div>
         <button onClick={load} className="rounded-xl border border-[var(--brand-border)] px-3 py-1.5 text-xs text-gray-400 hover:text-white transition">Refresh</button>
       </div>

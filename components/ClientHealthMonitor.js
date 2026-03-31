@@ -49,7 +49,7 @@ export default function ClientHealthMonitor() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/mission-control/client-health')
+      const res = await fetch('/api/metrics/intel-snapshot')
       const json = await res.json()
       if (json.error) throw new Error(json.error)
       setData(json)
@@ -62,7 +62,10 @@ export default function ClientHealthMonitor() {
   if (loading) return <div className="text-sm text-gray-400 py-8 text-center">Loading client health data…</div>
   if (error) return <div className="text-rose-300 text-sm">⚠️ {error}</div>
 
-  const ov = data?.overview || {}
+  // intel-snapshot wraps client health under clientHealth key
+  const healthData = data?.clientHealth || data
+  const ov = healthData?.overview || {}
+  const snapshotAsOf = data?.snapshot?.asOf || null
 
   return (
     <div className="space-y-6">
@@ -71,6 +74,7 @@ export default function ClientHealthMonitor() {
         <div>
           <h2 className="text-xl font-bold text-white">🏥 Client Health Monitor</h2>
           <p className="text-sm text-gray-400 mt-0.5">Portfolio-wide risk signals — billing, support, funnels, and conversion. Updated live from Stripe, Zendesk, and client funnel data.</p>
+          {snapshotAsOf && <p className="text-[11px] text-gray-600 mt-1">Snapshot as of {new Date(snapshotAsOf).toLocaleString()}</p>}
         </div>
         <button onClick={load} className="rounded-xl border border-[var(--brand-border)] px-3 py-1.5 text-xs text-gray-400 hover:text-white transition">Refresh</button>
       </div>
@@ -84,7 +88,7 @@ export default function ClientHealthMonitor() {
           { label: 'Avg MRR/Client', value: fmt$(ov.avg_mrr), tone: 'gray' },
           { label: 'High Value (>$2k)', value: fmtN(ov.high_value_count), tone: 'violet' },
           { label: 'Low Value (<$200)', value: fmtN(ov.low_value_count), tone: 'gray' },
-          { label: 'Ticket Escalations', value: fmtN(data?.ticketEscalations?.length), tone: Number(data?.ticketEscalations?.length) > 5 ? 'red' : 'amber' },
+          { label: 'Ticket Escalations', value: fmtN(healthData?.ticketEscalations?.length), tone: Number(healthData?.ticketEscalations?.length) > 5 ? 'red' : 'amber' },
         ].map(({ label, value, tone }) => (
           <div key={label} className="rounded-xl border border-[var(--brand-border)] bg-black/30 px-3 py-3">
             <p className="text-[11px] uppercase tracking-wider text-gray-500">{label}</p>
@@ -97,9 +101,9 @@ export default function ClientHealthMonitor() {
 
         {/* 🔴 Billing Risk — Past Due */}
         <Card>
-          <SectionHeader emoji="💳" title="Billing Risk — Past Due" count={data?.billingRisk?.length} tone="red" />
+          <SectionHeader emoji="💳" title="Billing Risk — Past Due" count={healthData?.billingRisk?.length} tone="red" />
           <p className="text-[11px] text-gray-500 mb-3">Active subscriptions with failed/missing payment. MRR at risk.</p>
-          {!data?.billingRisk?.length ? (
+          {!healthData?.billingRisk?.length ? (
             <p className="text-sm text-emerald-300">✓ No past-due clients right now</p>
           ) : (
             <div className="space-y-2">
@@ -122,9 +126,9 @@ export default function ClientHealthMonitor() {
 
         {/* 🎫 Zendesk Escalations */}
         <Card>
-          <SectionHeader emoji="🎫" title="Zendesk Escalations (10+ open tickets)" count={data?.ticketEscalations?.length} tone={data?.ticketEscalations?.length > 5 ? 'red' : 'amber'} />
+          <SectionHeader emoji="🎫" title="Zendesk Escalations (10+ open tickets)" count={healthData?.ticketEscalations?.length} tone={healthData?.ticketEscalations?.length > 5 ? 'red' : 'amber'} />
           <p className="text-[11px] text-gray-500 mb-3">Clients with high open ticket volume — likely experiencing unresolved service issues.</p>
-          {!data?.ticketEscalations?.length ? (
+          {!healthData?.ticketEscalations?.length ? (
             <p className="text-sm text-emerald-300">✓ No clients at escalation threshold</p>
           ) : (
             <div className="space-y-2">
@@ -148,9 +152,9 @@ export default function ClientHealthMonitor() {
 
         {/* 📉 Poor Conversion */}
         <Card>
-          <SectionHeader emoji="📉" title="Funnel Conversion — Lowest Performers" count={data?.poorConversion?.length} tone="amber" />
+          <SectionHeader emoji="📉" title="Funnel Conversion — Lowest Performers" count={healthData?.poorConversion?.length} tone="amber" />
           <p className="text-[11px] text-gray-500 mb-3">Clients with 5+ leads in last 90 days but lowest lead-to-enrollment conversion rate.</p>
-          {!data?.poorConversion?.length ? (
+          {!healthData?.poorConversion?.length ? (
             <p className="text-sm text-gray-400">No funnel conversion data available yet.</p>
           ) : (
             <div className="space-y-2">
@@ -178,7 +182,7 @@ export default function ClientHealthMonitor() {
         <Card>
           <SectionHeader emoji="💰" title="MRR Concentration — Top 10 Clients" count={null} tone="violet" />
           <p className="text-[11px] text-gray-500 mb-3">How much of your MRR is concentrated in your biggest clients. High concentration = churn risk.</p>
-          {!data?.mrrConcentration?.length ? (
+          {!healthData?.mrrConcentration?.length ? (
             <p className="text-sm text-gray-400">No data available.</p>
           ) : (
             <div className="space-y-1.5">
@@ -225,11 +229,11 @@ export default function ClientHealthMonitor() {
               </tr>
             </thead>
             <tbody>
-              {(data?.zdTopOrgs || []).map((c, i) => {
+              {(healthData?.zdTopOrgs || []).map((c, i) => {
                 const tone = c.openCount >= 15 ? 'red' : c.openCount >= 10 ? 'amber' : 'gray'
                 const acronym = c.acronym?.length <= 8 ? c.acronym : null
                 return (
-                  <tr key={i} style={{borderBottom: i < (data?.zdTopOrgs?.length||0)-1 ? '1px solid #1a0a2e' : 'none'}} className="hover:bg-white/5">
+                  <tr key={i} style={{borderBottom: i < (healthData?.zdTopOrgs?.length||0)-1 ? '1px solid #1a0a2e' : 'none'}} className="hover:bg-white/5">
                     <td className="px-4 py-2.5 text-gray-200">{c.orgName}</td>
                     <td className="px-4 py-2.5 text-right">
                       <span className={`font-bold ${tone === 'red' ? 'text-rose-300' : tone === 'amber' ? 'text-amber-300' : 'text-gray-300'}`}>{c.openCount}</span>
