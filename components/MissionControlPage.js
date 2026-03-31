@@ -136,30 +136,42 @@ function AgentOrgChart({ agents }) {
   // Row 2 — R2 (left of Wall·E), Eve (right of Wall·E)
   // Row 3 — BB-8, Fulcrum (under Eve) · Chopper (future, under Eve, planned)
 
-  const CANVAS_W = 980
-  const ROW_Y = [0, 130, 280, 430, 580]
+  // Canvas is wide enough to prevent all overlap
+  // Two separate columns: Mac Mini side (left) and Mac Studio side (right)
+  // Friday + Chopper on far right, Mini-2 on far left
+  const CANVAS_W = 1300
+  const ROW_Y = [0, 160, 340, 510, 680]
 
-  // Layout:
-  // Row 0 — Todd (anchor label, no card)
-  // Row 1 — Wall·E (centre-left) | Friday (deferred, right)
-  // Row 2 — R2 (far left) | Eve (centre) | Relay (right) | Validator (far right)
-  // Row 3 — BB-8 | Fulcrum | Sentinel (under Eve) | Guardian (under Wall·E side)
-  // Row 4 — Chopper (future, under Eve, planned)
+  // Column anchors
+  const LEFT_COL  = 200  // Mini-2 area
+  const MID_LEFT  = 380  // R2, Guardian
+  const WALLE_CX  = 530  // Wall·E (Mac Mini main)
+  const MID_RIGHT = 720  // Eve (Mac Studio main)
+  const RIGHT_1   = 880  // BB-8, Fulcrum
+  const RIGHT_2   = 1020 // Relay, Sentinel
+  const RIGHT_3   = 1130 // Validator
+  const FAR_RIGHT = 1150 // Friday
+  const FAR_FAR   = 1130 // Chopper (under Friday)
+  const TODD_CX   = Math.round((WALLE_CX + FAR_RIGHT) / 2)
 
   const pos = {
-    'Todd':      { cx: CANVAS_W / 2,        cy: ROW_Y[0], size: null },
-    'Wall·E':    { cx: CANVAS_W / 2 - 80,   cy: ROW_Y[1], size: 'xl' },
-    'Friday':    { cx: CANVAS_W / 2 + 310,  cy: ROW_Y[1], size: 'md', planned: true },
-    'R2':        { cx: CANVAS_W / 2 - 380,  cy: ROW_Y[2], size: 'md' },
-    'Eve':       { cx: CANVAS_W / 2 - 60,   cy: ROW_Y[2], size: 'xl' },
-    'Relay':     { cx: CANVAS_W / 2 + 160,  cy: ROW_Y[2], size: 'sm' },
-    'Validator': { cx: CANVAS_W / 2 + 330,  cy: ROW_Y[2], size: 'sm' },
-    'Guardian':  { cx: CANVAS_W / 2 - 250,  cy: ROW_Y[3], size: 'sm' },
-    'BB-8':      { cx: CANVAS_W / 2 - 80,   cy: ROW_Y[3], size: 'sm' },
-    'Fulcrum':   { cx: CANVAS_W / 2 + 80,   cy: ROW_Y[3], size: 'sm' },
-    'Sentinel':  { cx: CANVAS_W / 2 + 240,  cy: ROW_Y[3], size: 'sm' },
-    'Chopper':   { cx: CANVAS_W / 2 + 420,  cy: ROW_Y[4], size: 'sm', planned: true },
-    'Mini-2':    { cx: CANVAS_W / 2 - 420,  cy: ROW_Y[1], size: 'sm', planned: true },
+    'Todd':      { cx: TODD_CX,   cy: ROW_Y[0], size: null },
+    // Row 1 — main nodes + planned
+    'Mini-2':    { cx: LEFT_COL,  cy: ROW_Y[1], size: 'sm', planned: true },
+    'Wall·E':    { cx: WALLE_CX,  cy: ROW_Y[1], size: 'xl' },
+    'Friday':    { cx: FAR_RIGHT, cy: ROW_Y[1], size: 'md', planned: true },
+    // Row 2 — Mac Mini workers (left of Wall·E) + Mac Studio main (right)
+    'R2':        { cx: MID_LEFT,  cy: ROW_Y[2], size: 'md' },
+    'Eve':       { cx: MID_RIGHT, cy: ROW_Y[2], size: 'xl' },
+    'Relay':     { cx: RIGHT_2,   cy: ROW_Y[2], size: 'sm' },
+    'Validator': { cx: RIGHT_3,   cy: ROW_Y[2], size: 'sm' },
+    // Row 3 — Guardian under Wall·E, Eve workers
+    'Guardian':  { cx: WALLE_CX,  cy: ROW_Y[3], size: 'sm' },
+    'BB-8':      { cx: RIGHT_1,   cy: ROW_Y[3], size: 'sm' },
+    'Fulcrum':   { cx: MID_RIGHT, cy: ROW_Y[3], size: 'sm' },
+    'Sentinel':  { cx: RIGHT_2,   cy: ROW_Y[3], size: 'sm' },
+    // Row 4 — Chopper under Friday
+    'Chopper':   { cx: FAR_RIGHT, cy: ROW_Y[4], size: 'sm', planned: true },
   }
 
   // Connection pairs: [from, to, style]
@@ -167,16 +179,16 @@ function AgentOrgChart({ agents }) {
     ['Todd',    'Wall·E',    { color: '#7c3aed' }],
     ['Todd',    'Friday',    { color: '#4f46e5', dashed: true }],
     ['Todd',    'Mini-2',    { color: '#374151', dashed: true }],
-    ['Wall·E',  'Friday',    { color: '#6d28d9', dashed: true }],
     ['Wall·E',  'R2',        { color: '#2563eb' }],
     ['Wall·E',  'Eve',       { color: '#0891b2' }],
+    ['Wall·E',  'Guardian',  { color: '#dc2626' }],
     ['Wall·E',  'Relay',     { color: '#16a34a' }],
     ['Wall·E',  'Validator', { color: '#ca8a04' }],
-    ['Wall·E',  'Guardian',  { color: '#dc2626' }],
     ['Eve',     'BB-8',      { color: '#d97706' }],
     ['Eve',     'Fulcrum',   { color: '#db2777' }],
     ['Eve',     'Sentinel',  { color: '#7e22ce' }],
     ['Friday',  'Chopper',   { color: '#4f46e5', dashed: true }],
+    ['Wall·E',  'Friday',    { color: '#6d28d9', dashed: true }],
   ]
 
   const agentByName = {}
@@ -205,7 +217,7 @@ function AgentOrgChart({ agents }) {
     return { x1: from.x, y1: from.y, x2: to.x, y2: to.y }
   }
 
-  const CANVAS_H = ROW_Y[4] + 110
+  const CANVAS_H = ROW_Y[4] + 130
 
   return (
     <div style={{ background: 'radial-gradient(circle at 50% 20%, #1c0930, transparent 60%), linear-gradient(180deg,#08060e,#030305)', borderRadius: 20, border: '1px solid #2a1a3e', padding: '24px 16px 32px', overflowX: 'auto' }}>
