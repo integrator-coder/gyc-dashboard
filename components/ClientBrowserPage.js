@@ -12,6 +12,16 @@ function formatDate(value) {
   }).format(new Date(value))
 }
 
+function formatMrr(value) {
+  if (!value && value !== 0) return null
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(Number(value))
+}
+
 export default function ClientBrowserPage({ user }) {
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
@@ -91,35 +101,57 @@ export default function ClientBrowserPage({ user }) {
             const centerName = client.centerName || client.companyName || client.name || client.acronym
             const ownerName = client.ownerName || client.owner || client.contactName || client.name || 'Unknown'
             const growthAdvisor = client.gaName || client.assignedGA || 'Unassigned'
+            const mrr = formatMrr(client.mrr)
+            const isPastDue = client.status === 'past_due'
+            const isActive = client.status === 'active'
 
             return (
               <Link key={client.id} href={`/clients/${client.acronym}`} className="group rounded-3xl border border-[var(--brand-border)] bg-[radial-gradient(circle_at_top,#1a1024,transparent_50%),var(--brand-bg-card)] p-6 transition hover:border-violet-500/40 hover:bg-[radial-gradient(circle_at_top,#2a133e,transparent_55%),var(--brand-bg-card)] hover:shadow-[0_0_40px_rgba(115,20,148,0.15)]">
                 <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="text-xs font-semibold uppercase tracking-[0.24em] text-violet-300">Client Intel Card</div>
-                    <h2 className="mt-3 text-xl font-bold text-white transition group-hover:text-violet-100">{centerName}</h2>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <div className="text-xs font-semibold uppercase tracking-[0.24em] text-violet-300">Client Intel Card</div>
+                      {isActive && (
+                        <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-400">Active</span>
+                      )}
+                      {isPastDue && (
+                        <span className="rounded-full bg-rose-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-rose-400">Past Due</span>
+                      )}
+                    </div>
+                    <h2 className="mt-2 truncate text-xl font-bold text-white transition group-hover:text-violet-100">{centerName}</h2>
+                    {mrr && (
+                      <div className="mt-0.5 text-xs font-medium text-gray-400">{mrr}<span className="ml-1 text-gray-600">/mo</span></div>
+                    )}
                   </div>
-                  <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-violet-200">{client.acronym}</span>
+                  <span className="shrink-0 rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-violet-200">{client.acronym}</span>
                 </div>
 
-                <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <div className="rounded-2xl border border-[var(--brand-border)] bg-black/20 px-4 py-3">
-                    <div className="text-xs uppercase tracking-wider text-gray-500">Client Center Name (Acronym)</div>
-                    <div className="mt-1 text-sm font-semibold text-white">{centerName} ({client.acronym})</div>
+                    <div className="text-xs uppercase tracking-wider text-gray-500">Center Name</div>
+                    <div className="mt-1 text-sm font-semibold text-white truncate">{centerName}</div>
                   </div>
                   <div className="rounded-2xl border border-[var(--brand-border)] bg-black/20 px-4 py-3">
-                    <div className="text-xs uppercase tracking-wider text-gray-500">Owner's Name</div>
-                    <div className="mt-1 text-sm font-semibold text-white">{ownerName}</div>
+                    <div className="text-xs uppercase tracking-wider text-gray-500">Owner&apos;s Name</div>
+                    <div className="mt-1 text-sm font-semibold text-white truncate">{ownerName}</div>
                   </div>
                   <div className="rounded-2xl border border-[var(--brand-border)] bg-black/20 px-4 py-3">
-                    <div className="text-xs uppercase tracking-wider text-gray-500">Growth Advisor Name</div>
-                    <div className="mt-1 text-sm font-semibold text-white">{growthAdvisor}</div>
+                    <div className="text-xs uppercase tracking-wider text-gray-500">Growth Advisor</div>
+                    <div className="mt-1 text-sm font-semibold text-white truncate">{growthAdvisor}</div>
                   </div>
                 </div>
 
-                <div className="mt-4 rounded-2xl border border-[var(--brand-border)] bg-black/20 px-4 py-3">
-                  <div className="text-xs uppercase tracking-wider text-gray-500">Last Activity</div>
-                  <div className="mt-1 text-sm font-semibold text-white">{formatDate(client.lastCallDate)}</div>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <div className="rounded-2xl border border-[var(--brand-border)] bg-black/20 px-4 py-3">
+                    <div className="text-xs uppercase tracking-wider text-gray-500">Last Activity</div>
+                    <div className="mt-1 text-sm font-semibold text-white">{formatDate(client.lastCallDate)}</div>
+                  </div>
+                  {mrr && (
+                    <div className="rounded-2xl border border-[var(--brand-border)] bg-black/20 px-4 py-3">
+                      <div className="text-xs uppercase tracking-wider text-gray-500">MRR</div>
+                      <div className={`mt-1 text-sm font-semibold ${isPastDue ? 'text-rose-400' : 'text-emerald-400'}`}>{mrr}</div>
+                    </div>
+                  )}
                 </div>
               </Link>
             )
