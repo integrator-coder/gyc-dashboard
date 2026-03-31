@@ -45,10 +45,10 @@ function statusDot(status) {
 }
 
 const CARD_DIMS = {
-  xl: { w: 220, h: 155, pad: '14px 16px', emoji: 28, avatar: 54, nameSize: 15 },
-  lg: { w: 185, h: 130, pad: '12px 14px', emoji: 24, avatar: 44, nameSize: 13 },
-  md: { w: 165, h: 120, pad: '10px 12px', emoji: 22, avatar: 40, nameSize: 13 },
-  sm: { w: 150, h: 110, pad: '10px 12px', emoji: 20, avatar: 36, nameSize: 12 },
+  xl: { w: 230, h: 240, pad: '14px 16px', emoji: 28, avatar: 54, nameSize: 15 },
+  lg: { w: 200, h: 210, pad: '12px 14px', emoji: 24, avatar: 44, nameSize: 13 },
+  md: { w: 185, h: 200, pad: '10px 12px', emoji: 22, avatar: 40, nameSize: 13 },
+  sm: { w: 170, h: 195, pad: '10px 12px', emoji: 20, avatar: 36, nameSize: 12 },
 }
 
 const STATUS_LABEL = {
@@ -222,37 +222,39 @@ function AgentOrgChart({ agents }) {
   //
   // Todd label sits above Wall·E.
 
-  const COL = { A: 120, B: 380, C: 650, D: 980, E: 1270 }
-  const ROW_Y = [0, 170, 390, 600, 810, 1020]
-  const CANVAS_W = 1450
+  // Card heights: xl=240, md=200, sm=195. Gap between rows=70.
+  const XH = 240, MH = 200, SH = 195, GAP = 70
+  const R0 = 0
+  const R1 = 60
+  const R2 = R1 + XH + GAP    // 370
+  const R3 = R2 + SH + GAP    // 635
+  const R4 = R3 + SH + GAP    // 900
+  const R5 = R4 + SH + GAP    // 1165
+  const R6 = R5 + SH + GAP    // 1430
 
-  const TODD_CX = COL.C  // Todd directly above Wall·E
+  const COL = { A: 115, B: 340, C: 575, D: 850, E: 1090 }
+  const CANVAS_W = 1300
+  const TODD_CX = COL.C
 
   const pos = {
-    'Todd':      { cx: TODD_CX, cy: ROW_Y[0], size: null },
-    // Row 1 — main nodes only
-    'Mini-2':    { cx: COL.A,   cy: ROW_Y[1], size: 'sm', planned: true },
-    'Wall·E':    { cx: COL.C,   cy: ROW_Y[1], size: 'xl' },
-    'Eve':       { cx: COL.D,   cy: ROW_Y[1], size: 'xl' },
-    'Friday':    { cx: COL.E,   cy: ROW_Y[1], size: 'md', planned: true },
-    // Row 2 — first-level workers per cluster
-    'Axiom':     { cx: COL.A,   cy: ROW_Y[2], size: 'sm' },           // LIVE on Mac Mini
-    'R2':        { cx: COL.B,   cy: ROW_Y[2], size: 'md' },
-    'Echo':     { cx: COL.C,   cy: ROW_Y[2], size: 'sm' },
-    'BB-8':      { cx: COL.D,   cy: ROW_Y[2], size: 'sm' },
-    'Chopper':   { cx: COL.E,   cy: ROW_Y[2], size: 'sm', planned: true },
-    // Row 3
-    'Lens':      { cx: COL.A,   cy: ROW_Y[3], size: 'sm' },           // LIVE on Mac Mini
-    'Ratchet':  { cx: COL.B,   cy: ROW_Y[3], size: 'sm' },
-    'C3PO': { cx: COL.C,   cy: ROW_Y[3], size: 'sm' },
-    'Fulcrum':   { cx: COL.D,   cy: ROW_Y[3], size: 'sm' },
-    // Row 4
-    'Monday':    { cx: COL.A,   cy: ROW_Y[4], size: 'sm', planned: true },
-    'Vision':  { cx: COL.D,   cy: ROW_Y[4], size: 'sm' },
-    // Row 5
-    'Scribe':    { cx: COL.A,   cy: ROW_Y[5], size: 'sm', planned: true },
-    // Row 6 (if needed)
-    'Arbiter':   { cx: COL.A,   cy: 1230,     size: 'sm', planned: true },
+    'Todd':      { cx: TODD_CX, cy: R0, size: null },
+    'Mini-2':    { cx: COL.A,   cy: R1, size: 'sm', planned: true },
+    'Wall·E':    { cx: COL.C,   cy: R1, size: 'xl' },
+    'Eve':       { cx: COL.D,   cy: R1, size: 'xl' },
+    'Friday':    { cx: COL.E,   cy: R1, size: 'md', planned: true },
+    'Axiom':     { cx: COL.A,   cy: R2, size: 'sm' },
+    'R2':        { cx: COL.B,   cy: R2, size: 'md' },
+    'Echo':      { cx: COL.C,   cy: R2, size: 'sm' },
+    'BB-8':      { cx: COL.D,   cy: R2, size: 'sm' },
+    'Chopper':   { cx: COL.E,   cy: R2, size: 'sm', planned: true },
+    'Lens':      { cx: COL.A,   cy: R3, size: 'sm' },
+    'Ratchet':   { cx: COL.B,   cy: R3, size: 'sm' },
+    'C3PO':      { cx: COL.C,   cy: R3, size: 'sm' },
+    'Fulcrum':   { cx: COL.D,   cy: R3, size: 'sm' },
+    'Monday':    { cx: COL.A,   cy: R4, size: 'sm', planned: true },
+    'Vision':    { cx: COL.D,   cy: R4, size: 'sm' },
+    'Scribe':    { cx: COL.A,   cy: R5, size: 'sm', planned: true },
+    'Arbiter':   { cx: COL.A,   cy: R6, size: 'sm', planned: true },
   }
 
   const connections = [
@@ -307,7 +309,7 @@ function AgentOrgChart({ agents }) {
     return { x1: from.x, y1: from.y, x2: to.x, y2: to.y }
   }
 
-  const CANVAS_H = 1400
+  const CANVAS_H = R6 + SH + 80
 
   return (
     <div style={{ background: 'radial-gradient(circle at 50% 20%, #1c0930, transparent 60%), linear-gradient(180deg,#08060e,#030305)', borderRadius: 20, border: '1px solid #2a1a3e', padding: '24px 16px 32px', overflowX: 'auto' }}>
