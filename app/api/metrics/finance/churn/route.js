@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server'
 import { google } from 'googleapis'
-import path from 'path'
-import fs from 'fs'
+import { createGoogleAuth } from '@/lib/google-auth'
 
 const SHEET_ID = '1kLm6VWX_nlpUsFioKq6JEWLGka5Z3WCTgPUKY2C0Z6A'
-const KEY_FILE = `${process.env.HOME || require('os').homedir()}/.openclaw/credentials/google-console.json`
 
 // Col index 4 = Jan-23 (offset 0)
 // Derive correct label from column position — don't trust cell value
@@ -77,12 +75,7 @@ function getCell(rows, rowIndex, colIndex) {
 
 export async function GET() {
   try {
-    const keyData = JSON.parse(fs.readFileSync(KEY_FILE, 'utf8'))
-
-    const auth = new google.auth.GoogleAuth({
-      credentials: keyData,
-      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-    })
+    const auth = createGoogleAuth(['https://www.googleapis.com/auth/spreadsheets.readonly'])
 
     const client = await auth.getClient()
     const sheets = google.sheets({ version: 'v4', auth: client })

@@ -4,10 +4,7 @@ import { google } from 'googleapis'
 
 const SHEET_ID = '1kLm6VWX_nlpUsFioKq6JEWLGka5Z3WCTgPUKY2C0Z6A'
 
-const auth = new google.auth.GoogleAuth({
-  keyFile: process.env.GOOGLE_CREDENTIALS_PATH || `${require('os').homedir()}/.openclaw/credentials/google-console.json`,
-  scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-})
+const auth = createGoogleAuth(['https://www.googleapis.com/auth/spreadsheets.readonly'])
 
 async function readTab(sheets, tab, range) {
   const res = await sheets.spreadsheets.values.get({

@@ -31,7 +31,41 @@
 | `OPENAI_BILLING_API_KEY` | For OpenAI cost tracking |
 | `SLACK_BOT_TOKEN` | For deal-closed notifications |
 
-## Google Service Account Setup
+## Google Credentials
+
+The dashboard connects to Google Sheets via a service account. On Vercel there's no file system, so credentials must be passed as an environment variable.
+
+### Step 1: Get the JSON as a single line (minified)
+
+```bash
+cat ~/.openclaw/credentials/google-console.json | python3 -c "import sys,json; print(json.dumps(json.load(sys.stdin)))"
+```
+
+Or using `jq`:
+```bash
+cat ~/.openclaw/credentials/google-console.json | jq -c .
+```
+
+Or using Node:
+```bash
+node -e "const fs=require('fs'); console.log(JSON.stringify(JSON.parse(fs.readFileSync(process.env.HOME+'/.openclaw/credentials/google-console.json','utf8'))))"
+```
+
+### Step 2: Set in Vercel
+
+In Vercel → Settings → Environment Variables, add:
+
+| Variable | Value |
+|---|---|
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | Paste the entire minified JSON string from Step 1 |
+
+> ⚠️ **Must be a single line** — no newlines. The private key's `\n` sequences inside the JSON string are fine (they're escaped), but the overall JSON value must not have literal newlines.
+
+### How the code uses it
+
+`lib/google-auth.js` checks `GOOGLE_SERVICE_ACCOUNT_JSON` first (Vercel), then falls back to `GOOGLE_CREDENTIALS_PATH` or the default local file path. All route files use `createGoogleAuth()` from this module.
+
+## Google Service Account Setup (legacy note)
 The `google-console.json` file needs to be pasted as a JSON string env var.
 
 ```bash

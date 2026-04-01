@@ -6,10 +6,7 @@ const SHEET_ID = '1858s3B0oQ8YC4KEBDefJMc0WuD5nyjNIFxiQrqsuO-A'
 
 const MONTH_ORDER = ['January','February','March','April','May','June','July','August','September','October','November','December']
 
-const auth = new google.auth.GoogleAuth({
-  keyFile: process.env.GOOGLE_CREDENTIALS_PATH || `${require('os').homedir()}/.openclaw/credentials/google-console.json`,
-  scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
-})
+const auth = createGoogleAuth(['https://www.googleapis.com/auth/spreadsheets.readonly'])
 
 async function readTab(sheets, tab, range) {
   const res = await sheets.spreadsheets.values.get({

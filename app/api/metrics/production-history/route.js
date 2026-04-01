@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server'
 import { google } from 'googleapis'
-import os from 'os'
+import { createGoogleAuth } from '@/lib/google-auth'
 
 export const dynamic = 'force-dynamic'
 
 const SHEET_ID = '1SzmsEinQHF_Q_GigQB68xiWZIWRhYA___v-2zo_OJuc'
 const SHEET_RANGE = 'WEB!A:P'
-const KEY_FILE = `${os.homedir()}/.openclaw/credentials/google-console.json`
 const MONTH_INDEX = {
   jan: 0,
   feb: 1,
@@ -143,10 +142,7 @@ function finalizeQuarterlyBucket(bucket) {
 }
 
 async function fetchSheetRows() {
-  const auth = new google.auth.GoogleAuth({
-    keyFile: KEY_FILE,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-  })
+  const auth = createGoogleAuth(['https://www.googleapis.com/auth/spreadsheets.readonly'])
 
   const sheets = google.sheets({ version: 'v4', auth })
   const response = await sheets.spreadsheets.values.get({

@@ -11,10 +11,7 @@ const { Pool } = pkg
 const pool = new Pool({ connectionString: process.env.NEON_DATABASE_URL, ssl: { rejectUnauthorized: false } })
 
 const SCORECARD_SHEET_ID = '1858s3B0oQ8YC4KEBDefJMc0WuD5nyjNIFxiQrqsuO-A'
-const auth = new google.auth.GoogleAuth({
-  keyFile: process.env.GOOGLE_CREDENTIALS_PATH || `${require('os').homedir()}/.openclaw/credentials/google-console.json`,
-  scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-})
+const auth = createGoogleAuth(['https://www.googleapis.com/auth/spreadsheets.readonly'])
 
 const REP_ALIASES = {
   'Seb': 'Sebastian',
