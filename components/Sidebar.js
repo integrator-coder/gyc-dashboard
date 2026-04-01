@@ -4,20 +4,33 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 
-const DASHBOARD_GROUP = {
-  label: 'Dashboard',
-  emoji: '📊',
-  defaultOpen: true,
-  children: [
-    {
+// ─── Role helpers ─────────────────────────────────────────────────────────────
+function canSeeFinance(user) {
+  return ['superadmin', 'admin'].includes(user?.role)
+}
+
+function isAdminPlus(user) {
+  return ['superadmin', 'admin'].includes(user?.role)
+}
+
+function buildDashboardGroup(user) {
+  const children = []
+
+  // Leadership — admin+ only
+  if (isAdminPlus(user)) {
+    children.push({
       label: 'Leadership',
       emoji: '🏆',
       items: [
         { label: 'Overview', emoji: '🏆', href: '/leadership' },
         { label: 'HR', emoji: '🧑', href: '/hr' },
       ],
-    },
-    {
+    })
+  }
+
+  // Finance — admin+ only
+  if (canSeeFinance(user)) {
+    children.push({
       label: 'Finance',
       emoji: '💰',
       items: [
@@ -25,29 +38,42 @@ const DASHBOARD_GROUP = {
         { label: 'Churn', emoji: '📉', href: '/churn' },
         { label: 'Dunning', emoji: '⚠️', href: '/dunning' },
       ],
-    },
-    {
-      label: 'Sales',
-      emoji: '📞',
-      items: [
-        { label: 'Sales Activity', emoji: '📞', href: '/sales-activity' },
-        { label: 'New Business', emoji: '💵', href: '/new-business' },
-        { label: 'Sales Analysis', emoji: '🧮', href: '/sales-analysis' },
-      ],
-    },
-    {
-      label: 'CX',
-      emoji: '👥',
-      items: [
-        { label: 'CX Overview', emoji: '👥', href: '/cx' },
-        { label: 'Client Results', emoji: '📊', href: '/client-results' },
-        { label: 'Web Analytics', emoji: '📈', href: '/web-analytics' },
-        { label: 'Helpdesk', emoji: '🌐', href: '/helpdesk' },
-      ],
-    },
-    { label: 'Marketing', emoji: '📣', href: '/marketing' },
-    { label: 'Production', emoji: '🔧', href: '/production' },
-  ],
+    })
+  }
+
+  // Sales — visible to all
+  children.push({
+    label: 'Sales',
+    emoji: '📞',
+    items: [
+      { label: 'Sales Activity', emoji: '📞', href: '/sales-activity' },
+      { label: 'New Business', emoji: '💵', href: '/new-business' },
+      { label: 'Sales Analysis', emoji: '🧮', href: '/sales-analysis' },
+    ],
+  })
+
+  // CX — visible to all
+  children.push({
+    label: 'CX',
+    emoji: '👥',
+    items: [
+      { label: 'CX Overview', emoji: '👥', href: '/cx' },
+      { label: 'Client Results', emoji: '📊', href: '/client-results' },
+      { label: 'Web Analytics', emoji: '📈', href: '/web-analytics' },
+      { label: 'Helpdesk', emoji: '🌐', href: '/helpdesk' },
+    ],
+  })
+
+  // Marketing + Production — visible to all
+  children.push({ label: 'Marketing', emoji: '📣', href: '/marketing' })
+  children.push({ label: 'Production', emoji: '🔧', href: '/production' })
+
+  return {
+    label: 'Dashboard',
+    emoji: '📊',
+    defaultOpen: true,
+    children,
+  }
 }
 
 const TEAM_PORTAL_GROUP = {
@@ -58,6 +84,15 @@ const TEAM_PORTAL_GROUP = {
     { label: 'CX Handoffs', emoji: '🧾', href: '/cx-handoff', roles: ['sales', 'ga', 'cx', 'admin'] },
     { label: 'Client Intel', emoji: '🧠', href: '/clients', roles: ['ga', 'cx', 'admin'] },
     { label: 'Recon', emoji: '🔍', href: '/team/recon', roles: ['recon', 'admin'] },
+  ],
+}
+
+const ADMIN_GROUP = {
+  label: 'Admin',
+  emoji: '⚙️',
+  defaultOpen: false,
+  children: [
+    { label: '👥 Users', emoji: '👥', href: '/admin/users' },
   ],
 }
 
@@ -162,6 +197,8 @@ export default function Sidebar() {
     return () => { active = false }
   }, [pathname])
 
+  const dashboardGroup = useMemo(() => buildDashboardGroup(session.user), [session.user])
+
   const teamPortalGroup = useMemo(() => ({
     ...TEAM_PORTAL_GROUP,
     children: TEAM_PORTAL_GROUP.children.filter((item) => hasRole(session.user, item.roles)),
@@ -186,8 +223,11 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
-        <CollapsibleGroup group={DASHBOARD_GROUP} pathname={pathname} />
+        <CollapsibleGroup group={dashboardGroup} pathname={pathname} />
         <CollapsibleGroup group={teamPortalGroup} pathname={pathname} />
+        {isAdminPlus(session.user) && (
+          <CollapsibleGroup group={ADMIN_GROUP} pathname={pathname} />
+        )}
       </nav>
 
       <div className="px-5 py-4 space-y-3" style={{ borderTop: '1px solid #2a1a3e' }}>
