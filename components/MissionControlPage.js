@@ -78,6 +78,26 @@ const AGENT_MODEL = {
   'Arbiter': 'Claude Haiku',
 }
 
+const AGENT_MODEL_ACCESS = {
+  'Wall·E':    { default: 'Claude Sonnet', escalate: 'Opus (via Yoda)' },
+  'Eve':       { default: 'GPT-5.3-Codex', escalate: null },
+  'R2':        { default: 'GPT-5.4', escalate: null },
+  'Yoda':      { default: 'Claude Opus', escalate: null },
+  'Axiom':     { default: 'Claude Haiku', escalate: 'Sonnet (via Wall·E)' },
+  'Soundwave': { default: 'Claude Haiku', escalate: 'Sonnet (via Wall·E)' },
+  'Echo':      { default: 'Claude Haiku', escalate: null },
+  'C3PO':      { default: 'Claude Haiku', escalate: null },
+  'Ratchet':   { default: 'Claude Haiku', escalate: null },
+  'BB-8':      { default: 'GPT-5.3-Codex', escalate: null },
+  'Fulcrum':   { default: 'Claude Haiku', escalate: 'Sonnet (via Wall·E)' },
+  'Vision':    { default: 'Claude Haiku', escalate: null },
+  'Friday':    { default: 'TBD', escalate: null },
+  'Chopper':   { default: 'TBD', escalate: null },
+  'Monday':    { default: 'Claude Haiku', escalate: null },
+  'Scribe':    { default: 'Claude Haiku', escalate: null },
+  'Arbiter':   { default: 'Claude Haiku', escalate: null },
+}
+
 const AGENT_RESPONSIBILITIES = {
   'Wall·E':  ['Primary orchestrator for all GYC AI operations', 'Manages agent fleet task routing and coordination', 'Strategy, planning, and daily decision-making with Todd', 'Bridges all data, tools, and agents into coherent output', 'The human-facing intelligence layer — everything routes through here'],
   'Eve':     ['Runs all scheduled data sync jobs (Stripe, GHL, Zendesk, Sheets)', 'Writes all raw and normalized data into Neon PostgreSQL', 'Owns the data pipeline — source of truth for every dashboard metric', 'Runs independently on Mac Studio for reliability isolation', 'Eve writes, Wall·E reads — clean data ownership separation'],
@@ -104,14 +124,15 @@ function AgentCard({ agent, size = 'md' }) {
   const d = CARD_DIMS[size] || CARD_DIMS.md
   const sl = STATUS_LABEL[agent.status] || STATUS_LABEL.idle
   const model = AGENT_MODEL[agent.name] || null
+  const modelAccess = AGENT_MODEL_ACCESS[agent.name] || { default: model || '—', escalate: null }
   const responsibilities = AGENT_RESPONSIBILITIES[agent.name] || []
 
   return (
     <div style={{
       width: d.w,
       minHeight: d.h,
-      backgroundColor: isPlanned ? '#0a0a0a' : m.bg,
-      border: `${isPlanned ? '1px dashed #374151' : `1px solid ${m.border}66`}`,
+      backgroundColor: isPlanned ? '#111827' : m.bg,
+      border: `${isPlanned ? '1px dashed #4b5563' : `1px solid ${m.border}66`}`,
       boxShadow: isPlanned ? 'none' : `0 0 32px ${m.glow}30`,
       borderRadius: 14,
       padding: d.pad,
@@ -131,10 +152,10 @@ function AgentCard({ agent, size = 'md' }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         {m.img
           ? <img src={m.img} alt={agent.name} style={{ width: d.avatar, height: d.avatar, borderRadius: 8, objectFit: 'contain', background: 'rgba(0,0,0,0.5)', flexShrink: 0, border: `1px solid ${m.border}44` }} />
-          : <div style={{ width: d.avatar, height: d.avatar, borderRadius: 8, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: d.emoji, flexShrink: 0, border: `1px solid ${isPlanned ? '#374151' : m.border+'44'}` }}>🤖</div>
+          : <div style={{ width: d.avatar, height: d.avatar, borderRadius: 8, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: d.emoji, flexShrink: 0, border: `1px solid ${isPlanned ? '#4b5563' : m.border+'44'}` }}>🤖</div>
         }
         <div style={{ minWidth: 0 }}>
-          <div style={{ color: isPlanned ? '#6b7280' : '#fff', fontWeight: 700, fontSize: d.nameSize, lineHeight: 1.2 }}>{agent.name}</div>
+          <div style={{ color: isPlanned ? '#9ca3af' : '#fff', fontWeight: 700, fontSize: d.nameSize, lineHeight: 1.2 }}>{agent.name}</div>
           <div style={{ color: '#6b7280', fontSize: 10, lineHeight: 1.3, marginTop: 2 }}>{agent.node}</div>
           {size === 'xl' && !isPlanned && (
             <div style={{ color: m.glow, fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 2 }}>● Main Node</div>
@@ -143,17 +164,12 @@ function AgentCard({ agent, size = 'md' }) {
       </div>
 
       {/* Role */}
-      <div style={{ color: isPlanned ? '#4b5563' : '#c4b5fd', fontSize: 10, marginBottom: 6, lineHeight: 1.4, fontWeight: 500 }}>{agent.role}</div>
+      <div style={{ color: isPlanned ? '#6b7280' : '#c4b5fd', fontSize: 10, marginBottom: 6, lineHeight: 1.4, fontWeight: 500 }}>{agent.role}</div>
 
-      {/* Status + model row */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4, marginBottom: agent.currentTask && !isPlanned ? 6 : 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 600, color: sl.color }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: sl.color, display: 'inline-block', boxShadow: agent.status === 'working' ? `0 0 5px ${sl.color}` : 'none' }} />
-          {sl.text}
-        </div>
-        {model && (
-          <div style={{ color: '#374151', fontSize: 9, fontWeight: 500, textAlign: 'right' }}>{model}</div>
-        )}
+      {/* Status row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4, fontSize: 10, fontWeight: 600, color: sl.color }}>
+        <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: sl.color, display: 'inline-block', boxShadow: agent.status === 'working' ? `0 0 5px ${sl.color}` : 'none' }} />
+        {sl.text}
       </div>
 
       {/* Responsibilities */}
@@ -161,16 +177,29 @@ function AgentCard({ agent, size = 'md' }) {
         <div style={{ borderTop: '1px solid #1a1a2e', paddingTop: 6, marginTop: 4 }}>
           {responsibilities.slice(0, size === 'xl' ? 4 : 3).map((r, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 5, marginBottom: 2 }}>
-              <span style={{ color: isPlanned ? '#374151' : m.glow, fontSize: 9, marginTop: 1, flexShrink: 0 }}>▸</span>
-              <span style={{ color: isPlanned ? '#4b5563' : '#9ca3af', fontSize: 9.5, lineHeight: 1.4 }}>{r}</span>
+              <span style={{ color: isPlanned ? '#6b7280' : m.glow, fontSize: 9, marginTop: 1, flexShrink: 0 }}>▸</span>
+              <span style={{ color: isPlanned ? '#6b7280' : '#d1d5db', fontSize: 9.5, lineHeight: 1.4 }}>{r}</span>
             </div>
           ))}
         </div>
       )}
 
+      {/* Model section */}
+      <div style={{ borderTop: '1px solid #1a1a2e', paddingTop: 5, marginTop: 4 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 9.5 }}>
+          <span style={{ color: '#6b7280' }}>Model:</span>
+          <span style={{ color: '#c4b5fd', fontWeight: 600 }}>{modelAccess.default}</span>
+        </div>
+        {modelAccess.escalate && (
+          <div style={{ fontSize: 9, color: '#4b5563', marginTop: 1 }}>
+            ↑ {modelAccess.escalate}
+          </div>
+        )}
+      </div>
+
       {/* Current task */}
       {agent.currentTask && !isPlanned && (
-        <div style={{ color: '#4b5563', fontSize: 10, lineHeight: 1.4, marginTop: 5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', borderTop: '1px solid #1f1f2e', paddingTop: 5 }}>
+        <div style={{ color: '#6b7280', fontSize: 10, lineHeight: 1.4, marginTop: 5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', borderTop: '1px solid #1f1f2e', paddingTop: 5 }}>
           ⚡ {agent.currentTask}
         </div>
       )}
@@ -316,7 +345,7 @@ function AgentOrgChart({ agents }) {
   return (
     <div style={{ background: 'radial-gradient(circle at 50% 20%, #1c0930, transparent 60%), linear-gradient(180deg,#08060e,#030305)', borderRadius: 20, border: '1px solid #2a1a3e', padding: '24px 16px 32px', overflowX: 'auto' }}>
       {/* Legend */}
-      <div style={{ display: 'flex', gap: 20, marginBottom: 20, flexWrap: 'wrap', fontSize: 11, color: '#6b7280' }}>
+      <div style={{ display: 'flex', gap: 20, marginBottom: 20, flexWrap: 'wrap', fontSize: 11, color: '#9ca3af' }}>
         <span style={{ display:'flex',alignItems:'center',gap:6 }}><span style={{width:20,height:2,background:'#7c3aed',display:'inline-block'}}/> Reports to Todd</span>
         <span style={{ display:'flex',alignItems:'center',gap:6 }}><span style={{width:20,height:2,background:'#6d28d9',borderTop:'2px dashed #6d28d9',display:'inline-block'}}/> Peer coordination</span>
         <span style={{ display:'flex',alignItems:'center',gap:6 }}><span style={{width:20,height:2,background:'#0891b2',display:'inline-block'}}/> Orchestrates</span>
