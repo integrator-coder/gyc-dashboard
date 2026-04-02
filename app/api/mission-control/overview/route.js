@@ -441,6 +441,17 @@ export async function GET() {
       children: ['BB-8', 'Fulcrum', 'Vision'],
     },
     {
+      name: 'Yoda',
+      role: 'Deep Analysis',
+      category: 'worker',
+      node: 'Mac Mini',
+      status: inProgress.some((t) => t.owner === 'Yoda') ? 'working' : 'idle',
+      currentTask: inProgress.find((t) => t.owner === 'Yoda')?.title || 'On-demand — invoked by Wall·E for deep analysis',
+      lastActivity: nowIso,
+      reportsTo: 'Wall·E',
+      children: [],
+    },
+    {
       name: 'R2',
       role: 'Builder Agent',
       category: 'worker',
