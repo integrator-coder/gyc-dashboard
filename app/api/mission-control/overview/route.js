@@ -69,9 +69,14 @@ async function fetchAnthropicMtdCost(apiKey) {
   })
 
   const rawTotal = rawDaily.reduce((sum, d) => sum + Number(d.amountRaw || 0), 0)
-  // Anthropic cost_report returns values in cents (not dollars).
-  // Divide by 100 to get USD. E.g. rawTotal=2273 → $22.73.
+
+  // Anthropic cost_report returns values in CENTS not dollars.
+  // Always divide by 100. Sanity check: if computed MTD > $500 something is wrong — flag it.
   const unitScale = 0.01
+  const sanityCheck = rawTotal * unitScale
+  if (sanityCheck > 500) {
+    console.warn(`[cost-sanity] Anthropic MTD computed as $${sanityCheck.toFixed(2)} — exceeds $500 sanity threshold. rawTotal=${rawTotal}. Check API unit scale.`)
+  }
 
   const daily = rawDaily.map((d) => ({
     date: d.date,
