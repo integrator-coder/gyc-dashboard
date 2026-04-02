@@ -4,8 +4,11 @@ import { useEffect, useState, useCallback } from 'react'
 import KpiCard from '@/components/KpiCard'
 import CommissionTierTracker from '@/components/CommissionTierTracker'
 
-const VIEW_LABELS = ['Today', 'This Week', 'This Month', 'This Year']
-const VIEW_KEYS = ['today', 'week', 'month', 'year']
+const VIEW_LABELS = ['Today', 'This Week', 'This Month', 'Last Month', 'Q1', 'Q2', 'Q3', 'Q4', 'YTD', 'This Year']
+const VIEW_KEYS   = ['today', 'week', 'month', 'lastMonth', 'q1', 'q2', 'q3', 'q4', 'ytd', 'year']
+
+// Periods that have target tracking in DAILY/WEEKLY/MONTHLY_TARGETS
+const TRACKED_PERIODS = new Set(['today', 'week', 'month'])
 
 const PRIMARY_METRICS = [
   { key: 'Agreements Closed', isRate: false, size: 'large' },
@@ -23,6 +26,7 @@ const LOWER_IS_BETTER = new Set(['No Show', 'Cancelled'])
 
 function getTarget(targets, metric, period) {
   const map = { today: 'daily', week: 'weekly', month: 'monthly' }
+  if (!map[period]) return null
   return targets?.[map[period]]?.[metric] ?? null
 }
 
@@ -48,16 +52,29 @@ function RepCard({ repName, repData, period, metrics, targets }) {
         {metrics.map(({ key, isRate }) => {
           const actual = repData[key]?.[period] ?? 0
           const target = getTarget(targets, key, period)
-          if (target === null) return null
+          if (TRACKED_PERIODS.has(period) && target === null) return null
+          if (target !== null) {
+            return (
+              <KpiCard
+                key={key}
+                title={key}
+                actual={actual}
+                target={target}
+                isRate={isRate}
+                lowerIsBetter={LOWER_IS_BETTER.has(key)}
+              />
+            )
+          }
+          // Extended period — show actual only, no target bar
+          const displayVal = isRate
+            ? `${(actual * 100).toFixed(1)}%`
+            : Number.isInteger(actual) ? String(actual) : actual.toFixed(1)
           return (
-            <KpiCard
-              key={key}
-              title={key}
-              actual={actual}
-              target={target}
-              isRate={isRate}
-              lowerIsBetter={LOWER_IS_BETTER.has(key)}
-            />
+            <div key={key} className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+              <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">{key}</p>
+              <p className="text-2xl font-bold text-white">{displayVal}</p>
+              <p className="text-xs mt-1.5 text-gray-600">no target</p>
+            </div>
           )
         })}
       </div>
@@ -260,20 +277,34 @@ export default function SalesPage() {
         </div>
       )}
 
-      <div className="flex gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1 w-fit">
-        {VIEW_LABELS.map((label, i) => (
-          <button
-            key={label}
-            onClick={() => setViewIdx(i)}
-            className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
-              viewIdx === i
-                ? 'brand-active text-white'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+      {/* Period toggles — two rows */}
+      <div className="flex flex-col gap-1 w-fit">
+        <div className="flex gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1">
+          {[0, 1, 2, 3, 8].map(i => (
+            <button
+              key={VIEW_LABELS[i]}
+              onClick={() => setViewIdx(i)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                viewIdx === i ? 'brand-active text-white' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              {VIEW_LABELS[i]}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1">
+          {[4, 5, 6, 7, 9].map(i => (
+            <button
+              key={VIEW_LABELS[i]}
+              onClick={() => setViewIdx(i)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                viewIdx === i ? 'brand-active text-white' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              {VIEW_LABELS[i]}
+            </button>
+          ))}
+        </div>
       </div>
 
       <section>
@@ -317,15 +348,25 @@ export default function SalesPage() {
           {(() => {
             const actual = team?.metrics?.['Agreements Closed']?.[period] ?? 0
             const target = getTarget(targets, 'Agreements Closed', period)
-            return target !== null ? (
-              <KpiCard
-                title="Agreements Closed"
-                actual={actual}
-                target={target}
-                isRate={false}
-                size="large"
-              />
-            ) : null
+            if (target !== null) {
+              return (
+                <KpiCard
+                  title="Agreements Closed"
+                  actual={actual}
+                  target={target}
+                  isRate={false}
+                  size="large"
+                />
+              )
+            }
+            // Extended period — show actual only
+            return (
+              <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+                <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">Agreements Closed</p>
+                <p className="text-4xl font-bold text-white">{actual}</p>
+                <p className="text-xs mt-1.5 text-gray-600">no target for this period</p>
+              </div>
+            )
           })()}
         </div>
 
@@ -333,16 +374,29 @@ export default function SalesPage() {
           {PRIMARY_METRICS.filter(m => m.key !== 'Agreements Closed').map(({ key, isRate }) => {
             const actual = team?.metrics?.[key]?.[period] ?? 0
             const target = getTarget(targets, key, period)
-            if (target === null) return null
+            if (TRACKED_PERIODS.has(period) && target === null) return null
+            if (target !== null) {
+              return (
+                <KpiCard
+                  key={key}
+                  title={key}
+                  actual={actual}
+                  target={target}
+                  isRate={isRate}
+                  lowerIsBetter={LOWER_IS_BETTER.has(key)}
+                />
+              )
+            }
+            // Extended period — actual only
+            const displayVal = isRate
+              ? `${(actual * 100).toFixed(1)}%`
+              : Number.isInteger(actual) ? String(actual) : actual.toFixed(1)
             return (
-              <KpiCard
-                key={key}
-                title={key}
-                actual={actual}
-                target={target}
-                isRate={isRate}
-                lowerIsBetter={LOWER_IS_BETTER.has(key)}
-              />
+              <div key={key} className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+                <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">{key}</p>
+                <p className="text-2xl font-bold text-white">{displayVal}</p>
+                <p className="text-xs mt-1.5 text-gray-600">no target</p>
+              </div>
             )
           })}
         </div>

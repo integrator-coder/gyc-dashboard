@@ -15,10 +15,12 @@ export async function GET(request) {
     const period = searchParams.get('period') || 'month'
 
     const now = new Date()
+    const yr = now.getFullYear()
     let startDate
+    let endDate = now
 
     if (period === 'today') {
-      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      startDate = new Date(yr, now.getMonth(), now.getDate())
     } else if (period === 'week') {
       const day = now.getDay()
       const diff = day === 0 ? -6 : 1 - day // Monday
@@ -26,21 +28,40 @@ export async function GET(request) {
       startDate.setDate(now.getDate() + diff)
       startDate.setHours(0, 0, 0, 0)
     } else if (period === 'year') {
-      startDate = new Date(now.getFullYear(), 0, 1)
+      startDate = new Date(yr, 0, 1)
+    } else if (period === 'lastMonth') {
+      startDate = new Date(yr, now.getMonth() - 1, 1)
+      endDate   = new Date(yr, now.getMonth(), 0, 23, 59, 59)
+    } else if (period === 'q1') {
+      startDate = new Date(yr, 0, 1); endDate = new Date(yr, 2, 31, 23, 59, 59)
+    } else if (period === 'q2') {
+      startDate = new Date(yr, 3, 1); endDate = new Date(yr, 5, 30, 23, 59, 59)
+    } else if (period === 'q3') {
+      startDate = new Date(yr, 6, 1); endDate = new Date(yr, 8, 30, 23, 59, 59)
+    } else if (period === 'q4') {
+      startDate = new Date(yr, 9, 1); endDate = new Date(yr, 11, 31, 23, 59, 59)
+    } else if (period === 'ytd') {
+      startDate = new Date(yr, 0, 1)
     } else {
       // month (default)
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+      startDate = new Date(yr, now.getMonth(), 1)
     }
 
     const periodLabel = {
-      today: 'Today',
-      week: 'This Week',
-      month: startDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
-      year: String(now.getFullYear())
+      today:     'Today',
+      week:      'This Week',
+      month:     startDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+      lastMonth: new Date(yr, now.getMonth() - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+      q1:        `Q1 ${yr}`,
+      q2:        `Q2 ${yr}`,
+      q3:        `Q3 ${yr}`,
+      q4:        `Q4 ${yr}`,
+      ytd:       `YTD ${yr}`,
+      year:      String(yr),
     }[period] || 'This Month'
 
     const [deals, users] = await Promise.all([
-      getClosedWonDeals(startDate, now),
+      getClosedWonDeals(startDate, endDate),
       getGHLUsers()
     ])
 

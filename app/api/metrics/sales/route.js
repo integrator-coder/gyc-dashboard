@@ -101,30 +101,44 @@ async function fetchAllGhlWon() {
 // Get Closed Won counts for a specific rep, filtered by period
 async function getGhlClosedWon(repName) {
   const userId = GHL_USER_IDS[repName]
-  if (!userId) return { today: 0, week: 0, month: 0 }
+  if (!userId) return { today: 0, week: 0, month: 0, lastMonth: 0, q1: 0, q2: 0, q3: 0, q4: 0, ytd: 0 }
 
   const allWon = await fetchAllGhlWon()
   // Filter to this rep — assigned_to must match
   const repWon = allWon.filter(o => o.assignedTo === userId)
 
   const now = new Date()
+  const yr = now.getFullYear()
   const todayStart = new Date(now); todayStart.setHours(0,0,0,0)
   const weekStart = new Date(now)
   weekStart.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1))
   weekStart.setHours(0,0,0,0)
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const monthStart    = new Date(yr, now.getMonth(), 1)
+  const lastMonthStart = new Date(yr, now.getMonth() - 1, 1)
+  const lastMonthEnd   = new Date(yr, now.getMonth(), 0, 23, 59, 59)
+  const Q1_START = new Date(yr, 0, 1),  Q1_END = new Date(yr, 2, 31, 23, 59, 59)
+  const Q2_START = new Date(yr, 3, 1),  Q2_END = new Date(yr, 5, 30, 23, 59, 59)
+  const Q3_START = new Date(yr, 6, 1),  Q3_END = new Date(yr, 8, 30, 23, 59, 59)
+  const Q4_START = new Date(yr, 9, 1),  Q4_END = new Date(yr, 11, 31, 23, 59, 59)
+  const YTD_START = new Date(yr, 0, 1)
 
   // Only count deals created AND won in the same period (excludes prior-month pipeline)
-  const countInPeriod = (start) => repWon.filter(o => {
+  const countInPeriod = (start, end = now) => repWon.filter(o => {
     const created = new Date(o.createdAt)
     const won = new Date(o.lastStatusChangeAt)
-    return created >= start && won >= start
+    return created >= start && created <= end && won >= start && won <= end
   }).length
 
   return {
-    today: countInPeriod(todayStart),
-    week:  countInPeriod(weekStart),
-    month: countInPeriod(monthStart),
+    today:     countInPeriod(todayStart),
+    week:      countInPeriod(weekStart),
+    month:     countInPeriod(monthStart),
+    lastMonth: countInPeriod(lastMonthStart, lastMonthEnd),
+    q1:        countInPeriod(Q1_START, Q1_END),
+    q2:        countInPeriod(Q2_START, Q2_END),
+    q3:        countInPeriod(Q3_START, Q3_END),
+    q4:        countInPeriod(Q4_START, Q4_END),
+    ytd:       countInPeriod(YTD_START),
   }
 }
 
@@ -178,57 +192,48 @@ export async function GET() {
     const repData = {}
     const repFlags = {}
 
+    const ALL_PERIODS = ['today', 'week', 'month', 'lastMonth', 'q1', 'q2', 'q3', 'q4', 'ytd']
+
     allReps.forEach((rep, i) => {
       const sheetMetrics = sheetResults[i]
       if (!sheetMetrics) return
 
       // Conversion Rate = GHL Closed Won / Shown (includes follow-up closes)
-      // Close Rate = Agreements Closed / Shown (same-session closes)
-      const shown = sheetMetrics['Shown'] || { today: 0, week: 0, month: 0 }
-      const won = ghlWon[rep] || { today: 0, week: 0, month: 0 }
+      const shown = sheetMetrics['Shown'] || {}
+      const won   = ghlWon[rep]           || {}
 
-      sheetMetrics['Conversion Rate'] = {
-        today: shown.today > 0 ? won.today / shown.today : 0,
-        week:  shown.week  > 0 ? won.week  / shown.week  : 0,
-        month: shown.month > 0 ? won.month / shown.month : 0,
+      const convRate = {}
+      const closeRate = {}
+      const agrClosed = sheetMetrics['Agreements Closed'] || {}
+      for (const p of ALL_PERIODS) {
+        convRate[p]  = (shown[p] || 0) > 0 ? (won[p]       || 0) / shown[p] : 0
+        closeRate[p] = (shown[p] || 0) > 0 ? (agrClosed[p] || 0) / shown[p] : 0
       }
 
-      // Add GHL won counts as a separate metric for transparency
-      sheetMetrics['GHL Closed Won'] = won
+      sheetMetrics['Conversion Rate'] = convRate
+      sheetMetrics['GHL Closed Won']  = won
+      sheetMetrics['Close Rate']      = closeRate
 
-      // Close Rate = Agreements Closed / Shown (same-session closes)
-      const agrClosed = sheetMetrics['Agreements Closed'] || { today: 0, week: 0, month: 0 }
-      sheetMetrics['Close Rate'] = {
-        today: shown.today > 0 ? agrClosed.today / shown.today : 0,
-        week:  shown.week  > 0 ? agrClosed.week  / shown.week  : 0,
-        month: shown.month > 0 ? agrClosed.month / shown.month : 0,
-      }
-
-      repData[rep] = sheetMetrics
+      repData[rep]  = sheetMetrics
       repFlags[rep] = getDataFlags(rep, sheetMetrics)
     })
 
-    // Team totals (Jesse + Briana)
+    // Team totals (Jesse + Briana) — all periods
     const teamMetrics = {}
     for (const metric of Object.keys(DAILY_TARGETS)) {
       const isRate = RATE_METRICS.has(metric)
-      if (isRate) {
-        const periods = ['today', 'week', 'month']
-        const out = {}
-        for (const period of periods) {
+      const out = {}
+      for (const period of ALL_PERIODS) {
+        if (isRate) {
           const vals = PRIMARY_REPS
             .map(r => repData[r]?.[metric]?.[period] || 0)
             .filter(v => v > 0)
           out[period] = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0
-        }
-        teamMetrics[metric] = out
-      } else {
-        teamMetrics[metric] = {
-          today: PRIMARY_REPS.reduce((sum, r) => sum + (repData[r]?.[metric]?.today || 0), 0),
-          week:  PRIMARY_REPS.reduce((sum, r) => sum + (repData[r]?.[metric]?.week  || 0), 0),
-          month: PRIMARY_REPS.reduce((sum, r) => sum + (repData[r]?.[metric]?.month || 0), 0),
+        } else {
+          out[period] = PRIMARY_REPS.reduce((sum, r) => sum + (repData[r]?.[metric]?.[period] || 0), 0)
         }
       }
+      teamMetrics[metric] = out
     }
 
     return NextResponse.json({
