@@ -69,8 +69,9 @@ async function fetchAnthropicMtdCost(apiKey) {
   })
 
   const rawTotal = rawDaily.reduce((sum, d) => sum + Number(d.amountRaw || 0), 0)
-  // Anthropic cost_report can return values that behave like cents in some org views.
-  const unitScale = rawTotal > 5000 ? 0.01 : 1
+  // Anthropic cost_report returns values in cents (not dollars).
+  // Divide by 100 to get USD. E.g. rawTotal=2273 → $22.73.
+  const unitScale = 0.01
 
   const daily = rawDaily.map((d) => ({
     date: d.date,
