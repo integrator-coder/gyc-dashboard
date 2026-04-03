@@ -161,6 +161,7 @@ async function upsertDeals(client, deals) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 async function run() {
+  const startTime = Date.now()
   console.log('🔄 sync-sales-deals: starting...')
 
   const auth = createGoogleAuth(['https://www.googleapis.com/auth/spreadsheets.readonly'])
@@ -198,6 +199,19 @@ async function run() {
       ['sales-deals', 'success', `inserted=${totalInserted} skipped=${totalSkipped}`, 'default']
     )
     console.log('📝 SyncLog entry written')
+
+    // Write AgentAuditLog entry
+    const durationMs = Date.now() - startTime
+    try {
+      await client.query(
+        `INSERT INTO "AgentAuditLog" ("tenantId","agentId","agentName","action","target","summary","status","durationMs","recordsAffected")
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        ['gyc', 'main', 'Wall·E', 'sync', 'SalesDeal', `inserted=${totalInserted} skipped=${totalSkipped}`, 'ok', durationMs, totalInserted]
+      )
+      console.log('🔒 AgentAuditLog entry written')
+    } catch (auditErr) {
+      console.error('[agent-audit] Failed to log:', auditErr.message)
+    }
   } catch (err) {
     await client.query('ROLLBACK')
     console.error('❌ Sync failed:', err.message)
