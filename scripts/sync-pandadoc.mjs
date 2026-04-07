@@ -88,14 +88,53 @@ async function fetchDetail(docId) {
   } catch { return null }
 }
 
+/**
+ * Parse a token value that may be:
+ *   - Simple:       "$3,999"
+ *   - With note:    "$4,985 (one month free)"
+ *   - Multi-loc:    "1st Location: $14,990  2nd Location:$12,990  Total: $27,980"
+ *   - Multi-loc MRR: "1st Location: $1,499   2nd Location: $1,299"
+ *
+ * For PIF: prefer the "Total:" figure if present, otherwise sum all $ values.
+ * For MRR: sum all $ values (each location's monthly rate).
+ */
+function parseTokenValue(raw, mode = 'pif') {
+  if (!raw) return null
+  const str = String(raw)
+
+  // If there's a "Total:" label, use that value
+  if (mode === 'pif') {
+    const totalMatch = str.match(/total[:\s]+\$([\d,]+)/i)
+    if (totalMatch) {
+      const val = parseFloat(totalMatch[1].replace(/,/g, ''))
+      if (!isNaN(val) && val > 0) return val
+    }
+  }
+
+  // Extract ALL dollar amounts from the string
+  const allAmounts = [...str.matchAll(/\$([\d,]+(?:\.\d{1,2})?)/g)]
+    .map(m => parseFloat(m[1].replace(/,/g, '')))
+    .filter(v => !isNaN(v) && v > 0)
+
+  if (allAmounts.length === 0) return null
+
+  // For MRR: sum all location rates
+  // For PIF: if multiple amounts and no Total label, sum them
+  if (mode === 'mrr' || allAmounts.length > 1) {
+    return allAmounts.reduce((a, b) => a + b, 0)
+  }
+
+  return allAmounts[0]
+}
+
 function extractAmount(detail) {
   if (!detail) return null
-  const PIF_KEYS = /pay.?in.?full|pif|contract.?value|total.?value|deal.?value/i
+  const PIF_KEYS = /pay.?in.?full|\bpif\b|contract.?value|total.?value|deal.?value/i
   if (Array.isArray(detail.tokens)) {
     for (const t of detail.tokens) {
       if (PIF_KEYS.test(t.name || '')) {
-        const val = parseFloat(String(t.value || '').replace(/[$,\s]/g, ''))
-        if (!isNaN(val) && val > 0) return val
+        const val = parseTokenValue(t.value, 'pif')
+        if (val !== null) return val
       }
     }
   }
@@ -108,12 +147,12 @@ function extractAmount(detail) {
 
 function extractMrr(detail) {
   if (!detail) return null
-  const MRR_KEYS = /monthly.?financ|monthly.?rate|monthly.?amount|monthly.?fee|mrr|recurring/i
+  const MRR_KEYS = /monthly.?financ|monthly.?rate|monthly.?amount|monthly.?fee|\bmrr\b|recurring/i
   if (Array.isArray(detail.tokens)) {
     for (const t of detail.tokens) {
       if (MRR_KEYS.test(t.name || '')) {
-        const val = parseFloat(String(t.value || '').replace(/[$,\s]/g, ''))
-        if (!isNaN(val) && val > 0) return val
+        const val = parseTokenValue(t.value, 'mrr')
+        if (val !== null) return val
       }
     }
   }
