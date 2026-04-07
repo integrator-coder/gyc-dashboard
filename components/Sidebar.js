@@ -37,6 +37,7 @@ function buildDashboardGroup(user) {
         { label: 'Overview', emoji: '💰', href: '/finance' },
         { label: 'Churn', emoji: '📉', href: '/churn' },
         { label: 'Dunning', emoji: '⚠️', href: '/dunning' },
+        { label: 'Agreements', emoji: '📝', href: '/agreements' },
       ],
     })
   }
