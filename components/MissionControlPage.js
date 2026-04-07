@@ -390,7 +390,7 @@ function AgentOrgChart({ agents }) {
         {Object.entries(pos).filter(([name]) => name !== 'Todd').map(([name, p]) => {
           const PLANNED_META = {
             'Mini-2':  { role: 'GYC-Growth-Claw · M3 Client Engine',       node: 'Mac Mini #2 (planned)' },
-            'Thrawn':   { role: 'CMO Intelligence',                          node: 'Mac Mini #2 (planned)' },
+            'Thrawn':   { role: 'Business Intelligence',                     node: 'Mac Mini (live)' },
             'Monday':  { role: 'M3 Client Dashboard',                       node: 'Mac Mini #2 (planned)' },
             'Scribe':  { role: 'Report + Document Generation',              node: 'Mac Mini #2 (planned)' },
             'Arbiter': { role: 'Escalation + Inter-Agent Routing',          node: 'Mac Mini #2 (planned)' },
@@ -547,7 +547,7 @@ export default function MissionControlPage() {
             {/* Node breakdown */}
             <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
               {[
-                { name: 'GYC-Integrator-Claw', type: 'Mac Mini (2024)', status: 'live', agents: 'Wall·E, Yoda, R2, Thrawn, Soundwave, Echo, C3PO, Ratchet', color: '#7c3aed' },
+                { name: 'GYC-Integrator-Claw', type: 'Mac Mini (2024)', status: 'live', agents: 'Wall·E, Yoda, R2, Thrawn, Soundwave, Echo, C3PO, Ratchet (all reporting to Wall·E)', color: '#7c3aed' },
                 { name: 'GYC-Data-Claw', type: 'Mac Studio (M2 Max)', status: 'live', agents: 'Eve, BB-8, Fulcrum, Vision', color: '#0891b2' },
                 { name: 'Laptop', type: 'Portable Node', status: 'pending', agents: 'Friday, Chopper', color: '#374151' },
                 { name: 'GYC-Growth-Claw', type: 'Mac Mini #2 (planned)', status: 'planned', agents: 'Monday, Scribe, Arbiter', color: '#374151' },
