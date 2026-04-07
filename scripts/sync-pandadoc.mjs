@@ -43,7 +43,8 @@ const HEADERS = { Authorization: `API-Key ${PANDADOC_API_KEY}`, 'Content-Type': 
 
 const SENT_STATUSES = new Set(['document.sent','document.viewed','document.waiting_approval','document.approved','document.waiting_pay'])
 const SIGNED_STATUSES = new Set(['document.completed','document.paid'])
-const ACTIVE_STATUSES = new Set([...SENT_STATUSES, ...SIGNED_STATUSES])
+const EXPIRED_STATUSES = new Set(['document.expired'])
+const ACTIVE_STATUSES = new Set([...SENT_STATUSES, ...SIGNED_STATUSES, ...EXPIRED_STATUSES])
 const DAYS_BACK = 90
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
@@ -201,10 +202,27 @@ async function run() {
   console.log(`[sync-pandadoc] Starting — pulling docs since ${cutoff.toISOString().slice(0,10)}`)
 
   const allDocs = await fetchAllDocuments()
-  const recentActive = allDocs.filter(d =>
-    ACTIVE_STATUSES.has(d.status) && new Date(d.date_created) >= cutoff
+  // Also fetch expired docs separately (PandaDoc excludes them from default list)
+  const expiredDocs = []
+  try {
+    let page = 1
+    while (page <= 5) {
+      const res = await fetchWithRetry(`${BASE_URL}/documents?count=100&page=${page}&status=document.expired&order_by=-date_created`)
+      const data = await res.json()
+      const docs = data.results || data.data || []
+      if (!docs.length) break
+      expiredDocs.push(...docs)
+      if (docs.length < 100) break
+      page++
+    }
+    console.log(`[sync-pandadoc] ${expiredDocs.length} expired docs fetched`)
+  } catch(e) { console.log('[sync-pandadoc] expired fetch error:', e.message) }
+
+  const allDocsWithExpired = [...allDocs, ...expiredDocs.filter(d => !allDocs.find(a => a.id === d.id))]
+  const recentActive = allDocsWithExpired.filter(d =>
+    (ACTIVE_STATUSES.has(d.status) || EXPIRED_STATUSES.has(d.status)) && new Date(d.date_created) >= cutoff
   )
-  console.log(`[sync-pandadoc] ${allDocs.length} total docs, ${recentActive.length} active in last ${DAYS_BACK} days`)
+  console.log(`[sync-pandadoc] ${allDocsWithExpired.length} total docs, ${recentActive.length} active/expired in last ${DAYS_BACK} days`)
 
   // Fetch details one at a time with 2s delay — PandaDoc WAF blocks bursts
   const details = {}
@@ -227,7 +245,7 @@ async function run() {
 
     for (const doc of recentActive) {
       const detail = details[doc.id] || null
-      const sentStatus = SIGNED_STATUSES.has(doc.status) ? 'signed' : 'sent'
+      const sentStatus = SIGNED_STATUSES.has(doc.status) ? 'signed' : EXPIRED_STATUSES.has(doc.status) ? 'expired' : 'sent'
 
       await client.query(`
         INSERT INTO "AgreementsSnapshot"

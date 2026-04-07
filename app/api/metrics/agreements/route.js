@@ -99,7 +99,7 @@ export async function GET(request) {
       SELECT
         COUNT(*)  FILTER (WHERE "sentStatus" = 'sent')                     AS agreements_sent,
         COUNT(*)  FILTER (WHERE "sentStatus" = 'signed')                   AS agreements_signed,
-        COUNT(*)  FILTER (WHERE status = 'document.expired')               AS agreements_expired,
+        COUNT(*)  FILTER (WHERE status = 'document.expired' OR "sentStatus" = 'expired')               AS agreements_expired,
         SUM(amount) FILTER (WHERE "sentStatus" = 'sent')                   AS total_proposed,
         SUM(amount) FILTER (WHERE "sentStatus" = 'signed')                 AS closed_amount,
         SUM(mrr)    FILTER (WHERE "sentStatus" = 'signed')                 AS mrr,
@@ -116,7 +116,7 @@ export async function GET(request) {
         DATE_TRUNC('month', "createdAt") AS month_start,
         COUNT(*)    FILTER (WHERE "sentStatus" = 'sent')              AS sent,
         COUNT(*)    FILTER (WHERE "sentStatus" = 'signed')             AS signed,
-        COUNT(*)    FILTER (WHERE status = 'document.expired')         AS expired,
+        COUNT(*)    FILTER (WHERE status = 'document.expired' OR "sentStatus" = 'expired')         AS expired,
         SUM(amount) FILTER (WHERE "sentStatus" = 'sent')               AS proposed_amount,
         SUM(amount) FILTER (WHERE "sentStatus" = 'signed')             AS closed_amount
       FROM "AgreementsSnapshot"
