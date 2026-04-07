@@ -13,6 +13,21 @@ const endpoints = [
   '/api/metrics/production-snapshot?refresh=1',
 ]
 
+const ENDPOINT_TIMEOUT_MS = 30000 // 30s per endpoint max
+
+async function fetchWithTimeout(url, ms) {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), ms)
+  try {
+    const res = await fetch(url, { signal: controller.signal })
+    clearTimeout(timer)
+    return res
+  } catch (e) {
+    clearTimeout(timer)
+    throw e
+  }
+}
+
 async function run() {
   const started = new Date().toISOString()
   const results = []
@@ -21,7 +36,7 @@ async function run() {
     const url = `${base}${path}`
     const t0 = Date.now()
     try {
-      const res = await fetch(url)
+      const res = await fetchWithTimeout(url, ENDPOINT_TIMEOUT_MS)
       const json = await res.json().catch(() => ({}))
       results.push({
         path,
@@ -32,7 +47,8 @@ async function run() {
         error: json?.error || null,
       })
     } catch (e) {
-      results.push({ path, ok: false, status: 0, ms: Date.now() - t0, error: e.message })
+      const isTimeout = e.name === 'AbortError'
+      results.push({ path, ok: false, status: 0, ms: Date.now() - t0, error: isTimeout ? `timed out after ${ENDPOINT_TIMEOUT_MS}ms` : e.message })
     }
   }
 
