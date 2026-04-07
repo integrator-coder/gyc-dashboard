@@ -31,7 +31,7 @@ const AGENT_META = {
   'Vision':  { img: '', glow: '#7e22ce', border: '#7e22ce', bg: '#190730' },
   'Mini-2':    { img: '', glow: '#374151', border: '#374151', bg: '#0a0a0a' },
   'Yoda':    { img: '', glow: '#9333ea', border: '#9333ea', bg: '#1a0533' },
-  'Axiom':     { img: '', glow: '#0d9488', border: '#0d9488', bg: '#021a18' },
+  'Thrawn':     { img: '', glow: '#0d9488', border: '#0d9488', bg: '#021a18' },
   'Soundwave':      { img: '', glow: '#f59e0b', border: '#f59e0b', bg: '#1c0f00' },
   'Monday':    { img: '', glow: '#2563eb', border: '#2563eb', bg: '#04102a' },
   'Scribe':    { img: '', glow: '#c2410c', border: '#c2410c', bg: '#1c0800' },
@@ -64,7 +64,7 @@ const AGENT_MODEL = {
   'Eve':     'GPT-5.3-Codex',
   'R2':      'GPT-5.4',
   'Yoda':  'Claude Opus',
-  'Axiom':   'Claude Haiku',
+  'Thrawn':   'Claude Haiku',
   'Soundwave':    'Claude Haiku',
   'Echo':    'Claude Haiku',
   'C3PO':   'Claude Haiku',
@@ -84,7 +84,7 @@ const AGENT_MODEL_ACCESS = {
   'Eve':       { default: 'GPT-5.3-Codex', escalate: null },
   'R2':        { default: 'GPT-5.4', escalate: null },
   'Yoda':      { default: 'Claude Opus', escalate: null },
-  'Axiom':     { default: 'Claude Haiku', escalate: 'Sonnet (via Wall·E)' },
+  'Thrawn':     { default: 'Claude Haiku', escalate: 'Sonnet (via Wall·E)' },
   'Soundwave': { default: 'Claude Haiku', escalate: 'Sonnet (via Wall·E)' },
   'Echo':      { default: 'Claude Haiku', escalate: null },
   'C3PO':      { default: 'Claude Haiku', escalate: null },
@@ -104,7 +104,7 @@ const AGENT_RESPONSIBILITIES = {
   'Eve':     ['Runs all scheduled data sync jobs (Stripe, GHL, Zendesk, Sheets)', 'Writes all raw and normalized data into Neon PostgreSQL', 'Owns the data pipeline — source of truth for every dashboard metric', 'Runs independently on Mac Studio for reliability isolation', 'Eve writes, Wall·E reads — clean data ownership separation'],
   'R2':      ['Builds and maintains GYC KPI dashboard and Team Portal', 'Executes all coding: features, scripts, API integrations, bug fixes', 'Handles Next.js, Prisma, Neon, Recharts, Tailwind stack', 'Receives task specs from Wall·E, delivers working code', 'Primary implementation engine for all Mac Mini software'],
   'Yoda':  ['Reserved for deep analysis requiring maximum reasoning depth', 'Handles complex multi-variable decisions and long-form synthesis', 'Engaged sparingly — highest cost model, highest quality output', 'Wall·E escalates to Yoda when standard reasoning is insufficient', 'Strategic advisory layer — never for routine tasks'],
-  'Axiom':   ['Daily business intelligence sweeps against live Neon data', 'Detects churn risk, billing failures, and at-risk client signals early', 'Identifies upsell opportunities from active client engagement patterns', 'Monitors sales velocity, close rate trends, and rep performance shifts', 'Writes actionable memos to Wall·E — the CMO-level radar system'],
+  'Thrawn':   ['Daily business intelligence sweeps against live Neon data', 'Detects churn risk, billing failures, and at-risk client signals early', 'Identifies upsell opportunities from active client engagement patterns', 'Monitors sales velocity, close rate trends, and rep performance shifts', 'Writes actionable memos to Wall·E — the CMO-level radar system'],
   'Soundwave':    ['Processes every new Zoom sales and GA call transcript daily', 'Scores rep performance: talk/listen ratio, objection handling, commitment close', 'Detects recurring objection patterns and conversion blockers across calls', 'Writes per-rep coaching notes and weekly team performance summaries', 'Feeds structured analysis into Neon for Client Intel and M3 call review'],
   'Echo':    ['Routes task assignments across the entire agent fleet', 'Tracks task status and completion for all active agents', 'Generates concise progress summaries for Wall·E to relay to Todd', 'Maintains the task log and flags stalled or blocked work early', 'Coordination layer — keeps the fleet moving without Wall·E micromanaging'],
   'C3PO':   ['Validates all builds before they are marked user-facing or deployed', 'Runs smoke tests, build checks, and regression scans on new code', 'Reviews code diffs for obvious bugs, broken routes, or regressions', 'Returns structured pass/fail reports with failure details to Wall·E', 'The release gate — nothing ships without C3PO sign-off'],
@@ -273,7 +273,7 @@ function AgentOrgChart({ agents }) {
     'Wall·E':    { cx: COL.C,   cy: R1, size: 'xl' },
     'Eve':       { cx: COL.D,   cy: R1, size: 'xl' },
     'Friday':    { cx: COL.E,   cy: R1, size: 'md', planned: true },
-    'Axiom':     { cx: COL.A,   cy: R2, size: 'sm' },
+    'Thrawn':     { cx: COL.A,   cy: R2, size: 'sm' },
     'R2':        { cx: COL.B,   cy: R2, size: 'md' },
     'Echo':      { cx: COL.C,   cy: R2, size: 'sm' },
     'BB-8':      { cx: COL.D,   cy: R2, size: 'sm' },
@@ -308,7 +308,7 @@ function AgentOrgChart({ agents }) {
     // Friday worker
     ['Friday',  'Chopper',   { color: '#4f46e5', dashed: true }],
     // Mini-2 planned cluster
-    ['Wall·E',  'Axiom',     { color: '#0d9488' }],
+    ['Wall·E',  'Thrawn',     { color: '#0d9488' }],
     ['Wall·E',  'Soundwave',      { color: '#f59e0b' }],
     ['Mini-2',  'Monday',    { color: '#2563eb', dashed: true }],
     ['Mini-2',  'Scribe',    { color: '#c2410c', dashed: true }],
@@ -390,7 +390,7 @@ function AgentOrgChart({ agents }) {
         {Object.entries(pos).filter(([name]) => name !== 'Todd').map(([name, p]) => {
           const PLANNED_META = {
             'Mini-2':  { role: 'GYC-Growth-Claw · M3 Client Engine',       node: 'Mac Mini #2 (planned)' },
-            'Axiom':   { role: 'CMO Intelligence',                          node: 'Mac Mini #2 (planned)' },
+            'Thrawn':   { role: 'CMO Intelligence',                          node: 'Mac Mini #2 (planned)' },
             'Monday':  { role: 'M3 Client Dashboard',                       node: 'Mac Mini #2 (planned)' },
             'Scribe':  { role: 'Report + Document Generation',              node: 'Mac Mini #2 (planned)' },
             'Arbiter': { role: 'Escalation + Inter-Agent Routing',          node: 'Mac Mini #2 (planned)' },
@@ -547,7 +547,7 @@ export default function MissionControlPage() {
             {/* Node breakdown */}
             <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
               {[
-                { name: 'GYC-Integrator-Claw', type: 'Mac Mini (2024)', status: 'live', agents: 'Wall·E, Yoda, R2, Axiom, Soundwave, Echo, C3PO, Ratchet', color: '#7c3aed' },
+                { name: 'GYC-Integrator-Claw', type: 'Mac Mini (2024)', status: 'live', agents: 'Wall·E, Yoda, R2, Thrawn, Soundwave, Echo, C3PO, Ratchet', color: '#7c3aed' },
                 { name: 'GYC-Data-Claw', type: 'Mac Studio (M2 Max)', status: 'live', agents: 'Eve, BB-8, Fulcrum, Vision', color: '#0891b2' },
                 { name: 'Laptop', type: 'Portable Node', status: 'pending', agents: 'Friday, Chopper', color: '#374151' },
                 { name: 'GYC-Growth-Claw', type: 'Mac Mini #2 (planned)', status: 'planned', agents: 'Monday, Scribe, Arbiter', color: '#374151' },
