@@ -93,18 +93,18 @@ function StatusBadge({ status }) {
   )
 }
 
-function KpiCard({ title, value, sub, icon }) {
+function KpiCard({ title, value, sub, icon, accent }) {
   return (
     <div style={{
       background: C.card,
-      border: `1px solid ${C.border}`,
+      border: `1px solid ${accent ? accent + '55' : C.border}`,
       borderRadius: '12px',
       padding: '16px 20px',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
         <div>
           <p style={{ color: C.muted, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>{title}</p>
-          <p style={{ color: 'white', fontSize: '24px', fontWeight: 700, marginTop: 4, marginBottom: 0, lineHeight: 1 }}>{value}</p>
+          <p style={{ color: accent || 'white', fontSize: '24px', fontWeight: 700, marginTop: 4, marginBottom: 0, lineHeight: 1 }}>{value}</p>
           {sub && <p style={{ color: C.muted, fontSize: '11px', marginTop: 6, marginBottom: 0 }}>{sub}</p>}
         </div>
         <span style={{ fontSize: '22px', opacity: 0.7 }}>{icon}</span>
@@ -376,6 +376,13 @@ export default function AgreementsPage() {
           sub="Monthly recurring"
           icon="🔁"
         />
+        <KpiCard
+          title="Expired"
+          value={loading ? '…' : (kpis?.agreementsExpired ?? '—')}
+          sub="Not signed in time"
+          icon="⏰"
+          accent={C.red}
+        />
       </div>
 
       {/* Charts */}
@@ -412,8 +419,9 @@ export default function AgreementsPage() {
                 <YAxis tick={{ fill: C.muted, fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} width={30} />
                 <Tooltip content={<ChartTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 12, color: C.muted }} />
-                <Line type="monotone" dataKey="sent"   name="Sent"   stroke={C.purple} strokeWidth={2} dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="signed" name="Signed" stroke={C.teal}   strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="sent"    name="Sent"    stroke={C.purple} strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="signed"  name="Signed"  stroke={C.teal}   strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="expired" name="Expired" stroke={C.red}    strokeWidth={2} dot={{ r: 3 }} strokeDasharray="4 2" />
               </LineChart>
             </ResponsiveContainer>
           </div>

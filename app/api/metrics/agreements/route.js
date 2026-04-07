@@ -99,6 +99,7 @@ export async function GET(request) {
       SELECT
         COUNT(*)  FILTER (WHERE "sentStatus" = 'sent')                     AS agreements_sent,
         COUNT(*)  FILTER (WHERE "sentStatus" = 'signed')                   AS agreements_signed,
+        COUNT(*)  FILTER (WHERE status = 'document.expired')               AS agreements_expired,
         SUM(amount) FILTER (WHERE "sentStatus" = 'sent')                   AS total_proposed,
         SUM(amount) FILTER (WHERE "sentStatus" = 'signed')                 AS closed_amount,
         SUM(mrr)    FILTER (WHERE "sentStatus" = 'signed')                 AS mrr,
@@ -113,10 +114,11 @@ export async function GET(request) {
       SELECT
         TO_CHAR(DATE_TRUNC('month', "createdAt"), 'Mon YYYY') AS month,
         DATE_TRUNC('month', "createdAt") AS month_start,
-        COUNT(*)    FILTER (WHERE "sentStatus" = 'sent')   AS sent,
-        COUNT(*)    FILTER (WHERE "sentStatus" = 'signed') AS signed,
-        SUM(amount) FILTER (WHERE "sentStatus" = 'sent')   AS proposed_amount,
-        SUM(amount) FILTER (WHERE "sentStatus" = 'signed') AS closed_amount
+        COUNT(*)    FILTER (WHERE "sentStatus" = 'sent')              AS sent,
+        COUNT(*)    FILTER (WHERE "sentStatus" = 'signed')             AS signed,
+        COUNT(*)    FILTER (WHERE status = 'document.expired')         AS expired,
+        SUM(amount) FILTER (WHERE "sentStatus" = 'sent')               AS proposed_amount,
+        SUM(amount) FILTER (WHERE "sentStatus" = 'signed')             AS closed_amount
       FROM "AgreementsSnapshot"
       ${dateWhere}
       GROUP BY DATE_TRUNC('month', "createdAt"), TO_CHAR(DATE_TRUNC('month', "createdAt"), 'Mon YYYY')
@@ -125,8 +127,9 @@ export async function GET(request) {
 
     const monthlyData = monthlyResult.rows.map(r => ({
       month:          r.month,
-      sent:           parseInt(r.sent,   10),
-      signed:         parseInt(r.signed, 10),
+      sent:           parseInt(r.sent,    10),
+      signed:         parseInt(r.signed,  10),
+      expired:        parseInt(r.expired, 10),
       proposedAmount: n(r.proposed_amount) || 0,
       closedAmount:   n(r.closed_amount)   || 0,
     }))
@@ -163,8 +166,9 @@ export async function GET(request) {
     })
 
     return NextResponse.json({
-      agreementsSent:       parseInt(agg.agreements_sent,   10) || 0,
-      agreementsSigned:     parseInt(agg.agreements_signed, 10) || 0,
+      agreementsSent:       parseInt(agg.agreements_sent,    10) || 0,
+      agreementsSigned:     parseInt(agg.agreements_signed,  10) || 0,
+      agreementsExpired:    parseInt(agg.agreements_expired, 10) || 0,
       totalProposedAmount:  n(agg.total_proposed)  || 0,
       closedAmount:         n(agg.closed_amount)   || 0,
       mrr:                  n(agg.mrr)             || 0,
@@ -178,7 +182,7 @@ export async function GET(request) {
   } catch (err) {
     if (err.message?.includes('does not exist')) {
       return NextResponse.json({
-        agreementsSent: 0, agreementsSigned: 0,
+        agreementsSent: 0, agreementsSigned: 0, agreementsExpired: 0,
         totalProposedAmount: 0, closedAmount: 0, mrr: 0,
         monthlyData: [], agreements: [],
         syncedAt: null, period, periodLabel: '',
