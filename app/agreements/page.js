@@ -1,60 +1,60 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
+import {
+  BarChart, Bar, LineChart, Line,
+  XAxis, YAxis, CartesianGrid, Tooltip,
+  Legend, ResponsiveContainer,
+} from 'recharts'
 
-const B = {
-  card: '#111111',
-  border: '#2a1a3e',
-  muted: '#9ca3af',
-  elevated: '#1a1a1a',
-  p2: '#731494',
-  p4: '#AE2BCF',
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const C = {
+  card:    '#111111',
+  border:  '#2a1a3e',
+  muted:   '#9ca3af',
+  bg:      '#0a0a0a',
+  purple:  '#AE2BCF',
+  teal:    '#14b8a6',
+  green:   '#22c55e',
+  yellow:  '#f59e0b',
+  red:     '#ef4444',
+  blue:    '#3b82f6',
 }
 
-const PERIODS = [
-  { value: 'this_month', label: 'This Month' },
-  { value: 'last_month', label: 'Last Month' },
-  { value: 'q1', label: 'Q1' },
-  { value: 'q2', label: 'Q2' },
-  { value: 'q3', label: 'Q3' },
-  { value: 'q4', label: 'Q4' },
-  { value: 'ytd', label: 'YTD' },
-  { value: 'last_30', label: 'Last 30d' },
-  { value: 'last_90', label: 'Last 90d' },
-]
-
-const STATUS_FILTERS = [
-  { value: 'all', label: 'All' },
-  { value: 'sent', label: 'Sent / Open' },
-  { value: 'signed', label: 'Signed' },
-]
-
-const SORT_COLS = [
-  { value: 'createdAt',   label: 'Created' },
-  { value: 'completedAt', label: 'Signed Date' },
-  { value: 'amount',      label: 'Amount' },
-  { value: 'mrr',         label: 'MRR' },
-  { value: 'name',        label: 'Name' },
-  { value: 'status',      label: 'Status' },
-]
-
-const STATUS_LABELS = {
-  'document.draft':              { label: 'Draft',            color: '#6b7280' },
-  'document.sent':               { label: 'Sent',             color: '#3b82f6' },
+// ─── Status config ─────────────────────────────────────────────────────────────
+const STATUS_META = {
+  'document.draft':              { label: 'Draft',            color: C.muted  },
+  'document.sent':               { label: 'Sent',             color: C.blue   },
   'document.viewed':             { label: 'Viewed',           color: '#8b5cf6' },
-  'document.waiting_approval':   { label: 'Pending Approval', color: '#f59e0b' },
-  'document.approved':           { label: 'Approved',         color: '#10b981' },
-  'document.waiting_pay':        { label: 'Waiting Payment',  color: '#f59e0b' },
-  'document.completed':          { label: 'Signed',           color: '#22c55e' },
-  'document.paid':               { label: 'Signed & Paid',    color: '#22c55e' },
-  'document.voided':             { label: 'Voided',           color: '#ef4444' },
-  'document.expired':            { label: 'Expired',          color: '#ef4444' },
-  'document.rejected':           { label: 'Rejected',         color: '#ef4444' },
+  'document.waiting_approval':   { label: 'Pending Approval', color: C.yellow },
+  'document.approved':           { label: 'Approved',         color: C.teal   },
+  'document.waiting_pay':        { label: 'Waiting Payment',  color: C.yellow },
+  'document.completed':          { label: 'Signed',           color: C.green  },
+  'document.paid':               { label: 'Signed & Paid',    color: C.green  },
+  'document.voided':             { label: 'Voided',           color: C.red    },
+  'document.expired':            { label: 'Expired',          color: C.red    },
+  'document.rejected':           { label: 'Rejected',         color: C.red    },
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function fmt$(n) {
-  if (!n && n !== 0) return '—'
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
+  if (n == null || n === '') return '—'
+  const num = typeof n === 'string' ? parseFloat(n) : n
+  if (isNaN(num)) return '—'
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(num)
+}
+
+function fmtShort$(n) {
+  if (n == null || n === '') return '—'
+  const num = typeof n === 'string' ? parseFloat(n) : n
+  if (isNaN(num)) return '—'
+  if (num >= 1_000_000) return `$${(num / 1_000_000).toFixed(1)}M`
+  if (num >= 1_000)     return `$${(num / 1_000).toFixed(1)}K`
+  return fmt$(num)
 }
 
 function fmtDate(str) {
@@ -62,23 +62,50 @@ function fmtDate(str) {
   return new Date(str).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+function timeAgo(str) {
+  if (!str) return 'never'
+  const diff = Date.now() - new Date(str).getTime()
+  const mins  = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days  = Math.floor(diff / 86400000)
+  if (mins < 2)  return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  if (hours < 24) return `${hours}h ago`
+  return `${days}d ago`
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
 function StatusBadge({ status }) {
-  const info = STATUS_LABELS[status] || { label: status, color: B.muted }
+  const meta = STATUS_META[status] || { label: status, color: C.muted }
   return (
-    <span style={{ background: `${info.color}22`, color: info.color, border: `1px solid ${info.color}55`, borderRadius: '9999px', padding: '2px 10px', fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap' }}>
-      {info.label}
+    <span style={{
+      background: `${meta.color}22`,
+      color: meta.color,
+      border: `1px solid ${meta.color}55`,
+      borderRadius: '9999px',
+      padding: '2px 10px',
+      fontSize: '11px',
+      fontWeight: 600,
+      whiteSpace: 'nowrap',
+    }}>
+      {meta.label}
     </span>
   )
 }
 
-function KpiCard({ title, value, subtitle, icon }) {
+function KpiCard({ title, value, sub, icon }) {
   return (
-    <div style={{ background: B.card, border: `1px solid ${B.border}`, borderRadius: '12px', padding: '16px 20px' }}>
-      <div className="flex items-start justify-between gap-2">
+    <div style={{
+      background: C.card,
+      border: `1px solid ${C.border}`,
+      borderRadius: '12px',
+      padding: '16px 20px',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
         <div>
-          <p style={{ color: B.muted, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{title}</p>
-          <p style={{ color: 'white', fontSize: '24px', fontWeight: 700, marginTop: '4px', lineHeight: 1 }}>{value}</p>
-          {subtitle && <p style={{ color: B.muted, fontSize: '11px', marginTop: '6px' }}>{subtitle}</p>}
+          <p style={{ color: C.muted, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>{title}</p>
+          <p style={{ color: 'white', fontSize: '24px', fontWeight: 700, marginTop: 4, marginBottom: 0, lineHeight: 1 }}>{value}</p>
+          {sub && <p style={{ color: C.muted, fontSize: '11px', marginTop: 6, marginBottom: 0 }}>{sub}</p>}
         </div>
         <span style={{ fontSize: '22px', opacity: 0.7 }}>{icon}</span>
       </div>
@@ -88,42 +115,96 @@ function KpiCard({ title, value, subtitle, icon }) {
 
 function FilterBtn({ active, onClick, children }) {
   return (
-    <button onClick={onClick} style={{ background: active ? B.p2 : 'transparent', color: active ? 'white' : B.muted, border: `1px solid ${active ? B.p4 : B.border}`, borderRadius: '8px', padding: '5px 12px', fontSize: '12px', fontWeight: active ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap' }}>
+    <button onClick={onClick} style={{
+      background: active ? C.purple : 'transparent',
+      color: active ? 'white' : C.muted,
+      border: `1px solid ${active ? C.purple : C.border}`,
+      borderRadius: '8px',
+      padding: '5px 14px',
+      fontSize: '12px',
+      fontWeight: active ? 600 : 400,
+      cursor: 'pointer',
+      transition: 'all 0.15s',
+      whiteSpace: 'nowrap',
+    }}>
       {children}
     </button>
   )
 }
 
-function SortBtn({ col, current, dir, onClick }) {
-  const active = current === col.value
+function SortHeader({ label, field, sortBy, sortDir, onSort }) {
+  const active = sortBy === field
   return (
-    <button onClick={() => onClick(col.value)} style={{ background: active ? '#1a1a2e' : 'transparent', color: active ? '#AE2BCF' : B.muted, border: `1px solid ${active ? B.p2 : B.border}`, borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: active ? 600 : 400, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
-      {col.label}
-      {active && <span>{dir === 'desc' ? '↓' : '↑'}</span>}
-    </button>
+    <th
+      onClick={() => onSort(field)}
+      style={{
+        color: active ? C.purple : C.muted,
+        cursor: 'pointer',
+        padding: '10px 14px',
+        textAlign: 'left',
+        fontSize: '11px',
+        fontWeight: 600,
+        textTransform: 'uppercase',
+        letterSpacing: '0.04em',
+        whiteSpace: 'nowrap',
+        userSelect: 'none',
+      }}
+    >
+      {label}
+      {active && <span style={{ marginLeft: 4 }}>{sortDir === 'asc' ? '↑' : '↓'}</span>}
+    </th>
   )
 }
 
-export default function AgreementsPage() {
-  const [data, setData]       = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError]     = useState(null)
-  const [period, setPeriod]   = useState('this_month')
-  const [filter, setFilter]   = useState('all')
-  const [sortBy, setSortBy]   = useState('createdAt')
-  const [sortDir, setSortDir] = useState('desc')
-  const [page, setPage]       = useState(1)
+// Custom tooltip for charts
+function ChartTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  return (
+    <div style={{ background: '#1a0d2b', border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px' }}>
+      <p style={{ color: 'white', fontWeight: 600, margin: '0 0 6px', fontSize: 13 }}>{label}</p>
+      {payload.map(p => (
+        <p key={p.name} style={{ color: p.color, margin: '2px 0', fontSize: 12 }}>
+          {p.name}: {p.name.includes('Amount') || p.name.includes('Value') ? fmt$(p.value) : p.value}
+        </p>
+      ))}
+    </div>
+  )
+}
 
-  const fetchData = useCallback(async (opts = {}) => {
+// ─── Main page ────────────────────────────────────────────────────────────────
+const PERIODS = [
+  { value: 'this_month',    label: 'This Month' },
+  { value: 'last_month',    label: 'Last Month' },
+  { value: 'this_quarter',  label: 'This Quarter' },
+  { value: 'ytd',           label: 'YTD' },
+  { value: 'custom',        label: 'Custom' },
+]
+
+export default function AgreementsPage() {
+  const [data,      setData]      = useState(null)
+  const [loading,   setLoading]   = useState(true)
+  const [error,     setError]     = useState(null)
+  const [period,    setPeriod]    = useState('this_month')
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo,   setCustomTo]   = useState('')
+  const [showCustom, setShowCustom] = useState(false)
+  const [sortBy,    setSortBy]    = useState('sentDate')
+  const [sortDir,   setSortDir]   = useState('desc')
+  const [statusFilter, setStatusFilter] = useState('all')
+
+  const load = useCallback(async (opts = {}) => {
+    const p   = opts.period     ?? period
+    const cf  = opts.customFrom ?? customFrom
+    const ct  = opts.customTo   ?? customTo
+
     setLoading(true)
     setError(null)
-    const p  = opts.period  ?? period
-    const f  = opts.filter  ?? filter
-    const s  = opts.sortBy  ?? sortBy
-    const d  = opts.sortDir ?? sortDir
-    const pg = opts.page    ?? page
+
+    let url = `/api/metrics/agreements?period=${p}`
+    if (p === 'custom' && cf && ct) url += `&from=${cf}&to=${ct}`
+
     try {
-      const res = await fetch(`/api/metrics/agreements-db?period=${p}&status=${f}&sort=${s}&dir=${d}&page=${pg}`, { cache: 'no-store' })
+      const res  = await fetch(url, { cache: 'no-store' })
       const json = await res.json()
       if (json.error) throw new Error(json.error)
       setData(json)
@@ -132,127 +213,308 @@ export default function AgreementsPage() {
     } finally {
       setLoading(false)
     }
-  }, [period, filter, sortBy, sortDir, page])
+  }, [period, customFrom, customTo])
 
-  useEffect(() => { fetchData() }, [fetchData])
+  useEffect(() => { load() }, [load])
 
-  function changePeriod(v) { setPeriod(v); setPage(1); fetchData({ period: v, page: 1 }) }
-  function changeFilter(v) { setFilter(v); setPage(1); fetchData({ filter: v, page: 1 }) }
-  function changeSort(col) {
-    const newDir = sortBy === col && sortDir === 'desc' ? 'asc' : 'desc'
-    setSortBy(col); setSortDir(newDir); setPage(1)
-    fetchData({ sortBy: col, sortDir: newDir, page: 1 })
+  function handlePeriod(v) {
+    const isCustom = v === 'custom'
+    setShowCustom(isCustom)
+    setPeriod(v)
+    if (!isCustom) load({ period: v })
   }
-  function changePage(p) { setPage(p); fetchData({ page: p }) }
 
-  const kpis = data?.kpis
-  const rows = data?.rows || []
-  const pg   = data?.pagination
+  function handleCustomApply() {
+    if (customFrom && customTo) load({ period: 'custom', customFrom, customTo })
+  }
+
+  function handleSort(field) {
+    const dir = sortBy === field && sortDir === 'desc' ? 'asc' : 'desc'
+    setSortBy(field)
+    setSortDir(dir)
+  }
+
+  // Client-side sort + filter
+  const rows = useMemo(() => {
+    if (!data?.agreements) return []
+    let arr = [...data.agreements]
+
+    // Status filter
+    if (statusFilter === 'sent')   arr = arr.filter(r => r.sentStatus === 'sent')
+    if (statusFilter === 'signed') arr = arr.filter(r => r.sentStatus === 'signed')
+
+    // Sort
+    arr.sort((a, b) => {
+      let av = a[sortBy], bv = b[sortBy]
+      if (av == null) av = sortDir === 'asc' ? Infinity : -Infinity
+      if (bv == null) bv = sortDir === 'asc' ? Infinity : -Infinity
+      if (typeof av === 'string' && typeof bv === 'string') {
+        av = av.toLowerCase(); bv = bv.toLowerCase()
+        return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av)
+      }
+      return sortDir === 'asc' ? av - bv : bv - av
+    })
+
+    return arr
+  }, [data, sortBy, sortDir, statusFilter])
+
+  const kpis = data
 
   return (
-    <div className="p-6 space-y-6">
+    <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+
       {/* Header */}
-      <div className="flex items-start justify-between flex-wrap gap-3">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 className="text-2xl font-bold text-white">Agreements</h1>
-          <p style={{ color: B.muted }} className="text-sm mt-1">
-            PandaDoc · synced every 3h
-            {kpis?.lastSynced && (
-              <span> · Last sync: {fmtDate(kpis.lastSynced)}</span>
-            )}
+          <h1 style={{ color: 'white', fontSize: 24, fontWeight: 700, margin: 0 }}>Agreements</h1>
+          <p style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>
+            PandaDoc · {kpis?.periodLabel || ''}
           </p>
         </div>
-        <button onClick={() => fetchData()} disabled={loading} style={{ border: `1px solid ${B.border}` }}
-          className="rounded-lg px-3 py-1.5 text-xs font-medium text-gray-300 hover:border-violet-500/40 hover:bg-violet-500/10 hover:text-white disabled:opacity-50 transition">
+        <button
+          onClick={() => load()}
+          disabled={loading}
+          style={{
+            border: `1px solid ${C.border}`,
+            borderRadius: 8,
+            padding: '6px 14px',
+            fontSize: 12,
+            fontWeight: 500,
+            color: '#d1d5db',
+            background: 'transparent',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            opacity: loading ? 0.5 : 1,
+          }}
+        >
           {loading ? 'Loading…' : '↻ Refresh'}
         </button>
       </div>
 
       {/* Period filters */}
-      <div className="flex flex-wrap gap-2">
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
         {PERIODS.map(p => (
-          <FilterBtn key={p.value} active={period === p.value} onClick={() => changePeriod(p.value)}>
+          <FilterBtn key={p.value} active={period === p.value} onClick={() => handlePeriod(p.value)}>
             {p.label}
           </FilterBtn>
         ))}
       </div>
 
-      {/* Period label */}
-      {data?.periodLabel && (
-        <p style={{ color: '#6b5a8a', fontSize: '12px' }}>{data.periodLabel}</p>
+      {/* Custom date range */}
+      {showCustom && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+          background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '12px 16px',
+        }}>
+          <span style={{ color: C.muted, fontSize: 12 }}>From</span>
+          <input
+            type="date"
+            value={customFrom}
+            onChange={e => setCustomFrom(e.target.value)}
+            style={{ background: '#1a1a1a', border: `1px solid ${C.border}`, color: 'white', borderRadius: 6, padding: '4px 8px', fontSize: 13 }}
+          />
+          <span style={{ color: C.muted, fontSize: 12 }}>To</span>
+          <input
+            type="date"
+            value={customTo}
+            onChange={e => setCustomTo(e.target.value)}
+            style={{ background: '#1a1a1a', border: `1px solid ${C.border}`, color: 'white', borderRadius: 6, padding: '4px 8px', fontSize: 13 }}
+          />
+          <button
+            onClick={handleCustomApply}
+            disabled={!customFrom || !customTo}
+            style={{
+              background: C.purple, color: 'white', border: 'none', borderRadius: 6,
+              padding: '5px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+            }}
+          >
+            Apply
+          </button>
+        </div>
       )}
 
       {/* Error / Notice */}
       {error && (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-400 text-sm">⚠️ {error}</div>
+        <div style={{ background: '#7f1d1d33', border: `1px solid ${C.red}44`, borderRadius: 10, padding: 16, color: C.red, fontSize: 13 }}>
+          ⚠️ {error}
+        </div>
       )}
       {data?.notice && (
-        <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4 text-yellow-300 text-sm">ℹ️ {data.notice}</div>
+        <div style={{ background: '#78350f33', border: `1px solid ${C.yellow}44`, borderRadius: 10, padding: 16, color: C.yellow, fontSize: 13 }}>
+          ℹ️ {data.notice}
+        </div>
       )}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
-        <KpiCard title="Agreements Sent"  value={loading ? '…' : kpis?.sentCount ?? '—'}        subtitle="Open / pending"      icon="📤" />
-        <KpiCard title="Agreements Signed" value={loading ? '…' : kpis?.signedCount ?? '—'}      subtitle="Completed or paid"   icon="✅" />
-        <KpiCard title="Proposed Value"   value={loading ? '…' : fmt$(kpis?.proposedValue)}      subtitle="Sent, not yet signed" icon="💼" />
-        <KpiCard title="Closed Value"     value={loading ? '…' : fmt$(kpis?.closedValue)}        subtitle="Signed total"        icon="🏆" />
-        <KpiCard title="MRR (Signed)"     value={loading ? '…' : kpis?.totalMrr ? fmt$(kpis.totalMrr) : '—'} subtitle="Monthly recurring"  icon="🔁" />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16 }}>
+        <KpiCard
+          title="Sent"
+          value={loading ? '…' : (kpis?.agreementsSent ?? '—')}
+          sub="Open / pending"
+          icon="📤"
+        />
+        <KpiCard
+          title="Signed"
+          value={loading ? '…' : (kpis?.agreementsSigned ?? '—')}
+          sub="Completed or paid"
+          icon="✅"
+        />
+        <KpiCard
+          title="Proposed Value"
+          value={loading ? '…' : fmtShort$(kpis?.totalProposedAmount)}
+          sub="Sent, not yet signed"
+          icon="💼"
+        />
+        <KpiCard
+          title="Closed Value"
+          value={loading ? '…' : fmtShort$(kpis?.closedAmount)}
+          sub="Signed total"
+          icon="🏆"
+        />
+        <KpiCard
+          title="MRR (Signed)"
+          value={loading ? '…' : fmtShort$(kpis?.mrr)}
+          sub="Monthly recurring"
+          icon="🔁"
+        />
       </div>
 
+      {/* Charts */}
+      {!loading && data?.monthlyData?.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(480px, 1fr))', gap: 20 }}>
+
+          {/* Chart 1: Proposed vs Closed Value */}
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: '20px 16px' }}>
+            <h3 style={{ color: 'white', fontSize: 14, fontWeight: 600, margin: '0 0 16px' }}>
+              Proposed vs Closed Value
+            </h3>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={data.monthlyData} margin={{ top: 4, right: 16, bottom: 4, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#2a1a3e" />
+                <XAxis dataKey="month" tick={{ fill: C.muted, fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tickFormatter={v => fmtShort$(v)} tick={{ fill: C.muted, fontSize: 11 }} axisLine={false} tickLine={false} width={60} />
+                <Tooltip content={<ChartTooltip />} />
+                <Legend wrapperStyle={{ fontSize: 12, color: C.muted }} />
+                <Bar dataKey="proposedAmount" name="Proposed Value" fill={C.purple} radius={[3, 3, 0, 0]} />
+                <Bar dataKey="closedAmount"   name="Closed Value"   fill={C.teal}   radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Chart 2: Sent vs Signed count */}
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: '20px 16px' }}>
+            <h3 style={{ color: 'white', fontSize: 14, fontWeight: 600, margin: '0 0 16px' }}>
+              Agreements Sent vs Signed
+            </h3>
+            <ResponsiveContainer width="100%" height={240}>
+              <LineChart data={data.monthlyData} margin={{ top: 4, right: 16, bottom: 4, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#2a1a3e" />
+                <XAxis dataKey="month" tick={{ fill: C.muted, fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: C.muted, fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} width={30} />
+                <Tooltip content={<ChartTooltip />} />
+                <Legend wrapperStyle={{ fontSize: 12, color: C.muted }} />
+                <Line type="monotone" dataKey="sent"   name="Sent"   stroke={C.purple} strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="signed" name="Signed" stroke={C.teal}   strokeWidth={2} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
       {/* Table controls */}
-      <div className="flex flex-wrap items-center gap-3">
-        {/* Status filter */}
-        <div className="flex gap-1">
-          {STATUS_FILTERS.map(f => (
-            <FilterBtn key={f.value} active={filter === f.value} onClick={() => changeFilter(f.value)}>
-              {f.label}
-            </FilterBtn>
-          ))}
-        </div>
-        <div style={{ color: B.border }}>|</div>
-        {/* Sort */}
-        <div className="flex items-center gap-1 flex-wrap">
-          <span style={{ color: B.muted, fontSize: '11px' }}>Sort:</span>
-          {SORT_COLS.map(col => (
-            <SortBtn key={col.value} col={col} current={sortBy} dir={sortDir} onClick={changeSort} />
-          ))}
-        </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+        {[
+          { v: 'all',    l: 'All' },
+          { v: 'sent',   l: 'Sent / Open' },
+          { v: 'signed', l: 'Signed' },
+        ].map(f => (
+          <FilterBtn key={f.v} active={statusFilter === f.v} onClick={() => setStatusFilter(f.v)}>
+            {f.l}
+          </FilterBtn>
+        ))}
+        <span style={{ color: C.muted, fontSize: 12, marginLeft: 8 }}>
+          {rows.length} agreement{rows.length !== 1 ? 's' : ''}
+        </span>
       </div>
 
       {/* Table */}
-      <div style={{ background: B.card, border: `1px solid ${B.border}`, borderRadius: '12px', overflow: 'hidden' }}>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden' }}>
         {loading ? (
-          <p style={{ color: B.muted }} className="p-6 text-sm text-center">Loading…</p>
+          <p style={{ color: C.muted, padding: 24, textAlign: 'center', fontSize: 13 }}>Loading…</p>
         ) : rows.length === 0 ? (
-          <p style={{ color: B.muted }} className="p-6 text-sm text-center">No agreements found for this period.</p>
+          <p style={{ color: C.muted, padding: 24, textAlign: 'center', fontSize: 13 }}>No agreements found for this period.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ borderBottom: `1px solid ${B.border}` }}>
-                  {['Name', 'Status', 'Amount', 'MRR', 'Recipients', 'Created', 'Signed'].map(h => (
-                    <th key={h} style={{ color: B.muted }} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap">
-                      {h}
-                    </th>
-                  ))}
+                <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                  <SortHeader label="Name"        field="name"          sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label="Owner"       field="ownerName"     sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label="Recipient"   field="recipientName" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label="Status"      field="status"        sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label="Sent Date"   field="sentDate"      sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label="Signed Date" field="signedDate"    sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label="Amount"      field="amount"        sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <SortHeader label="MRR"         field="mrr"           sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row, i) => (
-                  <tr key={row.docId} style={{ borderBottom: i < rows.length - 1 ? `1px solid ${B.border}` : 'none' }}
-                    className="hover:bg-white/5 transition-colors">
-                    <td className="px-4 py-3 text-white font-medium max-w-[240px] truncate">
-                      <a href={`https://app.pandadoc.com/a/#/documents/${row.docId}`} target="_blank" rel="noopener noreferrer"
-                        style={{ color: '#AE2BCF' }} className="hover:underline" title={row.name}>
+                  <tr
+                    key={row.id}
+                    style={{
+                      borderBottom: i < rows.length - 1 ? `1px solid ${C.border}` : 'none',
+                      transition: 'background 0.1s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <td style={{ padding: '10px 14px', maxWidth: 260 }}>
+                      <a
+                        href={`https://app.pandadoc.com/a/#/documents/${row.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={row.name}
+                        style={{
+                          color: C.purple,
+                          textDecoration: 'none',
+                          fontWeight: 500,
+                          display: 'block',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
                         {row.name}
                       </a>
                     </td>
-                    <td className="px-4 py-3"><StatusBadge status={row.status} /></td>
-                    <td className="px-4 py-3 text-white font-medium whitespace-nowrap">{fmt$(row.amount)}</td>
-                    <td className="px-4 py-3 whitespace-nowrap" style={{ color: row.mrr ? '#22c55e' : B.muted }}>{row.mrr ? fmt$(row.mrr) + '/mo' : '—'}</td>
-                    <td className="px-4 py-3 text-gray-400 text-xs max-w-[180px] truncate">{(row.recipients || []).join(', ') || '—'}</td>
-                    <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{fmtDate(row.createdAt)}</td>
-                    <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{fmtDate(row.completedAt)}</td>
+                    <td style={{ padding: '10px 14px', color: '#d1d5db', whiteSpace: 'nowrap' }}>
+                      {row.ownerName || '—'}
+                    </td>
+                    <td style={{ padding: '10px 14px', maxWidth: 200 }}>
+                      <div style={{ color: '#d1d5db', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {row.recipientName || '—'}
+                      </div>
+                      {row.recipientEmail && (
+                        <div style={{ color: C.muted, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {row.recipientEmail}
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                      <StatusBadge status={row.status} />
+                    </td>
+                    <td style={{ padding: '10px 14px', color: C.muted, whiteSpace: 'nowrap', fontSize: 12 }}>
+                      {fmtDate(row.sentDate)}
+                    </td>
+                    <td style={{ padding: '10px 14px', color: C.muted, whiteSpace: 'nowrap', fontSize: 12 }}>
+                      {fmtDate(row.signedDate)}
+                    </td>
+                    <td style={{ padding: '10px 14px', color: 'white', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                      {fmt$(row.amount)}
+                    </td>
+                    <td style={{ padding: '10px 14px', whiteSpace: 'nowrap', color: row.mrr ? C.green : C.muted }}>
+                      {row.mrr ? fmt$(row.mrr) + '/mo' : '—'}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -261,33 +523,11 @@ export default function AgreementsPage() {
         )}
       </div>
 
-      {/* Pagination */}
-      {pg && pg.totalPages > 1 && (
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <p style={{ color: B.muted, fontSize: '12px' }}>
-            {pg.total} agreements · Page {pg.page} of {pg.totalPages}
-          </p>
-          <div className="flex gap-2">
-            <button onClick={() => changePage(pg.page - 1)} disabled={pg.page <= 1}
-              style={{ border: `1px solid ${B.border}`, borderRadius: '6px', padding: '4px 12px', color: B.muted, fontSize: '12px', background: 'transparent', cursor: 'pointer' }}
-              className="disabled:opacity-30">
-              ← Prev
-            </button>
-            <button onClick={() => changePage(pg.page + 1)} disabled={pg.page >= pg.totalPages}
-              style={{ border: `1px solid ${B.border}`, borderRadius: '6px', padding: '4px 12px', color: B.muted, fontSize: '12px', background: 'transparent', cursor: 'pointer' }}
-              className="disabled:opacity-30">
-              Next →
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Footer */}
-      {data && (
-        <p style={{ color: '#4a3060' }} className="text-xs">
-          {pg?.total ?? 0} total · {data.durationMs}ms
-        </p>
-      )}
+      <p style={{ color: '#4a3060', fontSize: 12, margin: 0 }}>
+        {data?.syncedAt ? `Last synced: ${timeAgo(data.syncedAt)} · ` : ''}
+        {data?.durationMs != null ? `${data.durationMs}ms` : ''}
+      </p>
     </div>
   )
 }
