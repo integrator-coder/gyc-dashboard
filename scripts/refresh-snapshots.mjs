@@ -2,6 +2,7 @@
 
 const base = process.env.SNAPSHOT_BASE_URL || 'http://localhost:3000'
 const endpoints = [
+  '/api/metrics/agreements-db?period=last_90',  // warms agreements cache (not a snapshot route, just validates DB reachable)
   '/api/metrics/leadership?refresh=1',
   '/api/metrics/intel-snapshot?refresh=1',
   '/api/metrics/recon-snapshot?refresh=1',
