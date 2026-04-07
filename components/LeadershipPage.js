@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import MetricTooltip from '@/components/MetricTooltip'
 import {
   ResponsiveContainer,
   BarChart, Bar,
@@ -22,11 +23,14 @@ function classifyDealType(rep, year) {
   return 'Unclassified'
 }
 
-function Card({ label, value, sub, tone = 'default' }) {
+function Card({ label, value, sub, tone = 'default', tooltip }) {
   const toneCls = tone === 'good' ? 'text-emerald-300' : tone === 'warn' ? 'text-amber-300' : tone === 'bad' ? 'text-rose-300' : 'text-white'
   return (
     <div className="rounded-xl border border-[#2a1a3e] bg-black/40 p-4">
-      <div className="text-[11px] uppercase tracking-wider text-gray-500">{label}</div>
+      <div className="text-[11px] uppercase tracking-wider text-gray-500 flex items-center">
+        {label}
+        {tooltip && <MetricTooltip text={tooltip} />}
+      </div>
       <div className={`text-2xl font-bold mt-1 ${toneCls}`}>{value}</div>
       {sub && <div className="text-xs text-gray-500 mt-1">{sub}</div>}
     </div>
@@ -195,23 +199,23 @@ export default function LeadershipPage() {
 
       {/* Finance Topline */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card label="MRR" value={fmt$(metrics?.mrr)} />
-        <Card label="Revenue (30d)" value={fmt$(metrics?.totalRevenue)} />
-        <Card label="ARR" value={fmt$(Number(metrics?.mrr || 0) * 12)} />
-        <Card label="Est Annual Revenue" value={fmt$(Number(metrics?.totalRevenue || 0) * 12)} />
-        <Card label="Active Clients" value={fmtN(metrics?.activeCustomers)} />
-        <Card label="Churned (30d)" value={fmtN(metrics?.churnedCustomers)} tone={Number(metrics?.churnedCustomers || 0) > 10 ? 'bad' : 'warn'} />
-        <Card label="RPE (MRR)" value={fmt$(Number(metrics?.mrr || 0) * 12 / 18.5)} sub="MRR x12 / 18.5" />
-        <Card label="RPE (Revenue)" value={fmt$(Number(metrics?.totalRevenue || 0) * 12 / 18.5)} sub="30d x12 / 18.5" />
-        <Card label="Today's Cash" value={fmt$(todayCash)} />
-        <Card label="Yesterday" value={fmt$(yesterdayCash)} sub={`7d avg ${fmt$(avg7)}`} />
+        <Card label="MRR" value={fmt$(metrics?.mrr)} tooltip="Monthly Recurring Revenue: total contracted monthly subscription revenue from all active clients. Source: Stripe. Updated every 8h via snapshot cache." />
+        <Card label="Revenue (30d)" value={fmt$(metrics?.totalRevenue)} tooltip="Total cash collected in the last 30 days across all Stripe payments. Includes one-time fees, signing payments, and recurring charges. Source: Stripe." />
+        <Card label="ARR" value={fmt$(Number(metrics?.mrr || 0) * 12)} tooltip="Annualized Recurring Revenue: MRR × 12. A forward-looking measure of annual subscription run-rate. Assumes current MRR holds flat. Source: Stripe MRR." />
+        <Card label="Est Annual Revenue" value={fmt$(Number(metrics?.totalRevenue || 0) * 12)} tooltip="Estimated annual revenue: 30-day cash collected × 12. Includes one-time fees and signing payments — not a pure recurring measure. Source: Stripe 30d cash." />
+        <Card label="Active Clients" value={fmtN(metrics?.activeCustomers)} tooltip="Number of clients with at least one active Stripe subscription. Source: Stripe." />
+        <Card label="Churned (30d)" value={fmtN(metrics?.churnedCustomers)} tone={Number(metrics?.churnedCustomers || 0) > 10 ? 'bad' : 'warn'} tooltip="Number of clients whose subscriptions were cancelled in the last 30 days. Source: Stripe." />
+        <Card label="RPE (MRR)" value={fmt$(Number(metrics?.mrr || 0) * 12 / 18.5)} sub="MRR x12 / 18.5" tooltip="Revenue Per Employee based on MRR: (MRR × 12) ÷ 18.5 headcount. Measures annualized MRR productivity per team member. Headcount fixed at 18.5." />
+        <Card label="RPE (Revenue)" value={fmt$(Number(metrics?.totalRevenue || 0) * 12 / 18.5)} sub="30d x12 / 18.5" tooltip="Revenue Per Employee based on 30-day cash: (30d revenue × 12) ÷ 18.5 headcount. Includes one-time fees. Headcount fixed at 18.5." />
+        <Card label="Today's Cash" value={fmt$(todayCash)} tooltip="Total cash collected today from Stripe payments. Resets at midnight. Source: Stripe daily revenue feed." />
+        <Card label="Yesterday" value={fmt$(yesterdayCash)} sub={`7d avg ${fmt$(avg7)}`} tooltip="Total cash collected yesterday from Stripe. Sub-label shows rolling 7-day average for comparison. Source: Stripe daily revenue feed." />
       </div>
 
       {/* New Business KPIs */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card label="YTD Contract Value" value={fmt$(newBusiness?.summary?.ytdFullTerm || 0)} sub="Full term — normalized PIF + monthly" />
-        <Card label="Cash at Signing (YTD)" value={fmt$(newBusiness?.summary?.ytdFirstPayment || 0)} sub="First payments collected at close" />
-        <Card label="New MRR Added (YTD)" value={fmt$(newBusiness?.summary?.mrr?.ytd26 || 0)} sub="Monthly recurring value from new deals" />
+        <Card label="YTD Contract Value" value={fmt$(newBusiness?.summary?.ytdFullTerm || 0)} sub="Full term — normalized PIF + monthly" tooltip="Full-term contract value of all new deals closed year-to-date. Formula: sum of (MRR × term months) for monthly deals + full PIF amount for paid-in-full deals. Source: Sales KPI Google Sheet." />
+        <Card label="Cash at Signing (YTD)" value={fmt$(newBusiness?.summary?.ytdFirstPayment || 0)} sub="First payments collected at close" tooltip="Total first payments collected at the point of signing year-to-date. For monthly deals: first month's payment. For PIF deals: full amount paid upfront. Source: Sales KPI Google Sheet." />
+        <Card label="New MRR Added (YTD)" value={fmt$(newBusiness?.summary?.mrr?.ytd26 || 0)} sub="Monthly recurring value from new deals" tooltip="Total new monthly recurring revenue added from deals closed year-to-date. Monthly deals contribute their MRR; PIF deals contribute $0 ongoing MRR. Source: Sales KPI Google Sheet." />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -258,12 +262,12 @@ export default function LeadershipPage() {
 
       {/* Risk + Churn + Dunning */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-        <Card label="Client Churn Rate" value={`${(latestChurn?.churnPct || 0).toFixed(1)}%`} tone={(latestChurn?.churnPct || 0) > 3 ? 'bad' : 'warn'} />
-        <Card label="Revenue Churn Rate" value={`${(latestChurn?.churnRevPct || 0).toFixed(1)}%`} tone={(latestChurn?.churnRevPct || 0) > 3 ? 'bad' : 'warn'} />
-        <Card label="Net MRR Change" value={`${Number(latestChurn?.netMRR || 0) >= 0 ? '+' : '-'}${fmt$(latestChurn?.netMRR || 0)}`} tone={Number(latestChurn?.netMRR || 0) >= 0 ? 'good' : 'bad'} />
-        <Card label="Client Movement" value={`-${latestChurn?.clientsLost || 0} / +${latestChurn?.clientsAdded || 0}`} />
-        <Card label="NRR (Current / 3m / 12m)" value={`${(nrr?.currentMonth || 0).toFixed(1)}% / ${(nrr?.trailing3mo || 0).toFixed(1)}% / ${(nrr?.trailing12mo || 0).toFixed(1)}%`} tone={(nrr?.currentMonth || 0) >= 100 ? 'good' : 'warn'} />
-        <Card label="Dunning Topline" value={`${fmtN(dunning?.summary?.pastDueCount)} past due`} sub={`${fmt$(dunning?.summary?.mrrAtRisk)} at risk · ${fmt$(dunning?.summary?.totalOutstanding)} outstanding`} tone={Number(dunning?.summary?.pastDueCount || 0) > 0 ? 'bad' : 'good'} />
+        <Card label="Client Churn Rate" value={`${(latestChurn?.churnPct || 0).toFixed(1)}%`} tone={(latestChurn?.churnPct || 0) > 3 ? 'bad' : 'warn'} tooltip="Percentage of active clients who cancelled in the most recent tracked month. Formula: Clients Lost ÷ Start-of-Month Active Clients × 100. Source: GYC Churn Tracker Google Sheet." />
+        <Card label="Revenue Churn Rate" value={`${(latestChurn?.churnRevPct || 0).toFixed(1)}%`} tone={(latestChurn?.churnRevPct || 0) > 3 ? 'bad' : 'warn'} tooltip="Percentage of MRR lost due to cancellations in the most recent tracked month. Formula: MRR Lost ÷ Start-of-Month MRR × 100. Source: GYC Churn Tracker Google Sheet." />
+        <Card label="Net MRR Change" value={`${Number(latestChurn?.netMRR || 0) >= 0 ? '+' : '-'}${fmt$(latestChurn?.netMRR || 0)}`} tone={Number(latestChurn?.netMRR || 0) >= 0 ? 'good' : 'bad'} tooltip="Net change in MRR for the most recent tracked month: new MRR added minus MRR lost to churn. Positive = growing, negative = contracting. Source: GYC Churn Tracker Google Sheet." />
+        <Card label="Client Movement" value={`-${latestChurn?.clientsLost || 0} / +${latestChurn?.clientsAdded || 0}`} tooltip="Net client count change in the most recent tracked month: clients lost (cancelled) vs. clients added (new). Source: GYC Churn Tracker Google Sheet." />
+        <Card label="NRR (Current / 3m / 12m)" value={`${(nrr?.currentMonth || 0).toFixed(1)}% / ${(nrr?.trailing3mo || 0).toFixed(1)}% / ${(nrr?.trailing12mo || 0).toFixed(1)}%`} tone={(nrr?.currentMonth || 0) >= 100 ? 'good' : 'warn'} tooltip="Net Revenue Retention: % of MRR retained from existing clients including expansions, contractions, and churn. >100% means upsells offset churn. Shows: current month / 3-month trailing avg / 12-month trailing avg. Source: GYC Churn Tracker Google Sheet." />
+        <Card label="Dunning Topline" value={`${fmtN(dunning?.summary?.pastDueCount)} past due`} sub={`${fmt$(dunning?.summary?.mrrAtRisk)} at risk · ${fmt$(dunning?.summary?.totalOutstanding)} outstanding`} tone={Number(dunning?.summary?.pastDueCount || 0) > 0 ? 'bad' : 'good'} tooltip="Clients currently in the dunning (payment recovery) process with past-due Stripe invoices. MRR at Risk = monthly revenue from past-due clients. Outstanding = total unpaid invoice amount. Source: Stripe dunning data." />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -297,12 +301,12 @@ export default function LeadershipPage() {
 
       {/* Sales + CX command strip */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-        <Card label="Leads Today / Week / Month" value={`${leads?.newLeads?.today || 0} / ${leads?.newLeads?.week || 0} / ${leads?.newLeads?.month || 0}`} />
-        <Card label="Qualified Leads Today / Week" value={`${leads?.qualifiedLeads?.today || 0} / ${leads?.qualifiedLeads?.week || 0}`} />
-        <Card label="Avg Deal Size (30d)" value={fmt$(dealSize?.avgDealSize || 0)} sub={`${dealSize?.totalDeals || 0} closed-won deals`} />
-        <Card label="Team Agreements Closed (Month)" value={fmtN(sales?.team?.metrics?.['Agreements Closed']?.month || 0)} />
-        <Card label="Client Health (G/Y/R)" value={`${fmtN(clientHealth?.green)} / ${fmtN(clientHealth?.yellow)} / ${fmtN(clientHealth?.red)}`} />
-        <Card label="Meeting Completion" value={`${(qStats?.pct || 0).toFixed(1)}%`} sub={`${qStats?.met || 0}/${qStats?.total || 0} this quarter`} tone={(qStats?.pct || 0) >= 80 ? 'good' : (qStats?.pct || 0) >= 50 ? 'warn' : 'bad'} />
+        <Card label="Leads Today / Week / Month" value={`${leads?.newLeads?.today || 0} / ${leads?.newLeads?.week || 0} / ${leads?.newLeads?.month || 0}`} tooltip="New leads (contacts) created in GHL (GoHighLevel) CRM. Today = current calendar day, Week = current 7-day rolling window, Month = current calendar month. Source: GHL leads API." />
+        <Card label="Qualified Leads Today / Week" value={`${leads?.qualifiedLeads?.today || 0} / ${leads?.qualifiedLeads?.week || 0}`} tooltip="Leads that have reached a qualified stage in the GHL pipeline. Today = current calendar day, Week = current 7-day rolling window. Source: GHL leads API." />
+        <Card label="Avg Deal Size (30d)" value={fmt$(dealSize?.avgDealSize || 0)} sub={`${dealSize?.totalDeals || 0} closed-won deals`} tooltip="Average cash at signing (first payment) per closed-won deal in the last 30 days. Formula: Total first payments ÷ number of closed-won deals. Source: Sales KPI Google Sheet via deal-size API." />
+        <Card label="Team Agreements Closed (Month)" value={fmtN(sales?.team?.metrics?.['Agreements Closed']?.month || 0)} tooltip="Total number of agreements (contracts) closed by the full sales team in the current calendar month. Includes all reps across Sales and Upsell deal types. Source: Sales KPI Google Sheet." />
+        <Card label="Client Health (G/Y/R)" value={`${fmtN(clientHealth?.green)} / ${fmtN(clientHealth?.yellow)} / ${fmtN(clientHealth?.red)}`} tooltip="Count of clients by health status — Green (on-track), Yellow (at-risk), Red (critical). Based on engagement, deliverable completion, and performance benchmarks. Source: Client health tracker." />
+        <Card label="Meeting Completion" value={`${(qStats?.pct || 0).toFixed(1)}%`} sub={`${qStats?.met || 0}/${qStats?.total || 0} this quarter`} tone={(qStats?.pct || 0) >= 80 ? 'good' : (qStats?.pct || 0) >= 50 ? 'warn' : 'bad'} tooltip="Percentage of scheduled client meetings completed this quarter. Formula: Meetings Completed ÷ Total Meetings Scheduled × 100. Source: CX meeting tracker (current quarter)." />
       </div>
 
       <Panel title="Executive Notes" sub="Suggested cross-sectional watchpoints">
