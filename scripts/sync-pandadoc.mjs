@@ -45,7 +45,7 @@ const SENT_STATUSES = new Set(['document.sent','document.viewed','document.waiti
 const SIGNED_STATUSES = new Set(['document.completed','document.paid'])
 const EXPIRED_STATUSES = new Set(['document.expired'])
 const ACTIVE_STATUSES = new Set([...SENT_STATUSES, ...SIGNED_STATUSES, ...EXPIRED_STATUSES])
-const DAYS_BACK = 90
+const DAYS_BACK = 9999 // pull all-time history
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
 
@@ -72,9 +72,8 @@ async function fetchAllDocuments() {
     const json = await res.json()
     const results = json.results || []
     all.push(...results)
-    // Stop paging once we hit docs older than DAYS_BACK
+    // No early stop — pulling full history
     const oldest = results[results.length - 1]
-    if (oldest && new Date(oldest.date_created) < new Date(Date.now() - DAYS_BACK * 86400000)) break
     if (results.length < 100) break
     page++
   }

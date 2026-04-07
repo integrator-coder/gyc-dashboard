@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import MetricCard from '@/components/MetricCard'
+import MetricTooltip from '@/components/MetricTooltip'
 import {
   BarChart,
   Bar,
@@ -222,24 +223,28 @@ export default function FinancePage() {
           trend={mrrTrend ? `${mrrTrend.pct}% vs last sync` : undefined}
           trendPositive={mrrTrend?.positive}
           icon="💰"
+          tooltip="Sum of all active Stripe subscription amounts. Monthly subs count at face value; annual subs are divided by 12. Includes active + past_due subscriptions. Excludes one-time payments and cancelled subs. Snapshotted at last sync."
         />
         <MetricCard
           title="Revenue (30d)"
           value={formatCurrency(metrics?.totalRevenue)}
           subtitle="Cash collected, last 30 days"
           icon="💵"
+          tooltip="Total cash collected from paid Stripe invoices in the rolling 30-day window prior to last sync. Includes both recurring subscription charges and one-time payments."
         />
         <MetricCard
           title="ARR"
           value={formatCurrency(metrics ? metrics.mrr * 12 : null)}
           subtitle="MRR × 12"
           icon="📈"
+          tooltip="MRR × 12. Represents the annualized value of current recurring subscriptions if the subscriber base stayed flat for a full year."
         />
         <MetricCard
           title="Est. Annual Revenue"
           value={formatCurrency(metrics ? metrics.totalRevenue * 12 : null)}
           subtitle="30d cash × 12"
           icon="🟢"
+          tooltip="Revenue (30d) × 12. Annualizes the last 30 days of actual cash collected to estimate total annual revenue, including both recurring and one-time project payments."
         />
       </div>
 
@@ -252,12 +257,14 @@ export default function FinancePage() {
           trend={clientTrend ? `${clientTrend.pct}% vs last sync` : undefined}
           trendPositive={clientTrend?.positive}
           icon="👥"
+          tooltip="Count of unique Stripe subscriptions in active or past_due status at the time of last sync. Each subscription counts as one client (a customer with multiple subs counts multiple times)."
         />
         <MetricCard
           title="New Clients (30d)"
           value={metrics?.newCustomers ?? '—'}
           subtitle="New subscriptions, last 30 days"
           icon="✨"
+          tooltip="Count of Stripe subscriptions whose created date falls within the rolling 30-day window before last sync. Based on subscription start date, not customer creation date."
         />
         <Link href="/finance/churn" className="block hover:opacity-80 transition-opacity">
           <MetricCard
@@ -265,6 +272,7 @@ export default function FinancePage() {
             value={metrics?.churnedCustomers ?? '—'}
             subtitle="Tap to view details →"
             icon="📉"
+            tooltip="Count of Stripe subscriptions with cancelled status whose cancellation date falls within the rolling 30-day window before last sync. Tap to see the full list of churned clients."
           />
         </Link>
       </div>
@@ -275,7 +283,10 @@ export default function FinancePage() {
         <div className="rounded-xl p-5" style={{ backgroundColor: B.card, border: `1px solid ${B.border}` }}>
           <div className="flex items-center justify-between mb-3">
             <div>
-              <h3 className="text-white font-semibold">RPE — MRR Based</h3>
+              <h3 className="text-white font-semibold flex items-center">
+                RPE — MRR Based
+                <MetricTooltip text={`(MRR × 12) ÷ ${NORMALIZED_EMPLOYEES} normalized employees. Measures annualized recurring revenue generated per employee. Target is ${formatCurrency(RPE_TARGET)}/yr per employee. MRR-based RPE excludes one-time project revenue.`} />
+              </h3>
               <p style={{ color: B.muted }} className="text-xs mt-0.5">
                 MRR × 12 ÷ {NORMALIZED_EMPLOYEES} employees · Target: {formatCurrency(RPE_TARGET)}/yr
               </p>
@@ -314,7 +325,10 @@ export default function FinancePage() {
         <div className="rounded-xl p-5" style={{ backgroundColor: B.card, border: `1px solid ${B.border}` }}>
           <div className="flex items-center justify-between mb-3">
             <div>
-              <h3 className="text-white font-semibold">RPE — Revenue Based</h3>
+              <h3 className="text-white font-semibold flex items-center">
+                RPE — Revenue Based
+                <MetricTooltip text={`(Revenue 30d × 12) ÷ ${NORMALIZED_EMPLOYEES} normalized employees. Annualizes the last 30 days of actual cash collected (recurring + one-time) and divides by headcount. Captures total revenue productivity including project/PIF payments.`} />
+              </h3>
               <p style={{ color: B.muted }} className="text-xs mt-0.5">
                 30d Cash × 12 ÷ {NORMALIZED_EMPLOYEES} employees · Target: {formatCurrency(RPE_TARGET)}/yr
               </p>
@@ -405,14 +419,21 @@ export default function FinancePage() {
               value={formatCurrency(todayRevenue)}
               subtitle="Cash collected today"
               icon="💵"
+              tooltip="Sum of all paid Stripe invoices dated today (calendar date in UTC). Updates each time a sync runs. May be $0 early in the day if no charges have processed yet."
             />
             <div className="rounded-xl p-5" style={{ backgroundColor: B.card, border: `1px solid ${B.border}` }}>
-              <p style={{ color: B.muted }} className="text-xs uppercase tracking-wider mb-1">Yesterday</p>
+              <p style={{ color: B.muted }} className="text-xs uppercase tracking-wider mb-1 flex items-center">
+                Yesterday
+                <MetricTooltip text="Sum of all paid Stripe invoices dated yesterday (calendar date in UTC). Pulled from the DailyRevenue table populated during Stripe sync." />
+              </p>
               <p className="text-2xl font-bold text-white">{formatCurrency(yesterdayRevenue)}</p>
               <p style={{ color: B.muted }} className="text-xs mt-1">Cash collected yesterday</p>
             </div>
             <div className="rounded-xl p-5" style={{ backgroundColor: B.card, border: `1px solid ${B.border}` }}>
-              <p style={{ color: B.muted }} className="text-xs uppercase tracking-wider mb-1">7-Day Avg</p>
+              <p style={{ color: B.muted }} className="text-xs uppercase tracking-wider mb-1 flex items-center">
+                7-Day Avg
+                <MetricTooltip text="Average daily cash over the last 7 calendar days (sum ÷ 7). Based on paid Stripe invoices grouped by day. Smooths out day-of-week variation to show typical daily run rate." />
+              </p>
               <p className="text-2xl font-bold text-white">{formatCurrency(sevenDayAvg)}</p>
               <p style={{ color: B.muted }} className="text-xs mt-1">Average daily cash (last 7 days)</p>
             </div>
