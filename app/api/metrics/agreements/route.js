@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
-import { fetchAllDocuments, fetchDocumentDetail, extractMrrFromDetail } from '@/lib/pandadoc'
+import { fetchAllDocuments, fetchDocumentDetail } from '@/lib/pandadoc'
 
 const SENT_STATUSES = new Set([
   'document.sent',
@@ -16,13 +16,53 @@ const SIGNED_STATUSES = new Set([
   'document.paid',
 ])
 
-function getAmount(doc) {
-  // Try multiple fields — PandaDoc list API may use grand_total, amount, or price
-  const candidates = [doc.grand_total, doc.amount, doc.price]
-  for (const raw of candidates) {
-    if (raw !== null && raw !== undefined && raw !== '') {
-      const val = parseFloat(raw)
-      if (!isNaN(val) && val > 0) return val
+/**
+ * Extract contract value from a document detail's tokens.
+ * Priority:
+ *   1. "Pay-In-Full" token (strip $ and commas)
+ *   2. grand_total.amount if > 0
+ *   3. null
+ *
+ * We intentionally do NOT use Monthly Financing Rate for the total —
+ * that would double-count vs PIF deals.
+ */
+function extractAmountFromDetail(detail) {
+  if (!detail) return null
+
+  // 1. Tokens — look for Pay-In-Full first, then any "total" or "value" token
+  if (Array.isArray(detail.tokens)) {
+    const PIF_KEYS = /pay.?in.?full|pif|contract.?value|total.?value|deal.?value/i
+    for (const token of detail.tokens) {
+      if (PIF_KEYS.test(token.name || '')) {
+        const cleaned = String(token.value || '').replace(/[$,\s]/g, '')
+        const val = parseFloat(cleaned)
+        if (!isNaN(val) && val > 0) return val
+      }
+    }
+  }
+
+  // 2. grand_total object: { amount: "3999", currency: "USD" }
+  if (detail.grand_total?.amount) {
+    const val = parseFloat(detail.grand_total.amount)
+    if (!isNaN(val) && val > 0) return val
+  }
+
+  return null
+}
+
+/**
+ * Extract MRR from tokens — Monthly Financing Rate or similar.
+ */
+function extractMrrFromDetail(detail) {
+  if (!detail) return null
+  const MRR_KEYS = /monthly.?financ|monthly.?rate|monthly.?amount|monthly.?fee|mrr|recurring/i
+  if (Array.isArray(detail.tokens)) {
+    for (const token of detail.tokens) {
+      if (MRR_KEYS.test(token.name || '')) {
+        const cleaned = String(token.value || '').replace(/[$,\s]/g, '')
+        const val = parseFloat(cleaned)
+        if (!isNaN(val) && val > 0) return val
+      }
     }
   }
   return null
@@ -37,33 +77,21 @@ function formatCurrency(n) {
 function getPeriodRange(period) {
   const now = new Date()
   const year = now.getFullYear()
-
   switch (period) {
-    case 'this_month': {
-      const start = new Date(year, now.getMonth(), 1)
-      const end = new Date(year, now.getMonth() + 1, 0, 23, 59, 59, 999)
-      return { start, end }
-    }
-    case 'last_month': {
-      const start = new Date(year, now.getMonth() - 1, 1)
-      const end = new Date(year, now.getMonth(), 0, 23, 59, 59, 999)
-      return { start, end }
-    }
-    case 'q1': {
+    case 'this_month':
+      return { start: new Date(year, now.getMonth(), 1), end: new Date(year, now.getMonth() + 1, 0, 23, 59, 59, 999) }
+    case 'last_month':
+      return { start: new Date(year, now.getMonth() - 1, 1), end: new Date(year, now.getMonth(), 0, 23, 59, 59, 999) }
+    case 'q1':
       return { start: new Date(year, 0, 1), end: new Date(year, 2, 31, 23, 59, 59, 999) }
-    }
-    case 'q2': {
+    case 'q2':
       return { start: new Date(year, 3, 1), end: new Date(year, 5, 30, 23, 59, 59, 999) }
-    }
-    case 'q3': {
+    case 'q3':
       return { start: new Date(year, 6, 1), end: new Date(year, 8, 30, 23, 59, 59, 999) }
-    }
-    case 'q4': {
+    case 'q4':
       return { start: new Date(year, 9, 1), end: new Date(year, 11, 31, 23, 59, 59, 999) }
-    }
-    case 'ytd': {
+    case 'ytd':
       return { start: new Date(year, 0, 1), end: new Date() }
-    }
     default:
       return null
   }
@@ -84,24 +112,38 @@ export async function GET(request) {
   const period = searchParams.get('period') || 'this_month'
 
   try {
-    // ── 1. Fetch all documents ────────────────────────────────────────────────
+    // ── 1. Fetch all documents (list — no amounts) ────────────────────────────
     const allDocs = await fetchAllDocuments(20)
 
-    // ── 2. Apply period filter ────────────────────────────────────────────────
+    // ── 2. Filter by period ───────────────────────────────────────────────────
     const docs = filterByPeriod(allDocs, period)
 
-    // ── 3. Partition documents ────────────────────────────────────────────────
+    // ── 3. Partition ──────────────────────────────────────────────────────────
     const sentDocs = docs.filter((d) => SENT_STATUSES.has(d.status))
     const signedDocs = docs.filter((d) => SIGNED_STATUSES.has(d.status))
+    const activeDocs = [...sentDocs, ...signedDocs]
 
-    // ── 4. Core metrics ───────────────────────────────────────────────────────
-    const agreementsSent = sentDocs.length
-    const agreementsSigned = signedDocs.length
+    // ── 4. Fetch details for all active docs (need tokens for amounts) ────────
+    // Cap at 60 to stay within rate limits; sorted by modified desc so newest first
+    const CAP = 60
+    activeDocs.sort((a, b) => new Date(b.date_modified) - new Date(a.date_modified))
+    const docsToDetail = activeDocs.slice(0, CAP)
 
+    const detailMap = {}
+    const detailResults = await Promise.allSettled(
+      docsToDetail.map((d) => fetchDocumentDetail(d.id))
+    )
+    detailResults.forEach((result, i) => {
+      if (result.status === 'fulfilled') {
+        detailMap[docsToDetail[i].id] = result.value
+      }
+    })
+
+    // ── 5. Compute metrics ────────────────────────────────────────────────────
     let totalProposedAmount = 0
     let proposedAmountNull = 0
     for (const doc of sentDocs) {
-      const amt = getAmount(doc)
+      const amt = extractAmountFromDetail(detailMap[doc.id])
       if (amt !== null) totalProposedAmount += amt
       else proposedAmountNull++
     }
@@ -109,90 +151,62 @@ export async function GET(request) {
     let closedAmount = 0
     let closedAmountNull = 0
     for (const doc of signedDocs) {
-      const amt = getAmount(doc)
+      const amt = extractAmountFromDetail(detailMap[doc.id])
       if (amt !== null) closedAmount += amt
       else closedAmountNull++
     }
 
-    // ── 5. MRR derivation ─────────────────────────────────────────────────────
-    const MRR_DETAIL_CAP = 50
-    const docsForMrr = signedDocs.slice(0, MRR_DETAIL_CAP)
-
+    // MRR from signed docs
     let mrr = null
     let mrrDerivedCount = 0
-    let mrrNullCount = 0
-    let mrrError = null
-
-    if (docsForMrr.length > 0) {
-      try {
-        const detailResults = await Promise.allSettled(
-          docsForMrr.map((d) => fetchDocumentDetail(d.id))
-        )
-
-        let mrrSum = 0
-        for (const result of detailResults) {
-          if (result.status === 'fulfilled') {
-            const extracted = extractMrrFromDetail(result.value)
-            if (extracted !== null) {
-              mrrSum += extracted
-              mrrDerivedCount++
-            } else {
-              mrrNullCount++
-            }
-          }
-        }
-
-        if (mrrDerivedCount > 0) {
-          mrr = formatCurrency(mrrSum)
-        }
-      } catch (err) {
-        mrrError = err.message
+    for (const doc of signedDocs) {
+      const detail = detailMap[doc.id]
+      if (!detail) continue
+      const val = extractMrrFromDetail(detail)
+      if (val !== null) {
+        mrr = (mrr || 0) + val
+        mrrDerivedCount++
       }
     }
 
-    // ── 6. Recent agreements table ────────────────────────────────────────────
-    const activeDocs = [...sentDocs, ...signedDocs]
-    activeDocs.sort((a, b) => new Date(b.date_modified) - new Date(a.date_modified))
-    const recentAgreements = activeDocs.slice(0, 25).map((doc) => ({
-      id: doc.id,
-      name: doc.name,
-      status: doc.status,
-      amount: getAmount(doc),
-      createdAt: doc.date_created,
-      modifiedAt: doc.date_modified,
-      completedAt: SIGNED_STATUSES.has(doc.status) ? (doc.date_completed || doc.date_modified) : null,
-      recipients: (doc.recipients || []).map((r) => r.email).filter(Boolean),
-    }))
+    // ── 6. Build recent agreements table ─────────────────────────────────────
+    const recentAgreements = docsToDetail.slice(0, 25).map((doc) => {
+      const detail = detailMap[doc.id]
+      return {
+        id: doc.id,
+        name: doc.name,
+        status: doc.status,
+        amount: extractAmountFromDetail(detail),
+        mrr: extractMrrFromDetail(detail),
+        createdAt: doc.date_created,
+        modifiedAt: doc.date_modified,
+        completedAt: SIGNED_STATUSES.has(doc.status) ? (doc.date_completed || doc.date_modified) : null,
+        recipients: (detail?.recipients || []).map((r) => r.email || r.shared_link).filter(Boolean),
+      }
+    })
 
-    // ── 7. Build response ─────────────────────────────────────────────────────
-    const caveats = []
-    if (proposedAmountNull > 0) {
-      caveats.push(`${proposedAmountNull} sent doc(s) had no amount — excluded from Proposed Value.`)
-    }
-    if (closedAmountNull > 0) {
-      caveats.push(`${closedAmountNull} signed doc(s) had no amount — excluded from Closed Value.`)
-    }
-    if (mrrDerivedCount === 0 && signedDocs.length > 0) {
-      caveats.push('MRR could not be derived: no signed documents contained a recognized MRR token/field.')
-    }
-    if (mrrError) {
-      caveats.push(`MRR detail fetch error: ${mrrError}`)
-    }
-
-    // Get period range label for display
+    // ── 7. Period label ───────────────────────────────────────────────────────
     const range = getPeriodRange(period)
     const periodLabel = range
       ? `${range.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} – ${range.end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
       : 'All time'
 
+    // ── 8. Caveats ────────────────────────────────────────────────────────────
+    const caveats = []
+    if (proposedAmountNull > 0)
+      caveats.push(`${proposedAmountNull} sent doc(s) had no Pay-In-Full token — excluded from Proposed Value.`)
+    if (closedAmountNull > 0)
+      caveats.push(`${closedAmountNull} signed doc(s) had no Pay-In-Full token — excluded from Closed Value.`)
+    if (activeDocs.length > CAP)
+      caveats.push(`Showing first ${CAP} of ${activeDocs.length} active docs (API cap).`)
+
     return NextResponse.json({
-      agreementsSent,
-      agreementsSigned,
+      agreementsSent: sentDocs.length,
+      agreementsSigned: signedDocs.length,
       totalProposedAmount: formatCurrency(totalProposedAmount),
       closedAmount: formatCurrency(closedAmount),
-      mrr,
+      mrr: mrr !== null ? formatCurrency(mrr) : null,
       mrrDerivedFromDocs: mrrDerivedCount,
-      mrrNullDocs: mrrNullCount,
       recentAgreements,
       totalDocsFetched: allDocs.length,
       filteredDocCount: docs.length,
@@ -205,11 +219,7 @@ export async function GET(request) {
   } catch (err) {
     console.error('[agreements route]', err)
     return NextResponse.json(
-      {
-        error: err.message || 'Unknown error fetching agreements',
-        timestamp: new Date().toISOString(),
-        durationMs: Date.now() - startTime,
-      },
+      { error: err.message || 'Unknown error', timestamp: new Date().toISOString(), durationMs: Date.now() - startTime },
       { status: 500 }
     )
   }
