@@ -35,6 +35,11 @@ export default function AppFrame({ children }) {
   const pathname = usePathname()
   const missionControlMode = pathname?.startsWith('/team/mission-control')
 
+  // No nav on the login page
+  if (pathname === '/login') {
+    return <>{children}</>
+  }
+
   if (missionControlMode) {
     return (
       <div className="flex h-screen">
