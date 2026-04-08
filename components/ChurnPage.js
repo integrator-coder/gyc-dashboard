@@ -10,10 +10,11 @@ import {
 } from 'recharts'
 import MetricTooltip from '@/components/MetricTooltip'
 
-const TEAL  = '#14B8A6'
-const RED   = '#EF4444'
-const AMBER = '#F59E0B'
-const GRAY  = '#374151'
+const TEAL   = '#14B8A6'
+const RED    = '#EF4444'
+const AMBER  = '#F59E0B'
+const GRAY   = '#374151'
+const PURPLE = '#A855F7'
 
 const fmt$  = (n) => '$' + Math.abs(Math.round(n ?? 0)).toLocaleString()
 const fmtK  = (n) => {
@@ -99,8 +100,10 @@ export default function ChurnPage() {
   const latest   = monthly.length > 0 ? monthly[monthly.length - 1] : {}
   const first    = monthly.length > 0 ? monthly[0] : {}
 
-  // NRR — only available for marketing tab
-  const nrr = activeTab === 'marketing' ? data.marketing?.nrr : null
+  // NRR, GRR, AvgDaysToChurn — only available for marketing tab
+  const nrr            = activeTab === 'marketing' ? data.marketing?.nrr            : null
+  const grr            = activeTab === 'marketing' ? data.marketing?.grr            : null
+  const avgDaysToChurn = activeTab === 'marketing' ? data.marketing?.avgDaysToChurn : null
   const nrrColor = (v) => {
     if (v == null) return 'text-gray-400'
     if (v >= 100) return 'text-teal-400'
@@ -438,6 +441,226 @@ export default function ChurnPage() {
                   </ResponsiveContainer>
                 </div>
               )}
+            </>
+          )}
+
+          {/* ── GRR (Gross Revenue Retention) — marketing only ─────────── */}
+          {grr && (
+            <>
+              <p className="text-gray-500 text-xs uppercase tracking-wide font-medium">
+                Gross Revenue Retention (GRR)
+              </p>
+
+              {/* GRR KPI cards */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {/* Current month */}
+                <div className="rounded-xl border p-4 flex flex-col gap-1 bg-teal-950 border-teal-700">
+                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wide leading-tight flex items-center">
+                    Current Month GRR
+                    <MetricTooltip text="Gross Revenue Retention — % of MRR kept excluding expansions. Formula: (Starting MRR - Churned MRR) ÷ Starting MRR × 100. 100% = perfect retention." />
+                  </p>
+                  <p className="text-2xl font-bold leading-snug text-teal-300">
+                    {grr.current != null ? grr.current.toFixed(1) + '%' : '—'}
+                  </p>
+                  <p className="text-gray-500 text-xs leading-snug">
+                    {grr.current != null
+                      ? grr.current >= 98
+                        ? 'Strong retention ✓'
+                        : grr.current >= 95
+                          ? 'Moderate revenue shrink'
+                          : 'High revenue erosion ✗'
+                      : 'No data'}
+                  </p>
+                </div>
+
+                {/* Trailing 3-month */}
+                <div className="rounded-xl border p-4 flex flex-col gap-1 bg-teal-950 border-teal-700">
+                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wide leading-tight flex items-center">
+                    Trailing 3-Month GRR
+                    <MetricTooltip text="Gross Revenue Retention — % of MRR kept excluding expansions. Formula: (Starting MRR - Churned MRR) ÷ Starting MRR × 100. 100% = perfect retention." />
+                  </p>
+                  <p className="text-2xl font-bold leading-snug text-teal-300">
+                    {grr.trailing3m != null ? grr.trailing3m.toFixed(1) + '%' : '—'}
+                  </p>
+                  <p className="text-gray-500 text-xs leading-snug">Avg over last 3 months</p>
+                </div>
+
+                {/* Trailing 12-month */}
+                <div className="rounded-xl border p-4 flex flex-col gap-1 bg-teal-950 border-teal-700">
+                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wide leading-tight flex items-center">
+                    Trailing 12-Month GRR
+                    <MetricTooltip text="Gross Revenue Retention — % of MRR kept excluding expansions. Formula: (Starting MRR - Churned MRR) ÷ Starting MRR × 100. 100% = perfect retention." />
+                  </p>
+                  <p className="text-2xl font-bold leading-snug text-teal-300">
+                    {grr.trailing12m != null ? grr.trailing12m.toFixed(1) + '%' : '—'}
+                  </p>
+                  <p className="text-gray-500 text-xs leading-snug">
+                    Best-in-class: &gt;95%
+                  </p>
+                </div>
+              </div>
+
+              {/* GRR line chart */}
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+                <h2 className="text-white font-semibold mb-1 flex items-center">
+                  GRR Over Time
+                  <MetricTooltip text="Gross Revenue Retention — % of MRR kept excluding expansions. Formula: (Starting MRR - Churned MRR) ÷ Starting MRR × 100. 100% = perfect retention." />
+                </h2>
+                <p className="text-gray-500 text-xs mb-4">
+                  Monthly Gross Revenue Retention · 100% = no revenue lost · excludes upsells
+                </p>
+                <ResponsiveContainer width="100%" height={260}>
+                  <LineChart
+                    data={chartData.filter(d => d.grr != null)}
+                    margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fill: '#9CA3AF', fontSize: 10 }}
+                      interval={Math.max(1, Math.floor(chartData.length / 12))}
+                    />
+                    <YAxis
+                      tickFormatter={v => v + '%'}
+                      tick={{ fill: '#9CA3AF', fontSize: 11 }}
+                      width={52}
+                      domain={[80, 100]}
+                    />
+                    <ReferenceLine
+                      y={100}
+                      stroke="#6B7280"
+                      strokeWidth={1.5}
+                      label={{ value: '100%', fill: '#9CA3AF', fontSize: 10, position: 'insideTopRight' }}
+                    />
+                    <Tooltip
+                      content={({ active, payload, label }) =>
+                        active && payload?.length ? (
+                          <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm min-w-[160px]">
+                            <p className="text-white font-semibold mb-1">{label}</p>
+                            <p style={{ color: TEAL }}>GRR: {payload[0].value?.toFixed(1)}%</p>
+                          </div>
+                        ) : null
+                      }
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="grr"
+                      name="GRR"
+                      stroke={TEAL}
+                      strokeWidth={2.5}
+                      dot={false}
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </>
+          )}
+
+          {/* ── Avg Days to Churn — marketing only ───────────────────────── */}
+          {avgDaysToChurn && (
+            <>
+              <p className="text-gray-500 text-xs uppercase tracking-wide font-medium">
+                Avg Days to Churn
+              </p>
+
+              {/* Avg Days KPI cards */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {/* Current month */}
+                <div className="rounded-xl border p-4 flex flex-col gap-1 bg-purple-950/60 border-purple-800">
+                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wide leading-tight flex items-center">
+                    Current Month Avg Days
+                    <MetricTooltip text="Estimated average days a client stays before churning. Formula: (1 ÷ Monthly Churn Rate) × 30." />
+                  </p>
+                  <p className="text-2xl font-bold leading-snug text-purple-300">
+                    {avgDaysToChurn.current != null ? avgDaysToChurn.current.toLocaleString() + 'd' : '—'}
+                  </p>
+                  <p className="text-gray-500 text-xs leading-snug">
+                    {avgDaysToChurn.current != null
+                      ? avgDaysToChurn.current >= 365
+                        ? 'Long-term clients ✓'
+                        : avgDaysToChurn.current >= 180
+                          ? 'Moderate tenure'
+                          : 'Short tenure — high churn risk ✗'
+                      : 'No data'}
+                  </p>
+                </div>
+
+                {/* Trailing 3-month */}
+                <div className="rounded-xl border p-4 flex flex-col gap-1 bg-purple-950/60 border-purple-800">
+                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wide leading-tight flex items-center">
+                    Trailing 3-Month Avg Days
+                    <MetricTooltip text="Estimated average days a client stays before churning. Formula: (1 ÷ Monthly Churn Rate) × 30." />
+                  </p>
+                  <p className="text-2xl font-bold leading-snug text-purple-300">
+                    {avgDaysToChurn.trailing3m != null ? avgDaysToChurn.trailing3m.toLocaleString() + 'd' : '—'}
+                  </p>
+                  <p className="text-gray-500 text-xs leading-snug">Avg over last 3 months</p>
+                </div>
+
+                {/* Trailing 12-month */}
+                <div className="rounded-xl border p-4 flex flex-col gap-1 bg-purple-950/60 border-purple-800">
+                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wide leading-tight flex items-center">
+                    Trailing 12-Month Avg Days
+                    <MetricTooltip text="Estimated average days a client stays before churning. Formula: (1 ÷ Monthly Churn Rate) × 30." />
+                  </p>
+                  <p className="text-2xl font-bold leading-snug text-purple-300">
+                    {avgDaysToChurn.trailing12m != null ? avgDaysToChurn.trailing12m.toLocaleString() + 'd' : '—'}
+                  </p>
+                  <p className="text-gray-500 text-xs leading-snug">
+                    Higher = better client retention
+                  </p>
+                </div>
+              </div>
+
+              {/* Avg Days line chart */}
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+                <h2 className="text-white font-semibold mb-1 flex items-center">
+                  Avg Days to Churn Over Time
+                  <MetricTooltip text="Estimated average days a client stays before churning. Formula: (1 ÷ Monthly Churn Rate) × 30." />
+                </h2>
+                <p className="text-gray-500 text-xs mb-4">
+                  Higher = clients staying longer · null months excluded (zero churn = infinite days)
+                </p>
+                <ResponsiveContainer width="100%" height={260}>
+                  <LineChart
+                    data={chartData.filter(d => d.avgDaysToChurn != null)}
+                    margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fill: '#9CA3AF', fontSize: 10 }}
+                      interval={Math.max(1, Math.floor(chartData.length / 12))}
+                    />
+                    <YAxis
+                      tickFormatter={v => v + 'd'}
+                      tick={{ fill: '#9CA3AF', fontSize: 11 }}
+                      width={60}
+                      domain={[0, 'auto']}
+                    />
+                    <Tooltip
+                      content={({ active, payload, label }) =>
+                        active && payload?.length ? (
+                          <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm min-w-[180px]">
+                            <p className="text-white font-semibold mb-1">{label}</p>
+                            <p style={{ color: PURPLE }}>Avg Days: {payload[0].value?.toLocaleString()}d</p>
+                          </div>
+                        ) : null
+                      }
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="avgDaysToChurn"
+                      name="Avg Days to Churn"
+                      stroke={PURPLE}
+                      strokeWidth={2.5}
+                      dot={false}
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </>
           )}
 

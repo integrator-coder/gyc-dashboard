@@ -148,6 +148,51 @@ function parseCAMData(rows) {
 }
 
 /**
+ * Augment monthly data with GRR and Avg Days to Churn, and return top-level aggregates.
+ * GRR  = (totalMRR - mrrLost) / totalMRR × 100, capped 0–100
+ * AvgDays = (1 / churnRate) × 30   where churnRate = churnPct / 100
+ */
+function computeGRRAndAvgDays(monthly) {
+  const augmented = monthly.map(m => {
+    const grr = m.totalMRR > 0
+      ? Math.round(Math.min(100, Math.max(0, (m.totalMRR - m.mrrLost) / m.totalMRR * 100)) * 10) / 10
+      : null
+    const avgDaysToChurn = (m.churnPct > 0 && m.churnPct <= 20)
+      ? Math.round((1 / (m.churnPct / 100)) * 30)
+      : null
+    return { ...m, grr, avgDaysToChurn }
+  })
+
+  const avgNums = (arr) => arr.length
+    ? Math.round(arr.reduce((s, v) => s + v, 0) / arr.length * 10) / 10
+    : null
+  const avgInts = (arr) => arr.length
+    ? Math.round(arr.reduce((s, v) => s + v, 0) / arr.length)
+    : null
+
+  const validGrr   = (slice) => slice.filter(m => m.grr != null).map(m => m.grr)
+  const validDays  = (slice) => slice.filter(m => m.avgDaysToChurn != null).map(m => m.avgDaysToChurn)
+
+  // Latest non-null value
+  const latestGrr  = [...augmented].reverse().find(m => m.grr != null)?.grr  ?? null
+  const latestDays = [...augmented].reverse().find(m => m.avgDaysToChurn != null)?.avgDaysToChurn ?? null
+
+  return {
+    augmented,
+    grr: {
+      current:     latestGrr,
+      trailing3m:  avgNums(validGrr(augmented.slice(-3))),
+      trailing12m: avgNums(validGrr(augmented.slice(-12))),
+    },
+    avgDaysToChurn: {
+      current:     latestDays,
+      trailing3m:  avgInts(validDays(augmented.slice(-3))),
+      trailing12m: avgInts(validDays(augmented.slice(-12))),
+    },
+  }
+}
+
+/**
  * Compute NRR (Net Revenue Retention) from the monthly data array.
  * NRR(month) = (prevMRR + upsells - reductions - cancellations) / prevMRR × 100
  * Skips the first month (no prevMRR) and filters outliers (NRR > 200% or < 0%).
@@ -203,12 +248,16 @@ export async function GET() {
     const recruitingMonthly = parseTabData(recruitingRows)
     const { camRevenue, camChurnPct } = parseCAMData(camRows)
 
+    const { augmented: marketingAugmented, grr, avgDaysToChurn } = computeGRRAndAvgDays(marketingMonthly)
+
     return NextResponse.json({
       marketing: {
-        monthly: marketingMonthly,
+        monthly: marketingAugmented,
         camRevenue,
         camChurnPct,
         nrr: computeNRR(marketingMonthly),
+        grr,
+        avgDaysToChurn,
       },
       recruiting: {
         monthly: recruitingMonthly,
