@@ -126,6 +126,12 @@ export default function ChurnPage() {
     churnRevPct: m.churnRevPct > 20 ? null : m.churnRevPct,
   }))
 
+  // Avg Days to Churn chart — only show from Nov 2023 onward (filter sparse early months)
+  const avgDaysChartData = (monthly || []).filter(m => {
+    const d = new Date(m.monthStart || m.month)
+    return d >= new Date('2023-11-01')
+  }).filter(m => m.avgDaysToChurn != null && m.avgDaysToChurn > 0)
+
   // Zoom-ins: year-to-date (auto-grows month by month)
   const latestMonth = chartData[chartData.length - 1]?.month || ''
   const latestYearSuffix = latestMonth.split('-')[1] || ''
@@ -624,14 +630,14 @@ export default function ChurnPage() {
                 </p>
                 <ResponsiveContainer width="100%" height={260}>
                   <LineChart
-                    data={chartData.filter(d => d.avgDaysToChurn != null)}
+                    data={avgDaysChartData}
                     margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                     <XAxis
                       dataKey="month"
                       tick={{ fill: '#9CA3AF', fontSize: 10 }}
-                      interval={Math.max(1, Math.floor(chartData.length / 12))}
+                      interval={Math.max(1, Math.floor(avgDaysChartData.length / 12))}
                     />
                     <YAxis
                       tickFormatter={v => v + 'd'}
