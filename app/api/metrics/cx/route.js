@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { NextResponse } from 'next/server'
 
 const SCORECARD_DB_ID = '176ca865-e197-81f8-b79b-f8836089790e'
