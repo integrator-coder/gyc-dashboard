@@ -127,10 +127,17 @@ export default function ChurnPage() {
   }))
 
   // Avg Days to Churn chart — only show from Nov 2023 onward (filter sparse early months)
-  const avgDaysChartData = (monthly || []).filter(m => {
-    const d = new Date(m.monthStart || m.month)
-    return d >= new Date('2023-11-01')
-  }).filter(m => m.avgDaysToChurn != null && m.avgDaysToChurn > 0)
+  const avgDaysChartData = (data?.marketing?.monthly || []).filter(m => {
+    if (!m.avgDaysToChurn || m.avgDaysToChurn <= 0) return false
+    // Parse "Nov-23" format — months from Nov 2023 onward
+    const parts = m.month?.split('-')
+    if (!parts || parts.length !== 2) return false
+    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+    const monthIdx = monthNames.indexOf(parts[0])
+    const year = 2000 + parseInt(parts[1], 10)
+    const d = new Date(year, monthIdx, 1)
+    return d >= new Date(2023, 10, 1) // Nov 2023
+  })
 
   // Zoom-ins: year-to-date (auto-grows month by month)
   const latestMonth = chartData[chartData.length - 1]?.month || ''
