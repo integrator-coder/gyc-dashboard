@@ -8,6 +8,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ReferenceLine,
 } from 'recharts'
+import MetricTooltip from '@/components/MetricTooltip'
 
 const TEAL  = '#14B8A6'
 const RED   = '#EF4444'
@@ -38,14 +39,17 @@ function trendline(data, dataKey, outKey) {
   return data.map((d, i) => ({ ...d, [outKey]: parseFloat((slope * i + intercept).toFixed(4)) }))
 }
 
-function KpiCard({ label, value, sub, highlight, negative }) {
+function KpiCard({ label, value, sub, highlight, negative, tooltip }) {
   return (
     <div className={`rounded-xl border p-4 flex flex-col gap-1 ${
       highlight ? 'bg-teal-950 border-teal-700' :
       negative  ? 'bg-red-950/60 border-red-800' :
       'bg-gray-900 border-gray-800'
     }`}>
-      <p className="text-gray-400 text-xs font-medium uppercase tracking-wide leading-tight">{label}</p>
+      <p className="text-gray-400 text-xs font-medium uppercase tracking-wide leading-tight flex items-center">
+        {label}
+        {tooltip && <MetricTooltip text={tooltip} />}
+      </p>
       <p className={`text-xl font-bold leading-snug ${
         highlight ? 'text-teal-300' : negative ? 'text-red-400' : 'text-white'
       }`}>{value}</p>
@@ -206,23 +210,27 @@ export default function ChurnPage() {
               value={latest.clientCount != null ? latest.clientCount.toLocaleString() : '—'}
               sub={`${first.clientCount != null ? (latest.clientCount - first.clientCount > 0 ? '+' : '') + (latest.clientCount - first.clientCount) + ' since ' + first.month : ''}`}
               highlight
+              tooltip="Total number of active clients at the end of the latest month. Source: Google Sheets (client count row)."
             />
             <KpiCard
               label="Total MRR"
               value={latest.totalMRR ? fmt$(latest.totalMRR) : '—'}
               sub={`Avg ${latest.avgMRR ? fmt$(latest.avgMRR) : '—'} per client`}
+              tooltip="Total Monthly Recurring Revenue from all active clients in the latest month. Average per client = Total MRR ÷ Active Clients. Source: Google Sheets."
             />
             <KpiCard
               label="Client Churn Rate"
               value={fmtPct(latest.churnPct)}
               sub="% of clients cancelled — healthy: <2%"
               negative={latest.churnPct > 3}
+              tooltip="Percentage of clients who cancelled in the period. Pre-calculated in the tracking sheet. Healthy target: <2%. Values >20% are filtered as first-month artifacts. Source: Google Sheets row 13."
             />
             <KpiCard
               label="Revenue Churn Rate"
               value={fmtPct(latest.churnRevPct)}
               sub="% of MRR lost — healthy: <3%"
               negative={latest.churnRevPct > 3}
+              tooltip="Percentage of MRR lost from cancellations in the period. Pre-calculated in the tracking sheet. Healthy target: <3%. Source: Google Sheets row 14."
             />
             <KpiCard
               label="Net MRR Change"
@@ -232,12 +240,14 @@ export default function ChurnPage() {
               sub={`New: ${latest.newMRR ? fmt$(latest.newMRR) : '—'} · Lost: ${latest.lostMRR ? fmt$(latest.lostMRR) : '—'}`}
               highlight={latest.netMRR > 0}
               negative={latest.netMRR < 0}
+              tooltip="Net MRR movement in the period. Formula: New MRR Added − MRR Lost from cancellations. Positive = growing, negative = shrinking. Source: Google Sheets row 22."
             />
             <KpiCard
               label="Client Movement"
               value={`-${latest.clientsLost ?? 0} / +${latest.clientsAdded ?? 0}`}
               sub={`Net ${(latest.clientsAdded ?? 0) - (latest.clientsLost ?? 0) >= 0 ? '+' : ''}${(latest.clientsAdded ?? 0) - (latest.clientsLost ?? 0)} clients this month`}
               negative={(latest.clientsLost ?? 0) > (latest.clientsAdded ?? 0)}
+              tooltip="Clients lost vs clients gained this month. Net = Clients Added − Clients Lost. Negative net means more cancellations than new sign-ups. Source: Google Sheets rows 8–11."
             />
           </div>
 
@@ -302,8 +312,9 @@ export default function ChurnPage() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Current month */}
                 <div className={`rounded-xl border p-4 flex flex-col gap-1 ${nrrBg(nrr.currentMonth)}`}>
-                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wide leading-tight">
+                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wide leading-tight flex items-center">
                     Current Month NRR
+                    <MetricTooltip text="Net Revenue Retention for the most recent month. Formula: (Starting MRR + Upsells − Reductions − Cancellations) ÷ Starting MRR × 100. Above 100% means existing clients are growing revenue on their own. Source: Google Sheets upsell/reduction/cancellation rows." />
                   </p>
                   <p className={`text-2xl font-bold leading-snug ${nrrColor(nrr.currentMonth)}`}>
                     {nrr.currentMonth != null ? nrr.currentMonth.toFixed(1) + '%' : '—'}
@@ -321,8 +332,9 @@ export default function ChurnPage() {
 
                 {/* Trailing 3-month */}
                 <div className={`rounded-xl border p-4 flex flex-col gap-1 ${nrrBg(nrr.trailing3mo)}`}>
-                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wide leading-tight">
+                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wide leading-tight flex items-center">
                     Trailing 3-Month NRR
+                    <MetricTooltip text="Average Net Revenue Retention over the last 3 months. Smooths out single-month noise. Same formula as Current Month NRR, averaged across 3 periods." />
                   </p>
                   <p className={`text-2xl font-bold leading-snug ${nrrColor(nrr.trailing3mo)}`}>
                     {nrr.trailing3mo != null ? nrr.trailing3mo.toFixed(1) + '%' : '—'}
@@ -332,8 +344,9 @@ export default function ChurnPage() {
 
                 {/* Trailing 12-month */}
                 <div className={`rounded-xl border p-4 flex flex-col gap-1 ${nrrBg(nrr.trailing12mo)}`}>
-                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wide leading-tight">
+                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wide leading-tight flex items-center">
                     Trailing 12-Month NRR
+                    <MetricTooltip text="Average Net Revenue Retention over the last 12 months. Best-in-class SaaS benchmark: 110–130%. Outlier months (NRR <0% or >200%) are filtered. Formula: (Starting MRR + Upsells − Reductions − Cancellations) ÷ Starting MRR × 100." />
                   </p>
                   <p className={`text-2xl font-bold leading-snug ${nrrColor(nrr.trailing12mo)}`}>
                     {nrr.trailing12mo != null ? nrr.trailing12mo.toFixed(1) + '%' : '—'}
@@ -347,7 +360,10 @@ export default function ChurnPage() {
               {/* NRR line chart */}
               {nrr.monthly?.length > 0 && (
                 <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-                  <h2 className="text-white font-semibold mb-1">NRR Over Time</h2>
+                  <h2 className="text-white font-semibold mb-1 flex items-center">
+                    NRR Over Time
+                    <MetricTooltip text="Monthly NRR trend. Each point = (Starting MRR + Upsells − Reductions − Cancellations) ÷ Starting MRR × 100. Hover a point to see the component values. Outliers filtered." />
+                  </h2>
                   <p className="text-gray-500 text-xs mb-4">
                     Monthly Net Revenue Retention · 100% = breakeven · 110% = best-in-class
                   </p>
@@ -470,7 +486,10 @@ export default function ChurnPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Zoom-In: Monthly Churn Rate */}
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-              <h2 className="text-white font-semibold mb-1">Monthly Churn Rate (Year to Date)</h2>
+              <h2 className="text-white font-semibold mb-1 flex items-center">
+                Monthly Churn Rate (Year to Date)
+                <MetricTooltip text="Client churn % month by month, year to date. Dashed line = linear trendline. Values >20% filtered as artifacts. Amber reference line at 3% = warning threshold. Source: Google Sheets row 13." />
+              </h2>
               <p className="text-gray-500 text-xs mb-4">YTD + trendline (auto-expands each month)</p>
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={churnZoom} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
@@ -495,7 +514,10 @@ export default function ChurnPage() {
 
             {/* Zoom-In: Lost vs Added MRR */}
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-              <h2 className="text-white font-semibold mb-1">Lost vs Added MRR (Year to Date)</h2>
+              <h2 className="text-white font-semibold mb-1 flex items-center">
+                Lost vs Added MRR (Year to Date)
+                <MetricTooltip text="New MRR added (teal bars) vs MRR lost from cancellations (red bars) each month, year to date. Amber line = Net MRR (New − Lost). Trendlines show direction of travel." />
+              </h2>
               <p className="text-gray-500 text-xs mb-4">YTD + trendlines (auto-expands each month)</p>
               <ResponsiveContainer width="100%" height={220}>
                 <ComposedChart data={mrrZoom} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
@@ -526,7 +548,10 @@ export default function ChurnPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Churn Rate */}
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-              <h2 className="text-white font-semibold mb-1">Monthly Churn Rate</h2>
+              <h2 className="text-white font-semibold mb-1 flex items-center">
+                Monthly Churn Rate
+                <MetricTooltip text="Full history of client churn % (red) and revenue churn % (amber dashed). Client churn = cancelled clients ÷ total clients. Revenue churn = MRR lost ÷ total MRR. Source: Google Sheets rows 13–14." />
+              </h2>
               <p className="text-gray-500 text-xs mb-4">Client count &amp; revenue churn over time</p>
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
@@ -551,7 +576,10 @@ export default function ChurnPage() {
 
             {/* Lost vs Added MRR */}
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-              <h2 className="text-white font-semibold mb-1">Lost vs Added MRR</h2>
+              <h2 className="text-white font-semibold mb-1 flex items-center">
+                Lost vs Added MRR
+                <MetricTooltip text="Full history of New MRR added (teal bars) vs MRR lost from cancellations (red bars). Amber line = Net MRR = New MRR − Lost MRR. Positive net = revenue growing. Source: Google Sheets rows 20–22." />
+              </h2>
               <p className="text-gray-500 text-xs mb-4">New MRR (teal) vs Lost MRR (red) + net line</p>
               <ResponsiveContainer width="100%" height={220}>
                 <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
