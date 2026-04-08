@@ -13,7 +13,9 @@ const endpoints = [
   '/api/metrics/production-snapshot?refresh=1',
 ]
 
-const ENDPOINT_TIMEOUT_MS = 30000 // 30s per endpoint max
+const ENDPOINT_TIMEOUT_MS = 30000 // 30s default per endpoint
+const SLOW_ENDPOINTS = ['/api/metrics/leadership', '/api/metrics/intel-snapshot']
+const SLOW_ENDPOINT_TIMEOUT_MS = 90000 // 90s for known slow endpoints
 
 async function fetchWithTimeout(url, ms) {
   const controller = new AbortController()
@@ -36,7 +38,9 @@ async function run() {
     const url = `${base}${path}`
     const t0 = Date.now()
     try {
-      const res = await fetchWithTimeout(url, ENDPOINT_TIMEOUT_MS)
+      const isSlow = SLOW_ENDPOINTS.some(s => path.startsWith(s))
+      const timeout = isSlow ? SLOW_ENDPOINT_TIMEOUT_MS : ENDPOINT_TIMEOUT_MS
+      const res = await fetchWithTimeout(url, timeout)
       const json = await res.json().catch(() => ({}))
       results.push({
         path,
@@ -48,7 +52,8 @@ async function run() {
       })
     } catch (e) {
       const isTimeout = e.name === 'AbortError'
-      results.push({ path, ok: false, status: 0, ms: Date.now() - t0, error: isTimeout ? `timed out after ${ENDPOINT_TIMEOUT_MS}ms` : e.message })
+      const usedTimeout = SLOW_ENDPOINTS.some(s => path.startsWith(s)) ? SLOW_ENDPOINT_TIMEOUT_MS : ENDPOINT_TIMEOUT_MS
+      results.push({ path, ok: false, status: 0, ms: Date.now() - t0, error: isTimeout ? `timed out after ${usedTimeout}ms` : e.message })
     }
   }
 
