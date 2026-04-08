@@ -130,6 +130,7 @@ export default function FinancePage() {
   const lastSync = data?.lastSync
   const mrrHistory = data?.mrrHistory || []
   const dailyRevenue = data?.dailyRevenue || []
+  const ytdCash = data?.ytdCash ?? 0
 
   // Daily cash stats
   const todayStr = new Date().toISOString().split('T')[0]
@@ -147,6 +148,12 @@ export default function FinancePage() {
     amount: d.amount,
     date: d.date
   }))
+
+  // YTD annualized Est. Annual Revenue
+  const now = new Date()
+  const startOfYear = new Date(now.getFullYear(), 0, 1)
+  const daysElapsed = Math.floor((now - startOfYear) / 86400000) + 1
+  const estAnnualRevenue = ytdCash > 0 ? (ytdCash / daysElapsed) * 365 : null
 
   // RPE calculations
   const rpeMrr = metrics ? (metrics.mrr * 12) / NORMALIZED_EMPLOYEES : null
@@ -241,10 +248,10 @@ export default function FinancePage() {
         />
         <MetricCard
           title="Est. Annual Revenue"
-          value={formatCurrency(metrics ? metrics.totalRevenue * 12 : null)}
-          subtitle="30d cash × 12"
+          value={formatCurrency(estAnnualRevenue)}
+          subtitle={`YTD ÷ ${daysElapsed}d × 365`}
           icon="🟢"
-          tooltip="Revenue (30d) × 12. Annualizes the last 30 days of actual cash collected to estimate total annual revenue, including both recurring and one-time project payments."
+          tooltip="Year-to-date cash collected ÷ days elapsed × 365. Based on actual YTD collections annualized forward. More stable than 30-day rolling estimate."
         />
       </div>
 

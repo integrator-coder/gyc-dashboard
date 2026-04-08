@@ -23,7 +23,7 @@ function buildDashboardGroup(user) {
       emoji: '🏆',
       items: [
         { label: 'Overview', emoji: '🏆', href: '/leadership' },
-        { label: 'HR', emoji: '🧑', href: '/hr' },
+        { label: 'HR', emoji: '🧑‍💼', href: '/hr' },
       ],
     })
   }

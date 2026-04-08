@@ -82,6 +82,14 @@ export async function GET() {
       ORDER BY date ASC
     `, [cutoffDate])
 
+    // YTD cash collected (Jan 1 to today)
+    const startOfYear = new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0]
+    const { rows: ytdRows } = await client.query(`
+      SELECT COALESCE(SUM(amount), 0) AS ytd_cash FROM "DailyRevenue"
+      WHERE date >= $1
+    `, [startOfYear])
+    const ytdCash = Number(ytdRows[0]?.ytd_cash || 0)
+
     return NextResponse.json({
       metrics: latest,
       previous,
@@ -90,6 +98,7 @@ export async function GET() {
       history,
       mrrHistory,
       dailyRevenue,
+      ytdCash,
     })
   } catch (error) {
     console.error('Finance metrics error:', error)
