@@ -1,7 +1,6 @@
 # GYC KPI Dashboard
 
-The internal operating system for Grow Your Center. Built to give the leadership team and growth advisors real-time visibility into business performance.
-
+The internal operating system for Grow Your Center. Built to give the leadership team and growth advisors real-time visibility into business performance..
 ---
 
 ## What's Inside
