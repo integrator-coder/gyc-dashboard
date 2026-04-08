@@ -1,4 +1,3 @@
-export const dynamic = 'force-dynamic'
 
 import { createGoogleAuth, SHEETS_READONLY } from '@/lib/google-auth'
 import { NextResponse } from 'next/server'
