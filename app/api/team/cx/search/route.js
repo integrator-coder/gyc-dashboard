@@ -7,7 +7,7 @@ import { tokenizeSearchQuery } from '@/lib/team'
 
 export async function GET(request) {
   try {
-    const auth = await requireApiUser(['cx', 'admin', 'superadmin'])
+    const auth = await requireApiUser(['sales', 'ga', 'cx', 'admin', 'superadmin'])
     if (auth.error) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }

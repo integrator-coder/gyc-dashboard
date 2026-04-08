@@ -49,7 +49,9 @@ function buildDashboardGroup(user) {
     items: [
       { label: 'Sales Activity', emoji: '📞', href: '/sales-activity' },
       { label: 'New Business', emoji: '💵', href: '/new-business' },
-      { label: 'Sales Analysis', emoji: '🧮', href: '/sales-analysis' },
+      ...(['superadmin', 'admin', 'ga', 'sales'].includes(user?.role)
+        ? [{ label: 'Sales Analysis', emoji: '🧮', href: '/sales-analysis' }]
+        : []),
     ],
   })
 
@@ -65,9 +67,13 @@ function buildDashboardGroup(user) {
     ],
   })
 
-  // Marketing + Production — visible to all
+  // Marketing — visible to all
   children.push({ label: 'Marketing', emoji: '📣', href: '/marketing' })
-  children.push({ label: 'Production', emoji: '🔧', href: '/production' })
+
+  // Production — ga and admin+ only
+  if (['superadmin', 'admin', 'ga'].includes(user?.role)) {
+    children.push({ label: 'Production', emoji: '🔧', href: '/production' })
+  }
 
   return {
     label: 'Dashboard',

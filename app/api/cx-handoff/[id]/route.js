@@ -6,7 +6,7 @@ import { getCxHandoffDetail, updateCxHandoffAssignment } from '@/lib/cx-handoff'
 
 export async function GET(_request, { params }) {
   try {
-    const auth = await requireApiUser(['cx', 'admin', 'superadmin'])
+    const auth = await requireApiUser(['sales', 'ga', 'cx', 'admin', 'superadmin'])
     if (auth.error) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
@@ -31,7 +31,7 @@ export async function GET(_request, { params }) {
 
 export async function PATCH(request, { params }) {
   try {
-    const auth = await requireApiUser(['cx', 'admin', 'superadmin'])
+    const auth = await requireApiUser(['sales', 'ga', 'cx', 'admin', 'superadmin'])
     if (auth.error) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
