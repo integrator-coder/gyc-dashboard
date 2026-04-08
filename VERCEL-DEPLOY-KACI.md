@@ -95,7 +95,7 @@ Once all env vars are saved:
 ## Step 5 — Test After Deploy
 
 1. Open the Vercel URL
-2. Log in with: `todd@growyourcenter.com` / `TestSuperAdmin2026!`
+2. Log in with: `todd@growyourcenter.com` / `Welcome2GYC!`
 3. Verify these pages load:
    - Finance dashboard
    - Sales Activity
