@@ -25,8 +25,11 @@ export async function GET(request) {
   } else if (statusFilter === 'all') {
     // no filter
   } else {
-    // default: pending / unclassified
+    // default: pending / unclassified — only show calls with actual data
     conditions.push(`(status = 'pending' OR status IS NULL)`)
+    conditions.push(`("transcriptText" IS NOT NULL OR participants IS NOT NULL OR "aiSummary" IS NOT NULL)`)
+    conditions.push(`"recordingUrl" IS NOT NULL`)
+    conditions.push(`duration >= 4`)
   }
 
   if (typeFilter) {
@@ -64,9 +67,9 @@ export async function GET(request) {
     ),
   ])
 
-  // Also get pending count for badge
+  // Also get pending count for badge — only enriched calls (with transcript/participants/summary)
   const pendingRes = await pool.query(
-    `SELECT COUNT(*) FROM "ZoomCall" WHERE (status = 'pending' OR status IS NULL)`
+    `SELECT COUNT(*) FROM "ZoomCall" WHERE (status = 'pending' OR status IS NULL) AND ("transcriptText" IS NOT NULL OR participants IS NOT NULL OR "aiSummary" IS NOT NULL) AND "recordingUrl" IS NOT NULL AND duration >= 4`
   )
 
   return NextResponse.json({
