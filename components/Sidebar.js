@@ -95,6 +95,15 @@ const TEAM_PORTAL_GROUP = {
   ],
 }
 
+const INTELLIGENCE_GROUP = {
+  label: 'Intelligence',
+  emoji: '🧠',
+  defaultOpen: false,
+  children: [
+    { label: 'Call Intelligence', emoji: '📞', href: '/zoom' },
+  ],
+}
+
 const ADMIN_GROUP = {
   label: 'Admin',
   emoji: '⚙️',
@@ -233,6 +242,9 @@ export default function Sidebar() {
       <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
         <CollapsibleGroup group={dashboardGroup} pathname={pathname} />
         <CollapsibleGroup group={teamPortalGroup} pathname={pathname} />
+        {isAdminPlus(session.user) && (
+          <CollapsibleGroup group={INTELLIGENCE_GROUP} pathname={pathname} />
+        )}
         {isAdminPlus(session.user) && (
           <CollapsibleGroup group={ADMIN_GROUP} pathname={pathname} />
         )}
