@@ -5,39 +5,28 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell,
 } from 'recharts'
+import MetricTooltip from '@/components/MetricTooltip'
 
 const fmt$ = (n) => '$' + Math.round(n ?? 0).toLocaleString()
 const fmtK = (n) => (n >= 1000 ? '$' + (n / 1000).toFixed(0) + 'K' : '$' + Math.round(n))
+const fmtPct = (n) => (n != null ? Math.round(n * 100) + '%' : '—')
 
-const RED = '#EF4444'
+const RED   = '#EF4444'
 const AMBER = '#F59E0B'
-const RED_DIM = '#7F1D1D'
-const AMBER_DIM = '#78350F'
 
-function KpiCard({ label, value, sub, danger }) {
+function KpiCard({ label, value, sub, danger, tooltip }) {
   return (
     <div
       className={`rounded-xl border p-5 ${
         danger ? 'bg-red-950/40 border-red-800/60' : 'bg-gray-900 border-gray-800'
       }`}
     >
-      <p className="text-gray-400 text-xs font-medium uppercase tracking-wide mb-1">{label}</p>
+      <p className="text-gray-400 text-xs font-medium uppercase tracking-wide mb-1 flex items-center">
+        {label}
+        {tooltip && <MetricTooltip text={tooltip} />}
+      </p>
       <p className={`text-2xl font-bold ${danger ? 'text-red-400' : 'text-white'}`}>{value}</p>
       {sub && <p className="text-gray-500 text-xs mt-1">{sub}</p>}
-    </div>
-  )
-}
-
-function BucketTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null
-  return (
-    <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm">
-      <p className="text-white font-semibold mb-1">{label}</p>
-      {payload.map((p) => (
-        <p key={p.name} style={{ color: p.color }}>
-          {p.name === 'count' ? `${p.value} subscriptions` : `${fmtK(p.value)} MRR at risk`}
-        </p>
-      ))}
     </div>
   )
 }
@@ -47,46 +36,81 @@ function bucketColor(label) {
   return RED
 }
 
+/** Badge showing how many times this client has been past-due before */
+function HistoryBadge({ ph }) {
+  if (!ph) return null
+  if (!ph.hasHistory) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-green-950/50 border border-green-800/40 text-green-400 font-medium">
+        🟢 First time
+      </span>
+    )
+  }
+  if (ph.inCollections) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-red-950/60 border border-red-700/60 text-red-300 font-bold">
+        ☠️ Collections
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-red-950/50 border border-red-800/40 text-red-400 font-medium">
+      🔴 Prior history
+    </span>
+  )
+}
+
+/** Catch-up rate pill */
+function CatchUpPill({ rate }) {
+  if (rate == null) return null
+  const pct = Math.round(rate * 100)
+  const color = pct >= 70 ? 'text-green-400' : pct >= 40 ? 'text-amber-400' : 'text-red-400'
+  return (
+    <span className={`text-xs font-medium ${color}`}>
+      {pct}% paid back historically
+    </span>
+  )
+}
+
+/** Reason code tag */
+function ReasonTag({ reason }) {
+  if (!reason) return null
+  return (
+    <span className="inline-block text-xs px-1.5 py-0.5 rounded bg-gray-800 border border-gray-700 text-gray-300">
+      {reason}
+    </span>
+  )
+}
+
 export default function DunningPage() {
-  const [data, setData] = useState(null)
+  const [data, setData]     = useState(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [error, setError]   = useState(null)
 
   useEffect(() => {
     fetch('/api/metrics/dunning')
-      .then((r) => r.json())
-      .then((d) => {
-        setData(d)
-        setLoading(false)
-      })
-      .catch((e) => {
-        setError(e.message)
-        setLoading(false)
-      })
+      .then(r => r.json())
+      .then(d => { setData(d); setLoading(false) })
+      .catch(e => { setError(e.message); setLoading(false) })
   }, [])
 
   if (loading)
-    return (
-      <div className="flex items-center justify-center h-64 text-gray-400">
-        Loading dunning data…
-      </div>
-    )
+    return <div className="flex items-center justify-center h-64 text-gray-400">Loading dunning data…</div>
   if (error || data?.error)
     return <div className="text-red-400 p-6">Error: {error || data.error}</div>
 
   const { summary, buckets, pastDue, updatedAt } = data
-  const { pastDueCount, mrrAtRisk, totalOutstanding, avgAttempts } = summary
+  const { pastDueCount, mrrAtRisk, totalOutstanding, avgAttempts,
+          repeatOffenders, avgCatchUpRate, topReason } = summary
 
-  // Chart data with dual bars
-  const chartData = buckets.map((b) => ({
-    label: b.label,
-    count: b.count,
-    mrr: Math.round(b.mrr),
+  const chartData = buckets.map(b => ({
+    label: b.label, count: b.count, mrr: Math.round(b.mrr),
     color: bucketColor(b.label),
   }))
 
   return (
     <div className="space-y-6">
+
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-white">Failed Payments &amp; Dunning</h1>
@@ -96,7 +120,7 @@ export default function DunningPage() {
         </p>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI Cards — row 1: live Stripe */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           label="Past-Due Subscriptions"
@@ -124,6 +148,35 @@ export default function DunningPage() {
         />
       </div>
 
+      {/* KPI Cards — row 2: historical intelligence */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+        <KpiCard
+          label="Repeat Offenders"
+          value={repeatOffenders ?? 0}
+          sub={
+            repeatOffenders > 0
+              ? `${repeatOffenders} current past-due have been overdue before`
+              : 'No repeat history found'
+          }
+          danger={repeatOffenders > 0}
+          tooltip="Count of currently past-due clients who also appear in the Overdue Payment Tracker 2025 sheet — meaning they have at least one prior overdue episode on record."
+        />
+        <KpiCard
+          label="Historical Catch-Up Rate"
+          value={avgCatchUpRate != null ? fmtPct(avgCatchUpRate) : '—'}
+          sub="Avg % of overdue balances eventually paid back"
+          danger={false}
+          tooltip="Across all tracked overdue episodes (excluding collections), what percentage of the overdue amount was eventually paid back. Helps Lex gauge recovery confidence on current past-due accounts."
+        />
+        <KpiCard
+          label="Top Failure Reason"
+          value={topReason ?? '—'}
+          sub="Most common reason code in tracker"
+          danger={false}
+          tooltip="The most frequently cited reason code across all entries in the Overdue Payment Tracker 2025 sheet."
+        />
+      </div>
+
       {/* Buckets Chart */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
         <h2 className="text-white font-semibold mb-1">Days Past Due — Breakdown</h2>
@@ -140,27 +193,19 @@ export default function DunningPage() {
               <BarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                 <XAxis dataKey="label" tick={{ fill: '#9CA3AF', fontSize: 11 }} />
-                <YAxis
-                  allowDecimals={false}
-                  tick={{ fill: '#9CA3AF', fontSize: 11 }}
-                  width={32}
-                />
-                <Tooltip
-                  content={({ active, payload, label }) =>
-                    active && payload?.length ? (
-                      <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm">
-                        <p className="text-white font-semibold mb-1">{label}</p>
-                        <p style={{ color: payload[0].payload.color }}>
-                          {payload[0].value} subscription{payload[0].value !== 1 ? 's' : ''}
-                        </p>
-                      </div>
-                    ) : null
-                  }
-                />
-                <Bar dataKey="count" name="count" radius={[4, 4, 0, 0]}>
-                  {chartData.map((entry, i) => (
-                    <Cell key={i} fill={entry.color} />
-                  ))}
+                <YAxis allowDecimals={false} tick={{ fill: '#9CA3AF', fontSize: 11 }} width={32} />
+                <Tooltip content={({ active, payload, label }) =>
+                  active && payload?.length ? (
+                    <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm">
+                      <p className="text-white font-semibold mb-1">{label}</p>
+                      <p style={{ color: payload[0].payload.color }}>
+                        {payload[0].value} subscription{payload[0].value !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  ) : null
+                } />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {chartData.map((e, i) => <Cell key={i} fill={e.color} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -176,31 +221,27 @@ export default function DunningPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                 <XAxis dataKey="label" tick={{ fill: '#9CA3AF', fontSize: 11 }} />
                 <YAxis tickFormatter={fmtK} tick={{ fill: '#9CA3AF', fontSize: 11 }} width={48} />
-                <Tooltip
-                  content={({ active, payload, label }) =>
-                    active && payload?.length ? (
-                      <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm">
-                        <p className="text-white font-semibold mb-1">{label}</p>
-                        <p style={{ color: payload[0].payload.color }}>
-                          {fmt$(payload[0].value)} MRR at risk
-                        </p>
-                      </div>
-                    ) : null
-                  }
-                />
-                <Bar dataKey="mrr" name="mrr" radius={[4, 4, 0, 0]}>
-                  {chartData.map((entry, i) => (
-                    <Cell key={i} fill={entry.color} />
-                  ))}
+                <Tooltip content={({ active, payload, label }) =>
+                  active && payload?.length ? (
+                    <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm">
+                      <p className="text-white font-semibold mb-1">{label}</p>
+                      <p style={{ color: payload[0].payload.color }}>
+                        {fmt$(payload[0].value)} MRR at risk
+                      </p>
+                    </div>
+                  ) : null
+                } />
+                <Bar dataKey="mrr" radius={[4, 4, 0, 0]}>
+                  {chartData.map((e, i) => <Cell key={i} fill={e.color} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Bucket summary pills */}
+        {/* Bucket pills */}
         <div className="flex flex-wrap gap-3 mt-4">
-          {buckets.map((b) => (
+          {buckets.map(b => (
             <div
               key={b.label}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border ${
@@ -224,7 +265,9 @@ export default function DunningPage() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-white font-semibold">Past-Due Subscriptions</h2>
-            <p className="text-gray-500 text-xs mt-0.5">Sorted by days past due — oldest first</p>
+            <p className="text-gray-500 text-xs mt-0.5">
+              Sorted by days past due — oldest first · History from Overdue Payment Tracker 2025
+            </p>
           </div>
           {pastDueCount > 0 && (
             <span className="text-red-400 text-xs font-semibold px-3 py-1 bg-red-950/50 border border-red-800/50 rounded-full">
@@ -241,30 +284,82 @@ export default function DunningPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[900px]">
               <thead>
                 <tr className="text-gray-400 text-xs uppercase border-b border-gray-800">
-                  <th className="text-left pb-2 pr-4">Client</th>
-                  <th className="text-right pb-2 pr-4">MRR</th>
-                  <th className="text-right pb-2 pr-4">Days Past Due</th>
-                  <th className="text-right pb-2 pr-4">Outstanding</th>
-                  <th className="text-right pb-2 pr-4">Attempts</th>
+                  <th className="text-left pb-2 pr-3">Client</th>
+                  <th className="text-left pb-2 pr-3">GA</th>
+                  <th className="text-left pb-2 pr-3">CRM</th>
+                  <th className="text-left pb-2 pr-3">History</th>
+                  <th className="text-right pb-2 pr-3">MRR</th>
+                  <th className="text-right pb-2 pr-3">Days Past Due</th>
+                  <th className="text-right pb-2 pr-3">Outstanding</th>
+                  <th className="text-right pb-2 pr-3">Attempts</th>
                   <th className="text-right pb-2">Next Retry</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
                 {pastDue.map((row, i) => {
                   const isOld = row.daysPastDue >= 14
+                  const ph    = row.paymentHistory
+
                   return (
-                    <tr key={i} className="hover:bg-gray-800/50">
-                      <td className="py-3 pr-4">
-                        <p className="text-white font-medium">{row.name}</p>
+                    <tr key={i} className="hover:bg-gray-800/50 align-top">
+                      {/* Client name */}
+                      <td className="py-3 pr-3">
+                        <p className="text-white font-medium leading-tight">{row.name}</p>
                         {row.email && (
                           <p className="text-gray-500 text-xs mt-0.5">{row.email}</p>
                         )}
+                        {row.acronym && (
+                          <p className="text-gray-600 text-xs mt-0.5 font-mono">{row.acronym}</p>
+                        )}
                       </td>
-                      <td className="py-3 pr-4 text-right text-white">{fmt$(row.mrr)}</td>
-                      <td className="py-3 pr-4 text-right">
+
+                      {/* Assigned GA */}
+                      <td className="py-3 pr-3">
+                        {row.assignedGA ? (
+                          <span className="text-blue-300 text-xs font-medium">
+                            {row.assignedGA}
+                          </span>
+                        ) : (
+                          <span className="text-gray-600 text-xs">—</span>
+                        )}
+                      </td>
+
+                      {/* CRM type */}
+                      <td className="py-3 pr-3">
+                        {row.crmType ? (
+                          <span className="inline-block text-xs px-1.5 py-0.5 rounded bg-purple-950/50 border border-purple-800/40 text-purple-300">
+                            {row.crmType}
+                          </span>
+                        ) : (
+                          <span className="text-gray-600 text-xs">—</span>
+                        )}
+                      </td>
+
+                      {/* Payment history column */}
+                      <td className="py-3 pr-3">
+                        <div className="space-y-1">
+                          <HistoryBadge ph={ph} />
+                          {ph?.hasHistory && (
+                            <>
+                              <CatchUpPill rate={ph.catchUpRate} />
+                              {ph.lastReason && (
+                                <div>
+                                  <ReasonTag reason={ph.lastReason} />
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* MRR */}
+                      <td className="py-3 pr-3 text-right text-white">{fmt$(row.mrr)}</td>
+
+                      {/* Days past due */}
+                      <td className="py-3 pr-3 text-right">
                         <span
                           className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${
                             isOld
@@ -275,12 +370,16 @@ export default function DunningPage() {
                           {row.daysPastDue}d
                         </span>
                       </td>
-                      <td className="py-3 pr-4 text-right text-red-400 font-medium">
+
+                      {/* Outstanding */}
+                      <td className="py-3 pr-3 text-right text-red-400 font-medium">
                         {fmt$(row.amountDue)}
                       </td>
-                      <td className="py-3 pr-4 text-right text-gray-300">
-                        {row.attemptCount}×
-                      </td>
+
+                      {/* Attempts */}
+                      <td className="py-3 pr-3 text-right text-gray-300">{row.attemptCount}×</td>
+
+                      {/* Next retry */}
                       <td className="py-3 text-right text-gray-400 text-xs">
                         {row.nextAttempt ?? '—'}
                       </td>
@@ -293,9 +392,24 @@ export default function DunningPage() {
         )}
       </div>
 
-      {/* Footer note */}
+      {/* History legend */}
+      {summary.historyLoaded > 0 && (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+          <p className="text-gray-400 text-xs font-semibold uppercase tracking-wide mb-2">
+            Payment History Legend
+          </p>
+          <div className="flex flex-wrap gap-4 text-xs text-gray-400">
+            <span>🟢 <strong className="text-gray-300">First time</strong> — no prior overdue episode on record</span>
+            <span>🔴 <strong className="text-gray-300">Prior history</strong> — appeared in Overdue Tracker before</span>
+            <span>☠️ <strong className="text-gray-300">Collections</strong> — sent to collections / attorneys</span>
+            <span className="text-gray-500 ml-auto">{summary.historyLoaded} episodes loaded from tracker</span>
+          </div>
+        </div>
+      )}
+
+      {/* Footer */}
       <p className="text-gray-600 text-xs pb-4">
-        Data pulled from Stripe · Read-only · Retry schedules managed by Stripe Smart Retries
+        Data: Stripe (live) · Overdue Payment Tracker 2025 (Google Sheets) · Active Client List (Google Sheets)
       </p>
     </div>
   )
