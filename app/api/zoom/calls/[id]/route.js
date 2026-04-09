@@ -29,6 +29,7 @@ export async function PATCH(request, { params }) {
   const allowedFields = [
     'classifiedAs', 'notes', 'assignedRepEmail', 'assignedRepName',
     'ghlContactId', 'ghlContactName', 'status', 'workflowTriggered',
+    'clientProfileId', 'acronym',
   ]
 
   const updates = []
@@ -75,6 +76,8 @@ export async function PATCH(request, { params }) {
     const repEmail = body.assignedRepEmail || call.assignedRepEmail || null
     const ghlContactId = body.ghlContactId || call.ghlContactId || null
     const ghlContactName = body.ghlContactName || call.ghlContactName || null
+    const clientProfileId = body.clientProfileId || call.clientProfileId || null
+    const acronym = body.acronym || call.acronym || null
 
     const logEntries = []
 
@@ -106,16 +109,20 @@ export async function PATCH(request, { params }) {
 
     // 2. Client card entry — for client-facing call types
     const clientTypes = ['client_meeting', 'onboarding', 'sales', 'blueprint']
-    if (clientTypes.includes(classType) && ghlContactId) {
+    if (clientTypes.includes(classType) && (ghlContactId || clientProfileId)) {
+      // Prefer ClientProfile linkage when available; fall back to GHL contact
+      const entityId   = clientProfileId ? String(clientProfileId) : ghlContactId
+      const entityType = clientProfileId ? 'ClientProfile' : 'client'
+      const clientLabel = acronym || ghlContactName || ghlContactId || clientProfileId
       logEntries.push({
         id: randomUUID(),
         tenantId: 'gyc',
         type: 'client_call_logged',
         referenceId: id,
         referenceType: 'ZoomCall',
-        entityId: ghlContactId,
-        entityType: 'client',
-        summary: `${classType.replace(/_/g, ' ')} call logged for ${ghlContactName || ghlContactId} — "${callLabel}"`,
+        entityId,
+        entityType,
+        summary: `${classType.replace(/_/g, ' ')} call logged for ${clientLabel} — "${callLabel}"`,
         detail: {
           callId: id,
           callType: classType,
@@ -124,6 +131,8 @@ export async function PATCH(request, { params }) {
           duration: call.duration,
           repName,
           repEmail,
+          acronym,
+          clientProfileId,
           notes: body.notes || null,
           recordingUrl: call.recordingUrl || null,
         },
