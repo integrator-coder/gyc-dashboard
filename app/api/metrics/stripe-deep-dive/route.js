@@ -400,6 +400,152 @@ export async function GET() {
       console.error('revenueConcentration query error:', e.message)
     }
 
+    // ─── M. Upsell Velocity ─────────────────────────────────────────────────
+    let upsellVelocity = []
+    try {
+      const { rows: uvRows } = await client.query(`
+        SELECT 
+          s2."productCategory" AS added_program,
+          ROUND(AVG(EXTRACT(EPOCH FROM (s2."startDate" - s1.first_start)) / 86400)::numeric, 0)::int AS avg_days_to_upsell,
+          COUNT(*) AS count
+        FROM "StripeSubscriptionHistory" s2
+        JOIN (
+          SELECT "customerId", MIN("startDate") AS first_start
+          FROM "StripeSubscriptionHistory"
+          WHERE "tenantId" = 'gyc'
+          GROUP BY "customerId"
+        ) s1 ON s2."customerId" = s1."customerId"
+        WHERE s2."tenantId" = 'gyc'
+          AND s2."startDate" > s1.first_start
+          AND s2."productCategory" NOT IN ('other', 'legacy')
+        GROUP BY 1
+        HAVING COUNT(*) >= 3
+        ORDER BY 2 ASC
+      `)
+      upsellVelocity = uvRows.map(r => ({
+        program: r.added_program,
+        avgDays: parseInt(r.avg_days_to_upsell),
+        count: parseInt(r.count),
+      }))
+    } catch (e) {
+      console.error('upsellVelocity query error:', e.message)
+    }
+
+    // ─── N. Churn Sequence Analysis ───────────────────────────────────────────
+    let churnSequence = { firstToGo: [], lastToGo: [] }
+    try {
+      const { rows: lastRows } = await client.query(`
+        SELECT 
+          last_cancel."productCategory" AS last_to_go,
+          COUNT(*) AS count
+        FROM (
+          SELECT 
+            "customerId",
+            "productCategory",
+            "canceledAt",
+            ROW_NUMBER() OVER (PARTITION BY "customerId" ORDER BY "canceledAt" DESC) AS rn
+          FROM "StripeSubscriptionHistory"
+          WHERE "tenantId" = 'gyc' AND "canceledAt" IS NOT NULL
+            AND "productCategory" NOT IN ('other', 'legacy')
+        ) last_cancel
+        WHERE rn = 1
+        GROUP BY 1
+        ORDER BY 2 DESC
+      `)
+      const { rows: firstRows } = await client.query(`
+        SELECT 
+          first_cancel."productCategory" AS first_to_go,
+          COUNT(*) AS count
+        FROM (
+          SELECT 
+            "customerId",
+            "productCategory",
+            "canceledAt",
+            ROW_NUMBER() OVER (PARTITION BY "customerId" ORDER BY "canceledAt" ASC) AS rn
+          FROM "StripeSubscriptionHistory"
+          WHERE "tenantId" = 'gyc' AND "canceledAt" IS NOT NULL
+            AND "productCategory" NOT IN ('other', 'legacy')
+        ) first_cancel
+        WHERE rn = 1
+        GROUP BY 1
+        ORDER BY 2 DESC
+      `)
+      churnSequence = {
+        lastToGo: lastRows.map(r => ({ program: r.last_to_go, count: parseInt(r.count) })),
+        firstToGo: firstRows.map(r => ({ program: r.first_to_go, count: parseInt(r.count) })),
+      }
+    } catch (e) {
+      console.error('churnSequence query error:', e.message)
+    }
+
+    // ─── O. Program Bundle Retention ─────────────────────────────────────────
+    let bundleRetention = []
+    try {
+      const { rows: brRows } = await client.query(`
+        SELECT 
+          bundle,
+          COUNT(*) AS clients,
+          SUM(CASE WHEN all_active THEN 1 ELSE 0 END) AS still_active,
+          ROUND(100.0 * SUM(CASE WHEN all_active THEN 1 ELSE 0 END) / COUNT(*), 0) AS retention_pct
+        FROM (
+          SELECT 
+            "customerId",
+            STRING_AGG(DISTINCT "productCategory", ',' ORDER BY "productCategory") AS bundle,
+            BOOL_AND("canceledAt" IS NULL) AS all_active
+          FROM "StripeSubscriptionHistory"
+          WHERE "tenantId" = 'gyc' AND "productCategory" NOT IN ('other', 'legacy')
+          GROUP BY "customerId"
+        ) bundles
+        GROUP BY bundle
+        HAVING COUNT(*) >= 2
+        ORDER BY clients DESC
+        LIMIT 15
+      `)
+      bundleRetention = brRows.map(r => ({
+        bundle: r.bundle,
+        clients: parseInt(r.clients),
+        stillActive: parseInt(r.still_active),
+        retentionPct: parseInt(r.retention_pct),
+      }))
+    } catch (e) {
+      console.error('bundleRetention query error:', e.message)
+    }
+
+    // ─── P. Cohort LTV Analysis ───────────────────────────────────────────────
+    let cohortLtv = []
+    try {
+      const { rows: ltvRows } = await client.query(`
+        SELECT 
+          date_part('year', cohort_start)::int AS cohort_year,
+          COUNT(DISTINCT "customerId") AS clients,
+          ROUND(SUM(monthly_amount * months_active)::numeric, 0)::float AS estimated_ltv,
+          ROUND((SUM(monthly_amount * months_active) / COUNT(DISTINCT "customerId"))::numeric, 0)::float AS avg_ltv_per_client
+        FROM (
+          SELECT 
+            "customerId",
+            MIN("startDate") OVER (PARTITION BY "customerId") AS cohort_start,
+            amount AS monthly_amount,
+            GREATEST(
+              EXTRACT(EPOCH FROM (COALESCE("canceledAt", NOW()) - "startDate")) / (30.44 * 86400),
+              0
+            ) AS months_active
+          FROM "StripeSubscriptionHistory"
+          WHERE "tenantId" = 'gyc'
+        ) sub
+        WHERE cohort_start >= '2023-01-01'
+        GROUP BY 1
+        ORDER BY 1
+      `)
+      cohortLtv = ltvRows.map(r => ({
+        year: parseInt(r.cohort_year),
+        clients: parseInt(r.clients),
+        estimatedLtv: parseFloat(r.estimated_ltv) || 0,
+        avgLtvPerClient: parseFloat(r.avg_ltv_per_client) || 0,
+      }))
+    } catch (e) {
+      console.error('cohortLtv query error:', e.message)
+    }
+
     // ─── Assemble Response ────────────────────────────────────────────────────
     const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
@@ -496,6 +642,11 @@ export async function GET() {
       avgClientTenure,
       seasonalAcquisition,
       revenueConcentration,
+      // Advanced intelligence sections
+      upsellVelocity,
+      churnSequence,
+      bundleRetention,
+      cohortLtv,
     })
   } catch (error) {
     console.error('Stripe deep dive error:', error)

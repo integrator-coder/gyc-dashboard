@@ -601,6 +601,221 @@ function KeyInsights({ annualSummary, seasonalHeatmap, cohortData }) {
   )
 }
 
+// ── Advanced Intelligence: Upsell Velocity ───────────────────────────────────
+
+function UpsellVelocityChart({ upsellVelocity }) {
+  if (!upsellVelocity?.length) return null
+  return (
+    <div className="bg-gray-800 rounded-xl p-6 mb-6">
+      <h3 className="text-lg font-semibold text-white mb-1">⚡ Upsell Velocity</h3>
+      <p className="text-gray-400 text-sm mb-4">Average days from first subscription to adding each program</p>
+      <ResponsiveContainer width="100%" height={200}>
+        <BarChart
+          data={upsellVelocity}
+          layout="vertical"
+          margin={{ top: 0, right: 40, left: 80, bottom: 0 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#374151" horizontal={false} />
+          <XAxis type="number" tick={{ fill: '#9ca3af', fontSize: 12 }} unit=" days" />
+          <YAxis
+            type="category"
+            dataKey="program"
+            tick={{ fill: '#d1d5db', fontSize: 13 }}
+            tickFormatter={v => CATEGORY_LABELS[v] || v}
+            width={75}
+          />
+          <Tooltip
+            contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: 8 }}
+            labelFormatter={v => CATEGORY_LABELS[v] || v}
+            formatter={(val, name, props) => [`${val} days (${props.payload.count} clients)`, 'Avg days to add']}
+          />
+          <Bar dataKey="avgDays" radius={[0, 4, 4, 0]}>
+            {upsellVelocity.map((entry, i) => (
+              <Cell key={i} fill={CATEGORY_COLORS[entry.program] || '#6366f1'} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+      <p className="text-gray-500 text-xs mt-2">
+        Based on customers who added a second program · Minimum 3 clients per category
+      </p>
+    </div>
+  )
+}
+
+// ── Advanced Intelligence: Churn Sequence ─────────────────────────────────────
+
+function ChurnSequenceChart({ churnSequence }) {
+  if (!churnSequence?.firstToGo?.length && !churnSequence?.lastToGo?.length) return null
+  const firstToGo = (churnSequence?.firstToGo || []).map(r => ({ ...r, label: CATEGORY_LABELS[r.program] || r.program }))
+  const lastToGo = (churnSequence?.lastToGo || []).map(r => ({ ...r, label: CATEGORY_LABELS[r.program] || r.program }))
+  return (
+    <div className="bg-gray-800 rounded-xl p-6 mb-6">
+      <h3 className="text-lg font-semibold text-white mb-1">🔄 Churn Sequence Analysis</h3>
+      <p className="text-gray-400 text-sm mb-4">What do clients drop first vs hold onto longest?</p>
+      <div className="grid grid-cols-2 gap-6">
+        <div>
+          <p className="text-red-400 font-medium text-sm mb-2">⚠️ First service dropped <span className="text-gray-500">(churn leading indicator)</span></p>
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={firstToGo} margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis dataKey="label" tick={{ fill: '#9ca3af', fontSize: 11 }} />
+              <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} allowDecimals={false} />
+              <Tooltip
+                contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: 8 }}
+                formatter={(val) => [`${val} clients`, 'Count']}
+              />
+              <Bar dataKey="count" fill="#ef4444" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <div>
+          <p className="text-emerald-400 font-medium text-sm mb-2">💪 Last service held <span className="text-gray-500">(what clients value most)</span></p>
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={lastToGo} margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis dataKey="label" tick={{ fill: '#9ca3af', fontSize: 11 }} />
+              <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} allowDecimals={false} />
+              <Tooltip
+                contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: 8 }}
+                formatter={(val) => [`${val} clients`, 'Count']}
+              />
+              <Bar dataKey="count" fill="#10b981" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      <p className="text-gray-500 text-xs mt-3">Excludes &apos;other&apos; / &apos;legacy&apos; categories · Based on {(churnSequence?.firstToGo || []).reduce((s, r) => s + r.count, 0)} churned clients</p>
+    </div>
+  )
+}
+
+// ── Advanced Intelligence: Bundle Retention ───────────────────────────────────
+
+function BundleRetentionTable({ bundleRetention }) {
+  if (!bundleRetention?.length) return null
+  const top3 = new Set(bundleRetention.slice(0, 3).map(r => r.bundle))
+  const formatBundle = (bundle) =>
+    bundle.split(',').map(p => CATEGORY_LABELS[p.trim()] || p.trim()).join(' + ')
+  return (
+    <div className="bg-gray-800 rounded-xl p-6 mb-6">
+      <h3 className="text-lg font-semibold text-white mb-1">📦 Program Bundle Retention</h3>
+      <p className="text-gray-400 text-sm mb-4">Which service combinations retain best?</p>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-gray-400 border-b border-gray-700">
+              <th className="text-left py-2 pr-4">Bundle</th>
+              <th className="text-right py-2 px-4">Clients</th>
+              <th className="text-right py-2 px-4">Still Active</th>
+              <th className="text-right py-2 px-4">Retention %</th>
+              <th className="py-2 pl-4"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {bundleRetention.map((row, i) => {
+              const isTop = top3.has(row.bundle)
+              const pct = row.retentionPct
+              const barColor = pct >= 90 ? 'bg-emerald-500' : pct >= 70 ? 'bg-yellow-500' : 'bg-red-500'
+              return (
+                <tr key={i} className={`border-b border-gray-700/50 ${isTop ? 'bg-indigo-950/30' : ''}`}>
+                  <td className="py-2 pr-4 text-white font-medium">
+                    {isTop && <span className="text-yellow-400 mr-1">★</span>}
+                    {formatBundle(row.bundle)}
+                  </td>
+                  <td className="text-right py-2 px-4 text-gray-300">{row.clients}</td>
+                  <td className="text-right py-2 px-4 text-gray-300">{row.stillActive}</td>
+                  <td className="text-right py-2 px-4">
+                    <span className={`font-bold ${
+                      pct >= 90 ? 'text-emerald-400' : pct >= 70 ? 'text-yellow-400' : 'text-red-400'
+                    }`}>{pct}%</span>
+                  </td>
+                  <td className="py-2 pl-4 w-24">
+                    <div className="bg-gray-700 rounded-full h-2">
+                      <div className={`${barColor} h-2 rounded-full`} style={{ width: `${pct}%` }} />
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-gray-500 text-xs mt-3">★ Top 3 bundles by client count · Minimum 2 clients per bundle</p>
+    </div>
+  )
+}
+
+// ── Advanced Intelligence: Cohort LTV ─────────────────────────────────────────
+
+function CohortLtvChart({ cohortLtv }) {
+  if (!cohortLtv?.length) return null
+  const chartData = cohortLtv.map(r => ({
+    name: String(r.year),
+    'Total LTV': Math.round(r.estimatedLtv),
+    'Avg per Client': Math.round(r.avgLtvPerClient),
+    clients: r.clients,
+  }))
+  return (
+    <div className="bg-gray-800 rounded-xl p-6 mb-6">
+      <h3 className="text-lg font-semibold text-white mb-1">📈 Cohort LTV Analysis</h3>
+      <p className="text-gray-400 text-sm mb-4">Revenue by acquisition cohort · How much have we collected from each year&apos;s clients?</p>
+      <div className="grid grid-cols-2 gap-6">
+        <div>
+          <p className="text-gray-400 text-xs mb-2 font-medium uppercase tracking-wide">Total LTV by Cohort</p>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={chartData} margin={{ top: 0, right: 10, left: 10, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis dataKey="name" tick={{ fill: '#9ca3af', fontSize: 12 }} />
+              <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} tickFormatter={v => `$${(v/1000).toFixed(0)}K`} />
+              <Tooltip
+                contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: 8 }}
+                formatter={(val, name, props) => [fmt(val), `${name} (${props.payload.clients} clients)`]}
+              />
+              <Bar dataKey="Total LTV" radius={[4, 4, 0, 0]}>
+                {chartData.map((entry, i) => (
+                  <Cell key={i} fill={YEAR_COLORS[parseInt(entry.name)] || '#6366f1'} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <div>
+          <p className="text-gray-400 text-xs mb-2 font-medium uppercase tracking-wide">Avg LTV per Client</p>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={chartData} margin={{ top: 0, right: 10, left: 10, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis dataKey="name" tick={{ fill: '#9ca3af', fontSize: 12 }} />
+              <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} tickFormatter={v => `$${(v/1000).toFixed(0)}K`} />
+              <Tooltip
+                contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: 8 }}
+                formatter={(val) => [fmt(val), 'Avg LTV per client']}
+              />
+              <Bar dataKey="Avg per Client" radius={[4, 4, 0, 0]}>
+                {chartData.map((entry, i) => (
+                  <Cell key={i} fill={YEAR_COLORS[parseInt(entry.name)] || '#6366f1'} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      <div className="grid grid-cols-4 gap-3 mt-4">
+        {cohortLtv.map(r => (
+          <div key={r.year} className="bg-gray-700/40 rounded-lg p-3 text-center">
+            <div className="text-xs text-gray-400 mb-1">{r.year} Cohort</div>
+            <div className="text-white font-bold">{r.clients} clients</div>
+            <div className="text-indigo-300 text-sm">{fmt(r.avgLtvPerClient)} avg</div>
+          </div>
+        ))}
+      </div>
+      <p className="text-gray-500 text-xs mt-3 italic">
+        ⚠️ LTV is approximate — based on subscription amounts × months active (or months to cancellation). 2026 cohort is early-stage.
+      </p>
+    </div>
+  )
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function StripeDeepDivePage() {
@@ -692,6 +907,24 @@ export default function StripeDeepDivePage() {
         seasonalAcquisition={data?.seasonalAcquisition}
         mrrTrend={data?.mrrTrend}
       />
+
+      {/* ── ADVANCED INTELLIGENCE SECTIONS ──────────────────────── */}
+      <div className="mt-2 mb-6 border-t border-gray-700 pt-6">
+        <h2 className="text-xl font-bold text-white mb-1">🧠 Advanced Intelligence</h2>
+        <p className="text-gray-500 text-sm">Upsell velocity · Churn sequence · Bundle retention · Cohort LTV · Powered by StripeSubscriptionHistory</p>
+      </div>
+
+      {/* 14. Upsell Velocity */}
+      <UpsellVelocityChart upsellVelocity={data?.upsellVelocity} />
+
+      {/* 15. Churn Sequence */}
+      <ChurnSequenceChart churnSequence={data?.churnSequence} />
+
+      {/* 16. Bundle Retention */}
+      <BundleRetentionTable bundleRetention={data?.bundleRetention} />
+
+      {/* 17. Cohort LTV */}
+      <CohortLtvChart cohortLtv={data?.cohortLtv} />
 
       {/* Footer note */}
       <div className="text-xs text-gray-600 mt-4 text-center">
