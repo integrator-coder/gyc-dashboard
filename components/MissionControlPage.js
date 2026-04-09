@@ -5,6 +5,7 @@ import BrandGuide from '@/components/BrandGuide'
 import FulcrumIntel from '@/components/FulcrumIntel'
 import ClientHealthMonitor from '@/components/ClientHealthMonitor'
 import AgentEventLog from '@/components/AgentEventLog'
+import ZoomClassifierPage from '@/components/ZoomClassifierPage'
 
 function fmtEpoch(epoch) {
   if (!epoch) return '—'
@@ -581,6 +582,7 @@ export default function MissionControlPage() {
             ['intel', '🔭 Fulcrum Intel'],
             ['health', '🏥 Client Health'],
             ['log', '📋 Agent Log'],
+            ['calls', '📞 Call Intelligence'],
           ].map(([key, label]) => (
             <button
               key={key}
@@ -931,6 +933,12 @@ export default function MissionControlPage() {
       {tab === 'intel' && <FulcrumIntel />}
       {tab === 'health' && <ClientHealthMonitor />}
       {tab === 'log' && <AgentEventLog />}
+      {tab === 'calls' && (
+        <Panel title="📞 Call Intelligence">
+          <p className="text-sm text-gray-400 mb-5">Classify Zoom calls, assign reps, and log activity to client and staff cards. Classifications write to ActivityLog for Phase 2 card wiring.</p>
+          <ZoomClassifierPage embedded />
+        </Panel>
+      )}
     </div>
   )
 }
