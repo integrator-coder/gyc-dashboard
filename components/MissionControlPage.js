@@ -419,12 +419,113 @@ function AgentOrgChart({ agents }) {
   )
 }
 
-function Panel({ title, children }) {
+function Panel({ title, children, action }) {
   return (
     <section className="rounded-2xl border border-[var(--brand-border)] bg-black/20 p-5">
-      <h2 className="text-lg font-semibold text-white">{title}</h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold text-white">{title}</h2>
+        {action && <div>{action}</div>}
+      </div>
       <div className="mt-3">{children}</div>
     </section>
+  )
+}
+
+// ─── Add Task Modal ────────────────────────────────────────────────────────
+function AddTaskModal({ onClose, onSaved }) {
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [status, setStatus] = useState('To Do')
+  const [priority, setPriority] = useState('Medium')
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState('')
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!title.trim()) { setErr('Title is required'); return }
+    setSaving(true)
+    setErr('')
+    try {
+      const res = await fetch('/api/mission-control/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, description, status, priority: priority.toLowerCase() }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to save')
+      onSaved()
+      onClose()
+    } catch (e) {
+      setErr(e.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl border border-violet-500/30 bg-[#0e0414] p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-4 flex items-center justify-between">
+          <div className="text-base font-bold text-white">Add Task</div>
+          <button onClick={onClose} className="text-gray-500 hover:text-white text-lg">✕</button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="mb-1 block text-xs text-gray-400 uppercase tracking-wider">Title *</label>
+            <input
+              className="w-full rounded-lg border border-violet-500/30 bg-black/40 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-violet-400 focus:outline-none"
+              placeholder="Task title…"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-gray-400 uppercase tracking-wider">Description</label>
+            <textarea
+              className="w-full rounded-lg border border-violet-500/30 bg-black/40 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-violet-400 focus:outline-none"
+              placeholder="Optional details…"
+              rows={3}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs text-gray-400 uppercase tracking-wider">Status</label>
+              <select
+                className="w-full rounded-lg border border-violet-500/30 bg-black/40 px-3 py-2 text-sm text-white focus:border-violet-400 focus:outline-none"
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+              >
+                <option>To Do</option>
+                <option>In Progress</option>
+                <option>Blocked</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-gray-400 uppercase tracking-wider">Priority</label>
+              <select
+                className="w-full rounded-lg border border-violet-500/30 bg-black/40 px-3 py-2 text-sm text-white focus:border-violet-400 focus:outline-none"
+                value={priority}
+                onChange={(e) => setPriority(e.target.value)}
+              >
+                <option>High</option>
+                <option>Medium</option>
+                <option>Low</option>
+              </select>
+            </div>
+          </div>
+          {err && <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">{err}</div>}
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose} className="flex-1 rounded-lg border border-[var(--brand-border)] px-4 py-2 text-sm text-gray-400 hover:text-white">Cancel</button>
+            <button type="submit" disabled={saving} className="flex-1 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500 disabled:opacity-50">
+              {saving ? 'Saving…' : 'Add Task'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   )
 }
 
@@ -433,6 +534,8 @@ export default function MissionControlPage() {
   const [error, setError] = useState('')
   const [tab, setTab] = useState('overview')
   const [selectedTask, setSelectedTask] = useState(null)
+  const [showAddTask, setShowAddTask] = useState(false)
+  const [completingId, setCompletingId] = useState(null)
 
   const load = useCallback(async () => {
     try {
@@ -571,9 +674,18 @@ export default function MissionControlPage() {
         </Panel>
       )}
 
+      {showAddTask && <AddTaskModal onClose={() => setShowAddTask(false)} onSaved={load} />}
+
       {tab === 'tasks' && (
         <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
-          <Panel title="Task Board">
+          <Panel title="Task Board" action={
+            <button
+              onClick={() => setShowAddTask(true)}
+              className="rounded-lg border border-violet-500/40 bg-violet-500/15 px-3 py-1.5 text-xs font-semibold text-violet-200 hover:bg-violet-500/25 transition"
+            >
+              + Add Task
+            </button>
+          }>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {Object.entries(data?.taskBoard?.columns || {}).sort(([a], [b]) => {
                 const order = ['backlog', 'inProgress', 'review', 'done']
@@ -582,13 +694,43 @@ export default function MissionControlPage() {
                 <div key={column} className="rounded-xl border border-[var(--brand-border)] bg-black/20 p-3">
                   <div className="text-xs uppercase tracking-wider text-violet-300">
                     {{ backlog: 'Backlog', inProgress: 'In Progress', review: 'Review', done: 'Done' }[column] || column}
+                    <span className="ml-1.5 text-gray-600">({(items || []).length})</span>
                   </div>
                   <div className="mt-2 space-y-2">
                     {(items || []).map((item) => (
-                      <button key={item.id} onClick={() => setSelectedTask(item)} className="w-full rounded-lg border border-[var(--brand-border)] bg-black/30 p-2 text-left">
-                        <div className="text-sm text-white">{item.title}</div>
-                        <div className="mt-1 text-xs text-gray-400">{item.owner} • {item.priority}</div>
-                      </button>
+                      <div key={item.id} className="group relative rounded-lg border border-[var(--brand-border)] bg-black/30 p-2">
+                        <button className="w-full text-left" onClick={() => setSelectedTask(item)}>
+                          <div className="text-sm text-white pr-6">{item.title}</div>
+                          <div className="mt-1 text-xs text-gray-400">{item.owner} • {item.priority}</div>
+                        </button>
+                        {column !== 'done' && (
+                          <button
+                            title="Mark as done"
+                            disabled={completingId === item.id}
+                            onClick={async (e) => {
+                              e.stopPropagation()
+                              setCompletingId(item.id)
+                              try {
+                                await fetch('/api/mission-control/tasks', {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ taskId: item.id }),
+                                })
+                                await load()
+                                setSelectedTask(null)
+                              } finally {
+                                setCompletingId(null)
+                              }
+                            }}
+                            className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 opacity-0 group-hover:opacity-100 hover:bg-emerald-500/25 transition disabled:opacity-40"
+                          >
+                            {completingId === item.id ? '…' : '✓'}
+                          </button>
+                        )}
+                        {column === 'done' && (
+                          <span className="absolute top-2 right-2 text-emerald-500 text-xs">✓</span>
+                        )}
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -599,7 +741,31 @@ export default function MissionControlPage() {
           <Panel title="Task Detail">
             {!selectedTask ? <div className="text-sm text-gray-400">Select a task to see detail and next steps.</div> : (
               <div className="space-y-3 text-sm">
-                <div className="text-white font-semibold">{selectedTask.title}</div>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="text-white font-semibold">{selectedTask.title}</div>
+                  {selectedTask.column !== 'done' && (
+                    <button
+                      disabled={completingId === selectedTask.id}
+                      onClick={async () => {
+                        setCompletingId(selectedTask.id)
+                        try {
+                          await fetch('/api/mission-control/tasks', {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ taskId: selectedTask.id }),
+                          })
+                          await load()
+                          setSelectedTask(null)
+                        } finally {
+                          setCompletingId(null)
+                        }
+                      }}
+                      className="shrink-0 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20 disabled:opacity-40 transition"
+                    >
+                      {completingId === selectedTask.id ? 'Moving…' : '✓ Mark Done'}
+                    </button>
+                  )}
+                </div>
                 <div className="text-gray-300">{selectedTask.description || 'No description yet.'}</div>
                 <div className="text-xs text-gray-400">Owner: {selectedTask.owner} • Priority: {selectedTask.priority} • Project: {selectedTask.project || '—'}</div>
                 <div>
