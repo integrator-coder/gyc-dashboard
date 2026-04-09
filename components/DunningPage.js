@@ -82,6 +82,303 @@ function ReasonTag({ reason }) {
   )
 }
 
+// ── Collections section components ───────────────────────────────────────────
+
+function CollectionStatusBadge({ row }) {
+  if (row.inCollections) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-red-950/60 border border-red-700/60 text-red-300 font-bold">
+        ☠️ Collections
+      </span>
+    )
+  }
+  if (row.balanceRemaining > 5000) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-orange-950/60 border border-orange-700/50 text-orange-300 font-semibold">
+        ⚠️ High Value
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-yellow-950/50 border border-yellow-700/40 text-yellow-300 font-medium">
+      Overdue
+    </span>
+  )
+}
+
+function RowAccentClass(row) {
+  if (row.inCollections) return 'border-l-2 border-l-red-600'
+  if (row.balanceRemaining > 5000) return 'border-l-2 border-l-orange-500'
+  return 'border-l-2 border-l-yellow-600'
+}
+
+function CollectionsSection() {
+  const [data, setData]     = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError]   = useState(null)
+  const [editingId, setEditingId] = useState(null)
+  const [payAmount, setPayAmount] = useState('')
+  const [payDate, setPayDate]     = useState(new Date().toISOString().slice(0, 10))
+  const [payNote, setPayNote]     = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [submitMsg, setSubmitMsg]   = useState(null)
+
+  const load = () => {
+    setLoading(true)
+    fetch('/api/metrics/dunning/collections')
+      .then(r => r.json())
+      .then(d => { setData(d); setLoading(false) })
+      .catch(e => { setError(e.message); setLoading(false) })
+  }
+
+  useEffect(() => { load() }, [])
+
+  const handleSubmitPayment = async (id) => {
+    if (!payAmount || isNaN(parseFloat(payAmount))) return
+    setSubmitting(true)
+    setSubmitMsg(null)
+    try {
+      const r = await fetch('/api/metrics/dunning/collections', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, paymentAmount: parseFloat(payAmount), paymentDate: payDate, note: payNote }),
+      })
+      const result = await r.json()
+      if (result.success) {
+        setSubmitMsg('✅ Payment recorded')
+        setEditingId(null)
+        setPayAmount('')
+        setPayNote('')
+        load()
+      } else {
+        setSubmitMsg('❌ ' + (result.error || 'Error saving'))
+      }
+    } catch (e) {
+      setSubmitMsg('❌ ' + e.message)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (loading) return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 text-center text-gray-400">
+      Loading collections data…
+    </div>
+  )
+  if (error || data?.error) return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 text-red-400">
+      Collections error: {error || data?.error}
+    </div>
+  )
+
+  const { collections, summary } = data
+
+  return (
+    <div className="space-y-4">
+      {/* Section header */}
+      <div className="border-t border-gray-800 pt-6">
+        <h2 className="text-xl font-bold text-white">Collections &amp; Historical Overdue</h2>
+        <p className="text-gray-400 text-sm mt-1">
+          Clients tracked outside Stripe — cancelled subscriptions with outstanding balances
+        </p>
+      </div>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiCard
+          label="Total Outstanding"
+          value={fmt$(summary.balanceRemaining)}
+          sub="Balance not yet recovered"
+          danger={summary.balanceRemaining > 0}
+        />
+        <KpiCard
+          label="In Active Collections"
+          value={summary.inCollectionsCount}
+          sub={summary.inCollectionsCount > 0 ? fmt$(summary.inCollectionsBalance) + ' balance' : 'None active'}
+          danger={summary.inCollectionsCount > 0}
+        />
+        <KpiCard
+          label="Recovered to Date"
+          value={fmt$(summary.totalRecovered)}
+          sub={`of ${fmt$(summary.totalDue)} total due`}
+          danger={false}
+        />
+        <KpiCard
+          label="Recovery Rate"
+          value={fmtPct(summary.recoveryRate)}
+          sub="Recovered ÷ total due"
+          danger={false}
+        />
+      </div>
+
+      {/* Collections table */}
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-white font-semibold">Outstanding Balances</h3>
+            <p className="text-gray-500 text-xs mt-0.5">
+              {collections.length} records · Sorted by balance remaining
+            </p>
+          </div>
+          {submitMsg && (
+            <span className="text-xs px-3 py-1 rounded-full bg-gray-800 border border-gray-700 text-gray-300">
+              {submitMsg}
+            </span>
+          )}
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[900px]">
+            <thead>
+              <tr className="text-gray-400 text-xs uppercase border-b border-gray-800">
+                <th className="text-left pb-2 pr-3">Client Name</th>
+                <th className="text-right pb-2 pr-3">Amount Due</th>
+                <th className="text-right pb-2 pr-3">Recovered</th>
+                <th className="text-right pb-2 pr-3">Balance Remaining</th>
+                <th className="text-left pb-2 pr-3">Status</th>
+                <th className="text-left pb-2 pr-3">Reasons</th>
+                <th className="text-right pb-2 pr-3">Last Updated</th>
+                <th className="text-right pb-2">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-800">
+              {collections.map((row) => (
+                <>
+                  <tr key={row.id} className={`hover:bg-gray-800/40 align-top ${RowAccentClass(row)}`}>
+                    {/* Client */}
+                    <td className="py-3 pr-3">
+                      <p className="text-white font-medium leading-tight">{row.clientName}</p>
+                      {row.companyAcronym && (
+                        <p className="text-gray-600 text-xs mt-0.5 font-mono">{row.companyAcronym}</p>
+                      )}
+                      {row.notes && (
+                        <p className="text-gray-500 text-xs mt-1 max-w-xs truncate" title={row.notes}>
+                          {row.notes.split('\n').pop()}
+                        </p>
+                      )}
+                    </td>
+
+                    {/* Amount Due */}
+                    <td className="py-3 pr-3 text-right text-gray-300">{fmt$(row.totalAmountDue)}</td>
+
+                    {/* Recovered */}
+                    <td className="py-3 pr-3 text-right text-green-400">{fmt$(row.totalCatchUpAmount)}</td>
+
+                    {/* Balance Remaining */}
+                    <td className="py-3 pr-3 text-right">
+                      <span className={`font-bold ${
+                        row.inCollections ? 'text-red-400'
+                        : row.balanceRemaining > 5000 ? 'text-orange-400'
+                        : 'text-yellow-400'
+                      }`}>
+                        {fmt$(row.balanceRemaining)}
+                      </span>
+                    </td>
+
+                    {/* Status */}
+                    <td className="py-3 pr-3">
+                      <CollectionStatusBadge row={row} />
+                    </td>
+
+                    {/* Reasons */}
+                    <td className="py-3 pr-3">
+                      <div className="flex flex-wrap gap-1">
+                        {(row.reasons || []).slice(0, 2).map((r, i) => (
+                          <ReasonTag key={i} reason={r} />
+                        ))}
+                        {row.reasons?.length > 2 && (
+                          <span className="text-gray-600 text-xs">+{row.reasons.length - 2}</span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Last Updated */}
+                    <td className="py-3 pr-3 text-right text-gray-500 text-xs">
+                      {row.updatedAt
+                        ? new Date(row.updatedAt).toLocaleDateString()
+                        : row.firstDueDate || '—'}
+                      {row.lastPaymentDate && (
+                        <p className="text-green-600 text-xs">Pmt: {row.lastPaymentDate}</p>
+                      )}
+                    </td>
+
+                    {/* Action */}
+                    <td className="py-3 text-right">
+                      {editingId === row.id ? (
+                        <button
+                          onClick={() => setEditingId(null)}
+                          className="text-xs text-gray-400 hover:text-gray-200"
+                        >
+                          Cancel
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => { setEditingId(row.id); setSubmitMsg(null) }}
+                          className="text-xs px-2 py-1 rounded bg-blue-900/50 border border-blue-700/50 text-blue-300 hover:bg-blue-800/60"
+                        >
+                          Update Recovery
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+
+                  {/* Inline payment form */}
+                  {editingId === row.id && (
+                    <tr key={`${row.id}-edit`} className="bg-gray-800/30">
+                      <td colSpan={8} className="px-4 py-3">
+                        <div className="flex flex-wrap items-end gap-3">
+                          <div>
+                            <label className="text-gray-400 text-xs block mb-1">Payment Amount ($)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              placeholder="e.g. 500"
+                              value={payAmount}
+                              onChange={e => setPayAmount(e.target.value)}
+                              className="bg-gray-900 border border-gray-600 rounded px-3 py-1.5 text-white text-sm w-32 focus:outline-none focus:border-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-gray-400 text-xs block mb-1">Payment Date</label>
+                            <input
+                              type="date"
+                              value={payDate}
+                              onChange={e => setPayDate(e.target.value)}
+                              className="bg-gray-900 border border-gray-600 rounded px-3 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-40">
+                            <label className="text-gray-400 text-xs block mb-1">Note (optional)</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Partial payment via wire"
+                              value={payNote}
+                              onChange={e => setPayNote(e.target.value)}
+                              className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500"
+                            />
+                          </div>
+                          <button
+                            onClick={() => handleSubmitPayment(row.id)}
+                            disabled={submitting || !payAmount}
+                            className="px-4 py-1.5 rounded bg-green-800/60 border border-green-600/50 text-green-300 text-sm font-semibold hover:bg-green-700/70 disabled:opacity-50"
+                          >
+                            {submitting ? 'Saving…' : 'Record Payment'}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function DunningPage() {
   const [data, setData]     = useState(null)
   const [loading, setLoading] = useState(true)
@@ -406,6 +703,9 @@ export default function DunningPage() {
           </div>
         </div>
       )}
+
+      {/* Collections & Historical Overdue section */}
+      <CollectionsSection />
 
       {/* Footer */}
       <p className="text-gray-600 text-xs pb-4">
