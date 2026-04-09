@@ -15,8 +15,8 @@ export async function GET() {
     // ─── A. Year-over-Year Revenue ───────────────────────────────────────────
     const { rows: revenueByMonth } = await client.query(`
       SELECT 
-        EXTRACT(YEAR FROM date::date)::int  AS year,
-        EXTRACT(MONTH FROM date::date)::int AS month,
+        date_part('year', date::timestamp)::int  AS year,
+        date_part('month', date::timestamp)::int AS month,
         ROUND(SUM(amount)::numeric, 0)::float AS monthly_total
       FROM "DailyRevenue"
       WHERE date >= '2023-01-01'
@@ -27,7 +27,7 @@ export async function GET() {
     // Annual totals
     const { rows: annualRows } = await client.query(`
       SELECT 
-        EXTRACT(YEAR FROM date::date)::int AS year,
+        date_part('year', date::timestamp)::int AS year,
         ROUND(SUM(amount)::numeric, 0)::float AS total
       FROM "DailyRevenue"
       WHERE date >= '2023-01-01'
@@ -53,7 +53,7 @@ export async function GET() {
     // ─── B. Customer Cohort Analysis ─────────────────────────────────────────
     const { rows: cohortRows } = await client.query(`
       SELECT 
-        EXTRACT(YEAR FROM "createdAt")::int AS year,
+        date_part('year', "createdAt"::timestamp)::int AS year,
         COUNT(*)::int AS acquired,
         SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END)::int AS still_active,
         SUM(CASE WHEN status = 'past_due' THEN 1 ELSE 0 END)::int AS past_due,
@@ -90,15 +90,15 @@ export async function GET() {
     // ─── D. Seasonal Trends ───────────────────────────────────────────────────
     const { rows: monthlyAvg } = await client.query(`
       SELECT 
-        EXTRACT(MONTH FROM date::date)::int AS month,
-        ROUND(AVG(monthly_total)::numeric, 0)::float AS avg_revenue
+        sub.month,
+        ROUND(AVG(sub.monthly_total)::numeric, 0)::float AS avg_revenue
       FROM (
         SELECT 
-          EXTRACT(YEAR FROM date::date) AS year,
-          EXTRACT(MONTH FROM date::date) AS month,
+          date_part('year', dr.date::timestamp)::int AS year,
+          date_part('month', dr.date::timestamp)::int AS month,
           SUM(amount) AS monthly_total
-        FROM "DailyRevenue"
-        WHERE date >= '2023-01-01' AND date < '2026-01-01'
+        FROM "DailyRevenue" dr
+        WHERE dr.date >= '2023-01-01' AND dr.date < '2026-01-01'
         GROUP BY 1, 2
       ) sub
       GROUP BY 1
@@ -108,8 +108,8 @@ export async function GET() {
     // Quarterly breakdown by year
     const { rows: quarterlyRows } = await client.query(`
       SELECT 
-        EXTRACT(YEAR FROM date::date)::int AS year,
-        CEIL(EXTRACT(MONTH FROM date::date) / 3.0)::int AS quarter,
+        date_part('year', date::timestamp)::int AS year,
+        CEIL(date_part('month', date::timestamp) / 3.0)::int AS quarter,
         ROUND(SUM(amount)::numeric, 0)::float AS revenue
       FROM "DailyRevenue"
       WHERE date >= '2023-01-01'
@@ -127,8 +127,8 @@ export async function GET() {
         ROUND(AVG(monthly_total)::numeric, 0)::float AS avg_monthly
       FROM (
         SELECT 
-          EXTRACT(YEAR FROM date::date)::int AS year,
-          EXTRACT(MONTH FROM date::date)::int AS month,
+          date_part('year', date::timestamp)::int AS year,
+          date_part('month', date::timestamp)::int AS month,
           SUM(amount) AS monthly_total
         FROM "DailyRevenue"
         WHERE date >= '2023-01-01'
@@ -142,8 +142,8 @@ export async function GET() {
     const { rows: peakMonthRows } = await client.query(`
       WITH monthly AS (
         SELECT 
-          EXTRACT(YEAR FROM date::date)::int AS year,
-          EXTRACT(MONTH FROM date::date)::int AS month,
+          date_part('year', date::timestamp)::int AS year,
+          date_part('month', date::timestamp)::int AS month,
           SUM(amount) AS monthly_total
         FROM "DailyRevenue"
         WHERE date >= '2023-01-01'
