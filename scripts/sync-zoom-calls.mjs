@@ -80,7 +80,25 @@ async function zoomGet(token, path) {
 }
 
 async function getRecordings(token, from, to) {
-  const data = await zoomGet(token, `/users/me/recordings?from=${from}&to=${to}&page_size=100`)
+  // Fetch all users first, then get recordings for each
+  const usersData = await zoomGet(token, '/users?page_size=100&status=active')
+  const users = usersData.users || []
+  console.log(`  👥 Fetching recordings for ${users.length} users...`)
+  
+  const allMeetings = []
+  for (const user of users) {
+    try {
+      const data = await zoomGet(token, `/users/${user.id}/recordings?from=${from}&to=${to}&page_size=100`)
+      const meetings = data.meetings || []
+      if (meetings.length > 0) {
+        console.log(`    ${user.email}: ${meetings.length} recordings`)
+        allMeetings.push(...meetings)
+      }
+    } catch (e) {
+      // skip users with no recording access
+    }
+  }
+  const data = { meetings: allMeetings }
   return data.meetings || []
 }
 
