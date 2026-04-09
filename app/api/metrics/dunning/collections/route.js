@@ -44,7 +44,7 @@ export async function GET(request) {
       ORDER BY ("totalAmountDue" - "totalCatchUpAmount") DESC
     `)
 
-    const collections = rows.map(r => {
+    const allRecords = rows.map(r => {
       const amountDue  = parseFloat(r.totalAmountDue)   || 0
       const recovered  = parseFloat(r.totalCatchUpAmount) || 0
       const balance    = Math.max(0, amountDue - recovered)
@@ -70,25 +70,32 @@ export async function GET(request) {
       }
     })
 
+    // Split into Historical Overdue (not in collections) vs Active Collections
+    const overdue           = allRecords.filter(r => !r.inCollections)
+    const activeCollections = allRecords.filter(r => r.inCollections)
+
     // Summary aggregates
-    const totalDue       = collections.reduce((s, r) => s + r.totalAmountDue, 0)
-    const totalRecovered = collections.reduce((s, r) => s + r.totalCatchUpAmount, 0)
-    const balanceRemaining = collections.reduce((s, r) => s + r.balanceRemaining, 0)
+    const totalDue       = allRecords.reduce((s, r) => s + r.totalAmountDue, 0)
+    const totalRecovered = allRecords.reduce((s, r) => s + r.totalCatchUpAmount, 0)
+    const balanceRemaining = allRecords.reduce((s, r) => s + r.balanceRemaining, 0)
     const recoveryRate   = totalDue > 0 ? totalRecovered / totalDue : 0
-    const inCollectionsCount   = collections.filter(r => r.inCollections).length
-    const inCollectionsBalance = collections
-      .filter(r => r.inCollections)
-      .reduce((s, r) => s + r.balanceRemaining, 0)
+
+    const overdueBalance       = overdue.reduce((s, r) => s + r.balanceRemaining, 0)
+    const collectionsBalance   = activeCollections.reduce((s, r) => s + r.balanceRemaining, 0)
+    const collectionsCount     = activeCollections.length
 
     return NextResponse.json({
-      collections,
+      overdue,
+      activeCollections,
       summary: {
         totalDue:            Math.round(totalDue * 100) / 100,
         totalRecovered:      Math.round(totalRecovered * 100) / 100,
         balanceRemaining:    Math.round(balanceRemaining * 100) / 100,
         recoveryRate:        Math.round(recoveryRate * 10000) / 10000,
-        inCollectionsCount,
-        inCollectionsBalance: Math.round(inCollectionsBalance * 100) / 100,
+        overdueBalance:      Math.round(overdueBalance * 100) / 100,
+        overdueCount:        overdue.length,
+        collectionsBalance:  Math.round(collectionsBalance * 100) / 100,
+        collectionsCount,
       },
       updatedAt: new Date().toISOString(),
     })
