@@ -78,12 +78,26 @@ function SummaryCards({ annualSummary }) {
 }
 
 function YoYChart({ chartData }) {
+  const currentYear = new Date().getFullYear()
+  const currentMonthIdx = new Date().getMonth() // 0-indexed
+  const MONTH_ABBRS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  const currentMonthAbbr = MONTH_ABBRS[currentMonthIdx]
+
+  // Exclude the current partial month from the current year line
+  const filteredData = chartData.map(entry => {
+    if (entry.month === currentMonthAbbr) {
+      const { [currentYear]: _excluded, ...rest } = entry
+      return rest
+    }
+    return entry
+  })
+
   return (
     <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 mb-6">
       <h2 className="text-white font-semibold text-lg mb-4">📈 Year-over-Year Revenue (Jan–Dec)</h2>
       <p className="text-gray-400 text-sm mb-4">All years overlaid — compare seasonal patterns at a glance</p>
       <ResponsiveContainer width="100%" height={320}>
-        <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+        <LineChart data={filteredData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
           <XAxis dataKey="month" tick={{ fill: '#9ca3af', fontSize: 12 }} />
           <YAxis
@@ -111,6 +125,9 @@ function YoYChart({ chartData }) {
           ))}
         </LineChart>
       </ResponsiveContainer>
+      <p className="text-gray-500 text-xs mt-2 text-center">
+        {currentMonthAbbr} {currentYear} excluded from {currentYear} line — month in progress.
+      </p>
     </div>
   )
 }
