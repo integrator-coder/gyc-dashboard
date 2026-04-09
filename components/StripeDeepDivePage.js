@@ -101,6 +101,7 @@ function YoYChart({ chartData }) {
           <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
           <XAxis dataKey="month" tick={{ fill: '#9ca3af', fontSize: 12 }} />
           <YAxis
+            domain={[150000, 'auto']}
             tickFormatter={v => `$${(v / 1000).toFixed(0)}K`}
             tick={{ fill: '#9ca3af', fontSize: 12 }}
           />
