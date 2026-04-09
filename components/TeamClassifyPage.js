@@ -150,7 +150,7 @@ export default function TeamClassifyPage({ user }) {
                         Open Zoom recording ↗
                       </a>
                     ) : (
-                      <div className="text-sm text-gray-500">No recording link attached.</div>
+                      <div className="text-sm text-gray-300">No recording link attached.</div>
                     )}
                   </div>
 
@@ -162,7 +162,7 @@ export default function TeamClassifyPage({ user }) {
                         value={draft.clientName}
                         onChange={(event) => handleSuggestionPick(call.id, event.target.value)}
                         placeholder="Start typing a known client…"
-                        className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-violet-500/50"
+                        className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-300 focus:border-violet-500/50"
                       />
                     </div>
                     <div>
@@ -171,7 +171,7 @@ export default function TeamClassifyPage({ user }) {
                         value={draft.acronym}
                         onChange={(event) => updateDraft(call.id, { acronym: event.target.value.toUpperCase() })}
                         placeholder="CLAC"
-                        className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm uppercase text-white outline-none transition placeholder:text-gray-600 focus:border-violet-500/50"
+                        className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm uppercase text-white outline-none transition placeholder:text-gray-300 focus:border-violet-500/50"
                       />
                     </div>
                     <div className="flex items-end">

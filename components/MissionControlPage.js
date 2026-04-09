@@ -468,7 +468,7 @@ function AddTaskModal({ onClose, onSaved }) {
       <div className="w-full max-w-md rounded-2xl border border-violet-500/30 bg-[#0e0414] p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <div className="text-base font-bold text-white">Add Task</div>
-          <button onClick={onClose} className="text-gray-500 hover:text-white text-lg">✕</button>
+          <button onClick={onClose} className="text-gray-300 hover:text-white text-lg">✕</button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -643,7 +643,7 @@ export default function MissionControlPage() {
                 ].map(({ label, value, color }) => (
                   <div key={label} className="rounded-lg border border-[var(--brand-border)] bg-black/20 px-4 py-3 text-center">
                     <div style={{ color }} className="text-2xl font-bold">{value}</div>
-                    <div className="text-[11px] text-gray-500 mt-0.5 uppercase tracking-wider">{label}</div>
+                    <div className="text-[11px] text-gray-300 mt-0.5 uppercase tracking-wider">{label}</div>
                   </div>
                 ))}
               </div>
@@ -665,7 +665,7 @@ export default function MissionControlPage() {
                       {status === 'live' ? '● Live' : '○ Planned'}
                     </span>
                   </div>
-                  <div className="text-[11px] text-gray-500 mb-1">{type}</div>
+                  <div className="text-[11px] text-gray-300 mb-1">{type}</div>
                   <div className="text-[11px] text-gray-400">{agents}</div>
                 </div>
               ))}
@@ -696,7 +696,7 @@ export default function MissionControlPage() {
                 <div key={column} className="rounded-xl border border-[var(--brand-border)] bg-black/20 p-3">
                   <div className="text-xs uppercase tracking-wider text-violet-300">
                     {{ backlog: 'Backlog', inProgress: 'In Progress', review: 'Review', done: 'Done' }[column] || column}
-                    <span className="ml-1.5 text-gray-600">({(items || []).length})</span>
+                    <span className="ml-1.5 text-gray-300">({(items || []).length})</span>
                   </div>
                   <div className="mt-2 space-y-2">
                     {(items || []).map((item) => (
@@ -771,7 +771,7 @@ export default function MissionControlPage() {
                 <div className="text-gray-300">{selectedTask.description || 'No description yet.'}</div>
                 <div className="text-xs text-gray-400">Owner: {selectedTask.owner} • Priority: {selectedTask.priority} • Project: {selectedTask.project || '—'}</div>
                 <div>
-                  <div className="text-xs uppercase tracking-wider text-gray-500">Next Steps</div>
+                  <div className="text-xs uppercase tracking-wider text-gray-300">Next Steps</div>
                   <ul className="mt-1 list-disc space-y-1 pl-5 text-gray-200">
                     {(selectedTask.nextSteps || []).map((step) => <li key={step}>{step}</li>)}
                   </ul>
@@ -792,7 +792,7 @@ export default function MissionControlPage() {
                   <span className={`rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${job.status === 'success' ? 'bg-emerald-500/20 text-emerald-200' : 'bg-amber-500/20 text-amber-200'}`}>{job.status}</span>
                 </div>
                 <div className="mt-1 text-gray-300">{job.summary}</div>
-                <div className="mt-1 text-xs text-gray-500">{fmtIso(job.startedAt)} → {fmtIso(job.endedAt)} • Owner: {job.owner}</div>
+                <div className="mt-1 text-xs text-gray-300">{fmtIso(job.startedAt)} → {fmtIso(job.endedAt)} • Owner: {job.owner}</div>
                 {job.artifact ? <a href={job.artifact} className="mt-2 inline-block text-xs text-violet-300 hover:text-violet-200">Open artifact ↗</a> : null}
               </div>
             ))}
@@ -805,7 +805,7 @@ export default function MissionControlPage() {
           <div className="max-h-[70vh] space-y-2 overflow-auto pr-1">
             {diary.map((entry, idx) => (
               <div key={`${entry.date}-${entry.time}-${idx}`} className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-3 text-sm">
-                <div className="text-xs text-gray-500">{entry.date} • {entry.time}</div>
+                <div className="text-xs text-gray-300">{entry.date} • {entry.time}</div>
                 <div className="mt-1 text-gray-200">{entry.note}</div>
               </div>
             ))}
@@ -839,11 +839,11 @@ export default function MissionControlPage() {
                 <div className="text-gray-400">{job.cadence}</div>
                 <div className="mt-2 text-xs text-violet-200">Last check: {fmtEpoch(job.lastCheckEpoch)}</div>
                 <div className="mt-3 rounded-lg border border-[var(--brand-border)] bg-black/20 p-2">
-                  <div className="text-[11px] uppercase tracking-wider text-gray-500">What we learned</div>
+                  <div className="text-[11px] uppercase tracking-wider text-gray-300">What we learned</div>
                   <div className="mt-1 text-gray-200">{job.finding || 'No finding recorded.'}</div>
                 </div>
                 <div className="mt-2 rounded-lg border border-[var(--brand-border)] bg-black/20 p-2">
-                  <div className="text-[11px] uppercase tracking-wider text-gray-500">Follow-up</div>
+                  <div className="text-[11px] uppercase tracking-wider text-gray-300">Follow-up</div>
                   <div className="mt-1 text-gray-200">{job.followUp || 'None.'}</div>
                 </div>
               </div>
@@ -953,7 +953,7 @@ const STATUS_STYLE = {
   'in-progress':'border-amber-500/30 bg-amber-500/10 text-amber-200',
   blocked:     'border-rose-500/30 bg-rose-500/10 text-rose-200',
   done:        'border-emerald-500/30 bg-emerald-500/10 text-emerald-200',
-  archived:    'border-gray-600/30 bg-gray-600/10 text-gray-500',
+  archived:    'border-gray-600/30 bg-gray-600/10 text-gray-300',
 }
 const PRIORITY_STYLE = {
   high:   'text-rose-300',
@@ -994,7 +994,7 @@ function IdeaCard({ idea, onVote, onStatusChange, onArchive, onDelete }) {
               <span className={`text-[11px] font-semibold uppercase ${PRIORITY_STYLE[idea.priority] || ''}`}>
                 ● {idea.priority}
               </span>
-              <span className="text-[11px] text-gray-500 capitalize">{idea.category}</span>
+              <span className="text-[11px] text-gray-300 capitalize">{idea.category}</span>
             </div>
           </div>
         </div>
@@ -1045,7 +1045,7 @@ function IdeaCard({ idea, onVote, onStatusChange, onArchive, onDelete }) {
               Delete
             </button>
           </div>
-          <p className="text-[11px] text-gray-600">Added by {idea.addedBy} · {new Date(idea.addedAt).toLocaleDateString()}</p>
+          <p className="text-[11px] text-gray-300">Added by {idea.addedBy} · {new Date(idea.addedAt).toLocaleDateString()}</p>
         </div>
       )}
     </div>
@@ -1161,10 +1161,10 @@ function IdeaBoard() {
           </button>
         ))}
         <div className="ml-auto flex items-center gap-2">
-          <span className="text-xs text-gray-500">Sort:</span>
+          <span className="text-xs text-gray-300">Sort:</span>
           {[['votes','Votes'],['priority','Priority'],['newest','Newest']].map(([key,label]) => (
             <button key={key} onClick={() => setSortBy(key)}
-              className={`rounded-full border px-2.5 py-1 text-xs transition ${sortBy === key ? 'border-violet-500/40 text-violet-200' : 'border-[var(--brand-border)] text-gray-500 hover:text-gray-300'}`}>
+              className={`rounded-full border px-2.5 py-1 text-xs transition ${sortBy === key ? 'border-violet-500/40 text-violet-200' : 'border-[var(--brand-border)] text-gray-300 hover:text-gray-300'}`}>
               {label}
             </button>
           ))}
@@ -1191,14 +1191,14 @@ function IdeaBoard() {
           />
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Category</label>
+              <label className="text-xs text-gray-300 mb-1 block">Category</label>
               <select value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
                 className="w-full rounded-lg border border-[var(--brand-border)] bg-black/40 px-2 py-1.5 text-sm text-gray-300 focus:outline-none">
                 {CATEGORIES.map((c) => <option key={c} value={c}>{CATEGORY_EMOJI[c]} {c}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Priority</label>
+              <label className="text-xs text-gray-300 mb-1 block">Priority</label>
               <select value={form.priority} onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))}
                 className="w-full rounded-lg border border-[var(--brand-border)] bg-black/40 px-2 py-1.5 text-sm text-gray-300 focus:outline-none">
                 {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -1234,7 +1234,7 @@ function IdeaBoard() {
       {loading ? (
         <div className="text-sm text-gray-400 py-8 text-center">Loading ideas…</div>
       ) : visible.length === 0 ? (
-        <div className="rounded-xl border border-[var(--brand-border)] bg-black/20 px-5 py-10 text-center text-sm text-gray-500">
+        <div className="rounded-xl border border-[var(--brand-border)] bg-black/20 px-5 py-10 text-center text-sm text-gray-300">
           No ideas match that filter. <button onClick={() => setFilter('all')} className="text-violet-300 underline">Show all</button>
         </div>
       ) : (

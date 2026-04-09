@@ -183,13 +183,13 @@ export default function TeamCXPage() {
         <div className="rounded-3xl border border-[var(--brand-border)] bg-[var(--brand-bg-card)] overflow-hidden">
           <div className="border-b border-[var(--brand-border)] px-5 py-4">
             <div className="text-sm font-semibold uppercase tracking-[0.24em] text-gray-400">Clients</div>
-            <div className="mt-1 text-sm text-gray-500">{loadingList ? 'Loading handoffs…' : `${handoffs.length} handoffs in queue`}</div>
+            <div className="mt-1 text-sm text-gray-300">{loadingList ? 'Loading handoffs…' : `${handoffs.length} handoffs in queue`}</div>
           </div>
           <div className="max-h-[calc(100vh-240px)] overflow-y-auto">
             {loadingList ? (
-              <div className="p-5 text-sm text-gray-500">Loading handoffs…</div>
+              <div className="p-5 text-sm text-gray-300">Loading handoffs…</div>
             ) : handoffs.length === 0 ? (
-              <div className="p-5 text-sm text-gray-500">No handoffs found.</div>
+              <div className="p-5 text-sm text-gray-300">No handoffs found.</div>
             ) : (
               <div className="divide-y divide-[var(--brand-border)]">
                 {handoffs.map((item) => {
@@ -214,7 +214,7 @@ export default function TeamCXPage() {
         <div className="space-y-6">
           <div className="rounded-3xl border border-[var(--brand-border)] bg-[var(--brand-bg-card)] p-6">
             {loadingDetail && !detail ? (
-              <div className="text-sm text-gray-500">Loading handoff detail…</div>
+              <div className="text-sm text-gray-300">Loading handoff detail…</div>
             ) : detail ? (
               <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                 <div>
@@ -230,27 +230,27 @@ export default function TeamCXPage() {
                     ['Zoom calls', zoomCalls.length],
                   ].map(([label, value]) => (
                     <div key={label} className="rounded-xl border border-[var(--brand-border)] bg-black/20 px-4 py-3">
-                      <div className="text-xs uppercase tracking-wider text-gray-500">{label}</div>
+                      <div className="text-xs uppercase tracking-wider text-gray-300">{label}</div>
                       <div className="mt-1 text-2xl font-bold text-white">{value}</div>
                     </div>
                   ))}
                 </div>
               </div>
             ) : (
-              <div className="text-sm text-gray-500">Select a handoff.</div>
+              <div className="text-sm text-gray-300">Select a handoff.</div>
             )}
           </div>
 
           <div className="rounded-3xl border border-[var(--brand-border)] bg-[var(--brand-bg-card)] overflow-hidden">
             <div className="border-b border-[var(--brand-border)] px-6 py-4">
               <div className="text-sm font-semibold uppercase tracking-[0.24em] text-gray-400">Promise ledger</div>
-              <div className="mt-1 text-sm text-gray-500">Confirm, clarify, or mark incorrect before kickoff.</div>
+              <div className="mt-1 text-sm text-gray-300">Confirm, clarify, or mark incorrect before kickoff.</div>
             </div>
             <div className="space-y-4 p-6">
               {!detail ? (
-                <div className="text-sm text-gray-500">No handoff selected.</div>
+                <div className="text-sm text-gray-300">No handoff selected.</div>
               ) : promiseItems.length === 0 ? (
-                <div className="text-sm text-gray-500">No promise ledger items attached.</div>
+                <div className="text-sm text-gray-300">No promise ledger items attached.</div>
               ) : promiseItems.map((item) => {
                 const draft = drafts[item.id] || {}
                 const reviewStatus = draft.reviewStatus || item.reviewStatus || 'Pending Review'
@@ -268,7 +268,7 @@ export default function TeamCXPage() {
                           <h3 className="text-lg font-semibold text-white">{item.promiseText}</h3>
                           <p className="mt-1 text-sm text-gray-400">Owner: {item.owner || '—'}{item.evidenceSource ? ` · Source: ${item.evidenceSource}` : ''}</p>
                         </div>
-                        {item.evidenceLink ? <a href={item.evidenceLink} target="_blank" rel="noreferrer" className="inline-flex text-sm font-medium text-violet-300 hover:text-violet-200">Open evidence ↗</a> : <div className="text-sm text-gray-500">No evidence link attached.</div>}
+                        {item.evidenceLink ? <a href={item.evidenceLink} target="_blank" rel="noreferrer" className="inline-flex text-sm font-medium text-violet-300 hover:text-violet-200">Open evidence ↗</a> : <div className="text-sm text-gray-300">No evidence link attached.</div>}
                       </div>
                       <div className="w-full max-w-xl space-y-3">
                         <div className="flex flex-wrap gap-2">
@@ -277,7 +277,7 @@ export default function TeamCXPage() {
                             return <button key={status} onClick={() => updateDraft(item.id, { reviewStatus: status })} className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${active ? 'border-violet-400 bg-violet-500/20 text-white' : 'border-[var(--brand-border)] text-gray-300 hover:border-violet-500/40 hover:bg-violet-500/10 hover:text-white'}`}>{status}</button>
                           })}
                         </div>
-                        <textarea value={draft.reviewComment ?? ''} onChange={(event) => updateDraft(item.id, { reviewComment: event.target.value })} rows={3} placeholder="Optional review comment…" className="w-full rounded-xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-3 py-2 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-violet-500/50" />
+                        <textarea value={draft.reviewComment ?? ''} onChange={(event) => updateDraft(item.id, { reviewComment: event.target.value })} rows={3} placeholder="Optional review comment…" className="w-full rounded-xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-3 py-2 text-sm text-white outline-none transition placeholder:text-gray-300 focus:border-violet-500/50" />
                       </div>
                     </div>
                   </div>
@@ -290,7 +290,7 @@ export default function TeamCXPage() {
             <div className="rounded-3xl border border-[var(--brand-border)] bg-[var(--brand-bg-card)] p-6">
               <div className="text-sm font-semibold uppercase tracking-[0.24em] text-gray-400">CX questions</div>
               <div className="mt-4 space-y-3">
-                {cxQuestions.length === 0 ? <div className="text-sm text-gray-500">No CX questions.</div> : cxQuestions.map((item, index) => (
+                {cxQuestions.length === 0 ? <div className="text-sm text-gray-300">No CX questions.</div> : cxQuestions.map((item, index) => (
                   <div key={`${item.question}-${index}`} className="rounded-xl border border-[var(--brand-border)] bg-black/20 p-4">
                     <div className="text-sm font-medium text-white">{item.question}</div>
                     {item.reason ? <div className="mt-2 text-sm text-gray-400">{item.reason}</div> : null}
@@ -303,11 +303,11 @@ export default function TeamCXPage() {
             <div className="rounded-3xl border border-[var(--brand-border)] bg-[var(--brand-bg-card)] p-6">
               <div className="text-sm font-semibold uppercase tracking-[0.24em] text-gray-400">Data gaps</div>
               <div className="mt-4 space-y-3">
-                {dataGaps.length === 0 ? <div className="text-sm text-gray-500">No data gaps flagged.</div> : dataGaps.map((item, index) => (
+                {dataGaps.length === 0 ? <div className="text-sm text-gray-300">No data gaps flagged.</div> : dataGaps.map((item, index) => (
                   <div key={`${item.code}-${index}`} className="rounded-xl border border-[var(--brand-border)] bg-black/20 p-4">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-300">{item.source || 'Unknown source'}</span>
-                      <span className="text-xs uppercase tracking-wider text-gray-500">{item.code || 'UNCODED'}</span>
+                      <span className="text-xs uppercase tracking-wider text-gray-300">{item.code || 'UNCODED'}</span>
                     </div>
                     <div className="mt-2 text-sm text-gray-300">{item.detail || 'No detail provided.'}</div>
                   </div>
@@ -321,16 +321,16 @@ export default function TeamCXPage() {
               <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                 <div>
                   <div className="text-sm font-semibold uppercase tracking-[0.24em] text-gray-400">Transcript Q&A</div>
-                  <div className="mt-1 text-sm text-gray-500">{selectedSummary?.clientName ? `Searching within ${selectedSummary.clientName}` : 'Searching across all calls'}</div>
+                  <div className="mt-1 text-sm text-gray-300">{selectedSummary?.clientName ? `Searching within ${selectedSummary.clientName}` : 'Searching across all calls'}</div>
                 </div>
                 <div className="flex w-full max-w-2xl gap-3">
-                  <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="What was said about pricing?" className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-violet-500/50" />
+                  <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="What was said about pricing?" className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-300 focus:border-violet-500/50" />
                   <button onClick={runSearch} disabled={searching || !searchQuery.trim()} className="rounded-2xl bg-[var(--brand-primary-2)] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[var(--brand-primary-3)] disabled:cursor-not-allowed disabled:opacity-50">{searching ? 'Searching…' : 'Search'}</button>
                 </div>
               </div>
             </div>
             <div className="space-y-4 p-6">
-              {searchResults.length === 0 ? <div className="text-sm text-gray-500">No transcript matches yet.</div> : searchResults.map((item) => (
+              {searchResults.length === 0 ? <div className="text-sm text-gray-300">No transcript matches yet.</div> : searchResults.map((item) => (
                 <div key={item.id} className="rounded-2xl border border-[var(--brand-border)] bg-black/20 p-5">
                   <div className="flex flex-wrap gap-2 text-xs">
                     <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2.5 py-1 text-violet-200">{item.clientName || item.acronym || 'Unknown client'}</span>

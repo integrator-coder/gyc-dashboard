@@ -47,7 +47,7 @@ export default function MarketingPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Marketing</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Google Ads · Meta Ads · Campaign Performance</p>
+          <p className="text-gray-300 text-sm mt-0.5">Google Ads · Meta Ads · Campaign Performance</p>
         </div>
         <span className="px-3 py-1 bg-yellow-900/40 border border-yellow-700 text-yellow-400 text-xs font-medium rounded-full">
           APIs connecting tomorrow
@@ -67,7 +67,7 @@ export default function MarketingPage() {
             </h3>
             <div className="flex flex-wrap gap-2">
               {section.metrics.map(m => (
-                <span key={m} className="text-xs bg-gray-800 text-gray-500 px-2 py-1 rounded-md border border-gray-700">
+                <span key={m} className="text-xs bg-gray-800 text-gray-300 px-2 py-1 rounded-md border border-gray-700">
                   {m}
                 </span>
               ))}

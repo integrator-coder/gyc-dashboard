@@ -44,9 +44,9 @@ function statusColor(status) {
 function KpiCard({ label, value, sub, color = 'text-white' }) {
   return (
     <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
-      <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">{label}</p>
+      <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-2">{label}</p>
       <p className={`text-3xl font-bold ${color}`}>{value}</p>
-      {sub && <p className="text-gray-600 text-xs mt-1">{sub}</p>}
+      {sub && <p className="text-gray-300 text-xs mt-1">{sub}</p>}
     </div>
   )
 }
@@ -100,7 +100,7 @@ export default function HelpdeskPage() {
         <div className="text-center">
           <div className="w-10 h-10 border-2 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-400">Loading helpdesk data…</p>
-          <p className="text-gray-600 text-xs mt-1">Querying Zendesk — this may take ~30s</p>
+          <p className="text-gray-300 text-xs mt-1">Querying Zendesk — this may take ~30s</p>
         </div>
       </div>
     )
@@ -150,7 +150,7 @@ export default function HelpdeskPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">🌐 Website Helpdesk</h1>
-          <p className="text-gray-500 text-sm mt-0.5">
+          <p className="text-gray-300 text-sm mt-0.5">
             {updatedAt ? `Updated ${formatUpdated(updatedAt)}` : 'Loading…'}
             {' · '}
             <span className="text-gray-400">Zendesk · tag: website_helpdesk</span>
@@ -282,9 +282,9 @@ export default function HelpdeskPage() {
             ].map(({ label, value, color }) => (
               <div key={label} className="bg-gray-900 rounded-xl p-5 border border-gray-800 flex items-center justify-between">
                 <div>
-                  <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">{label}</p>
+                  <p className="text-gray-300 text-xs font-medium uppercase tracking-wider">{label}</p>
                   {label.includes('Mean') && (
-                    <p className="text-gray-600 text-xs mt-0.5">n={resolutionTime.sampleSize ?? 0} closed tickets</p>
+                    <p className="text-gray-300 text-xs mt-0.5">n={resolutionTime.sampleSize ?? 0} closed tickets</p>
                   )}
                 </div>
                 <p className={`text-3xl font-bold ${color}`}>{formatHours(value)}</p>
@@ -333,7 +333,7 @@ export default function HelpdeskPage() {
                 })}
               </div>
             ) : (
-              <p className="text-gray-600 text-sm text-center py-8">No assignee data available</p>
+              <p className="text-gray-300 text-sm text-center py-8">No assignee data available</p>
             )}
           </div>
         </section>
@@ -350,11 +350,11 @@ export default function HelpdeskPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-800">
-                    <th className="text-left px-4 py-3 text-gray-500 text-xs uppercase tracking-wider w-20">ID</th>
-                    <th className="text-left px-4 py-3 text-gray-500 text-xs uppercase tracking-wider">Subject</th>
-                    <th className="text-left px-4 py-3 text-gray-500 text-xs uppercase tracking-wider w-24">Status</th>
-                    <th className="text-left px-4 py-3 text-gray-500 text-xs uppercase tracking-wider w-28">Created</th>
-                    <th className="text-left px-4 py-3 text-gray-500 text-xs uppercase tracking-wider w-36">Assignee</th>
+                    <th className="text-left px-4 py-3 text-gray-300 text-xs uppercase tracking-wider w-20">ID</th>
+                    <th className="text-left px-4 py-3 text-gray-300 text-xs uppercase tracking-wider">Subject</th>
+                    <th className="text-left px-4 py-3 text-gray-300 text-xs uppercase tracking-wider w-24">Status</th>
+                    <th className="text-left px-4 py-3 text-gray-300 text-xs uppercase tracking-wider w-28">Created</th>
+                    <th className="text-left px-4 py-3 text-gray-300 text-xs uppercase tracking-wider w-36">Assignee</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -365,7 +365,7 @@ export default function HelpdeskPage() {
                         i % 2 === 0 ? '' : 'bg-gray-900/60'
                       }`}
                     >
-                      <td className="px-4 py-3 text-gray-500 font-mono text-xs">
+                      <td className="px-4 py-3 text-gray-300 font-mono text-xs">
                         <a
                           href={`https://gycawesome.zendesk.com/agent/tickets/${ticket.id}`}
                           target="_blank"
@@ -382,7 +382,7 @@ export default function HelpdeskPage() {
                             : ticket.subject}
                         </span>
                         {ticket.requester && ticket.requester !== `#${ticket.id}` && (
-                          <p className="text-gray-600 text-xs mt-0.5">{ticket.requester}</p>
+                          <p className="text-gray-300 text-xs mt-0.5">{ticket.requester}</p>
                         )}
                       </td>
                       <td className="px-4 py-3">
@@ -393,7 +393,7 @@ export default function HelpdeskPage() {
                       <td className="px-4 py-3 text-gray-400 text-xs">{ticket.createdAt}</td>
                       <td className="px-4 py-3 text-gray-300 text-xs">
                         {ticket.assignee === 'Unassigned' ? (
-                          <span className="text-gray-600 italic">Unassigned</span>
+                          <span className="text-gray-300 italic">Unassigned</span>
                         ) : (
                           ticket.assignee
                         )}
@@ -404,7 +404,7 @@ export default function HelpdeskPage() {
               </table>
             </div>
           ) : (
-            <div className="px-5 py-10 text-center text-gray-600 text-sm">
+            <div className="px-5 py-10 text-center text-gray-300 text-sm">
               No open tickets found
             </div>
           )}

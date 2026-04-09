@@ -27,13 +27,13 @@ function MemoCard({ memo }) {
           <div className="flex flex-wrap items-center gap-2 mb-1">
             {memo.urgent && <span className="rounded-full border border-rose-500/40 bg-rose-500/15 px-2 py-0.5 text-[11px] font-bold text-rose-200">🚨 URGENT</span>}
             <ConfidencePill level={memo.confidence} />
-            {memo.date && <span className="text-[11px] text-gray-500">{memo.date}</span>}
+            {memo.date && <span className="text-[11px] text-gray-300">{memo.date}</span>}
           </div>
           <button onClick={() => setExpanded(e => !e)} className="text-left text-sm font-semibold text-white hover:text-violet-300 transition">
             {memo.title}
           </button>
         </div>
-        <button onClick={() => setExpanded(e => !e)} className="text-gray-500 hover:text-gray-300 text-xs transition shrink-0">
+        <button onClick={() => setExpanded(e => !e)} className="text-gray-300 hover:text-gray-300 text-xs transition shrink-0">
           {expanded ? '▲' : '▼'}
         </button>
       </div>
@@ -52,7 +52,7 @@ function MemoCard({ memo }) {
               <span className="text-violet-500 mt-0.5 shrink-0">•</span>{f}
             </li>
           ))}
-          {memo.findings.length > 2 && <li className="text-xs text-gray-600">+{memo.findings.length - 2} more…</li>}
+          {memo.findings.length > 2 && <li className="text-xs text-gray-300">+{memo.findings.length - 2} more…</li>}
         </ul>
       )}
 
@@ -60,7 +60,7 @@ function MemoCard({ memo }) {
         <div className="pt-2">
           {memo.findings?.length > 0 && (
             <div className="mb-3">
-              <p className="text-[11px] uppercase tracking-wider text-gray-500 mb-1">Key Findings</p>
+              <p className="text-[11px] uppercase tracking-wider text-gray-300 mb-1">Key Findings</p>
               <ul className="space-y-1">
                 {memo.findings.map((f, i) => (
                   <li key={i} className="flex items-start gap-2 text-xs text-gray-300">
@@ -106,7 +106,7 @@ export default function FulcrumIntel() {
         <div>
           <h2 className="text-xl font-bold text-white">🔭 Fulcrum Intel Feed</h2>
           <p className="text-sm text-gray-400 mt-0.5">Strategic memos from Fulcrum — portfolio health, competitive signals, upsell opportunities, and risk flags. Runs every 6 hours on weekdays.</p>
-          {snapshotAsOf && <p className="text-[11px] text-gray-600 mt-1">Snapshot as of {new Date(snapshotAsOf).toLocaleString()}</p>}
+          {snapshotAsOf && <p className="text-[11px] text-gray-300 mt-1">Snapshot as of {new Date(snapshotAsOf).toLocaleString()}</p>}
         </div>
         <button onClick={load} className="rounded-xl border border-[var(--brand-border)] px-3 py-1.5 text-xs text-gray-400 hover:text-white transition">Refresh</button>
       </div>
@@ -114,11 +114,11 @@ export default function FulcrumIntel() {
       {/* Digest feed — one-liners */}
       {digest.length > 0 && (
         <div className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Recent Digest Feed</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-gray-300 mb-3">Recent Digest Feed</p>
           <div className="space-y-2">
             {digest.slice(0, 8).map((d, i) => (
               <div key={i} className="flex items-start gap-3 text-sm">
-                <span className="text-[11px] text-gray-600 shrink-0 mt-0.5">{d.date}</span>
+                <span className="text-[11px] text-gray-300 shrink-0 mt-0.5">{d.date}</span>
                 <span className="text-gray-300">{d.text}</span>
               </div>
             ))}
@@ -129,8 +129,8 @@ export default function FulcrumIntel() {
       {/* Memos */}
       {memos.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[var(--brand-border)] bg-black/10 px-4 py-10 text-center">
-          <p className="text-gray-500 text-sm">No memos yet — Fulcrum will write her first one on the next heartbeat cycle (every 6h weekdays).</p>
-          <p className="text-gray-600 text-xs mt-2">Topics queued: competitive · churn-risk · product-gaps · sales-process · industry-trends · ops-efficiency · portfolio-health</p>
+          <p className="text-gray-300 text-sm">No memos yet — Fulcrum will write her first one on the next heartbeat cycle (every 6h weekdays).</p>
+          <p className="text-gray-300 text-xs mt-2">Topics queued: competitive · churn-risk · product-gaps · sales-process · industry-trends · ops-efficiency · portfolio-health</p>
         </div>
       ) : (
         <div className="space-y-3">

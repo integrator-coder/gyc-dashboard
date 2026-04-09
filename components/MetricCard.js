@@ -15,7 +15,7 @@ export default function MetricCard({ title, value, subtitle, trend, trendPositiv
         {icon && <span className="text-2xl">{icon}</span>}
       </div>
       <div className="text-3xl font-bold text-white mb-1">{value}</div>
-      {subtitle && <div className="text-gray-500 text-xs">{subtitle}</div>}
+      {subtitle && <div className="text-gray-300 text-xs">{subtitle}</div>}
       {trend && (
         <div className={`text-sm mt-2 font-medium ${trendPositive ? 'text-green-400' : 'text-red-400'}`}>
           {trendPositive ? '↑' : '↓'} {trend}

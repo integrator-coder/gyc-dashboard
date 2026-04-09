@@ -21,7 +21,7 @@ function KpiCard({ label, value, sub, highlight }) {
     <div className={`rounded-xl border p-5 ${highlight ? 'bg-teal-950 border-teal-700' : 'bg-gray-900 border-gray-800'}`}>
       <p className="text-gray-400 text-xs font-medium uppercase tracking-wide mb-1">{label}</p>
       <p className={`text-2xl font-bold ${highlight ? 'text-teal-300' : 'text-white'}`}>{value}</p>
-      {sub && <p className="text-gray-500 text-xs mt-1">{sub}</p>}
+      {sub && <p className="text-gray-300 text-xs mt-1">{sub}</p>}
     </div>
   )
 }
@@ -125,7 +125,7 @@ export default function NewBusinessPage() {
           Contract value · MRR · PIF breakdown · Updated {new Date(data.updatedAt).toLocaleTimeString()}
         </p>
         {data?.snapshot?.asOf && (
-          <p className="text-xs text-gray-600 mt-1">Data as of {new Date(data.snapshot.asOf).toLocaleString()} · {data.snapshot.source}</p>
+          <p className="text-xs text-gray-300 mt-1">Data as of {new Date(data.snapshot.asOf).toLocaleString()} · {data.snapshot.source}</p>
         )}
       </div>
 
@@ -143,7 +143,7 @@ export default function NewBusinessPage() {
         {/* YoY Contract Value Bar Chart (primary — Full Term) */}
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
           <h2 className="text-white font-semibold mb-1">Contract Value — 2026 vs 2025</h2>
-          <p className="text-gray-500 text-xs mb-4">Full term value by month (PIF ÷ term normalized to annual)</p>
+          <p className="text-gray-300 text-xs mb-4">Full term value by month (PIF ÷ term normalized to annual)</p>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={monthlyComparison} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -160,7 +160,7 @@ export default function NewBusinessPage() {
         {/* YoY Deal Count */}
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
           <h2 className="text-white font-semibold mb-1">Deal Count — 2026 vs 2025</h2>
-          <p className="text-gray-500 text-xs mb-4">Number of new deals closed per month</p>
+          <p className="text-gray-300 text-xs mb-4">Number of new deals closed per month</p>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={monthlyComparison} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -185,7 +185,7 @@ export default function NewBusinessPage() {
       {/* Row 2b — Cash at Signing (secondary chart) */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
         <h2 className="text-white font-semibold mb-1">Cash at Signing — 2026 vs 2025</h2>
-        <p className="text-gray-500 text-xs mb-4">First payments collected by month (PIF lump sum or first monthly payment)</p>
+        <p className="text-gray-300 text-xs mb-4">First payments collected by month (PIF lump sum or first monthly payment)</p>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={monthlyComparison} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -202,7 +202,7 @@ export default function NewBusinessPage() {
       {/* Row 3 — PIF Section */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
         <h2 className="text-white font-semibold mb-1">Paid in Full vs Recurring</h2>
-        <p className="text-gray-500 text-xs mb-4">How clients are paying — upfront vs monthly</p>
+        <p className="text-gray-300 text-xs mb-4">How clients are paying — upfront vs monthly</p>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           {/* PIF Donuts side by side */}
@@ -219,7 +219,7 @@ export default function NewBusinessPage() {
                     <text x={50} y={46} textAnchor="middle" fill="#fff" fontSize={14} fontWeight="bold">{Math.round(pct)}%</text>
                     <text x={50} y={62} textAnchor="middle" fill="#9CA3AF" fontSize={10}>PIF</text>
                   </PieChart>
-                  <p className="text-gray-500 text-xs mt-1">{count} PIF deals</p>
+                  <p className="text-gray-300 text-xs mt-1">{count} PIF deals</p>
                 </div>
               ))}
             </div>
@@ -259,7 +259,7 @@ export default function NewBusinessPage() {
         <div className="flex items-start justify-between mb-4">
           <div>
             <h2 className="text-white font-semibold">New MRR Added — 2026 vs 2025</h2>
-            <p className="text-gray-500 text-xs mt-0.5">Monthly recurring revenue from new deals only (excludes PIF)</p>
+            <p className="text-gray-300 text-xs mt-0.5">Monthly recurring revenue from new deals only (excludes PIF)</p>
           </div>
           <div className="flex gap-6 text-right">
             <div>
@@ -290,12 +290,12 @@ export default function NewBusinessPage() {
         <div className="flex items-start justify-between mb-1">
           <div>
             <h2 className="text-white font-semibold">Projected MRR Renewals</h2>
-            <p className="text-gray-500 text-xs mt-0.5">When PIF deals expire and convert to monthly billing</p>
+            <p className="text-gray-300 text-xs mt-0.5">When PIF deals expire and convert to monthly billing</p>
           </div>
           {missingRenewal?.length > 0 && (
             <div className="text-right">
               <span className="text-amber-400 text-xs font-medium">⚠️ {missingRenewal.length} deals missing renewal amounts</span>
-              <p className="text-gray-500 text-xs mt-0.5">Chart understates future months</p>
+              <p className="text-gray-300 text-xs mt-0.5">Chart understates future months</p>
             </div>
           )}
         </div>
@@ -362,11 +362,11 @@ export default function NewBusinessPage() {
 
       {/* Rep Leaderboard */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-        <h2 className="text-white font-semibold mb-4">Rep Leaderboard — {summary.currentMonth} &amp; YTD <span className="text-gray-500 text-xs font-normal ml-1">(full term value)</span></h2>
+        <h2 className="text-white font-semibold mb-4">Rep Leaderboard — {summary.currentMonth} &amp; YTD <span className="text-gray-300 text-xs font-normal ml-1">(full term value)</span></h2>
         <div className="space-y-3">
           {repLeaderboard.map((rep, i) => (
             <div key={rep.rep} className="flex items-center gap-4">
-              <span className="text-gray-500 text-sm w-5 text-right">
+              <span className="text-gray-300 text-sm w-5 text-right">
                 {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}.`}
               </span>
               <span className="text-white text-sm font-medium w-24">{rep.rep}</span>
@@ -375,7 +375,7 @@ export default function NewBusinessPage() {
               </div>
               <div className="text-right w-32">
                 <span className="text-white text-sm font-semibold">{fmt$(rep.ytd)}</span>
-                <span className="text-gray-500 text-xs ml-1">({rep.ytdCount})</span>
+                <span className="text-gray-300 text-xs ml-1">({rep.ytdCount})</span>
               </div>
               <div className="text-right w-28 hidden lg:block">
                 <span className="text-gray-400 text-xs">{summary.currentMonth.slice(0,3)}: </span>
@@ -413,13 +413,13 @@ export default function NewBusinessPage() {
             <div className="flex items-center gap-2 mb-1">
               <h2 className="text-white font-semibold">PIF Leaderboard — {summary.currentMonth} &amp; YTD</h2>
               <span className="text-amber-400 text-xs font-bold px-2 py-0.5 bg-amber-950 rounded-full">PIF</span>
-              <span className="text-gray-500 text-xs font-normal">(full term value)</span>
+              <span className="text-gray-300 text-xs font-normal">(full term value)</span>
             </div>
-            <p className="text-gray-500 text-xs mb-4">Paid-in-full deals only</p>
+            <p className="text-gray-300 text-xs mb-4">Paid-in-full deals only</p>
             <div className="space-y-3">
               {pifLeaderboard.map((rep, i) => (
                 <div key={rep.rep} className="flex items-center gap-4">
-                  <span className="text-gray-500 text-sm w-5 text-right">
+                  <span className="text-gray-300 text-sm w-5 text-right">
                     {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}.`}
                   </span>
                   <span className="text-white text-sm font-medium w-24">{rep.rep}</span>
@@ -428,7 +428,7 @@ export default function NewBusinessPage() {
                   </div>
                   <div className="text-right w-32">
                     <span className="text-white text-sm font-semibold">{fmt$(rep.ytd)}</span>
-                    <span className="text-gray-500 text-xs ml-1">({rep.ytdCount} PIF)</span>
+                    <span className="text-gray-300 text-xs ml-1">({rep.ytdCount} PIF)</span>
                   </div>
                   <div className="text-right w-28 hidden lg:block">
                     <span className="text-gray-400 text-xs">{summary.currentMonth.slice(0,3)}: </span>
@@ -444,7 +444,7 @@ export default function NewBusinessPage() {
       {/* Sales vs Upsells Split */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
         <h2 className="text-white font-semibold mb-1">Sales vs Upsells (Historical Rule-Based Split)</h2>
-        <p className="text-gray-500 text-xs mb-4">Sales reps: Jesse, Pia, Briana, Matt, Lex (+ Sebastian in 2025) · Upsell reps: JC, Zu, Stefen, Todd, Travis, Kim (+ Sebastian in 2026)</p>
+        <p className="text-gray-300 text-xs mb-4">Sales reps: Jesse, Pia, Briana, Matt, Lex (+ Sebastian in 2025) · Upsell reps: JC, Zu, Stefen, Todd, Travis, Kim (+ Sebastian in 2026)</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
           <div className="rounded-xl border border-gray-800 bg-gray-950/60 p-4">
@@ -494,7 +494,7 @@ export default function NewBusinessPage() {
               <p className="text-xs uppercase tracking-wider text-gray-400 mb-2">{label}</p>
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-gray-500 text-xs uppercase border-b border-gray-800">
+                  <tr className="text-gray-300 text-xs uppercase border-b border-gray-800">
                     <th className="text-left pb-2">Type</th>
                     <th className="text-right pb-2">Deals</th>
                     <th className="text-right pb-2">First Payment</th>
@@ -593,7 +593,7 @@ export default function NewBusinessPage() {
                     <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${deal.dealType === 'Sales' ? 'text-teal-300 bg-teal-950' : deal.dealType === 'Upsell' ? 'text-amber-300 bg-amber-950' : 'text-gray-300 bg-gray-800'}`}>{deal.dealType || 'Unclassified'}</span>
                   </td>
                   <td className="py-2.5 pr-4 text-center">
-                    {deal.pif ? <span className="text-amber-400 text-xs font-bold">PIF</span> : <span className="text-gray-600 text-xs">—</span>}
+                    {deal.pif ? <span className="text-amber-400 text-xs font-bold">PIF</span> : <span className="text-gray-300 text-xs">—</span>}
                   </td>
                   <td className="py-2.5 pr-4 text-right text-white">{fmt$(deal.firstPayment)}</td>
                   <td className="py-2.5 text-right text-gray-400">{fmt$(deal.fullTerm)}</td>

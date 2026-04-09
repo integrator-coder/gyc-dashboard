@@ -110,7 +110,7 @@ export default function AdminUsersClient({ currentUser }) {
           >
             👥 User Management
           </h1>
-          <p className="text-sm text-gray-500 mt-1 pl-4">
+          <p className="text-sm text-gray-300 mt-1 pl-4">
             Manage team access and roles · Admin-only
           </p>
         </div>
@@ -200,7 +200,7 @@ export default function AdminUsersClient({ currentUser }) {
 
       <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
         {loading ? (
-          <div className="flex items-center justify-center py-12 text-gray-500 gap-3">
+          <div className="flex items-center justify-center py-12 text-gray-300 gap-3">
             <div className="w-5 h-5 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
             Loading users…
           </div>
@@ -208,11 +208,11 @@ export default function AdminUsersClient({ currentUser }) {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: '1px solid #2a1a3e' }}>
-                <th className="text-left px-5 py-3 text-gray-500 text-xs uppercase tracking-wider">User</th>
-                <th className="text-left px-5 py-3 text-gray-500 text-xs uppercase tracking-wider">Role</th>
-                <th className="text-left px-5 py-3 text-gray-500 text-xs uppercase tracking-wider">Status</th>
-                <th className="text-left px-5 py-3 text-gray-500 text-xs uppercase tracking-wider">Created</th>
-                <th className="text-right px-5 py-3 text-gray-500 text-xs uppercase tracking-wider">Actions</th>
+                <th className="text-left px-5 py-3 text-gray-300 text-xs uppercase tracking-wider">User</th>
+                <th className="text-left px-5 py-3 text-gray-300 text-xs uppercase tracking-wider">Role</th>
+                <th className="text-left px-5 py-3 text-gray-300 text-xs uppercase tracking-wider">Status</th>
+                <th className="text-left px-5 py-3 text-gray-300 text-xs uppercase tracking-wider">Created</th>
+                <th className="text-right px-5 py-3 text-gray-300 text-xs uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -222,7 +222,7 @@ export default function AdminUsersClient({ currentUser }) {
                   <tr key={u.id} style={{ borderBottom: '1px solid #1a0a2e' }} className="hover:bg-white/5 transition">
                     <td className="px-5 py-3">
                       <div className="text-white font-medium">{u.name || '—'}</div>
-                      <div className="text-gray-500 text-xs">{u.email}</div>
+                      <div className="text-gray-300 text-xs">{u.email}</div>
                     </td>
                     <td className="px-5 py-3">
                       {isSelf ? (
@@ -250,7 +250,7 @@ export default function AdminUsersClient({ currentUser }) {
                         </span>
                       )}
                     </td>
-                    <td className="px-5 py-3 text-gray-500 text-xs">
+                    <td className="px-5 py-3 text-gray-300 text-xs">
                       {u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
                     </td>
                     <td className="px-5 py-3 text-right">
@@ -267,7 +267,7 @@ export default function AdminUsersClient({ currentUser }) {
                         </button>
                       )}
                       {isSelf && (
-                        <span className="text-xs text-gray-600">you</span>
+                        <span className="text-xs text-gray-300">you</span>
                       )}
                     </td>
                   </tr>
@@ -278,10 +278,10 @@ export default function AdminUsersClient({ currentUser }) {
         )}
       </div>
 
-      <p className="text-gray-600 text-xs pb-4">
-        Role definitions: <strong className="text-gray-500">superadmin</strong> → full access (Todd only) ·{' '}
-        <strong className="text-gray-500">admin</strong> → full access (leadership team) ·{' '}
-        <strong className="text-gray-500">staff</strong> → all pages except Finance/Churn/Dunning/Leadership
+      <p className="text-gray-300 text-xs pb-4">
+        Role definitions: <strong className="text-gray-300">superadmin</strong> → full access (Todd only) ·{' '}
+        <strong className="text-gray-300">admin</strong> → full access (leadership team) ·{' '}
+        <strong className="text-gray-300">staff</strong> → all pages except Finance/Churn/Dunning/Leadership
       </p>
     </div>
   )

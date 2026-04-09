@@ -35,7 +35,7 @@ function RepCard({ repName, repData, period, metrics, targets }) {
     return (
       <div className="bg-gray-900 rounded-xl p-4 border border-gray-800 opacity-50">
         <h3 className="text-white font-semibold mb-3">{repName}</h3>
-        <p className="text-gray-600 text-sm">No data</p>
+        <p className="text-gray-300 text-sm">No data</p>
       </div>
     )
   }
@@ -71,9 +71,9 @@ function RepCard({ repName, repData, period, metrics, targets }) {
             : Number.isInteger(actual) ? String(actual) : actual.toFixed(1)
           return (
             <div key={key} className="bg-gray-900 rounded-xl p-4 border border-gray-800">
-              <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">{key}</p>
+              <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-2">{key}</p>
               <p className="text-2xl font-bold text-white">{displayVal}</p>
-              <p className="text-xs mt-1.5 text-gray-600">no target</p>
+              <p className="text-xs mt-1.5 text-gray-300">no target</p>
             </div>
           )
         })}
@@ -99,9 +99,9 @@ function PiaCard({ repData, period }) {
           P
         </span>
         Pia
-        <span className="text-gray-600 text-xs font-normal">(Outbound)</span>
+        <span className="text-gray-300 text-xs font-normal">(Outbound)</span>
       </h3>
-      <p className="text-gray-600 text-xs mb-4">No targets set yet — activity tracking only</p>
+      <p className="text-gray-300 text-xs mb-4">No targets set yet — activity tracking only</p>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {piaMetrics.map(({ key, isRate }) => {
           const actual = repData[key]?.[period] ?? 0
@@ -111,7 +111,7 @@ function PiaCard({ repData, period }) {
 
           return (
             <div key={key} className="bg-gray-800 rounded-lg p-3 border border-gray-700">
-              <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">{key}</p>
+              <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-1">{key}</p>
               <p className="text-xl font-bold text-white">{displayVal}</p>
             </div>
           )
@@ -138,9 +138,9 @@ function MarketingMetricCard({ title, value, subtitle, accent = '#AE2BCF' }) {
   return (
     <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
       <div className="w-10 h-1 rounded-full mb-3" style={{ backgroundColor: accent }} />
-      <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">{title}</p>
+      <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-2">{title}</p>
       <p className="text-3xl font-bold text-white">{value}</p>
-      {subtitle && <p className="text-gray-600 text-xs mt-1">{subtitle}</p>}
+      {subtitle && <p className="text-gray-300 text-xs mt-1">{subtitle}</p>}
     </div>
   )
 }
@@ -256,11 +256,11 @@ export default function SalesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Sales</h1>
-          <p className="text-gray-500 text-sm mt-0.5">
+          <p className="text-gray-300 text-sm mt-0.5">
             {data?.updatedAt ? `Updated ${formatUpdated(data.updatedAt)}` : 'Loading…'}
           </p>
           {data?.snapshot?.asOf && (
-            <p className="text-xs text-gray-600 mt-1">Data as of {new Date(data.snapshot.asOf).toLocaleString()} · {data.snapshot.source}</p>
+            <p className="text-xs text-gray-300 mt-1">Data as of {new Date(data.snapshot.asOf).toLocaleString()} · {data.snapshot.source}</p>
           )}
         </div>
         <button
@@ -313,7 +313,7 @@ export default function SalesPage() {
             <h2 className="text-gray-400 text-xs font-semibold uppercase tracking-widest">
               Marketing &amp; Leads
             </h2>
-            <p className="text-gray-600 text-xs mt-1">GHL lead flow + 30-day closed-won deal size</p>
+            <p className="text-gray-300 text-xs mt-1">GHL lead flow + 30-day closed-won deal size</p>
           </div>
         </div>
 
@@ -324,7 +324,7 @@ export default function SalesPage() {
         ) : marketingLoading && !leadsData && !dealSizeData ? (
           <div className="rounded-xl border border-gray-800 px-5 py-8 flex items-center justify-center gap-3" style={{ backgroundColor: '#111111' }}>
             <div className="w-5 h-5 border-2 border-[#AE2BCF] border-t-transparent rounded-full animate-spin" />
-            <span className="text-gray-500 text-sm">Loading marketing and leads data…</span>
+            <span className="text-gray-300 text-sm">Loading marketing and leads data…</span>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -362,9 +362,9 @@ export default function SalesPage() {
             // Extended period — show actual only
             return (
               <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
-                <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">Agreements Closed</p>
+                <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-2">Agreements Closed</p>
                 <p className="text-4xl font-bold text-white">{actual}</p>
-                <p className="text-xs mt-1.5 text-gray-600">no target for this period</p>
+                <p className="text-xs mt-1.5 text-gray-300">no target for this period</p>
               </div>
             )
           })()}
@@ -393,9 +393,9 @@ export default function SalesPage() {
               : Number.isInteger(actual) ? String(actual) : actual.toFixed(1)
             return (
               <div key={key} className="bg-gray-900 rounded-xl p-4 border border-gray-800">
-                <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">{key}</p>
+                <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-2">{key}</p>
                 <p className="text-2xl font-bold text-white">{displayVal}</p>
-                <p className="text-xs mt-1.5 text-gray-600">no target</p>
+                <p className="text-xs mt-1.5 text-gray-300">no target</p>
               </div>
             )
           })}
@@ -433,13 +433,13 @@ export default function SalesPage() {
         <h2 className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-1">
           Deals Won
         </h2>
-        <p className="text-gray-600 text-xs mb-3">
+        <p className="text-gray-300 text-xs mb-3">
           Closed Won · {ghlData?.period ?? VIEW_LABELS[viewIdx]} · from GHL
         </p>
         {ghlLoading ? (
           <div className="bg-gray-900 rounded-xl border border-gray-800 px-5 py-8 flex items-center justify-center gap-3">
             <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-            <span className="text-gray-500 text-sm">Loading deals{period === 'year' ? ' (this may take a moment for full year data)' : '…'}</span>
+            <span className="text-gray-300 text-sm">Loading deals{period === 'year' ? ' (this may take a moment for full year data)' : '…'}</span>
           </div>
         ) : (
           <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
@@ -447,9 +447,9 @@ export default function SalesPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-800">
-                    <th className="text-left px-4 py-3 text-gray-500 text-xs uppercase tracking-wider">Advisor</th>
-                    <th className="text-right px-4 py-3 text-gray-500 text-xs uppercase tracking-wider">Deals Closed</th>
-                    <th className="text-right px-4 py-3 text-gray-500 text-xs uppercase tracking-wider">Total Value</th>
+                    <th className="text-left px-4 py-3 text-gray-300 text-xs uppercase tracking-wider">Advisor</th>
+                    <th className="text-right px-4 py-3 text-gray-300 text-xs uppercase tracking-wider">Deals Closed</th>
+                    <th className="text-right px-4 py-3 text-gray-300 text-xs uppercase tracking-wider">Total Value</th>
                   </tr>
                 </thead>
                 <tbody>

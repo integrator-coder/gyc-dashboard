@@ -72,7 +72,7 @@ function McCard({ mcName, data }) {
         </div>
         <div>
           <div className="text-white font-semibold text-sm">{mcName}</div>
-          <div className="text-gray-500 text-xs">{data.total} clients</div>
+          <div className="text-gray-300 text-xs">{data.total} clients</div>
         </div>
         <div className={`ml-auto text-lg font-bold ${completionTextColor(pct)}`}>
           {pct.toFixed(0)}%
@@ -88,12 +88,12 @@ function HealthBandStat({ label, icon, pct, count, colorClass }) {
     <div className="rounded-xl p-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">{icon} {label}</p>
+          <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-1">{icon} {label}</p>
           <p className={`text-3xl font-bold ${colorClass}`}>{pct.toFixed(1)}%</p>
         </div>
         <div className="text-right">
           <p className="text-white text-lg font-semibold">{count}</p>
-          <p className="text-gray-600 text-xs">clients</p>
+          <p className="text-gray-300 text-xs">clients</p>
         </div>
       </div>
     </div>
@@ -108,10 +108,10 @@ const CustomTooltip = ({ active, payload, label }) => {
         <p className="text-gray-300 font-medium">{label}</p>
         <p className="text-brand-p4 font-bold">{payload[0].value.toFixed(1)}%</p>
         {entry.met !== undefined && (
-          <p className="text-gray-500 text-xs">{entry.met} / {entry.total} clients met</p>
+          <p className="text-gray-300 text-xs">{entry.met} / {entry.total} clients met</p>
         )}
         {entry.months && (
-          <p className="text-gray-600 text-xs mt-0.5">{entry.months}</p>
+          <p className="text-gray-300 text-xs mt-0.5">{entry.months}</p>
         )}
       </div>
     )
@@ -280,7 +280,7 @@ export default function CXPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Client Experience</h1>
-          <p className="text-gray-500 text-sm mt-0.5">
+          <p className="text-gray-300 text-sm mt-0.5">
             {updatedAt ? `Updated ${formatUpdated(updatedAt)}` : 'Loading…'}
             {' · '}
             <span className="text-brand-p4 font-medium">{totalClients} active clients</span>
@@ -298,10 +298,10 @@ export default function CXPage() {
         <div className="flex items-center justify-between mb-3 gap-4">
           <div>
             <h2 className="text-gray-400 text-xs font-semibold uppercase tracking-widest">Client Health</h2>
-            <p className="text-gray-600 text-xs mt-1">Health scores pulled from GHL custom fields</p>
+            <p className="text-gray-300 text-xs mt-1">Health scores pulled from GHL custom fields</p>
           </div>
           {healthData?.updatedAt && (
-            <span className="text-gray-600 text-xs">Updated {formatUpdated(healthData.updatedAt)}</span>
+            <span className="text-gray-300 text-xs">Updated {formatUpdated(healthData.updatedAt)}</span>
           )}
         </div>
 
@@ -312,7 +312,7 @@ export default function CXPage() {
         ) : healthLoading && !healthData ? (
           <div className="rounded-xl border border-gray-800 px-5 py-8 flex items-center justify-center gap-3" style={{ backgroundColor: '#111111' }}>
             <div className="w-5 h-5 border-2 border-brand border-t-transparent rounded-full animate-spin" />
-            <span className="text-gray-500 text-sm">Loading client health data…</span>
+            <span className="text-gray-300 text-sm">Loading client health data…</span>
           </div>
         ) : (
           <div className="space-y-4">
@@ -332,15 +332,15 @@ export default function CXPage() {
             <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
               <div className="flex items-center justify-between gap-4 mb-3">
                 <div>
-                  <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Health Score Coverage</p>
+                  <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-1">Health Score Coverage</p>
                   <p className="text-white text-lg font-semibold">{contactsWithScores} of {sampleSize} clients have health scores.</p>
-                  <p className="text-gray-600 text-sm mt-1">
+                  <p className="text-gray-300 text-sm mt-1">
                     {contactsWithScores} of {sampleSize} clients have health scores. Score more clients in GHL to get full coverage.
                   </p>
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-3xl font-bold text-brand-p4">{coveragePct.toFixed(1)}%</p>
-                  <p className="text-gray-600 text-xs">coverage</p>
+                  <p className="text-gray-300 text-xs">coverage</p>
                 </div>
               </div>
 
@@ -357,9 +357,9 @@ export default function CXPage() {
 
               <div className="grid grid-cols-3 gap-3 mt-3 text-xs">
                 {healthSegments.map(segment => (
-                  <div key={segment.key} className="text-gray-500">
+                  <div key={segment.key} className="text-gray-300">
                     <span className={segment.color}>{segment.icon} {segment.label}</span>
-                    <span className="text-gray-700 mx-1">·</span>
+                    <span className="text-gray-200 mx-1">·</span>
                     <span>{segment.count} clients</span>
                   </div>
                 ))}
@@ -381,15 +381,15 @@ export default function CXPage() {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-            <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">Met This Quarter</p>
+            <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-2">Met This Quarter</p>
             <p className={`text-3xl font-bold ${completionTextColor(currentQStats.pct)}`}>
               {currentQStats.met}
-              <span className="text-gray-600 text-lg font-normal"> / {currentQStats.total}</span>
+              <span className="text-gray-300 text-lg font-normal"> / {currentQStats.total}</span>
             </p>
           </div>
 
           <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-            <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">% Complete</p>
+            <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-2">% Complete</p>
             <p className={`text-3xl font-bold mb-3 ${completionTextColor(currentQStats.pct)}`}>
               {currentQStats.pct.toFixed(1)}%
             </p>
@@ -402,11 +402,11 @@ export default function CXPage() {
           </div>
 
           <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-            <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">Not Yet Met</p>
+            <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-2">Not Yet Met</p>
             <p className={`text-3xl font-bold ${notMetCount > 0 ? 'text-red-400' : 'text-green-400'}`}>
               {notMetCount}
             </p>
-            <p className="text-gray-600 text-xs mt-1">
+            <p className="text-gray-300 text-xs mt-1">
               {notMetCount > 0 ? 'clients still need a meeting' : 'all clients met! 🎉'}
             </p>
           </div>
@@ -416,11 +416,11 @@ export default function CXPage() {
           <div className="mt-3 flex flex-wrap gap-3">
             {Object.entries(currentQuarterMonthBreakdown).map(([month, stats]) => (
               <div key={month} className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-xs">
-                <span className="text-gray-500 mr-2">{month}</span>
+                <span className="text-gray-300 mr-2">{month}</span>
                 <span className={completionTextColor(stats.pct)}>
                   {stats.done} logged
                 </span>
-                <span className="text-gray-700 mx-1">·</span>
+                <span className="text-gray-200 mx-1">·</span>
                 <span className={completionTextColor(stats.pct)}>{stats.pct.toFixed(0)}%</span>
               </div>
             ))}
@@ -489,7 +489,7 @@ export default function CXPage() {
             Support (Zendesk)
           </h2>
           {zendeskData?.syncedAt && (
-            <span className="text-gray-600 text-xs">
+            <span className="text-gray-300 text-xs">
               Synced {formatUpdated(zendeskData.syncedAt)}
             </span>
           )}
@@ -498,15 +498,15 @@ export default function CXPage() {
         {zendeskLoading && !zendeskData ? (
           <div className="bg-gray-900 rounded-xl border border-gray-800 px-5 py-10 flex items-center justify-center gap-3">
             <div className="w-5 h-5 border-2 border-brand border-t-transparent rounded-full animate-spin" />
-            <span className="text-gray-500 text-sm">Loading Zendesk data…</span>
+            <span className="text-gray-300 text-sm">Loading Zendesk data…</span>
           </div>
         ) : zendeskData ? (
           <div className="space-y-4">
             <div>
-              <p className="text-gray-600 text-xs mb-2 uppercase tracking-wider">Queue Health</p>
+              <p className="text-gray-300 text-xs mb-2 uppercase tracking-wider">Queue Health</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-                  <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">Active Queue</p>
+                  <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-2">Active Queue</p>
                   <p className={`text-3xl font-bold ${
                     zendeskData.queue.total > 500
                       ? 'text-red-400'
@@ -516,25 +516,25 @@ export default function CXPage() {
                   }`}>
                     {zendeskData.queue.total}
                   </p>
-                  <p className="text-gray-600 text-xs mt-1">
+                  <p className="text-gray-300 text-xs mt-1">
                     {zendeskData.queue.new}n · {zendeskData.queue.open}o · {zendeskData.queue.pending}p · {zendeskData.queue.hold}h
                   </p>
                 </div>
 
                 <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-                  <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">New This Month</p>
+                  <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-2">New This Month</p>
                   <p className="text-3xl font-bold text-white">{zendeskData.thisMonth.created}</p>
-                  <p className="text-gray-600 text-xs mt-1">tickets created</p>
+                  <p className="text-gray-300 text-xs mt-1">tickets created</p>
                 </div>
 
                 <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-                  <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">Resolved This Month</p>
+                  <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-2">Resolved This Month</p>
                   <p className="text-3xl font-bold text-brand-p4">{zendeskData.thisMonth.resolved}</p>
-                  <p className="text-gray-600 text-xs mt-1">tickets solved</p>
+                  <p className="text-gray-300 text-xs mt-1">tickets solved</p>
                 </div>
 
                 <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-                  <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">Resolution Rate</p>
+                  <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-2">Resolution Rate</p>
                   <p className={`text-3xl font-bold ${
                     zendeskData.thisMonth.resolutionRate >= 80
                       ? 'text-green-400'
@@ -544,13 +544,13 @@ export default function CXPage() {
                   }`}>
                     {zendeskData.thisMonth.resolutionRate}%
                   </p>
-                  <p className="text-gray-600 text-xs mt-1">resolved / created</p>
+                  <p className="text-gray-300 text-xs mt-1">resolved / created</p>
                 </div>
               </div>
             </div>
 
             <div>
-              <p className="text-gray-600 text-xs mb-2 uppercase tracking-wider">Resolution Time</p>
+              <p className="text-gray-300 text-xs mb-2 uppercase tracking-wider">Resolution Time</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
                   { label: 'Mean Resolution', value: zendeskData.resolutionTime.mean },
@@ -558,7 +558,7 @@ export default function CXPage() {
                   { label: 'Mode Resolution', value: zendeskData.resolutionTime.mode },
                 ].map(({ label, value }) => (
                   <div key={label} className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-                    <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">{label}</p>
+                    <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-2">{label}</p>
                     <p className="text-3xl font-bold text-brand-p4">
                       {value >= 24
                         ? `${(value / 24).toFixed(1)}d`
@@ -567,16 +567,16 @@ export default function CXPage() {
                   </div>
                 ))}
                 <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-                  <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">Sample Size</p>
+                  <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-2">Sample Size</p>
                   <p className="text-3xl font-bold text-white">{zendeskData.resolutionTime.sampleSize}</p>
-                  <p className="text-gray-600 text-xs mt-1">closed tickets</p>
+                  <p className="text-gray-300 text-xs mt-1">closed tickets</p>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-                <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-3">Resolution Time Distribution</p>
+                <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-3">Resolution Time Distribution</p>
                 {zendeskData.resolutionTime.buckets.length > 0 ? (
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart
@@ -607,7 +607,7 @@ export default function CXPage() {
                               <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm">
                                 <p className="text-gray-300 font-medium">{label}</p>
                                 <p className="text-brand-p4 font-bold">{count} tickets</p>
-                                <p className="text-gray-500 text-xs">{pct}% of total</p>
+                                <p className="text-gray-300 text-xs">{pct}% of total</p>
                               </div>
                             )
                           }
@@ -644,12 +644,12 @@ export default function CXPage() {
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[220px] flex items-center justify-center text-gray-600 text-sm">No data yet</div>
+                  <div className="h-[220px] flex items-center justify-center text-gray-300 text-sm">No data yet</div>
                 )}
               </div>
 
               <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-                <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-3">Open Tickets by Type</p>
+                <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-3">Open Tickets by Type</p>
                 {(() => {
                   const typeLabels = {
                     website_build: 'Website Build',
@@ -709,7 +709,7 @@ export default function CXPage() {
 
             {zendeskData.firstReplyTime && (
               <div>
-                <p className="text-gray-600 text-xs mb-2 uppercase tracking-wider">First Response Time</p>
+                <p className="text-gray-300 text-xs mb-2 uppercase tracking-wider">First Response Time</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {[
                     { label: 'Mean First Reply', value: zendeskData.firstReplyTime.mean },
@@ -724,7 +724,7 @@ export default function CXPage() {
                       ? `${hours.toFixed(1)}h`
                       : `${Math.round(value)}m`
                     const color = value === 0
-                      ? 'text-gray-500'
+                      ? 'text-gray-300'
                       : hours <= 4
                       ? 'text-green-400'
                       : hours <= 24
@@ -732,28 +732,28 @@ export default function CXPage() {
                       : 'text-red-400'
                     return (
                       <div key={label} className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-                        <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">{label}</p>
+                        <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-2">{label}</p>
                         <p className={`text-3xl font-bold ${color}`}>{display}</p>
                         {value > 0 && (
-                          <p className="text-gray-600 text-xs mt-1">{Math.round(value)} minutes</p>
+                          <p className="text-gray-300 text-xs mt-1">{Math.round(value)} minutes</p>
                         )}
                       </div>
                     )
                   })}
                   <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-                    <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">FRT Sample</p>
+                    <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-2">FRT Sample</p>
                     <p className="text-3xl font-bold text-white">{zendeskData.firstReplyTime.sampleSize}</p>
-                    <p className="text-gray-600 text-xs mt-1">tickets measured</p>
+                    <p className="text-gray-300 text-xs mt-1">tickets measured</p>
                   </div>
                 </div>
               </div>
             )}
 
             <div>
-              <p className="text-gray-600 text-xs mb-2 uppercase tracking-wider">SLA &amp; Overdue</p>
+              <p className="text-gray-300 text-xs mb-2 uppercase tracking-wider">SLA &amp; Overdue</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-                  <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">Overdue Tickets</p>
+                  <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-2">Overdue Tickets</p>
                   <p className={`text-3xl font-bold ${
                     (zendeskData.overdueTickets || 0) > 20
                       ? 'text-red-400'
@@ -763,10 +763,10 @@ export default function CXPage() {
                   }`}>
                     {zendeskData.overdueTickets ?? 0}
                   </p>
-                  <p className="text-gray-600 text-xs mt-1">past due date</p>
+                  <p className="text-gray-300 text-xs mt-1">past due date</p>
                 </div>
                 <div className="bg-gray-900 rounded-xl p-5 border border-gray-800 sm:col-span-3">
-                  <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">Overdue as % of Queue</p>
+                  <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-2">Overdue as % of Queue</p>
                   {(() => {
                     const total = zendeskData.queue?.total || 0
                     const overdue = zendeskData.overdueTickets || 0
@@ -787,7 +787,7 @@ export default function CXPage() {
 
             {zendeskData.monthlyVolume && zendeskData.monthlyVolume.length > 0 && (
               <div>
-                <p className="text-gray-600 text-xs mb-2 uppercase tracking-wider">Ticket Volume — Last 12 Months</p>
+                <p className="text-gray-300 text-xs mb-2 uppercase tracking-wider">Ticket Volume — Last 12 Months</p>
                 <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart
@@ -842,7 +842,7 @@ export default function CXPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {zendeskData.assigneeLoads && zendeskData.assigneeLoads.length > 0 && (
                 <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-                  <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-4">Open Tickets by Growth Advisor</p>
+                  <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-4">Open Tickets by Growth Advisor</p>
                   <div className="space-y-3">
                     {(() => {
                       const maxCount = Math.max(...zendeskData.assigneeLoads.map(a => a.openCount), 1)
@@ -882,8 +882,8 @@ export default function CXPage() {
               {zendeskData.orgTickets && zendeskData.orgTickets.length > 0 && (
                 <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
                   <div className="flex items-center justify-between mb-4">
-                    <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">Top Clients by Ticket Volume</p>
-                    <span className="text-gray-600 text-xs">churn risk signal</span>
+                    <p className="text-gray-300 text-xs font-medium uppercase tracking-wider">Top Clients by Ticket Volume</p>
+                    <span className="text-gray-300 text-xs">churn risk signal</span>
                   </div>
                   <div className="space-y-1.5 max-h-[280px] overflow-y-auto pr-1">
                     {zendeskData.orgTickets.slice(0, 15).map(({ orgName, openCount }, i) => {
@@ -893,7 +893,7 @@ export default function CXPage() {
                       const barColor = openCount >= 10 ? '#ef4444' : openCount >= 5 ? '#eab308' : '#374151'
                       return (
                         <div key={orgName} className="flex items-center gap-3">
-                          <span className="text-gray-600 text-xs w-4 shrink-0">{i + 1}</span>
+                          <span className="text-gray-300 text-xs w-4 shrink-0">{i + 1}</span>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-0.5">
                               <span className="text-gray-300 text-xs truncate mr-2">{orgName}</span>
@@ -919,7 +919,7 @@ export default function CXPage() {
             )}
           </div>
         ) : (
-          <div className="bg-gray-900 rounded-xl border border-gray-800 px-5 py-6 text-gray-500 text-sm">
+          <div className="bg-gray-900 rounded-xl border border-gray-800 px-5 py-6 text-gray-300 text-sm">
             Unable to load Zendesk data.
           </div>
         )}
@@ -946,14 +946,14 @@ export default function CXPage() {
             ))}
           </div>
         </div>
-        <p className="text-gray-600 text-xs mb-3">
+        <p className="text-gray-300 text-xs mb-3">
           Closed Won · {ghlData?.period ?? (ghlPeriod === 'month' ? 'This Month' : 'This Year')} · from GHL
         </p>
 
         {ghlLoading ? (
           <div className="bg-gray-900 rounded-xl border border-gray-800 px-5 py-8 flex items-center justify-center gap-3">
             <div className="w-5 h-5 border-2 border-brand border-t-transparent rounded-full animate-spin" />
-            <span className="text-gray-500 text-sm">Loading deals…</span>
+            <span className="text-gray-300 text-sm">Loading deals…</span>
           </div>
         ) : (
           <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
@@ -961,9 +961,9 @@ export default function CXPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-800">
-                    <th className="text-left px-4 py-3 text-gray-500 text-xs uppercase tracking-wider">Growth Advisor</th>
-                    <th className="text-right px-4 py-3 text-gray-500 text-xs uppercase tracking-wider">Deals Closed</th>
-                    <th className="text-right px-4 py-3 text-gray-500 text-xs uppercase tracking-wider">Total Value</th>
+                    <th className="text-left px-4 py-3 text-gray-300 text-xs uppercase tracking-wider">Growth Advisor</th>
+                    <th className="text-right px-4 py-3 text-gray-300 text-xs uppercase tracking-wider">Deals Closed</th>
+                    <th className="text-right px-4 py-3 text-gray-300 text-xs uppercase tracking-wider">Total Value</th>
                   </tr>
                 </thead>
                 <tbody>

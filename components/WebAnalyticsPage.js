@@ -76,7 +76,7 @@ export default function WebAnalyticsPage() {
         <h1 className="text-2xl font-bold text-white">Web Analytics</h1>
         <p className="text-gray-400 text-sm mt-1">{clientCount} active clients · Last 30 days · Synced {lastSync ? new Date(lastSync).toLocaleDateString() : '—'}</p>
         {data?.snapshot?.asOf && (
-          <p className="text-xs text-gray-600 mt-1">Data as of {new Date(data.snapshot.asOf).toLocaleString()} · {data.snapshot.source}</p>
+          <p className="text-xs text-gray-300 mt-1">Data as of {new Date(data.snapshot.asOf).toLocaleString()} · {data.snapshot.source}</p>
         )}
       </div>
 
@@ -91,7 +91,7 @@ export default function WebAnalyticsPage() {
           <div key={label} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
             <p className="text-gray-400 text-sm">{label}</p>
             <p className="text-2xl font-bold text-white mt-1">{value}</p>
-            <p className="text-gray-500 text-xs mt-1">{sub}</p>
+            <p className="text-gray-300 text-xs mt-1">{sub}</p>
           </div>
         ))}
       </div>
@@ -147,7 +147,7 @@ export default function WebAnalyticsPage() {
       {historical && historical.length > 0 && (
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
           <h2 className="text-white font-semibold mb-1">Traffic Source Trends — Portfolio</h2>
-          <p className="text-gray-500 text-xs mb-4">Monthly sessions by channel across all clients</p>
+          <p className="text-gray-300 text-xs mb-4">Monthly sessions by channel across all clients</p>
           <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={historical.map(m => ({ ...m, month: fmtMonth(m.month) }))} margin={{ top: 0, right: 10, bottom: 0, left: 0 }}>
               <defs>
@@ -203,11 +203,11 @@ export default function WebAnalyticsPage() {
                   <h2 className="text-white font-semibold">🤖 AI Traffic Tracker</h2>
                   <span className="bg-blue-900/40 text-blue-400 text-xs px-2 py-0.5 rounded-full border border-blue-800">Early Signal</span>
                 </div>
-                <p className="text-gray-500 text-xs mt-1">ChatGPT, Gemini, Perplexity, Copilot — portfolio aggregate</p>
+                <p className="text-gray-300 text-xs mt-1">ChatGPT, Gemini, Perplexity, Copilot — portfolio aggregate</p>
               </div>
               {monthsToTipping !== null && (
                 <div className="text-right">
-                  <p className="text-gray-500 text-xs">Est. tipping point (1% of traffic)</p>
+                  <p className="text-gray-300 text-xs">Est. tipping point (1% of traffic)</p>
                   <p className="text-yellow-400 font-bold">{monthsToTipping} months</p>
                 </div>
               )}
@@ -224,7 +224,7 @@ export default function WebAnalyticsPage() {
                 <div key={label} className="bg-gray-800/50 rounded-lg p-3">
                   <p className="text-gray-400 text-xs">{label}</p>
                   <p className={`text-xl font-bold mt-1 ${color || 'text-white'}`}>{value}</p>
-                  <p className="text-gray-600 text-xs mt-0.5">{sub}</p>
+                  <p className="text-gray-300 text-xs mt-0.5">{sub}</p>
                 </div>
               ))}
             </div>
@@ -233,7 +233,7 @@ export default function WebAnalyticsPage() {
             <div className="grid grid-cols-3 gap-4">
               {/* Source breakdown */}
               <div>
-                <p className="text-gray-500 text-xs mb-2 uppercase tracking-wide">Sources (all-time)</p>
+                <p className="text-gray-300 text-xs mb-2 uppercase tracking-wide">Sources (all-time)</p>
                 {[
                   { label: 'ChatGPT', value: aiMonths.reduce((s,m) => s+m.aiChatgpt, 0) },
                   { label: 'Gemini',  value: aiMonths.reduce((s,m) => s+m.aiGemini, 0) },
@@ -250,7 +250,7 @@ export default function WebAnalyticsPage() {
 
               {/* Trend chart */}
               <div className="col-span-2">
-                <p className="text-gray-500 text-xs mb-2 uppercase tracking-wide">Monthly AI sessions trend</p>
+                <p className="text-gray-300 text-xs mb-2 uppercase tracking-wide">Monthly AI sessions trend</p>
                 <ResponsiveContainer width="100%" height={120}>
                   <AreaChart data={aiMonths.map(m => ({ month: fmtMonth(m.month), ai: m.aiTotal, pct: m.aiPct }))}>
                     <defs>
@@ -280,7 +280,7 @@ export default function WebAnalyticsPage() {
           <div className="space-y-3">
             {top5.map((c, i) => (
               <div key={c.acronym} className="flex items-center gap-3">
-                <span className="text-gray-600 text-sm w-4">{i + 1}</span>
+                <span className="text-gray-300 text-sm w-4">{i + 1}</span>
                 <span className="text-white font-medium w-16">{c.acronym}</span>
                 <div className="flex-1 bg-gray-800 rounded-full h-2">
                   <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${Math.round(c.sessions / top5[0].sessions * 100)}%` }} />
@@ -293,11 +293,11 @@ export default function WebAnalyticsPage() {
 
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
           <h2 className="text-white font-semibold mb-1">Highest Bounce Rate</h2>
-          <p className="text-gray-500 text-xs mb-4">Min. 100 sessions</p>
+          <p className="text-gray-300 text-xs mb-4">Min. 100 sessions</p>
           <div className="space-y-3">
             {worstBounce.map((c, i) => (
               <div key={c.acronym} className="flex items-center gap-3">
-                <span className="text-gray-600 text-sm w-4">{i + 1}</span>
+                <span className="text-gray-300 text-sm w-4">{i + 1}</span>
                 <span className="text-white font-medium w-16">{c.acronym}</span>
                 <div className="flex-1 bg-gray-800 rounded-full h-2">
                   <div className="bg-red-500 h-2 rounded-full" style={{ width: `${c.bounceRate}%` }} />

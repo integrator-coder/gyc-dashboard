@@ -1,12 +1,12 @@
 {
-  "green": 0,
+  "green": 1,
   "yellow": 1,
   "red": 0,
-  "total": 1,
-  "greenPct": 0,
-  "yellowPct": 100,
+  "total": 2,
+  "greenPct": 50,
+  "yellowPct": 50,
   "redPct": 0,
-  "contactsWithScores": 1,
+  "contactsWithScores": 2,
   "fieldIds": {
     "clientHappiness": "WZx9JcXna04pa3Br7mhE",
     "businessStability": "dSZ4TSf0QnaxKkdwNe0t"
@@ -15,5 +15,5 @@
   "matchedContacts": 253,
   "awaitingScores": false,
   "cached": false,
-  "updatedAt": "2026-04-09T16:02:30.147Z"
+  "updatedAt": "2026-04-09T20:05:03.396Z"
 }

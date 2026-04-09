@@ -428,7 +428,7 @@ export default function SalesAnalysisPage() {
       <div className="text-center">
         <div className="w-10 h-10 border-2 border-[#AE2BCF] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
         <p className="text-gray-400">Building sales analysis…</p>
-        <p className="text-gray-600 text-xs mt-1">Fetching Stripe history — ~30s first load</p>
+        <p className="text-gray-300 text-xs mt-1">Fetching Stripe history — ~30s first load</p>
       </div>
     </div>
   )
@@ -442,9 +442,9 @@ export default function SalesAnalysisPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">Sales Analysis</h1>
-          <p className="text-gray-500 text-sm mt-1">What we sold · how many · deal size distribution · how clients pay · how the business has shifted since 2022</p>
+          <p className="text-gray-300 text-sm mt-1">What we sold · how many · deal size distribution · how clients pay · how the business has shifted since 2022</p>
           {data?.snapshot?.asOf && (
-            <p className="text-xs text-gray-600 mt-1">Data as of {new Date(data.snapshot.asOf).toLocaleString()} · {data.snapshot.source}</p>
+            <p className="text-xs text-gray-300 mt-1">Data as of {new Date(data.snapshot.asOf).toLocaleString()} · {data.snapshot.source}</p>
           )}
         </div>
       </div>
@@ -453,7 +453,7 @@ export default function SalesAnalysisPage() {
       <div className="space-y-3">
         {/* Quick presets */}
         <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-gray-500 text-xs uppercase tracking-wider">Period:</span>
+          <span className="text-gray-300 text-xs uppercase tracking-wider">Period:</span>
           {[
             ['overall', 'All Time'],
             ['year2025', '2025'],
@@ -534,7 +534,7 @@ export default function SalesAnalysisPage() {
                 <option key={m.key} value={m.key}>{m.label}</option>
               ))}
             </select>
-            <span className="text-gray-500 text-xs">
+            <span className="text-gray-300 text-xs">
               {t.count} deals in range
             </span>
           </div>
@@ -543,15 +543,15 @@ export default function SalesAnalysisPage() {
         {/* Active filter label */}
         {(filterMode !== 'overall') && (
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-600">Showing:</span>
+            <span className="text-xs text-gray-300">Showing:</span>
             <span className="text-xs font-medium" style={{ color: '#AE2BCF' }}>
               {filterMode === 'year2025' ? '2025 only'
                 : filterMode === 'year2026' ? '2026 YTD'
                 : filterMode === 'range' ? `${rangeStart} → ${rangeEnd}`
                 : (data?.availableMonths?.find(m => m.key === filterMode)?.label || filterMode)}
             </span>
-            <span className="text-gray-600 text-xs">— {t.count} deals, {new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(t.revenue)}</span>
-            <button onClick={() => setFilterMode('overall')} className="text-xs text-gray-600 hover:text-gray-300 transition ml-1">✕ clear</button>
+            <span className="text-gray-300 text-xs">— {t.count} deals, {new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(t.revenue)}</span>
+            <button onClick={() => setFilterMode('overall')} className="text-xs text-gray-300 hover:text-gray-300 transition ml-1">✕ clear</button>
           </div>
         )}
       </div>
@@ -612,8 +612,8 @@ export default function SalesAnalysisPage() {
           <div className="xl:col-span-2 flex flex-col gap-4">
             {/* Deal size by count */}
             <Panel>
-              <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Deal Size Distribution</p>
-              <p className="text-[11px] text-gray-600 mb-3">Number of deals (not $) in each size bracket</p>
+              <p className="text-gray-300 text-xs uppercase tracking-wider mb-1">Deal Size Distribution</p>
+              <p className="text-[11px] text-gray-300 mb-3">Number of deals (not $) in each size bracket</p>
               <ResponsiveContainer width="100%" height={150}>
                 <BarChart data={sizeBars}>
                   <CartesianGrid strokeDasharray="3 3" stroke={C.bgDeep} />
@@ -626,10 +626,10 @@ export default function SalesAnalysisPage() {
             </Panel>
             {/* PIF vs Monthly — BOTH count and revenue */}
             <Panel>
-              <p className="text-gray-500 text-xs uppercase tracking-wider mb-3">PIF vs Monthly — Count & Revenue</p>
+              <p className="text-gray-300 text-xs uppercase tracking-wider mb-3">PIF vs Monthly — Count & Revenue</p>
               <div className="space-y-3">
                 <div>
-                  <p className="text-[11px] text-gray-500 mb-1">Deal count</p>
+                  <p className="text-[11px] text-gray-300 mb-1">Deal count</p>
                   <div className="flex items-center gap-5">
                     <PieChart width={80} height={80}>
                       <Pie data={[{v:t.pifCount||0},{v:t.monthlyCount||0}]} dataKey="v" cx={38} cy={38} innerRadius={20} outerRadius={36} paddingAngle={3}>
@@ -649,7 +649,7 @@ export default function SalesAnalysisPage() {
                   </div>
                 </div>
                 <div style={{borderTop:`1px solid ${C.border}`}} className="pt-3">
-                  <p className="text-[11px] text-gray-500 mb-1">First payment collected ($)</p>
+                  <p className="text-[11px] text-gray-300 mb-1">First payment collected ($)</p>
                   {(() => {
                     const raw = data?.rawDeals || []
                     let pifRev = 0, mthRev = 0
@@ -876,7 +876,7 @@ export default function SalesAnalysisPage() {
                     <span className="text-white font-semibold">{row.year}</span>
                     <span className="font-bold text-xl" style={{ color: C.purple }}>{pct}% PIF deals</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 text-xs text-gray-500 mb-3">
+                  <div className="grid grid-cols-2 gap-4 text-xs text-gray-300 mb-3">
                     <div>
                       <p className="text-[11px] uppercase tracking-wider mb-1" style={{color:C.slate}}>Deal count</p>
                       <p><strong className="text-white">{row.pif}</strong> PIF · <strong className="text-white">{row.monthly}</strong> monthly · <span className="text-gray-400">{row.count} total</span></p>
@@ -906,7 +906,7 @@ export default function SalesAnalysisPage() {
       <div style={{ borderTop: `1px solid ${C.border}` }} className="pt-8">
         <div className="mb-6">
           <h2 className="text-white text-lg font-bold">GYC Business Model — The Era Shift (2022–2026)</h2>
-          <p className="text-gray-500 text-sm mt-1">Stripe subscription data reveals exactly when and how the product mix changed</p>
+          <p className="text-gray-300 text-sm mt-1">Stripe subscription data reveals exactly when and how the product mix changed</p>
         </div>
 
         {/* Era overview area chart */}
@@ -972,7 +972,7 @@ export default function SalesAnalysisPage() {
             {retentionData.map((yr) => (
               <Panel key={yr.year}>
                 <p className="text-white font-bold text-lg">{yr.year}</p>
-                <p className="text-gray-500 text-xs mb-2">{yr.total} acquired</p>
+                <p className="text-gray-300 text-xs mb-2">{yr.total} acquired</p>
                 <div className="relative h-2 rounded-full overflow-hidden mb-1" style={{ backgroundColor: C.border }}>
                   <div className="h-full rounded-full" style={{ width: `${yr.pct}%`, backgroundColor: yr.pct > 50 ? C.purple : yr.pct > 20 ? C.gold : '#ef4444' }} />
                 </div>

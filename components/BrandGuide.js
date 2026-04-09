@@ -12,7 +12,7 @@ function CopyBtn({ text }) {
   return (
     <button
       onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1200) }}
-      className="text-[11px] text-gray-500 hover:text-violet-300 transition ml-1"
+      className="text-[11px] text-gray-300 hover:text-violet-300 transition ml-1"
       title="Copy"
     >
       {copied ? '✓' : text}
@@ -50,7 +50,7 @@ function EditableText({ value, onSave, multiline = false, className = '' }) {
       className={`cursor-text hover:bg-violet-500/10 rounded px-1 -mx-1 transition ${className}`}
       title="Click to edit"
     >
-      {value || <span className="text-gray-600 italic">Click to add…</span>}
+      {value || <span className="text-gray-300 italic">Click to add…</span>}
     </span>
   )
 }
@@ -98,7 +98,7 @@ function UploadZone({ category, label, accept = '*', onUploaded }) {
       <input ref={inputRef} type="file" accept={accept} className="hidden" onChange={(e) => upload(e.target.files[0])} />
       {uploading
         ? <><div className="w-5 h-5 border-2 border-[#AE2BCF] border-t-transparent rounded-full animate-spin" /><span className="text-xs text-gray-400">Uploading…</span></>
-        : <><span className="text-2xl">📁</span><span className="text-xs text-gray-400">{label}</span><span className="text-[11px] text-gray-600">Drop or click to upload</span></>}
+        : <><span className="text-2xl">📁</span><span className="text-xs text-gray-400">{label}</span><span className="text-[11px] text-gray-300">Drop or click to upload</span></>}
     </div>
   )
 }
@@ -184,7 +184,7 @@ export default function BrandGuide() {
                 ['Mission', 'brand.mission'],
               ].map(([label, path]) => (
                 <div key={path}>
-                  <p className="text-gray-500 text-xs uppercase tracking-wider mb-0.5">{label}</p>
+                  <p className="text-gray-300 text-xs uppercase tracking-wider mb-0.5">{label}</p>
                   <EditableText
                     value={path.split('.').reduce((o, k) => o?.[k], data) || ''}
                     onSave={(v) => api({ action: 'update_field', path, value: v })}
@@ -199,7 +199,7 @@ export default function BrandGuide() {
           <Panel title="Quick Brand Preview">
             <div className="space-y-4">
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Color Palette</p>
+                <p className="text-xs text-gray-300 uppercase tracking-wider mb-2">Color Palette</p>
                 <div className="flex flex-wrap gap-2">
                   {[...data.colors?.primary || [], ...data.colors?.secondary || []].map((c) => (
                     <div key={c.hex} className="flex items-center gap-2 rounded-lg border border-[var(--brand-border)] px-3 py-1.5">
@@ -211,11 +211,11 @@ export default function BrandGuide() {
                 </div>
               </div>
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Primary Font</p>
+                <p className="text-xs text-gray-300 uppercase tracking-wider mb-2">Primary Font</p>
                 <span className="text-white text-lg font-semibold" style={{ fontFamily: data.typography?.primary?.family }}>
                   {data.typography?.primary?.family}
                 </span>
-                <span className="text-gray-500 text-xs ml-3">All headings, body copy, and UI</span>
+                <span className="text-gray-300 text-xs ml-3">All headings, body copy, and UI</span>
               </div>
             </div>
           </Panel>
@@ -252,11 +252,11 @@ export default function BrandGuide() {
                         <span className="text-white font-medium text-sm">{color.name}</span>
                         <CopyBtn text={color.hex} />
                       </div>
-                      <p className="text-gray-500 text-xs mt-0.5">{color.usage}</p>
+                      <p className="text-gray-300 text-xs mt-0.5">{color.usage}</p>
                     </div>
                     <button
                       onClick={() => { if (confirm(`Remove ${color.name}?`)) api({ action: 'remove_color', palette, hex: color.hex }) }}
-                      className="text-gray-700 hover:text-rose-400 text-xs transition mt-1"
+                      className="text-gray-200 hover:text-rose-400 text-xs transition mt-1"
                       title="Remove"
                     >
                       ✕
@@ -275,7 +275,7 @@ export default function BrandGuide() {
           <Panel title="Primary Typeface">
             <div className="space-y-6">
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Font Family</p>
+                <p className="text-xs text-gray-300 uppercase tracking-wider mb-2">Font Family</p>
                 <EditableText
                   value={data.typography?.primary?.family || ''}
                   onSave={(v) => api({ action: 'update_field', path: 'typography.primary.family', value: v })}
@@ -283,7 +283,7 @@ export default function BrandGuide() {
                 />
               </div>
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wider mb-3">Type Scale Preview</p>
+                <p className="text-xs text-gray-300 uppercase tracking-wider mb-3">Type Scale Preview</p>
                 {[
                   ['Heading 1', '32px / bold', 'text-3xl font-bold'],
                   ['Heading 2', '24px / semibold', 'text-2xl font-semibold'],
@@ -296,16 +296,16 @@ export default function BrandGuide() {
                     <span className={`text-white ${cls}`} style={{ fontFamily: data.typography?.primary?.family }}>
                       {data.brand?.name || 'Grow Your Childcare'}
                     </span>
-                    <span className="text-gray-600 text-xs shrink-0">{level} — {spec}</span>
+                    <span className="text-gray-300 text-xs shrink-0">{level} — {spec}</span>
                   </div>
                 ))}
               </div>
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Fallback Stack</p>
+                <p className="text-xs text-gray-300 uppercase tracking-wider mb-2">Fallback Stack</p>
                 <p className="text-gray-400 text-sm">{(data.typography?.primary?.fallbacks || []).join(', ')}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Notes</p>
+                <p className="text-xs text-gray-300 uppercase tracking-wider mb-2">Notes</p>
                 <EditableText
                   value={data.typography?.notes || ''}
                   onSave={(v) => api({ action: 'update_field', path: 'typography.notes', value: v })}
@@ -328,11 +328,11 @@ export default function BrandGuide() {
                   <div className={`flex items-center justify-center h-32 ${variant.name.toLowerCase().includes('white') || variant.name.toLowerCase().includes('revers') ? 'bg-gray-800' : 'bg-white/5'}`}>
                     {variant.file
                       ? <img src={variant.file} alt={variant.name} className="max-h-24 max-w-full object-contain" />
-                      : <span className="text-gray-600 text-xs">No file uploaded</span>}
+                      : <span className="text-gray-300 text-xs">No file uploaded</span>}
                   </div>
                   <div className="px-3 py-2">
                     <p className="text-white text-sm font-medium">{variant.name}</p>
-                    <p className="text-gray-500 text-xs">{variant.usage}</p>
+                    <p className="text-gray-300 text-xs">{variant.usage}</p>
                     <UploadZone
                       category="logos"
                       label={`Upload ${variant.name}`}
@@ -346,13 +346,13 @@ export default function BrandGuide() {
           </Panel>
           <Panel title="Logo Usage Rules">
             <div className="space-y-2">
-              <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Clear Space</p>
+              <p className="text-xs text-gray-300 uppercase tracking-wider mb-2">Clear Space</p>
               <EditableText
                 value={data.logo?.clearspace || ''}
                 onSave={(v) => api({ action: 'update_field', path: 'logo.clearspace', value: v })}
                 className="text-gray-300 text-sm"
               />
-              <p className="text-xs text-gray-500 uppercase tracking-wider mt-4 mb-2">Don't Do</p>
+              <p className="text-xs text-gray-300 uppercase tracking-wider mt-4 mb-2">Don't Do</p>
               <ul className="space-y-1.5">
                 {(data.logo?.dontDo || []).map((rule, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-gray-400">
@@ -433,7 +433,7 @@ export default function BrandGuide() {
                 }}
               />
               {(data.templates?.items || []).length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-4">No templates uploaded yet. Drop files above to add them.</p>
+                <p className="text-sm text-gray-300 text-center py-4">No templates uploaded yet. Drop files above to add them.</p>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                   {data.templates.items.map((item) => (
@@ -442,11 +442,11 @@ export default function BrandGuide() {
                         <div className="text-2xl">{item.file?.endsWith('.pdf') ? '📄' : item.file?.endsWith('.pptx') ? '📊' : item.file?.endsWith('.docx') ? '📝' : '📁'}</div>
                         <button
                           onClick={() => { if (confirm(`Remove ${item.name}?`)) api({ action: 'remove_template', id: item.id }) }}
-                          className="text-gray-700 hover:text-rose-400 text-xs transition"
+                          className="text-gray-200 hover:text-rose-400 text-xs transition"
                         >✕</button>
                       </div>
                       <p className="text-white text-sm font-medium mt-2">{item.name}</p>
-                      {item.description && <p className="text-gray-500 text-xs mt-0.5">{item.description}</p>}
+                      {item.description && <p className="text-gray-300 text-xs mt-0.5">{item.description}</p>}
                       <a href={item.file} download className="mt-2 inline-block text-xs text-violet-300 hover:text-violet-100 transition">
                         ↓ Download
                       </a>
@@ -480,7 +480,7 @@ export default function BrandGuide() {
                 onUploaded={() => load()}
               />
               {(data.mediaLibrary?.items || []).length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-4">No assets uploaded yet. Drop files above to add them.</p>
+                <p className="text-sm text-gray-300 text-center py-4">No assets uploaded yet. Drop files above to add them.</p>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
                   {data.mediaLibrary.items.map((item) => (
@@ -491,7 +491,7 @@ export default function BrandGuide() {
                           : <div className="flex items-center justify-center h-full text-3xl">📁</div>}
                         <button
                           onClick={() => { if (confirm(`Remove ${item.name}?`)) api({ action: 'remove_media', id: item.id }) }}
-                          className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-gray-700 hover:text-rose-400 text-xs transition bg-black/60 rounded-full w-5 h-5 flex items-center justify-center"
+                          className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-gray-200 hover:text-rose-400 text-xs transition bg-black/60 rounded-full w-5 h-5 flex items-center justify-center"
                         >✕</button>
                       </div>
                       <div className="px-2 py-1.5">

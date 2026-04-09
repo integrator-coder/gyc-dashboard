@@ -448,7 +448,7 @@ export default function CXHandoffPage({ user }) {
                 Classify Queue
               </button>
             </div>
-            <div className="mt-3 text-sm text-gray-500">
+            <div className="mt-3 text-sm text-gray-300">
               {activeTab === 'handoffs'
                 ? (loadingList ? 'Loading handoffs…' : `${handoffs.length} handoffs ready for CX`)
                 : (loadingClassify ? 'Loading classify queue…' : `${classifyCalls.length} calls awaiting confirmation`)}
@@ -457,11 +457,11 @@ export default function CXHandoffPage({ user }) {
           <div className="max-h-[calc(100vh-220px)] overflow-y-auto">
             {activeTab === 'handoffs' ? (
               !canAccessHandoffs ? (
-                <div className="p-5 text-sm text-gray-500">Your role only has access to the classify queue.</div>
+                <div className="p-5 text-sm text-gray-300">Your role only has access to the classify queue.</div>
               ) : loadingList ? (
-                <div className="p-5 text-sm text-gray-500">Loading handoffs…</div>
+                <div className="p-5 text-sm text-gray-300">Loading handoffs…</div>
               ) : handoffs.length === 0 ? (
-                <div className="p-5 text-sm text-gray-500">No CX handoffs are available right now.</div>
+                <div className="p-5 text-sm text-gray-300">No CX handoffs are available right now.</div>
               ) : (
                 <div className="divide-y divide-[var(--brand-border)]">
                   {handoffs.map((item) => {
@@ -501,7 +501,7 @@ export default function CXHandoffPage({ user }) {
                 </div>
               )
             ) : loadingClassify ? (
-              <div className="p-5 text-sm text-gray-500">Loading classify queue…</div>
+              <div className="p-5 text-sm text-gray-300">Loading classify queue…</div>
             ) : classifyCalls.length === 0 ? (
               <div className="p-5">
                 <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/10 p-6 text-center">
@@ -549,7 +549,7 @@ export default function CXHandoffPage({ user }) {
             <>
               <section className="rounded-3xl border border-[var(--brand-border)] bg-[var(--brand-bg-card)] p-6">
                 {!selectedClassifyCall ? (
-                  <div className="text-sm text-gray-500">Pick a call from the left to classify it.</div>
+                  <div className="text-sm text-gray-300">Pick a call from the left to classify it.</div>
                 ) : (
                   <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                     <div>
@@ -571,7 +571,7 @@ export default function CXHandoffPage({ user }) {
                         ['Suggestions', loadingClients ? 'Loading…' : clientSuggestions.length],
                       ].map(([label, value]) => (
                         <div key={label} className="rounded-xl border border-[var(--brand-border)] bg-black/20 px-4 py-3">
-                          <div className="text-xs uppercase tracking-wider text-gray-500">{label}</div>
+                          <div className="text-xs uppercase tracking-wider text-gray-300">{label}</div>
                           <div className="mt-1 break-all text-xl font-bold text-white">{value}</div>
                         </div>
                       ))}
@@ -582,7 +582,7 @@ export default function CXHandoffPage({ user }) {
 
               <section className="rounded-3xl border border-[var(--brand-border)] bg-[linear-gradient(180deg,rgba(115,20,148,0.16),rgba(17,17,17,1))] p-6">
                 {!selectedClassifyCall || !selectedClassifyDraft ? (
-                  <div className="text-sm text-gray-500">No classify item selected.</div>
+                  <div className="text-sm text-gray-300">No classify item selected.</div>
                 ) : (
                   <div className="space-y-5">
                     <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -598,7 +598,7 @@ export default function CXHandoffPage({ user }) {
                             Open Zoom recording ↗
                           </a>
                         ) : (
-                          <div className="text-sm text-gray-500">No recording link attached.</div>
+                          <div className="text-sm text-gray-300">No recording link attached.</div>
                         )}
                       </div>
 
@@ -610,7 +610,7 @@ export default function CXHandoffPage({ user }) {
                             value={selectedClassifyDraft.clientName}
                             onChange={(event) => handleSuggestionPick(selectedClassifyCall.id, event.target.value)}
                             placeholder="Start typing a known client…"
-                            className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-violet-500/50"
+                            className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-300 focus:border-violet-500/50"
                           />
                         </div>
                         <div>
@@ -619,7 +619,7 @@ export default function CXHandoffPage({ user }) {
                             value={selectedClassifyDraft.acronym}
                             onChange={(event) => updateClassifyDraft(selectedClassifyCall.id, { acronym: event.target.value.toUpperCase() })}
                             placeholder="CLAC"
-                            className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm uppercase text-white outline-none transition placeholder:text-gray-600 focus:border-violet-500/50"
+                            className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm uppercase text-white outline-none transition placeholder:text-gray-300 focus:border-violet-500/50"
                           />
                         </div>
                         <div className="flex items-end">
@@ -641,9 +641,9 @@ export default function CXHandoffPage({ user }) {
             <>
               <section className="rounded-3xl border border-[var(--brand-border)] bg-[var(--brand-bg-card)] p-6">
                 {loadingDetail && !detail ? (
-                  <div className="text-sm text-gray-500">Loading handoff detail…</div>
+                  <div className="text-sm text-gray-300">Loading handoff detail…</div>
                 ) : !detail ? (
-                  <div className="text-sm text-gray-500">Pick a handoff from the left to start reviewing it.</div>
+                  <div className="text-sm text-gray-300">Pick a handoff from the left to start reviewing it.</div>
                 ) : (
                   <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                     <div>
@@ -666,7 +666,7 @@ export default function CXHandoffPage({ user }) {
                         ['Client ID', detail.clientId || '—'],
                       ].map(([label, value]) => (
                         <div key={label} className="rounded-xl border border-[var(--brand-border)] bg-black/20 px-4 py-3">
-                          <div className="text-xs uppercase tracking-wider text-gray-500">{label}</div>
+                          <div className="text-xs uppercase tracking-wider text-gray-300">{label}</div>
                           <div className="mt-1 break-all text-xl font-bold text-white">{value}</div>
                         </div>
                       ))}
@@ -714,13 +714,13 @@ export default function CXHandoffPage({ user }) {
               <section className="overflow-hidden rounded-3xl border border-[var(--brand-border)] bg-[var(--brand-bg-card)]">
                 <div className="border-b border-[var(--brand-border)] px-6 py-4">
                   <div className="text-sm font-semibold uppercase tracking-[0.24em] text-gray-400">Sales calls</div>
-                  <div className="mt-1 text-sm text-gray-500">Linked Zoom calls used to support the handoff packet.</div>
+                  <div className="mt-1 text-sm text-gray-300">Linked Zoom calls used to support the handoff packet.</div>
                 </div>
                 <div className="space-y-4 p-6">
                   {!detail ? (
-                    <div className="text-sm text-gray-500">No handoff selected.</div>
+                    <div className="text-sm text-gray-300">No handoff selected.</div>
                   ) : (detail.salesCalls || []).length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-[var(--brand-border)] bg-black/10 px-5 py-6 text-sm text-gray-500">
+                    <div className="rounded-2xl border border-dashed border-[var(--brand-border)] bg-black/10 px-5 py-6 text-sm text-gray-300">
                       No linked Zoom calls yet for {selectedSummary?.clientName || 'this handoff'}.
                     </div>
                   ) : (
@@ -734,7 +734,7 @@ export default function CXHandoffPage({ user }) {
                               <div className="mt-1 text-sm text-gray-400">
                                 {formatDate(call.callDate || call.startedAt, true)} · {call.repName || detail.repName || 'Unknown rep'} · Duration {formatDuration(call.durationSecs)}
                               </div>
-                              <div className="mt-2 text-xs text-gray-500">Match: {call.matchMethod || '—'} · Confidence {call.matchConfidence ?? '—'}</div>
+                              <div className="mt-2 text-xs text-gray-300">Match: {call.matchMethod || '—'} · Confidence {call.matchConfidence ?? '—'}</div>
 
                               <div className="mt-4 rounded-2xl border border-[var(--brand-border)] bg-black/20 p-4">
                                 <div className="flex flex-wrap items-center gap-2">
@@ -750,7 +750,7 @@ export default function CXHandoffPage({ user }) {
                                       <div className="mt-4 space-y-2">
                                         {transcript.previewSegments.map((segment) => (
                                           <div key={segment.id || `${segment.startMs}-${segment.speaker || 'speaker'}`} className="rounded-xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-3 py-2.5 text-sm text-gray-300">
-                                            <div className="text-xs uppercase tracking-[0.16em] text-gray-500">{segment.speaker || 'Unknown speaker'} · {segment.startMs != null ? `${Math.round(Number(segment.startMs) / 1000)}s` : '—'}</div>
+                                            <div className="text-xs uppercase tracking-[0.16em] text-gray-300">{segment.speaker || 'Unknown speaker'} · {segment.startMs != null ? `${Math.round(Number(segment.startMs) / 1000)}s` : '—'}</div>
                                             <div className="mt-1 leading-6">{segment.text}</div>
                                           </div>
                                         ))}
@@ -758,7 +758,7 @@ export default function CXHandoffPage({ user }) {
                                     ) : null}
                                   </>
                                 ) : (
-                                  <div className="mt-3 text-sm text-gray-500">No transcript is linked to this sales call yet.</div>
+                                  <div className="mt-3 text-sm text-gray-300">No transcript is linked to this sales call yet.</div>
                                 )}
                               </div>
                             </div>
@@ -767,7 +767,7 @@ export default function CXHandoffPage({ user }) {
                                 Open recording ↗
                               </a>
                             ) : (
-                              <div className="text-sm text-gray-500">No recording link saved.</div>
+                              <div className="text-sm text-gray-300">No recording link saved.</div>
                             )}
                           </div>
                         </div>
@@ -780,13 +780,13 @@ export default function CXHandoffPage({ user }) {
               <section className="overflow-hidden rounded-3xl border border-[var(--brand-border)] bg-[var(--brand-bg-card)]">
                 <div className="border-b border-[var(--brand-border)] px-6 py-4">
                   <div className="text-sm font-semibold uppercase tracking-[0.24em] text-gray-400">Promise ledger</div>
-                  <div className="mt-1 text-sm text-gray-500">Review each commitment before kickoff. Save one row at a time.</div>
+                  <div className="mt-1 text-sm text-gray-300">Review each commitment before kickoff. Save one row at a time.</div>
                 </div>
                 <div className="space-y-4 p-6">
                   {!detail ? (
-                    <div className="text-sm text-gray-500">No handoff selected.</div>
+                    <div className="text-sm text-gray-300">No handoff selected.</div>
                   ) : (detail.promiseLedgerItems || []).length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-[var(--brand-border)] bg-black/10 px-5 py-6 text-sm text-gray-500">
+                    <div className="rounded-2xl border border-dashed border-[var(--brand-border)] bg-black/10 px-5 py-6 text-sm text-gray-300">
                       No promise ledger items were extracted for this handoff.
                     </div>
                   ) : (
@@ -812,7 +812,7 @@ export default function CXHandoffPage({ user }) {
                                   Open evidence ↗
                                 </a>
                               ) : (
-                                <div className="text-sm text-gray-500">No evidence link attached.</div>
+                                <div className="text-sm text-gray-300">No evidence link attached.</div>
                               )}
                             </div>
 
@@ -836,7 +836,7 @@ export default function CXHandoffPage({ user }) {
                                 onChange={(event) => updatePromiseDraft(item.id, { reviewComment: event.target.value })}
                                 rows={3}
                                 placeholder="Add review notes or context for CX…"
-                                className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-3 py-2.5 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-violet-500/50"
+                                className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-3 py-2.5 text-sm text-white outline-none transition placeholder:text-gray-300 focus:border-violet-500/50"
                               />
                               <button
                                 onClick={() => savePromiseReview(item.id)}
@@ -857,13 +857,13 @@ export default function CXHandoffPage({ user }) {
               <section className="overflow-hidden rounded-3xl border border-[var(--brand-border)] bg-[var(--brand-bg-card)]">
                 <div className="border-b border-[var(--brand-border)] px-6 py-4">
                   <div className="text-sm font-semibold uppercase tracking-[0.24em] text-gray-400">Data gaps</div>
-                  <div className="mt-1 text-sm text-gray-500">Critical missing info is grouped by source so CX can close every gap before handoff.</div>
+                  <div className="mt-1 text-sm text-gray-300">Critical missing info is grouped by source so CX can close every gap before handoff.</div>
                 </div>
                 <div className="space-y-6 p-6">
                   {!detail ? (
-                    <div className="text-sm text-gray-500">No handoff selected.</div>
+                    <div className="text-sm text-gray-300">No handoff selected.</div>
                   ) : Object.keys(groupedGaps).length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-[var(--brand-border)] bg-black/10 px-5 py-6 text-sm text-gray-500">
+                    <div className="rounded-2xl border border-dashed border-[var(--brand-border)] bg-black/10 px-5 py-6 text-sm text-gray-300">
                       No data gaps were flagged for this handoff.
                     </div>
                   ) : (
@@ -871,7 +871,7 @@ export default function CXHandoffPage({ user }) {
                       <div key={source} className="space-y-3">
                         <div className="flex items-center gap-3">
                           <span className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${badgeClass('source', source)}`}>{source}</span>
-                          <div className="text-sm text-gray-500">{gaps.filter((gap) => gap.status === 'open').length} open · {gaps.length} total</div>
+                          <div className="text-sm text-gray-300">{gaps.filter((gap) => gap.status === 'open').length} open · {gaps.length} total</div>
                         </div>
                         <div className="space-y-3">
                           {gaps.map((gap) => {
@@ -887,7 +887,7 @@ export default function CXHandoffPage({ user }) {
                                     </div>
                                     <div className="mt-3 text-sm leading-6 text-gray-200">{gap.description}</div>
                                     {gap.resolvedValue ? <div className="mt-3 text-sm text-gray-400"><span className="font-medium text-gray-300">Resolved value:</span> {gap.resolvedValue}</div> : null}
-                                    {gap.filledBy || gap.filledAt ? <div className="mt-1 text-xs text-gray-500">{gap.filledBy ? `Filled by ${gap.filledBy}` : 'Updated'}{gap.filledAt ? ` · ${formatDate(gap.filledAt, true)}` : ''}</div> : null}
+                                    {gap.filledBy || gap.filledAt ? <div className="mt-1 text-xs text-gray-300">{gap.filledBy ? `Filled by ${gap.filledBy}` : 'Updated'}{gap.filledAt ? ` · ${formatDate(gap.filledAt, true)}` : ''}</div> : null}
                                   </div>
 
                                   <div className="w-full max-w-xl space-y-3">
@@ -895,14 +895,14 @@ export default function CXHandoffPage({ user }) {
                                       value={draft.resolvedValue ?? ''}
                                       onChange={(event) => updateGapDraft(gap.id, { resolvedValue: event.target.value })}
                                       placeholder="Enter the missing info or fallback notes…"
-                                      className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-violet-500/50"
+                                      className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-300 focus:border-violet-500/50"
                                     />
                                     <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px]">
                                       <input
                                         value={draft.filledBy ?? ''}
                                         onChange={(event) => updateGapDraft(gap.id, { filledBy: event.target.value })}
                                         placeholder="Who filled this?"
-                                        className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-violet-500/50"
+                                        className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-300 focus:border-violet-500/50"
                                       />
                                       <select
                                         value={draft.status || gap.status || 'open'}
@@ -936,11 +936,11 @@ export default function CXHandoffPage({ user }) {
               <section className="overflow-hidden rounded-3xl border border-[var(--brand-border)] bg-[var(--brand-bg-card)]">
                 <div className="border-b border-[var(--brand-border)] px-6 py-4">
                   <div className="text-sm font-semibold uppercase tracking-[0.24em] text-gray-400">Transcript Q&amp;A</div>
-                  <div className="mt-1 text-sm text-gray-500">Search exact transcript quotes across this client&apos;s linked sales calls.</div>
+                  <div className="mt-1 text-sm text-gray-300">Search exact transcript quotes across this client&apos;s linked sales calls.</div>
                 </div>
                 <div className="space-y-4 p-6">
                   {!detail ? (
-                    <div className="text-sm text-gray-500">No handoff selected.</div>
+                    <div className="text-sm text-gray-300">No handoff selected.</div>
                   ) : (
                     <>
                       <form onSubmit={runTranscriptSearch} className="flex flex-col gap-3 lg:flex-row">
@@ -948,7 +948,7 @@ export default function CXHandoffPage({ user }) {
                           value={qaQuery}
                           onChange={(event) => setQaQuery(event.target.value)}
                           placeholder="Ask anything about this client's calls..."
-                          className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-violet-500/50"
+                          className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-300 focus:border-violet-500/50"
                         />
                         <button
                           type="submit"
@@ -960,7 +960,7 @@ export default function CXHandoffPage({ user }) {
                       </form>
 
                       {qaQuery.trim() && !qaLoading && qaResults.length === 0 ? (
-                        <div className="rounded-2xl border border-dashed border-[var(--brand-border)] bg-black/10 px-5 py-6 text-sm text-gray-500">
+                        <div className="rounded-2xl border border-dashed border-[var(--brand-border)] bg-black/10 px-5 py-6 text-sm text-gray-300">
                           No matching transcript quotes found yet.
                         </div>
                       ) : null}
@@ -977,7 +977,7 @@ export default function CXHandoffPage({ user }) {
                                   </a>
                                 ) : null}
                               </div>
-                              <div className="mt-2 text-xs uppercase tracking-[0.16em] text-gray-500">{result.repName || 'Unknown rep'}{result.startMs != null ? ` · ${Math.round(Number(result.startMs) / 1000)}s` : ''}</div>
+                              <div className="mt-2 text-xs uppercase tracking-[0.16em] text-gray-300">{result.repName || 'Unknown rep'}{result.startMs != null ? ` · ${Math.round(Number(result.startMs) / 1000)}s` : ''}</div>
                               <blockquote className="mt-3 border-l border-violet-500/30 pl-4 text-sm leading-6 text-gray-200">“{result.snippet || result.text}”</blockquote>
                             </div>
                           ))}

@@ -196,7 +196,7 @@ export default function HRPage() {
                 </div>
               ) : (
                 <div className="flex items-center gap-4">
-                  <span className="text-2xl font-bold text-white">{formatCurrency(monthlyPayroll)}<span className="text-base font-normal text-gray-500">/mo</span></span>
+                  <span className="text-2xl font-bold text-white">{formatCurrency(monthlyPayroll)}<span className="text-base font-normal text-gray-300">/mo</span></span>
                   <button
                     onClick={handleEditStart}
                     className="text-xs px-3 py-1 rounded-lg border text-gray-400 hover:text-white hover:border-violet-500 transition"
@@ -286,7 +286,7 @@ export default function HRPage() {
                 <span className="text-xl">{m.icon}</span>
                 <span className="text-sm font-semibold text-gray-400">{m.title}</span>
               </div>
-              <p className="text-xs text-gray-600 leading-relaxed">{m.description}</p>
+              <p className="text-xs text-gray-300 leading-relaxed">{m.description}</p>
               <div className="mt-3">
                 <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#1a1a2e', color: '#4a4a6a' }}>
                   Data pipeline not yet built

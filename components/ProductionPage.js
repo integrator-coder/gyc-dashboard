@@ -28,9 +28,9 @@ function ProductionMetricCard({ title, value, subtitle, accent = '#AE2BCF', valu
   return (
     <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
       <div className="w-10 h-1 rounded-full mb-3" style={{ backgroundColor: accent }} />
-      <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">{title}</p>
+      <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-2">{title}</p>
       <p className={`text-3xl font-bold ${valueClass}`}>{value}</p>
-      {subtitle && <p className="text-gray-600 text-xs mt-1">{subtitle}</p>}
+      {subtitle && <p className="text-gray-300 text-xs mt-1">{subtitle}</p>}
       {children}
     </div>
   )
@@ -42,7 +42,7 @@ function StageNode({ label, value, accent = '#AE2BCF', danger = false }) {
       className={`rounded-xl px-4 py-4 min-w-[132px] ${danger ? 'border-red-800 bg-red-950/40' : ''}`}
       style={danger ? undefined : { backgroundColor: '#111111', border: '1px solid #2a1a3e' }}
     >
-      <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${danger ? 'text-red-300' : 'text-gray-500'}`}>
+      <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${danger ? 'text-red-300' : 'text-gray-300'}`}>
         {label}
       </p>
       <div className="flex items-end justify-between gap-3">
@@ -59,7 +59,7 @@ function SectionShell({ title, subtitle, children }) {
       <div className="flex items-end justify-between gap-4 mb-3">
         <div>
           <h2 className="text-gray-200 text-lg font-semibold">{title}</h2>
-          {subtitle && <p className="text-gray-500 text-sm mt-1">{subtitle}</p>}
+          {subtitle && <p className="text-gray-300 text-sm mt-1">{subtitle}</p>}
         </div>
       </div>
       {children}
@@ -195,11 +195,11 @@ export default function ProductionPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Production</h1>
-          <p className="text-gray-500 text-sm mt-0.5">
+          <p className="text-gray-300 text-sm mt-0.5">
             {lastUpdated ? `Updated ${formatUpdated(lastUpdated)}` : 'Loading…'}
           </p>
           {productionData?.snapshot?.asOf && (
-            <p className="text-xs text-gray-600 mt-1">Data as of {new Date(productionData.snapshot.asOf).toLocaleString()} · {productionData.snapshot.source}</p>
+            <p className="text-xs text-gray-300 mt-1">Data as of {new Date(productionData.snapshot.asOf).toLocaleString()} · {productionData.snapshot.source}</p>
           )}
         </div>
         <button
@@ -246,7 +246,7 @@ export default function ProductionPage() {
           <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
             <div>
               <h3 className="text-white font-semibold">Stage Pipeline</h3>
-              <p className="text-gray-600 text-sm mt-1">Design → Copy → FL Build → Client Approval, with blocked work called out separately.</p>
+              <p className="text-gray-300 text-sm mt-1">Design → Copy → FL Build → Client Approval, with blocked work called out separately.</p>
             </div>
             <div className="rounded-full px-3 py-1 text-xs font-semibold border border-red-800 bg-red-950 text-red-300">
               Blocked: {webBlockedCount}
@@ -254,13 +254,13 @@ export default function ProductionPage() {
           </div>
 
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="flex flex-wrap items-center gap-3 text-gray-500">
+            <div className="flex flex-wrap items-center gap-3 text-gray-300">
               <StageNode label="Design" value={stageBreakdown.design || 0} accent="#A855F7" />
-              <span className="text-2xl text-gray-700">→</span>
+              <span className="text-2xl text-gray-200">→</span>
               <StageNode label="Copy" value={stageBreakdown.copy || 0} accent="#8B5CF6" />
-              <span className="text-2xl text-gray-700">→</span>
+              <span className="text-2xl text-gray-200">→</span>
               <StageNode label="FL Build" value={stageBreakdown.flBuild || 0} accent="#7C3AED" />
-              <span className="text-2xl text-gray-700">→</span>
+              <span className="text-2xl text-gray-200">→</span>
               <StageNode label="Client Approval" value={stageBreakdown.clientApproval || 0} accent="#22c55e" />
             </div>
             <div className="xl:min-w-[160px]">
@@ -269,7 +269,7 @@ export default function ProductionPage() {
           </div>
 
           {(stageBreakdown.other || 0) > 0 && (
-            <p className="text-sm text-gray-500 mt-4">Other WEB stage values: {stageBreakdown.other}</p>
+            <p className="text-sm text-gray-300 mt-4">Other WEB stage values: {stageBreakdown.other}</p>
           )}
         </div>
 
@@ -294,14 +294,14 @@ export default function ProductionPage() {
           </div>
         </div>
         {clientApprovalQueue.length === 0 ? (
-          <p className="text-gray-500 text-sm">No projects in Client Approval.</p>
+          <p className="text-gray-300 text-sm">No projects in Client Approval.</p>
         ) : (
           <div className="space-y-2">
             {clientApprovalQueue.map((project, i) => (
               <div key={i} className="flex items-center justify-between px-4 py-3 rounded-lg" style={{ backgroundColor: '#0a0a0a', border: '1px solid #1f1f3a' }}>
                 <span className="text-sm text-white">{project.name}</span>
                 <div className="flex items-center gap-4">
-                  {project.dueDate && <span className="text-xs text-gray-500">Due: {project.dueDate}</span>}
+                  {project.dueDate && <span className="text-xs text-gray-300">Due: {project.dueDate}</span>}
                   <span className={`text-sm font-semibold ${(project.daysWaiting || 0) > 60 ? 'text-red-400' : (project.daysWaiting || 0) > 30 ? 'text-yellow-400' : 'text-gray-300'}`}>
                     {project.daysWaiting != null ? `${project.daysWaiting}d` : '—'}
                   </span>
@@ -338,9 +338,9 @@ export default function ProductionPage() {
         <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
           <h3 className="text-white font-semibold mb-4">SEO Stage Breakdown</h3>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-wrap items-center gap-3 text-gray-500">
+            <div className="flex flex-wrap items-center gap-3 text-gray-300">
               <StageNode label="Set Up" value={seoStageBreakdown.setUp || 0} accent="#A855F7" />
-              <span className="text-2xl text-gray-700">→</span>
+              <span className="text-2xl text-gray-200">→</span>
               <StageNode label="Delivery" value={seoStageBreakdown.delivery || 0} accent="#22c55e" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:min-w-[320px]">
@@ -411,7 +411,7 @@ export default function ProductionPage() {
         <div className="rounded-xl p-5 mb-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
           <div className="mb-4">
             <h3 className="text-white font-semibold">Monthly Trend</h3>
-            <p className="text-gray-500 text-sm mt-1">Go-live volume by month from the production scorecard.</p>
+            <p className="text-gray-300 text-sm mt-1">Go-live volume by month from the production scorecard.</p>
           </div>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
@@ -431,7 +431,7 @@ export default function ProductionPage() {
         <div className="rounded-xl p-5 overflow-x-auto mb-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
           <div className="mb-4">
             <h3 className="text-white font-semibold">Quarterly Summary</h3>
-            <p className="text-gray-500 text-sm mt-1">Quarterly rollup from the scorecard history.</p>
+            <p className="text-gray-300 text-sm mt-1">Quarterly rollup from the scorecard history.</p>
           </div>
           <table className="w-full min-w-[760px] text-sm">
             <thead>
@@ -449,7 +449,7 @@ export default function ProductionPage() {
             <tbody>
               {quarterlyHistory.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-4 text-gray-500">No quarterly history available.</td>
+                  <td colSpan={8} className="py-4 text-gray-300">No quarterly history available.</td>
                 </tr>
               ) : (
                 quarterlyHistory.map(row => (

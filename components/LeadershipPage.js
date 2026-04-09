@@ -27,12 +27,12 @@ function Card({ label, value, sub, tone = 'default', tooltip }) {
   const toneCls = tone === 'good' ? 'text-emerald-300' : tone === 'warn' ? 'text-amber-300' : tone === 'bad' ? 'text-rose-300' : 'text-white'
   return (
     <div className="rounded-xl border border-[#2a1a3e] bg-black/40 p-4">
-      <div className="text-[11px] uppercase tracking-wider text-gray-500 flex items-center">
+      <div className="text-[11px] uppercase tracking-wider text-gray-300 flex items-center">
         {label}
         {tooltip && <MetricTooltip text={tooltip} />}
       </div>
       <div className={`text-2xl font-bold mt-1 ${toneCls}`}>{value}</div>
-      {sub && <div className="text-xs text-gray-500 mt-1">{sub}</div>}
+      {sub && <div className="text-xs text-gray-300 mt-1">{sub}</div>}
     </div>
   )
 }
@@ -44,7 +44,7 @@ function Panel({ title, sub, children, href, tone = 'neutral' }) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-white font-semibold">{title}</h3>
-          {sub && <p className="text-xs text-gray-500 mt-0.5 mb-3">{sub}</p>}
+          {sub && <p className="text-xs text-gray-300 mt-0.5 mb-3">{sub}</p>}
         </div>
         {href && (
           <Link href={href} className="text-xs text-violet-300 hover:text-violet-100 whitespace-nowrap">Open →</Link>
@@ -177,9 +177,9 @@ export default function LeadershipPage() {
       <div className="flex items-end justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Leadership Board</h1>
-          <p className="text-sm text-gray-500">Cross-sectional command view — finance, churn, risk, growth, CX, and commercial mix</p>
+          <p className="text-sm text-gray-300">Cross-sectional command view — finance, churn, risk, growth, CX, and commercial mix</p>
           {data?.snapshot?.asOf && (
-            <p className="text-xs text-gray-600 mt-1">Snapshot: {new Date(data.snapshot.asOf).toLocaleString()} · {data.snapshot.source}</p>
+            <p className="text-xs text-gray-300 mt-1">Snapshot: {new Date(data.snapshot.asOf).toLocaleString()} · {data.snapshot.source}</p>
           )}
         </div>
       </div>

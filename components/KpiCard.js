@@ -33,10 +33,10 @@ export default function KpiCard({
 
   return (
     <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
-      <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2">{title}</p>
+      <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-2">{title}</p>
       <div className="flex items-end justify-between mb-2">
         <span className={`${valueSize} font-bold ${color}`}>{displayActual}</span>
-        <span className="text-gray-600 text-sm">/ {displayTarget}</span>
+        <span className="text-gray-300 text-sm">/ {displayTarget}</span>
       </div>
       <div className="w-full bg-gray-800 rounded-full h-1.5">
         <div

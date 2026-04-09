@@ -62,7 +62,7 @@ export default function AgentEventLog() {
           {loading ? 'Loading…' : 'Refresh'}
         </button>
         {lastRefresh && (
-          <span className="text-xs text-gray-500">Last updated {lastRefresh.toLocaleTimeString()}</span>
+          <span className="text-xs text-gray-300">Last updated {lastRefresh.toLocaleTimeString()}</span>
         )}
       </div>
 
@@ -73,13 +73,13 @@ export default function AgentEventLog() {
       {/* Table */}
       <div className="overflow-x-auto rounded-2xl border border-[var(--brand-border)] bg-black/30">
         {filtered.length === 0 && !loading ? (
-          <div className="px-6 py-10 text-center text-sm text-gray-500">
+          <div className="px-6 py-10 text-center text-sm text-gray-300">
             {error ? 'Error loading logs.' : 'No agent events recorded yet.'}
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[var(--brand-border)] text-xs uppercase tracking-wider text-gray-500">
+              <tr className="border-b border-[var(--brand-border)] text-xs uppercase tracking-wider text-gray-300">
                 <th className="px-4 py-3 text-left">Timestamp</th>
                 <th className="px-4 py-3 text-left">Agent</th>
                 <th className="px-4 py-3 text-left">Action</th>
@@ -124,7 +124,7 @@ export default function AgentEventLog() {
           </table>
         )}
       </div>
-      <p className="text-xs text-gray-600">Showing {filtered.length} of {logs.length} entries · auto-refreshes every 30s</p>
+      <p className="text-xs text-gray-300">Showing {filtered.length} of {logs.length} entries · auto-refreshes every 30s</p>
     </div>
   )
 }

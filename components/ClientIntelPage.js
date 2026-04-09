@@ -50,7 +50,7 @@ function trendChip(value) {
 }
 
 function EmptyState({ children }) {
-  return <div className="rounded-2xl border border-dashed border-[var(--brand-border)] bg-black/10 px-4 py-5 text-sm text-gray-500">{children}</div>
+  return <div className="rounded-2xl border border-dashed border-[var(--brand-border)] bg-black/10 px-4 py-5 text-sm text-gray-300">{children}</div>
 }
 
 function SectionCard({ eyebrow, title, children, action }) {
@@ -73,9 +73,9 @@ function SectionCard({ eyebrow, title, children, action }) {
 function StatCard({ label, value, sub }) {
   return (
     <div className="rounded-2xl border border-[var(--brand-border)] bg-black/25 px-4 py-4">
-      <div className="text-xs uppercase tracking-wider text-gray-500">{label}</div>
+      <div className="text-xs uppercase tracking-wider text-gray-300">{label}</div>
       <div className="mt-2 text-2xl font-bold text-white">{value}</div>
-      {sub ? <div className="mt-1 text-xs text-gray-500">{sub}</div> : null}
+      {sub ? <div className="mt-1 text-xs text-gray-300">{sub}</div> : null}
     </div>
   )
 }
@@ -681,7 +681,7 @@ export default function ClientIntelPage({ acronym, user }) {
                   onChange={(event) => setSearchQuery(event.target.value)}
                   onKeyDown={(event) => { if (event.key === 'Enter') runSearch() }}
                   placeholder="Ask anything about this client..."
-                  className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-violet-500/50"
+                  className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-300 focus:border-violet-500/50"
                 />
                 <button onClick={runSearch} disabled={searching || !searchQuery.trim()} className="rounded-2xl bg-[var(--brand-primary-2)] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[var(--brand-primary-3)] disabled:cursor-not-allowed disabled:opacity-50">{searching ? 'Searching…' : 'Search'}</button>
               </div>
@@ -702,7 +702,7 @@ export default function ClientIntelPage({ acronym, user }) {
                     <div className="mt-3 text-sm leading-7 text-gray-200">"{item.text}"</div>
                     <div className="mt-4 flex flex-wrap gap-4 text-sm">
                       {item.callLink ? <a href={item.callLink} target="_blank" rel="noreferrer" className="font-medium text-violet-300 hover:text-violet-200">Open recording ↗</a> : null}
-                      {item.meetingTopic ? <span className="text-gray-500">{item.meetingTopic}</span> : null}
+                      {item.meetingTopic ? <span className="text-gray-300">{item.meetingTopic}</span> : null}
                     </div>
                   </div>
                 ))}
@@ -736,10 +736,10 @@ export default function ClientIntelPage({ acronym, user }) {
                             <p className="text-gray-200 flex-1">{p.promiseText}</p>
                             <div className="flex flex-col items-end gap-1 shrink-0">
                               {p.riskFlag === 'high' && <span className="rounded-full border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 text-[11px] text-rose-200">high risk</span>}
-                              <span className="text-[11px] text-gray-500">{p.confidence} confidence</span>
+                              <span className="text-[11px] text-gray-300">{p.confidence} confidence</span>
                             </div>
                           </div>
-                          <div className="mt-1.5 flex gap-3 text-[11px] text-gray-500">
+                          <div className="mt-1.5 flex gap-3 text-[11px] text-gray-300">
                             <span>Owner: {p.owner}</span>
                             <span>Category: {p.category}</span>
                             <span className={`font-medium ${p.reviewStatus === 'Pending Review' ? 'text-amber-400' : 'text-emerald-400'}`}>{p.reviewStatus}</span>
@@ -776,8 +776,8 @@ export default function ClientIntelPage({ acronym, user }) {
                 {ghlTasks.map((task) => (
                   <div key={task.id} className={`rounded-xl border p-3 text-sm flex items-start justify-between gap-3 ${task.completed ? 'border-gray-800 bg-black/10 opacity-60' : 'border-[var(--brand-border)] bg-black/20'}`}>
                     <div>
-                      <p className={`font-medium ${task.completed ? 'line-through text-gray-500' : 'text-white'}`}>{task.title}</p>
-                      {task.dueDate && <p className="text-xs text-gray-500 mt-0.5">Due: {formatDate(task.dueDate)}</p>}
+                      <p className={`font-medium ${task.completed ? 'line-through text-gray-300' : 'text-white'}`}>{task.title}</p>
+                      {task.dueDate && <p className="text-xs text-gray-300 mt-0.5">Due: {formatDate(task.dueDate)}</p>}
                     </div>
                     <span className={`rounded-full border px-2 py-0.5 text-[11px] shrink-0 ${task.completed ? 'border-emerald-500/30 text-emerald-300' : 'border-amber-500/30 text-amber-300'}`}>
                       {task.completed ? 'Done' : 'Open'}
@@ -796,7 +796,7 @@ export default function ClientIntelPage({ acronym, user }) {
               <div className="space-y-3">
                 {ghlNotes.map((note) => (
                   <div key={note.id} className="rounded-xl border border-[var(--brand-border)] bg-black/20 p-4">
-                    <div className="text-xs text-gray-500 mb-2">{note.createdAt ? formatDate(note.createdAt, true) : '—'}</div>
+                    <div className="text-xs text-gray-300 mb-2">{note.createdAt ? formatDate(note.createdAt, true) : '—'}</div>
                     <p className="text-sm text-gray-200 leading-relaxed whitespace-pre-wrap">
                       {note.body.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()}
                     </p>

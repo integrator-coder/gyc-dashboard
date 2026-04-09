@@ -73,7 +73,7 @@ export default function ClientHealthMonitor() {
         <div>
           <h2 className="text-xl font-bold text-white">🏥 Client Health Monitor</h2>
           <p className="text-sm text-gray-400 mt-0.5">Portfolio-wide risk signals — billing, support, funnels, and conversion. Updated live from Stripe, Zendesk, and client funnel data.</p>
-          {snapshotAsOf && <p className="text-[11px] text-gray-600 mt-1">Snapshot as of {new Date(snapshotAsOf).toLocaleString()}</p>}
+          {snapshotAsOf && <p className="text-[11px] text-gray-300 mt-1">Snapshot as of {new Date(snapshotAsOf).toLocaleString()}</p>}
         </div>
         <button onClick={load} className="rounded-xl border border-[var(--brand-border)] px-3 py-1.5 text-xs text-gray-400 hover:text-white transition">Refresh</button>
       </div>
@@ -90,7 +90,7 @@ export default function ClientHealthMonitor() {
           { label: 'Ticket Escalations', value: fmtN(healthData?.ticketEscalations?.length), tone: Number(healthData?.ticketEscalations?.length) > 5 ? 'red' : 'amber' },
         ].map(({ label, value, tone }) => (
           <div key={label} className="rounded-xl border border-[var(--brand-border)] bg-black/30 px-3 py-3">
-            <p className="text-[11px] uppercase tracking-wider text-gray-500">{label}</p>
+            <p className="text-[11px] uppercase tracking-wider text-gray-300">{label}</p>
             <p className={`text-xl font-bold mt-1 ${tone === 'red' ? 'text-rose-300' : tone === 'amber' ? 'text-amber-300' : tone === 'green' ? 'text-emerald-300' : tone === 'violet' ? 'text-violet-300' : 'text-white'}`}>{value}</p>
           </div>
         ))}
@@ -101,7 +101,7 @@ export default function ClientHealthMonitor() {
         {/* 🔴 Billing Risk — Past Due */}
         <Card>
           <SectionHeader emoji="💳" title="Billing Risk — Past Due" count={healthData?.billingRisk?.length} tone="red" />
-          <p className="text-[11px] text-gray-500 mb-3">Active subscriptions with failed/missing payment. MRR at risk.</p>
+          <p className="text-[11px] text-gray-300 mb-3">Active subscriptions with failed/missing payment. MRR at risk.</p>
           {!healthData?.billingRisk?.length ? (
             <p className="text-sm text-emerald-300">✓ No past-due clients right now</p>
           ) : (
@@ -110,15 +110,15 @@ export default function ClientHealthMonitor() {
                 <div key={i} className="flex items-center justify-between gap-3 rounded-lg border border-rose-500/20 bg-rose-500/5 px-3 py-2 text-sm">
                   <div className="min-w-0">
                     <p className="text-white font-medium truncate">{c.name}</p>
-                    <p className="text-gray-500 text-xs truncate">{c.email}</p>
+                    <p className="text-gray-300 text-xs truncate">{c.email}</p>
                   </div>
                   <div className="shrink-0 text-right">
-                    <p className="text-rose-300 font-semibold">{fmt$(c.mrr)}<span className="text-gray-500 text-xs">/mo</span></p>
+                    <p className="text-rose-300 font-semibold">{fmt$(c.mrr)}<span className="text-gray-300 text-xs">/mo</span></p>
                     <Pill tone="red">past due</Pill>
                   </div>
                 </div>
               ))}
-              <p className="text-xs text-gray-600 pt-1">Total at-risk MRR: {fmt$(data.billingRisk.reduce((s,c)=>s+Number(c.mrr||0),0))}</p>
+              <p className="text-xs text-gray-300 pt-1">Total at-risk MRR: {fmt$(data.billingRisk.reduce((s,c)=>s+Number(c.mrr||0),0))}</p>
             </div>
           )}
         </Card>
@@ -126,7 +126,7 @@ export default function ClientHealthMonitor() {
         {/* 🎫 Zendesk Escalations */}
         <Card>
           <SectionHeader emoji="🎫" title="Zendesk Escalations (10+ open tickets)" count={healthData?.ticketEscalations?.length} tone={healthData?.ticketEscalations?.length > 5 ? 'red' : 'amber'} />
-          <p className="text-[11px] text-gray-500 mb-3">Clients with high open ticket volume — likely experiencing unresolved service issues.</p>
+          <p className="text-[11px] text-gray-300 mb-3">Clients with high open ticket volume — likely experiencing unresolved service issues.</p>
           {!healthData?.ticketEscalations?.length ? (
             <p className="text-sm text-emerald-300">✓ No clients at escalation threshold</p>
           ) : (
@@ -138,7 +138,7 @@ export default function ClientHealthMonitor() {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="text-amber-300 font-bold text-base">{c.openCount}</span>
-                    <span className="text-gray-500 text-xs">open</span>
+                    <span className="text-gray-300 text-xs">open</span>
                     {c.acronym && c.acronym.length <= 8 && (
                       <Link href={`/clients/${c.acronym}`} className="text-[11px] text-violet-400 hover:text-violet-200 transition">View →</Link>
                     )}
@@ -152,7 +152,7 @@ export default function ClientHealthMonitor() {
         {/* 📉 Poor Conversion */}
         <Card>
           <SectionHeader emoji="📉" title="Funnel Conversion — Lowest Performers" count={healthData?.poorConversion?.length} tone="amber" />
-          <p className="text-[11px] text-gray-500 mb-3">Clients with 5+ leads in last 90 days but lowest lead-to-enrollment conversion rate.</p>
+          <p className="text-[11px] text-gray-300 mb-3">Clients with 5+ leads in last 90 days but lowest lead-to-enrollment conversion rate.</p>
           {!healthData?.poorConversion?.length ? (
             <p className="text-sm text-gray-400">No funnel conversion data available yet.</p>
           ) : (
@@ -161,7 +161,7 @@ export default function ClientHealthMonitor() {
                 <div key={i} className="flex items-center justify-between gap-3 rounded-lg border border-[var(--brand-border)] bg-black/20 px-3 py-2 text-sm">
                   <div className="min-w-0">
                     <p className="text-white font-medium">{c.name || c.acronym}</p>
-                    <p className="text-gray-500 text-xs">{fmtN(c.total_leads)} leads · {fmtN(c.total_registrations)} enrolled</p>
+                    <p className="text-gray-300 text-xs">{fmtN(c.total_leads)} leads · {fmtN(c.total_registrations)} enrolled</p>
                   </div>
                   <div className="shrink-0 text-right">
                     <p className={`font-bold text-base ${Number(c.conversion_pct) < 3 ? 'text-rose-300' : Number(c.conversion_pct) < 8 ? 'text-amber-300' : 'text-gray-300'}`}>
@@ -180,20 +180,20 @@ export default function ClientHealthMonitor() {
         {/* 💰 MRR Concentration Risk */}
         <Card>
           <SectionHeader emoji="💰" title="MRR Concentration — Top 10 Clients" count={null} tone="violet" />
-          <p className="text-[11px] text-gray-500 mb-3">How much of your MRR is concentrated in your biggest clients. High concentration = churn risk.</p>
+          <p className="text-[11px] text-gray-300 mb-3">How much of your MRR is concentrated in your biggest clients. High concentration = churn risk.</p>
           {!healthData?.mrrConcentration?.length ? (
             <p className="text-sm text-gray-400">No data available.</p>
           ) : (
             <div className="space-y-1.5">
               {data.mrrConcentration.map((c, i) => (
                 <div key={i} className="flex items-center gap-3 text-sm">
-                  <span className="text-gray-600 text-[11px] w-4 shrink-0">{i + 1}</span>
+                  <span className="text-gray-300 text-[11px] w-4 shrink-0">{i + 1}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-gray-200 truncate text-xs">{c.name}</p>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-violet-300 font-semibold text-xs">{fmt$(c.mrr)}</span>
-                        <span className="text-gray-500 text-[11px]">{c.pct_of_mrr}%</span>
+                        <span className="text-gray-300 text-[11px]">{c.pct_of_mrr}%</span>
                       </div>
                     </div>
                     <div className="mt-1 h-1.5 rounded-full overflow-hidden bg-gray-800">
@@ -202,7 +202,7 @@ export default function ClientHealthMonitor() {
                   </div>
                 </div>
               ))}
-              <p className="text-[11px] text-gray-600 pt-1">
+              <p className="text-[11px] text-gray-300 pt-1">
                 Top 10 = {fmt$(data.mrrConcentration.reduce((s,c)=>s+Number(c.mrr||0),0))} · {
                   Math.round(data.mrrConcentration.reduce((s,c)=>s+Number(c.pct_of_mrr||0),0))
                 }% of total MRR
@@ -216,15 +216,15 @@ export default function ClientHealthMonitor() {
       {/* Zendesk all open tickets table */}
       <Card>
         <SectionHeader emoji="📋" title="All Open Ticket Volume by Client" count={null} tone="gray" />
-        <p className="text-[11px] text-gray-500 mb-3">Every client with open Zendesk tickets, ranked by volume. Click name to open Client Intel.</p>
+        <p className="text-[11px] text-gray-300 mb-3">Every client with open Zendesk tickets, ranked by volume. Click name to open Client Intel.</p>
         <div className="overflow-x-auto rounded-xl border border-[var(--brand-border)]">
           <table className="w-full text-sm">
             <thead>
               <tr style={{borderBottom:'1px solid #2a1a3e'}}>
-                <th className="px-4 py-3 text-left text-[11px] uppercase tracking-wider text-gray-500 font-semibold">Client</th>
-                <th className="px-4 py-3 text-right text-[11px] uppercase tracking-wider text-gray-500 font-semibold">Open Tickets</th>
-                <th className="px-4 py-3 text-right text-[11px] uppercase tracking-wider text-gray-500 font-semibold">Risk</th>
-                <th className="px-4 py-3 text-right text-[11px] uppercase tracking-wider text-gray-500 font-semibold">View</th>
+                <th className="px-4 py-3 text-left text-[11px] uppercase tracking-wider text-gray-300 font-semibold">Client</th>
+                <th className="px-4 py-3 text-right text-[11px] uppercase tracking-wider text-gray-300 font-semibold">Open Tickets</th>
+                <th className="px-4 py-3 text-right text-[11px] uppercase tracking-wider text-gray-300 font-semibold">Risk</th>
+                <th className="px-4 py-3 text-right text-[11px] uppercase tracking-wider text-gray-300 font-semibold">View</th>
               </tr>
             </thead>
             <tbody>

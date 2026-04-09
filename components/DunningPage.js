@@ -26,7 +26,7 @@ function KpiCard({ label, value, sub, danger, tooltip }) {
         {tooltip && <MetricTooltip text={tooltip} />}
       </p>
       <p className={`text-2xl font-bold ${danger ? 'text-red-400' : 'text-white'}`}>{value}</p>
-      {sub && <p className="text-gray-500 text-xs mt-1">{sub}</p>}
+      {sub && <p className="text-gray-300 text-xs mt-1">{sub}</p>}
     </div>
   )
 }
@@ -135,7 +135,7 @@ function BalanceTable({ rows, editingId, setEditingId, payAmount, setPayAmount,
         <tbody className={`divide-y ${ isCollections ? 'divide-red-900/40' : 'divide-gray-800' }`}>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={7} className="py-6 text-center text-gray-500 text-sm">No records</td>
+              <td colSpan={7} className="py-6 text-center text-gray-300 text-sm">No records</td>
             </tr>
           ) : rows.map((row) => (
             <>
@@ -150,10 +150,10 @@ function BalanceTable({ rows, editingId, setEditingId, payAmount, setPayAmount,
                     {row.clientName}
                   </p>
                   {row.companyAcronym && (
-                    <p className="text-gray-600 text-xs mt-0.5 font-mono">{row.companyAcronym}</p>
+                    <p className="text-gray-300 text-xs mt-0.5 font-mono">{row.companyAcronym}</p>
                   )}
                   {row.notes && (
-                    <p className="text-gray-500 text-xs mt-1 max-w-xs truncate" title={row.notes}>
+                    <p className="text-gray-300 text-xs mt-1 max-w-xs truncate" title={row.notes}>
                       {row.notes.split('\n').pop()}
                     </p>
                   )}
@@ -185,13 +185,13 @@ function BalanceTable({ rows, editingId, setEditingId, payAmount, setPayAmount,
                       <ReasonTag key={i} reason={r} />
                     ))}
                     {row.reasons?.length > 2 && (
-                      <span className="text-gray-600 text-xs">+{row.reasons.length - 2}</span>
+                      <span className="text-gray-300 text-xs">+{row.reasons.length - 2}</span>
                     )}
                   </div>
                 </td>
 
                 {/* Last Updated */}
-                <td className="py-3 pr-3 text-right text-gray-500 text-xs">
+                <td className="py-3 pr-3 text-right text-gray-300 text-xs">
                   {row.updatedAt
                     ? new Date(row.updatedAt).toLocaleDateString()
                     : row.firstDueDate || '—'}
@@ -377,7 +377,7 @@ function CollectionsSection() {
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
         <div className="mb-4">
           <h3 className="text-white font-semibold">Historical Overdue</h3>
-          <p className="text-gray-500 text-xs mt-0.5">
+          <p className="text-gray-300 text-xs mt-0.5">
             Clients with outstanding balances not in collections · {overdue.length} record{overdue.length !== 1 ? 's' : ''} · Sorted by balance remaining
           </p>
         </div>
@@ -535,7 +535,7 @@ export default function DunningPage() {
       {/* Buckets Chart */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
         <h2 className="text-white font-semibold mb-1">Days Past Due — Breakdown</h2>
-        <p className="text-gray-500 text-xs mb-4">
+        <p className="text-gray-300 text-xs mb-4">
           Amber = earlier buckets (0–14 days) · Red = older (15+ days, higher risk)
         </p>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -620,7 +620,7 @@ export default function DunningPage() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-white font-semibold">Past-Due Subscriptions</h2>
-            <p className="text-gray-500 text-xs mt-0.5">
+            <p className="text-gray-300 text-xs mt-0.5">
               Sorted by days past due — oldest first · History from Overdue Payment Tracker 2025
             </p>
           </div>
@@ -632,7 +632,7 @@ export default function DunningPage() {
         </div>
 
         {pastDue.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-gray-300">
             <p className="text-2xl mb-2">✅</p>
             <p className="font-medium text-gray-400">No past-due subscriptions</p>
             <p className="text-xs mt-1">All subscriptions are current</p>
@@ -664,10 +664,10 @@ export default function DunningPage() {
                       <td className="py-3 pr-3">
                         <p className="text-white font-medium leading-tight">{row.name}</p>
                         {row.email && (
-                          <p className="text-gray-500 text-xs mt-0.5">{row.email}</p>
+                          <p className="text-gray-300 text-xs mt-0.5">{row.email}</p>
                         )}
                         {row.acronym && (
-                          <p className="text-gray-600 text-xs mt-0.5 font-mono">{row.acronym}</p>
+                          <p className="text-gray-300 text-xs mt-0.5 font-mono">{row.acronym}</p>
                         )}
                       </td>
 
@@ -678,7 +678,7 @@ export default function DunningPage() {
                             {row.assignedGA}
                           </span>
                         ) : (
-                          <span className="text-gray-600 text-xs">—</span>
+                          <span className="text-gray-300 text-xs">—</span>
                         )}
                       </td>
 
@@ -689,7 +689,7 @@ export default function DunningPage() {
                             {row.crmType}
                           </span>
                         ) : (
-                          <span className="text-gray-600 text-xs">—</span>
+                          <span className="text-gray-300 text-xs">—</span>
                         )}
                       </td>
 
@@ -757,7 +757,7 @@ export default function DunningPage() {
             <span>🟢 <strong className="text-gray-300">First time</strong> — no prior overdue episode on record</span>
             <span>🔴 <strong className="text-gray-300">Prior history</strong> — appeared in Overdue Tracker before</span>
             <span>☠️ <strong className="text-gray-300">Collections</strong> — sent to collections / attorneys</span>
-            <span className="text-gray-500 ml-auto">{summary.historyLoaded} episodes loaded from tracker</span>
+            <span className="text-gray-300 ml-auto">{summary.historyLoaded} episodes loaded from tracker</span>
           </div>
         </div>
       )}
@@ -766,7 +766,7 @@ export default function DunningPage() {
       <CollectionsSection />
 
       {/* Footer */}
-      <p className="text-gray-600 text-xs pb-4">
+      <p className="text-gray-300 text-xs pb-4">
         Data: Stripe (live) · Overdue Payment Tracker 2025 (Google Sheets) · Active Client List (Google Sheets)
       </p>
     </div>

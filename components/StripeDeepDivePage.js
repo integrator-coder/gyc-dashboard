@@ -78,13 +78,13 @@ function SummaryCards({ annualSummary }) {
             {fmt(yr.ytdFlag ? yr.annualized : yr.total)}
           </div>
           {yr.ytdFlag && (
-            <div className="text-xs text-gray-500 mb-1">YTD: {fmt(yr.total)}</div>
+            <div className="text-xs text-gray-300 mb-1">YTD: {fmt(yr.total)}</div>
           )}
           <div className="mt-2">{growthBadge(yr.yoyGrowth)}</div>
-          <div className="mt-2 text-xs text-gray-500">
+          <div className="mt-2 text-xs text-gray-300">
             Avg/mo: {fmt(yr.avgMonthly)}
           </div>
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-gray-300">
             Peak: {yr.peakMonth} ({fmt(yr.peakAmount)})
           </div>
         </div>
@@ -120,7 +120,7 @@ function YoYChart({ chartData }) {
           ))}
         </LineChart>
       </ResponsiveContainer>
-      <p className="text-gray-500 text-xs mt-2 text-center">{currentMonthAbbr} {currentYear} excluded from {currentYear} line — month in progress.</p>
+      <p className="text-gray-300 text-xs mt-2 text-center">{currentMonthAbbr} {currentYear} excluded from {currentYear} line — month in progress.</p>
     </div>
   )
 }
@@ -209,7 +209,7 @@ function SeasonalHeatmap({ seasonalHeatmap }) {
           </div>
         ))}
       </div>
-      <div className="mt-4 flex gap-4 text-xs text-gray-500">
+      <div className="mt-4 flex gap-4 text-xs text-gray-300">
         <span>🟢 Best: {seasonalHeatmap.reduce((a, b) => b.avg > a.avg ? b : a, { avg: 0 }).month} ({fmt(seasonalHeatmap.reduce((a, b) => b.avg > a.avg ? b : a, { avg: 0 }).avg)})</span>
         <span>🔵 Slowest: {seasonalHeatmap.filter(r => r.avg > 0).reduce((a, b) => b.avg < a.avg ? b : a, { avg: Infinity }).month} ({fmt(seasonalHeatmap.filter(r => r.avg > 0).reduce((a, b) => b.avg < a.avg ? b : a, { avg: Infinity }).avg)})</span>
       </div>
@@ -245,7 +245,7 @@ function MrrTrendChart({ mrrTrend }) {
         </div>
         <div className="text-right">
           <div className="text-2xl font-bold text-white">{fmt(latestMrr)}</div>
-          <div className="text-xs text-gray-500">Latest MRR</div>
+          <div className="text-xs text-gray-300">Latest MRR</div>
           {momGrowth != null && (
             <div className={`text-sm font-semibold ${momGrowth >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
               {momGrowth >= 0 ? '↑' : '↓'} {Math.abs(momGrowth)}% MoM
@@ -268,7 +268,7 @@ function MrrTrendChart({ mrrTrend }) {
           <Bar dataKey="churnedMrr" name="Churned MRR" fill="#ef4444" radius={[3, 3, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
-      <p className="text-gray-500 text-xs mt-2 text-center">
+      <p className="text-gray-300 text-xs mt-2 text-center">
         Data from StripeSubscriptionHistory · Reflects subscriptions tracked in Stripe
       </p>
     </div>
@@ -441,7 +441,7 @@ function ClientProgramMix({ clientProgramMix }) {
               </div>
               <div className="text-right">
                 <span className="text-white font-semibold">{row.clientCount}</span>
-                <span className="text-gray-500 text-xs ml-1">({Math.round((row.clientCount / total) * 100)}%)</span>
+                <span className="text-gray-300 text-xs ml-1">({Math.round((row.clientCount / total) * 100)}%)</span>
               </div>
             </div>
           ))}
@@ -524,7 +524,7 @@ function AdditionalInsights({ avgClientTenure, revenueConcentration, seasonalAcq
               <span className="text-gray-400 text-xs font-medium uppercase tracking-wide">{ins.title}</span>
             </div>
             <div className="text-2xl font-bold text-white mb-1">{ins.value}</div>
-            <div className="text-gray-500 text-xs leading-relaxed">{ins.detail}</div>
+            <div className="text-gray-300 text-xs leading-relaxed">{ins.detail}</div>
           </div>
         ))}
       </div>
@@ -636,7 +636,7 @@ function UpsellVelocityChart({ upsellVelocity }) {
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-      <p className="text-gray-500 text-xs mt-2">
+      <p className="text-gray-300 text-xs mt-2">
         Based on customers who added a second program · Minimum 3 clients per category
       </p>
     </div>
@@ -655,7 +655,7 @@ function ChurnSequenceChart({ churnSequence }) {
       <p className="text-gray-400 text-sm mb-4">What do clients drop first vs hold onto longest?</p>
       <div className="grid grid-cols-2 gap-6">
         <div>
-          <p className="text-red-400 font-medium text-sm mb-2">⚠️ First service dropped <span className="text-gray-500">(churn leading indicator)</span></p>
+          <p className="text-red-400 font-medium text-sm mb-2">⚠️ First service dropped <span className="text-gray-300">(churn leading indicator)</span></p>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={firstToGo} margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -670,7 +670,7 @@ function ChurnSequenceChart({ churnSequence }) {
           </ResponsiveContainer>
         </div>
         <div>
-          <p className="text-emerald-400 font-medium text-sm mb-2">💪 Last service held <span className="text-gray-500">(what clients value most)</span></p>
+          <p className="text-emerald-400 font-medium text-sm mb-2">💪 Last service held <span className="text-gray-300">(what clients value most)</span></p>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={lastToGo} margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -685,7 +685,7 @@ function ChurnSequenceChart({ churnSequence }) {
           </ResponsiveContainer>
         </div>
       </div>
-      <p className="text-gray-500 text-xs mt-3">Excludes &apos;other&apos; / &apos;legacy&apos; categories · Based on {(churnSequence?.firstToGo || []).reduce((s, r) => s + r.count, 0)} churned clients</p>
+      <p className="text-gray-300 text-xs mt-3">Excludes &apos;other&apos; / &apos;legacy&apos; categories · Based on {(churnSequence?.firstToGo || []).reduce((s, r) => s + r.count, 0)} churned clients</p>
     </div>
   )
 }
@@ -741,7 +741,7 @@ function BundleRetentionTable({ bundleRetention }) {
           </tbody>
         </table>
       </div>
-      <p className="text-gray-500 text-xs mt-3">★ Top 3 bundles by client count · Minimum 2 clients per bundle</p>
+      <p className="text-gray-300 text-xs mt-3">★ Top 3 bundles by client count · Minimum 2 clients per bundle</p>
     </div>
   )
 }
@@ -809,7 +809,7 @@ function CohortLtvChart({ cohortLtv }) {
           </div>
         ))}
       </div>
-      <p className="text-gray-500 text-xs mt-3 italic">
+      <p className="text-gray-300 text-xs mt-3 italic">
         ⚠️ LTV is approximate — based on subscription amounts × months active (or months to cancellation). 2026 cohort is early-stage.
       </p>
     </div>
@@ -879,7 +879,7 @@ export default function StripeDeepDivePage() {
       {/* ── NEW SUBSCRIPTION SECTIONS ─────────────────────────── */}
       <div className="mt-2 mb-6 border-t border-gray-700 pt-6">
         <h2 className="text-xl font-bold text-white mb-1">🔬 Subscription Intelligence</h2>
-        <p className="text-gray-500 text-sm">Program-level breakdown from StripeSubscriptionHistory · {data?.mrrTrend?.filter(r => r.mrr > 0).length || 0} months of data · {data?.clientProgramMix?.reduce((s, r) => s + r.clientCount, 0) || 0} active clients tracked</p>
+        <p className="text-gray-300 text-sm">Program-level breakdown from StripeSubscriptionHistory · {data?.mrrTrend?.filter(r => r.mrr > 0).length || 0} months of data · {data?.clientProgramMix?.reduce((s, r) => s + r.clientCount, 0) || 0} active clients tracked</p>
       </div>
 
       {/* 7. Subscription MRR Trend */}
@@ -911,7 +911,7 @@ export default function StripeDeepDivePage() {
       {/* ── ADVANCED INTELLIGENCE SECTIONS ──────────────────────── */}
       <div className="mt-2 mb-6 border-t border-gray-700 pt-6">
         <h2 className="text-xl font-bold text-white mb-1">🧠 Advanced Intelligence</h2>
-        <p className="text-gray-500 text-sm">Upsell velocity · Churn sequence · Bundle retention · Cohort LTV · Powered by StripeSubscriptionHistory</p>
+        <p className="text-gray-300 text-sm">Upsell velocity · Churn sequence · Bundle retention · Cohort LTV · Powered by StripeSubscriptionHistory</p>
       </div>
 
       {/* 14. Upsell Velocity */}
@@ -927,7 +927,7 @@ export default function StripeDeepDivePage() {
       <CohortLtvChart cohortLtv={data?.cohortLtv} />
 
       {/* Footer note */}
-      <div className="text-xs text-gray-600 mt-4 text-center">
+      <div className="text-xs text-gray-300 mt-4 text-center">
         Data from Neon PostgreSQL · DailyRevenue + StripeCustomer + StripeSubscriptionHistory + MRRHistory · Synced by Eve
       </div>
     </div>

@@ -245,7 +245,7 @@ export default function Sidebar() {
           <>
             <div>
               <div className="text-sm font-medium text-white">{session.user.name}</div>
-              <div className="text-xs text-gray-500">{session.user.email}</div>
+              <div className="text-xs text-gray-300">{session.user.email}</div>
             </div>
             <button onClick={logout} className="w-full rounded-lg border border-[var(--brand-border)] px-3 py-2 text-xs font-medium text-gray-300 transition hover:border-violet-500/40 hover:bg-violet-500/10 hover:text-white">Log out</button>
           </>

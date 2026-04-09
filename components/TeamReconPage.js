@@ -276,13 +276,13 @@ export default function TeamReconPage({ user }) {
         <div className="rounded-3xl border border-[var(--brand-border)] bg-[var(--brand-bg-card)] overflow-hidden">
           <div className="border-b border-[var(--brand-border)] px-5 py-4">
             <div className="text-sm font-semibold uppercase tracking-[0.24em] text-gray-400">Pending queue</div>
-            <div className="mt-1 text-sm text-gray-500">{loadingList ? 'Loading drafts…' : `${drafts.length} drafts waiting for review`}</div>
+            <div className="mt-1 text-sm text-gray-300">{loadingList ? 'Loading drafts…' : `${drafts.length} drafts waiting for review`}</div>
           </div>
           <div className="max-h-[calc(100vh-240px)] overflow-y-auto">
             {loadingList ? (
-              <div className="p-5 text-sm text-gray-500">Loading drafts…</div>
+              <div className="p-5 text-sm text-gray-300">Loading drafts…</div>
             ) : drafts.length === 0 ? (
-              <div className="p-5 text-sm text-gray-500">No pending recon drafts.</div>
+              <div className="p-5 text-sm text-gray-300">No pending recon drafts.</div>
             ) : (
               <div className="divide-y divide-[var(--brand-border)]">
                 {drafts.map((draft) => {
@@ -312,7 +312,7 @@ export default function TeamReconPage({ user }) {
         <div className="space-y-6">
           <div className="rounded-3xl border border-[var(--brand-border)] bg-[var(--brand-bg-card)] p-6">
             {loadingDetail && !detail ? (
-              <div className="text-sm text-gray-500">Loading draft detail…</div>
+              <div className="text-sm text-gray-300">Loading draft detail…</div>
             ) : detail ? (
               <div className="space-y-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -323,7 +323,7 @@ export default function TeamReconPage({ user }) {
                       <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold uppercase tracking-wider ${statusTone(detail.status)}`}>{detail.status}</span>
                     </div>
                     <div className="mt-2 text-sm text-gray-400">Requested by {detail.requestedBy || 'unknown'} · Created {formatDate(detail.createdAt)}</div>
-                    <div className="mt-1 text-sm text-gray-500">Last reviewed {formatDate(detail.reviewedAt)}</div>
+                    <div className="mt-1 text-sm text-gray-300">Last reviewed {formatDate(detail.reviewedAt)}</div>
                   </div>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     {[
@@ -333,7 +333,7 @@ export default function TeamReconPage({ user }) {
                       ['You', user?.email || '—'],
                     ].map(([label, value]) => (
                       <div key={label} className="rounded-xl border border-[var(--brand-border)] bg-black/20 px-4 py-3">
-                        <div className="text-xs uppercase tracking-wider text-gray-500">{label}</div>
+                        <div className="text-xs uppercase tracking-wider text-gray-300">{label}</div>
                         <div className="mt-1 text-sm font-semibold text-white">{value}</div>
                       </div>
                     ))}
@@ -353,24 +353,24 @@ export default function TeamReconPage({ user }) {
 
                 <div>
                   <div className="mb-2 text-sm font-medium text-gray-300">Reviewer notes</div>
-                  <textarea rows={3} value={draftForm.notes} onChange={(event) => updateDraftForm({ notes: event.target.value })} placeholder="Anything the brief generator should know…" className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-violet-500/50" />
+                  <textarea rows={3} value={draftForm.notes} onChange={(event) => updateDraftForm({ notes: event.target.value })} placeholder="Anything the brief generator should know…" className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-300 focus:border-violet-500/50" />
                 </div>
               </div>
             ) : (
-              <div className="text-sm text-gray-500">Select a recon draft.</div>
+              <div className="text-sm text-gray-300">Select a recon draft.</div>
             )}
           </div>
 
           <div className="rounded-3xl border border-[var(--brand-border)] bg-[var(--brand-bg-card)] overflow-hidden">
             <div className="border-b border-[var(--brand-border)] px-6 py-4">
               <div className="text-sm font-semibold uppercase tracking-[0.24em] text-gray-400">Location review</div>
-              <div className="mt-1 text-sm text-gray-500">Confirm the real GBP footprint before brief generation.</div>
+              <div className="mt-1 text-sm text-gray-300">Confirm the real GBP footprint before brief generation.</div>
             </div>
             <div className="space-y-4 p-6">
               {!detail ? (
-                <div className="text-sm text-gray-500">No draft selected.</div>
+                <div className="text-sm text-gray-300">No draft selected.</div>
               ) : (detail.locations || []).length === 0 ? (
-                <div className="text-sm text-gray-500">No locations found yet. Add one manually below.</div>
+                <div className="text-sm text-gray-300">No locations found yet. Add one manually below.</div>
               ) : (
                 (detail.locations || []).map((location, index) => {
                   const locDraft = locationDrafts[location.id] || {}
@@ -440,7 +440,7 @@ export default function TeamReconPage({ user }) {
 
                           <div>
                             <div className="mb-2 text-sm font-medium text-gray-300">Review notes</div>
-                            <textarea rows={3} value={locDraft.reviewNotes || ''} onChange={(event) => updateLocationDraft(location.id, { reviewNotes: event.target.value })} placeholder="What changed? What did you verify manually?" className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-violet-500/50" />
+                            <textarea rows={3} value={locDraft.reviewNotes || ''} onChange={(event) => updateLocationDraft(location.id, { reviewNotes: event.target.value })} placeholder="What changed? What did you verify manually?" className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-300 focus:border-violet-500/50" />
                           </div>
 
                           <div className="flex justify-end">
@@ -458,15 +458,15 @@ export default function TeamReconPage({ user }) {
           {detail ? (
             <div className="rounded-3xl border border-[var(--brand-border)] bg-[var(--brand-bg-card)] p-6">
               <div className="text-sm font-semibold uppercase tracking-[0.24em] text-gray-400">Add location manually</div>
-              <div className="mt-1 text-sm text-gray-500">Use this when the auto pull missed a location completely.</div>
+              <div className="mt-1 text-sm text-gray-300">Use this when the auto pull missed a location completely.</div>
               <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <input value={manualLocation.locationName} onChange={(event) => setManualLocation((current) => ({ ...current, locationName: event.target.value }))} placeholder="Location name" className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-violet-500/50 xl:col-span-2" />
-                <input value={manualLocation.city} onChange={(event) => setManualLocation((current) => ({ ...current, city: event.target.value }))} placeholder="City" className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-violet-500/50" />
-                <input value={manualLocation.state} onChange={(event) => setManualLocation((current) => ({ ...current, state: event.target.value }))} placeholder="State" className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-violet-500/50" />
-                <input value={manualLocation.address} onChange={(event) => setManualLocation((current) => ({ ...current, address: event.target.value }))} placeholder="Address" className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-violet-500/50 xl:col-span-2" />
-                <input value={manualLocation.googleMapsUrl} onChange={(event) => setManualLocation((current) => ({ ...current, googleMapsUrl: event.target.value }))} placeholder="Google Maps URL" className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-violet-500/50 xl:col-span-2" />
+                <input value={manualLocation.locationName} onChange={(event) => setManualLocation((current) => ({ ...current, locationName: event.target.value }))} placeholder="Location name" className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-300 focus:border-violet-500/50 xl:col-span-2" />
+                <input value={manualLocation.city} onChange={(event) => setManualLocation((current) => ({ ...current, city: event.target.value }))} placeholder="City" className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-300 focus:border-violet-500/50" />
+                <input value={manualLocation.state} onChange={(event) => setManualLocation((current) => ({ ...current, state: event.target.value }))} placeholder="State" className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-300 focus:border-violet-500/50" />
+                <input value={manualLocation.address} onChange={(event) => setManualLocation((current) => ({ ...current, address: event.target.value }))} placeholder="Address" className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-300 focus:border-violet-500/50 xl:col-span-2" />
+                <input value={manualLocation.googleMapsUrl} onChange={(event) => setManualLocation((current) => ({ ...current, googleMapsUrl: event.target.value }))} placeholder="Google Maps URL" className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-300 focus:border-violet-500/50 xl:col-span-2" />
               </div>
-              <textarea rows={3} value={manualLocation.reviewNotes} onChange={(event) => setManualLocation((current) => ({ ...current, reviewNotes: event.target.value }))} placeholder="Why this location was added manually…" className="mt-4 w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-violet-500/50" />
+              <textarea rows={3} value={manualLocation.reviewNotes} onChange={(event) => setManualLocation((current) => ({ ...current, reviewNotes: event.target.value }))} placeholder="Why this location was added manually…" className="mt-4 w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-300 focus:border-violet-500/50" />
               <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex flex-wrap gap-2">
                   {CLAIM_OPTIONS.map((option) => {

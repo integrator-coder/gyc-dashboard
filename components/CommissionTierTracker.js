@@ -51,10 +51,10 @@ function TeamProductCard({ productKey, teamData }) {
     return (
       <div className="bg-gray-800/40 rounded-lg p-3 border border-gray-700/40">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-gray-500 text-sm font-medium">{label}</span>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-gray-700/40 text-gray-600 border border-gray-600/30">No sales yet</span>
+          <span className="text-gray-300 text-sm font-medium">{label}</span>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-gray-700/40 text-gray-300 border border-gray-600/30">No sales yet</span>
         </div>
-        <p className="text-gray-600 text-xs">{dealsToNext} team deals to unlock Tier 1 ({formatPercent(nextRate)})</p>
+        <p className="text-gray-300 text-xs">{dealsToNext} team deals to unlock Tier 1 ({formatPercent(nextRate)})</p>
       </div>
     )
   }
@@ -74,7 +74,7 @@ function TeamProductCard({ productKey, teamData }) {
 
       <div className="flex items-end gap-1 mb-2">
         <span className="text-2xl font-bold text-white">{count}</span>
-        <span className="text-gray-500 text-xs mb-1">team deal{count !== 1 ? 's' : ''}</span>
+        <span className="text-gray-300 text-xs mb-1">team deal{count !== 1 ? 's' : ''}</span>
       </div>
 
       <div className="mb-2">
@@ -86,7 +86,7 @@ function TeamProductCard({ productKey, teamData }) {
       {isMaxTier ? (
         <p className="text-emerald-400 text-xs font-medium">🏆 Max tier — {formatPercent(rate)} on all deals</p>
       ) : (
-        <p className={`text-xs font-medium ${isClose ? 'text-amber-400' : 'text-gray-500'}`}>
+        <p className={`text-xs font-medium ${isClose ? 'text-amber-400' : 'text-gray-300'}`}>
           {dealsToNext} more team deal{dealsToNext !== 1 ? 's' : ''} → Tier {nextTier} ({formatPercent(nextRate)})
         </p>
       )}
@@ -125,7 +125,7 @@ function RepRow({ repName, repData, teamData }) {
       <span className={`w-7 h-7 rounded-full ${bgColors[repName] || 'bg-gray-700'} flex items-center justify-center text-xs font-bold ${textColors[repName] || 'text-gray-300'}`}>
         {repName[0]}
       </span>
-      <span className="text-gray-500 text-sm">{repName} — no deals yet</span>
+      <span className="text-gray-300 text-sm">{repName} — no deals yet</span>
     </div>
   )
 
@@ -146,7 +146,7 @@ function RepRow({ repName, repData, teamData }) {
       </div>
       {totalEst > 0 && (
         <div className="text-right shrink-0">
-          <p className="text-gray-600 text-xs">Est. commission</p>
+          <p className="text-gray-300 text-xs">Est. commission</p>
           <p className="text-emerald-400 font-bold text-sm">{formatCurrency(totalEst)}</p>
         </div>
       )}
@@ -183,7 +183,7 @@ export default function CommissionTierTracker({ data, loading }) {
           💰 Commission Tier Progress — {currentMonth}
         </h2>
         {data?.totalDealsThisMonth !== undefined && (
-          <span className="text-gray-600 text-xs">{data.totalDealsThisMonth} team deal{data.totalDealsThisMonth !== 1 ? 's' : ''} this month</span>
+          <span className="text-gray-300 text-xs">{data.totalDealsThisMonth} team deal{data.totalDealsThisMonth !== 1 ? 's' : ''} this month</span>
         )}
       </div>
 
@@ -191,14 +191,14 @@ export default function CommissionTierTracker({ data, loading }) {
         <Skeleton />
       ) : !data ? (
         <div className="bg-gray-900 rounded-xl border border-gray-800 px-5 py-8 text-center">
-          <p className="text-gray-600 text-sm">Commission data unavailable</p>
+          <p className="text-gray-300 text-sm">Commission data unavailable</p>
         </div>
       ) : (
         <div className="bg-gray-900 rounded-xl border border-gray-800 p-4 space-y-4">
 
           {/* Team tier progress — one card per product */}
           <div>
-            <p className="text-gray-600 text-xs uppercase tracking-wider mb-2">Team Tier Progress</p>
+            <p className="text-gray-300 text-xs uppercase tracking-wider mb-2">Team Tier Progress</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
               {products.map(key => (
                 <TeamProductCard key={key} productKey={key} teamData={data.team?.[key]} />
@@ -211,7 +211,7 @@ export default function CommissionTierTracker({ data, loading }) {
 
           {/* Per-rep breakdown */}
           <div>
-            <p className="text-gray-600 text-xs uppercase tracking-wider mb-2">Rep Contributions</p>
+            <p className="text-gray-300 text-xs uppercase tracking-wider mb-2">Rep Contributions</p>
             <div className="space-y-2">
               {['Jesse', 'Briana'].map(rep => (
                 <RepRow key={rep} repName={rep} repData={data.reps?.[rep]} teamData={data.team} />

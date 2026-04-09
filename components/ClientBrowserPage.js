@@ -75,13 +75,13 @@ export default function ClientBrowserPage({ user }) {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="text-sm font-semibold uppercase tracking-[0.24em] text-gray-400">Client Browser</div>
-            <div className="mt-1 text-sm text-gray-500">Search by center name, acronym, owner, or growth advisor.</div>
+            <div className="mt-1 text-sm text-gray-300">Search by center name, acronym, owner, or growth advisor.</div>
           </div>
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search clients…"
-            className="w-full max-w-xl rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-violet-500/50"
+            className="w-full max-w-xl rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-300 focus:border-violet-500/50"
           />
         </div>
       </div>
@@ -93,7 +93,7 @@ export default function ClientBrowserPage({ user }) {
       ) : filteredClients.length === 0 ? (
         <div className="rounded-3xl border border-[var(--brand-border)] bg-[var(--brand-bg-card)] p-10 text-center">
           <div className="text-2xl font-bold text-white">No clients matched</div>
-          <div className="mt-2 text-sm text-gray-500">Try a broader search, or refresh if new calls were just synced.</div>
+          <div className="mt-2 text-sm text-gray-300">Try a broader search, or refresh if new calls were just synced.</div>
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -120,7 +120,7 @@ export default function ClientBrowserPage({ user }) {
                     </div>
                     <h2 className="mt-2 truncate text-xl font-bold text-white transition group-hover:text-violet-100">{centerName}</h2>
                     {mrr && (
-                      <div className="mt-0.5 text-xs font-medium text-gray-400">{mrr}<span className="ml-1 text-gray-600">/mo</span></div>
+                      <div className="mt-0.5 text-xs font-medium text-gray-400">{mrr}<span className="ml-1 text-gray-300">/mo</span></div>
                     )}
                   </div>
                   <span className="shrink-0 rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-violet-200">{client.acronym}</span>
@@ -128,27 +128,27 @@ export default function ClientBrowserPage({ user }) {
 
                 <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <div className="rounded-2xl border border-[var(--brand-border)] bg-black/20 px-4 py-3">
-                    <div className="text-xs uppercase tracking-wider text-gray-500">Center Name</div>
+                    <div className="text-xs uppercase tracking-wider text-gray-300">Center Name</div>
                     <div className="mt-1 text-sm font-semibold text-white truncate">{centerName}</div>
                   </div>
                   <div className="rounded-2xl border border-[var(--brand-border)] bg-black/20 px-4 py-3">
-                    <div className="text-xs uppercase tracking-wider text-gray-500">Owner&apos;s Name</div>
+                    <div className="text-xs uppercase tracking-wider text-gray-300">Owner&apos;s Name</div>
                     <div className="mt-1 text-sm font-semibold text-white truncate">{ownerName}</div>
                   </div>
                   <div className="rounded-2xl border border-[var(--brand-border)] bg-black/20 px-4 py-3">
-                    <div className="text-xs uppercase tracking-wider text-gray-500">Growth Advisor</div>
+                    <div className="text-xs uppercase tracking-wider text-gray-300">Growth Advisor</div>
                     <div className="mt-1 text-sm font-semibold text-white truncate">{growthAdvisor}</div>
                   </div>
                 </div>
 
                 <div className="mt-3 grid grid-cols-2 gap-3">
                   <div className="rounded-2xl border border-[var(--brand-border)] bg-black/20 px-4 py-3">
-                    <div className="text-xs uppercase tracking-wider text-gray-500">Last Activity</div>
+                    <div className="text-xs uppercase tracking-wider text-gray-300">Last Activity</div>
                     <div className="mt-1 text-sm font-semibold text-white">{formatDate(client.lastCallDate)}</div>
                   </div>
                   {mrr && (
                     <div className="rounded-2xl border border-[var(--brand-border)] bg-black/20 px-4 py-3">
-                      <div className="text-xs uppercase tracking-wider text-gray-500">MRR</div>
+                      <div className="text-xs uppercase tracking-wider text-gray-300">MRR</div>
                       <div className={`mt-1 text-sm font-semibold ${isPastDue ? 'text-rose-400' : 'text-emerald-400'}`}>{mrr}</div>
                     </div>
                   )}

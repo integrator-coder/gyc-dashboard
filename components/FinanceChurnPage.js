@@ -61,11 +61,11 @@ function StatCard({ label, value, sub, color = 'white', prefix, suffix }) {
 
   return (
     <div className="rounded-lg p-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-      <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">{label}</p>
+      <p className="text-gray-300 text-xs uppercase tracking-wider mb-1">{label}</p>
       <p className={`text-2xl font-bold ${colorClass}`}>
         {prefix}{value}{suffix}
       </p>
-      {sub && <p className="text-gray-500 text-xs mt-1">{sub}</p>}
+      {sub && <p className="text-gray-300 text-xs mt-1">{sub}</p>}
     </div>
   )
 }
@@ -184,7 +184,7 @@ export default function FinanceChurnPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-white">Churn Report</h1>
-          <p className="text-gray-500 text-sm mt-0.5">
+          <p className="text-gray-300 text-sm mt-0.5">
             Last 3 months — Google Sheet source of truth
           </p>
         </div>
@@ -230,7 +230,7 @@ export default function FinanceChurnPage() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Card 1: Clients Lost + MRR Lost */}
             <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-              <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Clients Lost</p>
+              <p className="text-gray-300 text-xs uppercase tracking-wider mb-1">Clients Lost</p>
               <p className="text-4xl font-bold text-red-400">{selected.clientsLost}</p>
               <p className="text-red-400/70 text-sm font-medium mt-1">
                 {formatCurrency(selected.mrrLost)} MRR
@@ -239,7 +239,7 @@ export default function FinanceChurnPage() {
 
             {/* Card 2: Clients Added + MRR Added */}
             <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-              <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Clients Added</p>
+              <p className="text-gray-300 text-xs uppercase tracking-wider mb-1">Clients Added</p>
               <p className="text-4xl font-bold text-green-400">{selected.clientsAdded}</p>
               <p className="text-green-400/70 text-sm font-medium mt-1">
                 {formatCurrency(selected.mrrAdded)} MRR
@@ -248,20 +248,20 @@ export default function FinanceChurnPage() {
 
             {/* Card 3: Churn Rates */}
             <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-              <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Churn Rate</p>
+              <p className="text-gray-300 text-xs uppercase tracking-wider mb-1">Churn Rate</p>
               <p className="text-4xl font-bold text-red-400">{selected.churnRateCount}%</p>
-              <p className="text-gray-500 text-xs mt-1">
+              <p className="text-gray-300 text-xs mt-1">
                 Revenue churn: <span className="text-red-400/80">{selected.churnRateRevenue}%</span>
               </p>
             </div>
 
             {/* Card 4: Net MRR */}
             <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-              <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Net MRR Change</p>
+              <p className="text-gray-300 text-xs uppercase tracking-wider mb-1">Net MRR Change</p>
               <p className={`text-4xl font-bold ${netMrrColor === 'green' ? 'text-green-400' : 'text-red-400'}`}>
                 {netMrr >= 0 ? '+' : ''}{formatCurrency(netMrr)}
               </p>
-              <p className="text-gray-500 text-xs mt-1">
+              <p className="text-gray-300 text-xs mt-1">
                 New minus lost
               </p>
             </div>
@@ -273,7 +273,7 @@ export default function FinanceChurnPage() {
               {/* Chart 1: Churn Rate */}
               <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
                 <p className="text-white font-semibold text-sm">Churn Rate (Client Count)</p>
-                <p className="text-gray-500 text-xs mt-0.5 mb-4">Last 6 months</p>
+                <p className="text-gray-300 text-xs mt-0.5 mb-4">Last 6 months</p>
                 <ResponsiveContainer width="100%" height={240}>
                   <LineChart data={churnChartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -319,7 +319,7 @@ export default function FinanceChurnPage() {
               {/* Chart 2: Lost vs Added MRR */}
               <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
                 <p className="text-white font-semibold text-sm">Lost vs Added MRR</p>
-                <p className="text-gray-500 text-xs mt-0.5 mb-4">Last 6 months</p>
+                <p className="text-gray-300 text-xs mt-0.5 mb-4">Last 6 months</p>
                 <ResponsiveContainer width="100%" height={240}>
                   <ComposedChart data={mrrChartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -373,7 +373,7 @@ export default function FinanceChurnPage() {
           <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-800">
               <h3 className="text-white font-semibold">Monthly Summary — {selected.month}</h3>
-              <p className="text-gray-500 text-xs mt-0.5">All key metrics for this month</p>
+              <p className="text-gray-300 text-xs mt-0.5">All key metrics for this month</p>
             </div>
 
             <div className="p-5 space-y-6">

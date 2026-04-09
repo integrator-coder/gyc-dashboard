@@ -73,7 +73,7 @@ export default function LoginPageClient({ message = '', nextUrl = '/cx-handoff' 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <label className="block">
               <div className="mb-2 text-sm font-medium text-gray-300">Email</div>
-              <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="email" placeholder="name@growyourcenter.com" className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-white outline-none transition placeholder:text-gray-600 focus:border-violet-500/50" required />
+              <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="email" placeholder="name@growyourcenter.com" className="w-full rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-bg)] px-4 py-3 text-white outline-none transition placeholder:text-gray-300 focus:border-violet-500/50" required />
             </label>
 
             <label className="block">

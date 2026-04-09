@@ -180,9 +180,9 @@ export default function ClientsPage() {
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white">Client Performance</h1>
-          <p className="text-gray-500 text-sm mt-0.5">
+          <p className="text-gray-300 text-sm mt-0.5">
             {clientCount} active clients
-            {lastSync && <span className="text-gray-600"> · Synced {new Date(lastSync.syncedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+            {lastSync && <span className="text-gray-300"> · Synced {new Date(lastSync.syncedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
           </p>
         </div>
         <button onClick={handleSync} disabled={syncing}
@@ -200,7 +200,7 @@ export default function ClientsPage() {
 
       {/* All-time totals */}
       <div>
-        <p className="text-xs text-gray-600 uppercase tracking-wider mb-3">All Time — Across All Clients</p>
+        <p className="text-xs text-gray-300 uppercase tracking-wider mb-3">All Time — Across All Clients</p>
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           <StatCard label="Total Leads"         value={allTimeTotals.leads.toLocaleString()}      sub="all clients, all time" />
           <StatCard label="Total Tours"         value={allTimeTotals.tours.toLocaleString()}      sub="all clients, all time" />
@@ -210,7 +210,7 @@ export default function ClientsPage() {
 
       {/* Conversion rates */}
       <div>
-        <p className="text-xs text-gray-600 uppercase tracking-wider mb-3">All-Time Average Conversion Rates</p>
+        <p className="text-xs text-gray-300 uppercase tracking-wider mb-3">All-Time Average Conversion Rates</p>
         <div className="grid grid-cols-3 gap-3">
           <ConvPill value={allTimeTotals.leadToTour} benchmark={BENCHMARKS.leadToTour} label="Lead → Tour" />
           <ConvPill value={allTimeTotals.tourToReg}  benchmark={BENCHMARKS.tourToReg}  label="Tour → Reg" />
@@ -221,7 +221,7 @@ export default function ClientsPage() {
       {/* Latest month snapshot */}
       {latestMonth && (
         <div>
-          <p className="text-xs text-gray-600 uppercase tracking-wider mb-3">
+          <p className="text-xs text-gray-300 uppercase tracking-wider mb-3">
             Latest Month — {fmtMonth(latestMonth.month)} ({latestMonth.clientCount} institutions reporting)
           </p>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -306,7 +306,7 @@ export default function ClientsPage() {
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div>
             <h2 className="text-white font-semibold">Per Location — Last 24 Months</h2>
-            <p className="text-gray-500 text-xs mt-0.5">
+            <p className="text-gray-300 text-xs mt-0.5">
               {latestMonth ? `${latestMonth.locationCount} locations reporting in ${fmtMonth(latestMonth.month)}` : ''}
             </p>
           </div>
@@ -360,7 +360,7 @@ export default function ClientsPage() {
                 <p className={`text-2xl font-bold ${col.blue ? 'text-blue-400' : col.purple ? 'text-purple-400' : 'text-green-400'}`}>
                   {col[statMode]}
                 </p>
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="text-xs text-gray-300 mt-0.5">
                   {statMode === 'avg' ? 'Mean' : statMode === 'median' ? 'Median' : 'Mode'} {col.label} / Location
                 </p>
               </div>
@@ -398,12 +398,12 @@ export default function ClientsPage() {
             const rank   = ['#1', '#2', '#3', '#4', '#5'][i]
             return (
               <div key={perf.acronym || i} className="flex items-center gap-3">
-                <span className="text-xs font-bold text-gray-500 w-6 text-center">{rank}</span>
+                <span className="text-xs font-bold text-gray-300 w-6 text-center">{rank}</span>
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
                     <div>
                       <span className="text-white font-semibold text-sm">{perf.acronym}</span>
-                      {lbPeriod === 'lastMonth' && <span className="text-gray-500 text-xs ml-2">{fmtMonth(lastCompleteMonth)}</span>}
+                      {lbPeriod === 'lastMonth' && <span className="text-gray-300 text-xs ml-2">{fmtMonth(lastCompleteMonth)}</span>}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-gray-400">
                       <span>{perf.leads} leads</span>
@@ -435,7 +435,7 @@ export default function ClientsPage() {
           })}
 
           {leaderboard.length === 0 && (
-            <p className="text-gray-600 text-sm text-center py-4">No recent data — run a sync first</p>
+            <p className="text-gray-300 text-sm text-center py-4">No recent data — run a sync first</p>
           )}
         </div>
       </div>
@@ -469,13 +469,13 @@ export default function ClientsPage() {
             const rank   = ['#1', '#2', '#3', '#4', '#5', '#6', '#7', '#8', '#9', '#10'][i] ?? `#${i + 1}`
             return (
               <div key={perf.acronym || i} className="flex items-center gap-3">
-                <span className="text-xs font-bold text-gray-500 w-6 text-center">{rank}</span>
+                <span className="text-xs font-bold text-gray-300 w-6 text-center">{rank}</span>
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
                     <div>
                       <span className="text-white font-semibold text-sm">{perf.acronym}</span>
-                      {perf.parent && <span className="text-gray-500 text-xs ml-2">({perf.parent})</span>}
-                      {lb2Period === 'lastMonth' && <span className="text-gray-500 text-xs ml-2">{fmtMonth(lastCompleteMonth)}</span>}
+                      {perf.parent && <span className="text-gray-300 text-xs ml-2">({perf.parent})</span>}
+                      {lb2Period === 'lastMonth' && <span className="text-gray-300 text-xs ml-2">{fmtMonth(lastCompleteMonth)}</span>}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-gray-400">
                       <span>{perf.leads} leads</span>
@@ -507,7 +507,7 @@ export default function ClientsPage() {
           })}
 
           {leaderboard2.length === 0 && (
-            <p className="text-gray-600 text-sm text-center py-4">No recent data — run a sync first</p>
+            <p className="text-gray-300 text-sm text-center py-4">No recent data — run a sync first</p>
           )}
         </div>
       </div>
@@ -522,7 +522,7 @@ export default function ClientsPage() {
               {underperforming.length} clients
             </span>
           </div>
-          <p className="text-gray-500 text-xs mb-4">
+          <p className="text-gray-300 text-xs mb-4">
             10+ leads · L→R below 18% (70% of {BENCHMARKS.leadToReg}% benchmark) · sorted by volume
           </p>
           <div className="space-y-3">
@@ -530,7 +530,7 @@ export default function ClientsPage() {
               const barPct = (perf.leads / maxUnderLeads) * 100
               return (
                 <div key={perf.acronym || i} className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-gray-600 w-5 text-right">{i + 1}</span>
+                  <span className="text-xs font-bold text-gray-300 w-5 text-right">{i + 1}</span>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
                       <div>
@@ -541,7 +541,7 @@ export default function ClientsPage() {
                         <span className="text-gray-400">{perf.tours} tours</span>
                         <span className="text-gray-400">{perf.registered} reg</span>
                         <span className="font-bold text-red-400">{perf.leadToReg}% L→R</span>
-                        <span className={perf.leadToTour < BENCHMARKS.leadToTour ? 'text-orange-400' : 'text-gray-500'}>
+                        <span className={perf.leadToTour < BENCHMARKS.leadToTour ? 'text-orange-400' : 'text-gray-300'}>
                           {perf.leadToTour}% L→T
                         </span>
                       </div>
@@ -567,7 +567,7 @@ export default function ClientsPage() {
               {lowLeadFlow.length} clients
             </span>
           </div>
-          <p className="text-gray-500 text-xs mb-4">
+          <p className="text-gray-300 text-xs mb-4">
             Lowest lead volume among reporting clients · top-of-funnel concern · sorted by fewest leads
           </p>
           <div className="space-y-3">
@@ -576,7 +576,7 @@ export default function ClientsPage() {
               const barPct = (perf.leads / maxLow) * 100
               return (
                 <div key={perf.acronym || i} className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-gray-600 w-5 text-right">{i + 1}</span>
+                  <span className="text-xs font-bold text-gray-300 w-5 text-right">{i + 1}</span>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
                       <div>
@@ -587,7 +587,7 @@ export default function ClientsPage() {
                         <span className="text-gray-400">{perf.tours} tours</span>
                         <span className="text-gray-400">{perf.registered} reg</span>
                         {perf.leadToReg !== null && (
-                          <span className={`font-medium ${perf.leadToReg >= BENCHMARKS.leadToReg ? 'text-green-400' : 'text-gray-500'}`}>
+                          <span className={`font-medium ${perf.leadToReg >= BENCHMARKS.leadToReg ? 'text-green-400' : 'text-gray-300'}`}>
                             {perf.leadToReg}% L→R
                           </span>
                         )}
