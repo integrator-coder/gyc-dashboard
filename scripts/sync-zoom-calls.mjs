@@ -130,6 +130,35 @@ async function searchGhlContact(email) {
   }
 }
 
+// ─── OpenAI Summary ─────────────────────────────────────────────────────────
+async function generateCallSummary(transcript, topic, participants) {
+  if (!transcript || transcript.length < 100) return null
+
+  const openaiKey = process.env.OPENAI_API_KEY
+  if (!openaiKey) return null
+
+  const participantList = participants.map(p => p.name || p.user_name || p.user_email).filter(Boolean).join(', ')
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        max_tokens: 300,
+        messages: [{
+          role: 'user',
+          content: `Summarize this Zoom call in 3-4 sentences. Meeting: "${topic || 'Untitled'}". Participants: ${participantList || 'unknown'}.\n\nTranscript:\n${transcript.slice(0, 3000)}`,
+        }],
+      }),
+    }).then(r => r.json())
+    return response.choices?.[0]?.message?.content || null
+  } catch (err) {
+    console.warn('    ⚠️  OpenAI summary failed:', err.message)
+    return null
+  }
+}
+
 // ─── AI Classification ────────────────────────────────────────────────────────
 function classifyCall(meeting, participants, ghlMatch) {
   const topic = (meeting.topic || '').toLowerCase()
@@ -289,7 +318,15 @@ async function main() {
 
     // AI classification
     const classification = classifyCall(meeting, participants, ghlMatch)
-    const aiSummary = buildAiSummary(meeting, participants, classification)
+    // Try OpenAI summary first, fall back to rule-based
+    let aiSummary = null
+    if (transcriptText) {
+      console.log('    🤖 Generating AI summary...')
+      aiSummary = await generateCallSummary(transcriptText, meeting.topic, participants)
+    }
+    if (!aiSummary) {
+      aiSummary = buildAiSummary(meeting, participants, classification)
+    }
 
     const typeStat = classification.type
     stats.byType[typeStat] = (stats.byType[typeStat] || 0) + 1

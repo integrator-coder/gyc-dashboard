@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const CLASSIFICATION_OPTIONS = [
@@ -201,33 +201,146 @@ function CallCard({ call, isSelected, onClick }) {
   )
 }
 
+// ─── GHL Contact constants ────────────────────────────────────────────────────
+const GYC_DOMAINS = ['@growyourcenter.com', '@gyc.', 'brucewspurr']
+function isGycStaff(email = '') {
+  return GYC_DOMAINS.some(d => email.toLowerCase().includes(d))
+}
+
+// ─── GHL Contact Linker ───────────────────────────────────────────────────────
+function GhlContactLinker({ callId, onLinked }) {
+  const [query, setQuery]       = useState('')
+  const [results, setResults]   = useState([])
+  const [searching, setSearching] = useState(false)
+  const [linking, setLinking]   = useState(false)
+  const [searchErr, setSearchErr] = useState('')
+  const debounceRef = useRef(null)
+
+  async function doSearch(q) {
+    if (!q || q.length < 2) { setResults([]); return }
+    setSearching(true)
+    setSearchErr('')
+    try {
+      const res = await fetch(`/api/ghl/contacts/search?q=${encodeURIComponent(q)}`)
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Search failed')
+      setResults(json.contacts || [])
+    } catch (err) {
+      setSearchErr(err.message)
+    } finally {
+      setSearching(false)
+    }
+  }
+
+  function handleQueryChange(e) {
+    const val = e.target.value
+    setQuery(val)
+    clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => doSearch(val), 400)
+  }
+
+  async function handleSelect(contact) {
+    setLinking(true)
+    try {
+      const res = await fetch(`/api/zoom/calls/${callId}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          ghlContactId: contact.id,
+          ghlContactName: contact.name,
+          ghlPipelineStage: contact.stage || null,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Link failed')
+      onLinked(json.call)
+    } catch (err) {
+      setSearchErr(err.message)
+    } finally {
+      setLinking(false)
+    }
+  }
+
+  return (
+    <div style={{ marginTop: 8 }}>
+      <div style={{ color: '#9ca3af', fontSize: 11, marginBottom: 5 }}>Link to GHL Contact</div>
+      <div style={{ position: 'relative' }}>
+        <input
+          value={query}
+          onChange={handleQueryChange}
+          placeholder="Search by name or email…"
+          style={{
+            width: '100%', boxSizing: 'border-box',
+            background: '#1a0a2e', color: '#fff',
+            border: '1px solid #3d1f6e', borderRadius: 7,
+            padding: '6px 10px', fontSize: 12,
+          }}
+        />
+        {searching && (
+          <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', color: '#6b7280', fontSize: 10 }}>searching…</span>
+        )}
+      </div>
+      {searchErr && <div style={{ color: '#f87171', fontSize: 11, marginTop: 4 }}>{searchErr}</div>}
+      {results.length > 0 && (
+        <div style={{ marginTop: 4, background: '#0d0d1a', border: '1px solid #3d1f6e', borderRadius: 7, overflow: 'hidden' }}>
+          {results.map(c => (
+            <button
+              key={c.id}
+              onClick={() => handleSelect(c)}
+              disabled={linking}
+              style={{
+                display: 'block', width: '100%', textAlign: 'left',
+                background: 'none', border: 'none', borderBottom: '1px solid #2a1a3e',
+                padding: '7px 10px', cursor: 'pointer',
+                transition: 'background 0.1s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#1a0a2e'}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            >
+              <div style={{ color: '#e2d9f3', fontSize: 12, fontWeight: 600 }}>{c.name}</div>
+              <div style={{ color: '#6b7280', fontSize: 10, marginTop: 1 }}>
+                {c.email}{c.stage ? ` · ${c.stage}` : ''}{c.pipeline ? ` · ${c.pipeline}` : ''}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+      {query.length >= 2 && !searching && results.length === 0 && !searchErr && (
+        <div style={{ color: '#6b7280', fontSize: 11, marginTop: 5, textAlign: 'center' }}>No contacts found for "{query}"</div>
+      )}
+    </div>
+  )
+}
+
 // ─── ClassificationForm ───────────────────────────────────────────────────────
-function ClassificationForm({ call, onSaved }) {
+function ClassificationForm({ call: initialCall, onSaved }) {
+  const [call, setCall] = useState(initialCall)
   const [form, setForm] = useState({
-    classifiedAs: call.classifiedAs || call.aiClassification || '',
-    assignedRepEmail: call.assignedRepEmail || '',
-    assignedRepName: call.assignedRepName || '',
-    notes: call.notes || '',
+    classifiedAs: initialCall.classifiedAs || initialCall.aiClassification || '',
+    assignedRepEmail: initialCall.assignedRepEmail || '',
+    assignedRepName: initialCall.assignedRepName || '',
+    notes: initialCall.notes || '',
   })
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [error, setError] = useState('')
-  const [askQ, setAskQ] = useState('')
+  const [saving, setSaving]   = useState(false)
+  const [saved, setSaved]     = useState(false)
+  const [error, setError]     = useState('')
+  const [askQ, setAskQ]       = useState('')
   const [askAnswer, setAskAnswer] = useState('')
-  const [asking, setAsking] = useState(false)
+  const [asking, setAsking]   = useState(false)
 
   useEffect(() => {
+    setCall(initialCall)
     setForm({
-      classifiedAs: call.classifiedAs || call.aiClassification || '',
-      assignedRepEmail: call.assignedRepEmail || '',
-      assignedRepName: call.assignedRepName || '',
-      notes: call.notes || '',
+      classifiedAs: initialCall.classifiedAs || initialCall.aiClassification || '',
+      assignedRepEmail: initialCall.assignedRepEmail || '',
+      assignedRepName: initialCall.assignedRepName || '',
+      notes: initialCall.notes || '',
     })
     setAskAnswer('')
     setAskQ('')
     setError('')
     setSaved(false)
-  }, [call.id])
+  }, [initialCall.id])
 
   const reps = REPS_BY_TYPE[form.classifiedAs] || REPS_BY_TYPE.internal
 
@@ -276,19 +389,60 @@ function ClassificationForm({ call, onSaved }) {
     }
   }
 
+  function handleGhlLinked(updatedCall) {
+    setCall(prev => ({ ...prev, ...updatedCall }))
+    onSaved(updatedCall)
+  }
+
   const participants = Array.isArray(call.participants) ? call.participants : []
+  const gycStaff = participants.filter(p => isGycStaff(p.email || ''))
+  const external  = participants.filter(p => !isGycStaff(p.email || ''))
   const badge = confidenceBadge(call.aiConfidence, call.aiClassification)
+  const hasGhl = Boolean(call.ghlContactId)
+
+  const sectionLabel = {
+    color: '#9ca3af', fontSize: 10, fontWeight: 700,
+    textTransform: 'uppercase', letterSpacing: '0.1em',
+    marginBottom: 6, display: 'block',
+  }
+  const divider = { borderTop: '1px solid #2a1a3e', margin: '10px 0' }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      {/* Call header */}
-      <div style={{ borderBottom: '1px solid #2a1a3e', paddingBottom: 12 }}>
-        <div style={{ color: '#fff', fontWeight: 700, fontSize: 15, marginBottom: 3 }}>
-          {call.topic || '(No topic)'}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+
+      {/* ── CALL HEADER ─────────────────────────────────────────── */}
+      <div style={{ paddingBottom: 12, marginBottom: 12, borderBottom: '1px solid #2a1a3e' }}>
+        <div style={{ color: '#fff', fontWeight: 700, fontSize: 15, marginBottom: 4, lineHeight: 1.3 }}>
+          {call.topic || 'Untitled Meeting'}
         </div>
-        <div style={{ color: '#6b7280', fontSize: 11, marginBottom: 6 }}>
-          {fmt(call.startTime)} · {fmtDuration(call.duration)} · {call.hostEmail || '—'}
+
+        {/* Date · Duration · Recording link */}
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 6 }}>
+          <span style={{ color: '#6b7280', fontSize: 11 }}>
+            📅 {fmt(call.startTime)}
+          </span>
+          <span style={{ color: '#6b7280', fontSize: 11 }}>
+            ⏱ {fmtDuration(call.duration)}
+          </span>
+          {call.recordingUrl && (
+            <a
+              href={call.recordingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                background: '#3d1f6e', color: '#c4b5fd',
+                border: '1px solid #7c3aed44', borderRadius: 6,
+                padding: '2px 8px', fontSize: 11, fontWeight: 600,
+                textDecoration: 'none',
+              }}
+            >
+              🎥 Recording
+            </a>
+          )}
         </div>
+
+        {/* AI Classification badge */}
         {badge && (
           <span style={{
             display: 'inline-block',
@@ -297,28 +451,140 @@ function ClassificationForm({ call, onSaved }) {
             borderRadius: 6, padding: '2px 9px', fontSize: 11, fontWeight: 600,
           }}>🤖 {badge.label} — {badge.pct}% confident</span>
         )}
-        {call.ghlContactName && (
-          <div style={{ marginTop: 5, color: '#22c55e', fontSize: 11 }}>
-            🔗 GHL: {call.ghlContactName}{call.ghlPipelineStage ? ` · ${call.ghlPipelineStage}` : ''}
-          </div>
-        )}
-        {participants.length > 0 && (
-          <div style={{ marginTop: 5, color: '#9ca3af', fontSize: 11 }}>
-            👥 {participants.map(p => p.name || p.email).filter(Boolean).join(', ')}
-          </div>
-        )}
+
         {saved && (
-          <div style={{ marginTop: 6, color: '#22c55e', fontSize: 12, fontWeight: 600 }}>
+          <div style={{ marginTop: 8, color: '#22c55e', fontSize: 12, fontWeight: 600 }}>
             ✅ Classified — activity logged
           </div>
         )}
       </div>
 
-      {/* Classification */}
-      <div>
-        <label style={{ color: '#d1d5db', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-          Classification
-        </label>
+      {/* ── PARTICIPANTS ─────────────────────────────────────────── */}
+      {participants.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <span style={sectionLabel}>👥 Participants</span>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            {/* GYC Staff column */}
+            <div style={{ background: '#0d0d1a', borderRadius: 7, padding: '8px 10px', border: '1px solid #2a1a3e' }}>
+              <div style={{ color: '#c4b5fd', fontSize: 10, fontWeight: 700, marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>GYC Staff</div>
+              {gycStaff.length > 0 ? gycStaff.map((p, i) => (
+                <div key={i} style={{ marginBottom: 3 }}>
+                  <div style={{ color: '#e2d9f3', fontSize: 11, fontWeight: 500 }}>{p.name || '—'}</div>
+                  {p.email && <div style={{ color: '#6b7280', fontSize: 10 }}>{p.email}</div>}
+                </div>
+              )) : (
+                <div style={{ color: '#4a3060', fontSize: 11 }}>None detected</div>
+              )}
+            </div>
+            {/* External column */}
+            <div style={{ background: '#0d0d1a', borderRadius: 7, padding: '8px 10px', border: '1px solid #2a1a3e' }}>
+              <div style={{ color: '#fbbf24', fontSize: 10, fontWeight: 700, marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>External</div>
+              {external.length > 0 ? external.map((p, i) => (
+                <div key={i} style={{ marginBottom: 3 }}>
+                  <div style={{ color: '#e2d9f3', fontSize: 11, fontWeight: 500 }}>{p.name || '—'}</div>
+                  {p.email && <div style={{ color: '#6b7280', fontSize: 10 }}>{p.email}</div>}
+                </div>
+              )) : (
+                <div style={{ color: '#4a3060', fontSize: 11 }}>None detected</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {participants.length === 0 && (
+        <div style={{ marginBottom: 12, color: '#4a3060', fontSize: 12, fontStyle: 'italic' }}>
+          👥 No participant data — transcript required for participant detection
+        </div>
+      )}
+
+      {/* ── GHL PIPELINE STATUS ──────────────────────────────────── */}
+      <div style={{ marginBottom: 12 }}>
+        <span style={sectionLabel}>🔗 GHL Pipeline Status</span>
+        {hasGhl ? (
+          <div style={{ background: '#0a1a0d', border: '1px solid #22c55e44', borderRadius: 8, padding: '8px 12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ color: '#22c55e', fontSize: 13, fontWeight: 700 }}>{call.ghlContactName}</span>
+              {call.ghlPipelineStage && (
+                <span style={{
+                  background: '#22c55e22', color: '#4ade80',
+                  border: '1px solid #22c55e44',
+                  borderRadius: 6, padding: '1px 8px', fontSize: 10, fontWeight: 600,
+                }}>
+                  {call.ghlPipelineStage}
+                </span>
+              )}
+            </div>
+            {call.ghlContactId && (
+              <div style={{ color: '#6b7280', fontSize: 10, marginTop: 3 }}>ID: {call.ghlContactId}</div>
+            )}
+          </div>
+        ) : (
+          <div style={{ background: '#0d0d1a', border: '1px solid #2a1a3e', borderRadius: 8, padding: '8px 12px' }}>
+            <div style={{ color: '#f59e0b', fontSize: 11, marginBottom: 6 }}>
+              ⚠️ No GHL contact found — may be internal or auto-match failed
+            </div>
+            <GhlContactLinker callId={call.id} onLinked={handleGhlLinked} />
+          </div>
+        )}
+      </div>
+
+      {/* ── AI SUMMARY ───────────────────────────────────────────── */}
+      <div style={{ marginBottom: 12 }}>
+        <span style={sectionLabel}>🧠 AI Summary</span>
+        {call.aiSummary ? (
+          <div style={{
+            background: '#0d0d1a', border: '1px solid #3d1f6e',
+            borderRadius: 8, padding: '8px 12px',
+            color: '#d1d5db', fontSize: 12, lineHeight: 1.6,
+          }}>
+            {call.aiSummary}
+          </div>
+        ) : (
+          <div style={{
+            background: '#0d0d1a', border: '1px solid #2a1a3e',
+            borderRadius: 8, padding: '8px 12px',
+            color: '#6b7280', fontSize: 12, fontStyle: 'italic',
+          }}>
+            Summary not available — transcript required
+          </div>
+        )}
+
+        {/* Ask Wall·E */}
+        <div style={{ background: '#0d0d1a', borderRadius: 8, padding: 10, border: '1px solid #2a1a3e', marginTop: 8 }}>
+          <div style={{ color: '#ae2bcf', fontSize: 10, fontWeight: 700, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.08em' }}>🤖 Ask Wall·E about this call</div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input
+              value={askQ}
+              onChange={e => setAskQ(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleAsk()}
+              placeholder="e.g. What objections came up?"
+              style={{ flex: 1, background: '#1a0a2e', color: '#fff', border: '1px solid #2a1a3e', borderRadius: 6, padding: '6px 9px', fontSize: 12 }}
+            />
+            <button
+              onClick={handleAsk}
+              disabled={asking || !askQ.trim()}
+              style={{
+                background: asking ? '#2a1a3e' : '#7c3aed',
+                color: '#fff', border: 'none', borderRadius: 6,
+                padding: '6px 12px', fontSize: 12, cursor: asking ? 'not-allowed' : 'pointer',
+                opacity: !askQ.trim() ? 0.5 : 1, whiteSpace: 'nowrap',
+              }}
+            >
+              {asking ? '…' : 'Ask'}
+            </button>
+          </div>
+          {askAnswer && (
+            <div style={{ marginTop: 8, color: '#d1d5db', fontSize: 11, lineHeight: 1.6, background: '#111', borderRadius: 6, padding: '7px 10px' }}>
+              {askAnswer}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── CLASSIFICATION ───────────────────────────────────────── */}
+      <div style={divider} />
+      <div style={{ marginBottom: 10 }}>
+        <label style={{ ...sectionLabel, marginBottom: 5 }}>Classification</label>
         <select
           value={form.classifiedAs}
           onChange={e => setForm(f => ({ ...f, classifiedAs: e.target.value, assignedRepEmail: '', assignedRepName: '' }))}
@@ -333,10 +599,8 @@ function ClassificationForm({ call, onSaved }) {
 
       {/* Assigned To */}
       {form.classifiedAs && (
-        <div>
-          <label style={{ color: '#d1d5db', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            Assigned To
-          </label>
+        <div style={{ marginBottom: 10 }}>
+          <label style={{ ...sectionLabel, marginBottom: 5 }}>Assigned To</label>
           <select
             value={form.assignedRepEmail}
             onChange={e => handleRepChange(e.target.value)}
@@ -351,52 +615,19 @@ function ClassificationForm({ call, onSaved }) {
       )}
 
       {/* Notes */}
-      <div>
-        <label style={{ color: '#d1d5db', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-          Notes
-        </label>
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ ...sectionLabel, marginBottom: 5 }}>Notes</label>
         <textarea
           value={form.notes}
           onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
           placeholder="Add notes about this call..."
-          rows={3}
+          rows={2}
           style={{ width: '100%', background: '#1a0a2e', color: '#fff', border: '1px solid #2a1a3e', borderRadius: 8, padding: '7px 10px', fontSize: 12, resize: 'vertical', boxSizing: 'border-box' }}
         />
       </div>
 
-      {/* Ask Wall·E */}
-      <div style={{ background: '#0d0d1a', borderRadius: 8, padding: 12, border: '1px solid #2a1a3e' }}>
-        <div style={{ color: '#ae2bcf', fontSize: 11, fontWeight: 600, marginBottom: 7, textTransform: 'uppercase', letterSpacing: '0.08em' }}>🤖 Ask Wall·E</div>
-        <div style={{ display: 'flex', gap: 7 }}>
-          <input
-            value={askQ}
-            onChange={e => setAskQ(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleAsk()}
-            placeholder="Ask about this call..."
-            style={{ flex: 1, background: '#1a0a2e', color: '#fff', border: '1px solid #2a1a3e', borderRadius: 6, padding: '6px 9px', fontSize: 12 }}
-          />
-          <button
-            onClick={handleAsk}
-            disabled={asking || !askQ.trim()}
-            style={{
-              background: asking ? '#2a1a3e' : '#7c3aed',
-              color: '#fff', border: 'none', borderRadius: 6,
-              padding: '6px 12px', fontSize: 12, cursor: asking ? 'not-allowed' : 'pointer',
-              opacity: !askQ.trim() ? 0.5 : 1,
-            }}
-          >
-            {asking ? '…' : 'Ask'}
-          </button>
-        </div>
-        {askAnswer && (
-          <div style={{ marginTop: 8, color: '#d1d5db', fontSize: 11, lineHeight: 1.6, background: '#111', borderRadius: 6, padding: '7px 10px' }}>
-            {askAnswer}
-          </div>
-        )}
-      </div>
-
       {error && (
-        <div style={{ color: '#f87171', fontSize: 12, background: '#1f0505', border: '1px solid #dc262644', borderRadius: 6, padding: '6px 10px' }}>{error}</div>
+        <div style={{ color: '#f87171', fontSize: 12, background: '#1f0505', border: '1px solid #dc262644', borderRadius: 6, padding: '6px 10px', marginBottom: 8 }}>{error}</div>
       )}
 
       <button
