@@ -89,9 +89,9 @@ const TEAM_PORTAL_GROUP = {
   emoji: '🧩',
   defaultOpen: true,
   children: [
-    { label: 'CX Handoffs', emoji: '🧾', href: '/cx-handoff', roles: ['sales', 'ga', 'cx', 'admin'] },
-    { label: 'Client Intel', emoji: '🧠', href: '/clients', roles: ['ga', 'cx', 'admin'] },
-    { label: 'Recon', emoji: '🔍', href: '/team/recon', roles: ['recon', 'admin'] },
+    { label: 'CX Handoffs', emoji: '🧾', href: '/cx-handoff', roles: ['sales', 'ga', 'cx', 'admin', 'superadmin'] },
+    { label: 'Client Intel', emoji: '🧠', href: '/clients', roles: ['ga', 'cx', 'admin', 'superadmin'] },
+    { label: 'Recon', emoji: '🔍', href: '/team/recon', roles: ['recon', 'admin', 'superadmin'] },
   ],
 }
 

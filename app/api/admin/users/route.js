@@ -27,7 +27,7 @@ export async function POST(request) {
     return NextResponse.json({ error: 'email, password, and role are required' }, { status: 400 })
   }
 
-  const validRoles = ['superadmin', 'admin', 'staff']
+  const validRoles = ['superadmin', 'admin', 'sales', 'ga', 'staff', 'cx']
   if (!validRoles.includes(role)) {
     return NextResponse.json({ error: `role must be one of: ${validRoles.join(', ')}` }, { status: 400 })
   }
