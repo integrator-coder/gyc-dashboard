@@ -222,12 +222,39 @@ function buildAiSummary(meeting, participants, classification) {
 }
 
 // ─── Upsert ───────────────────────────────────────────────────────────────────
+// ─── ClientProfile lookup ────────────────────────────────────────────────────
+/**
+ * Given a GHL contact ID, find the matching ClientProfile and return
+ * its acronym, id, and assignedGA.
+ */
+async function lookupClientProfile(ghlContactId) {
+  if (!ghlContactId) return null
+  try {
+    const { rows } = await pool.query(
+      `SELECT cp.acronym, cp.id AS "clientProfileId", cp."assignedGA"
+       FROM "ClientProfile" cp
+       WHERE cp."tenantId" = 'gyc' AND (
+         cp."ghlContactId" = $1
+         OR cp."stripeCustomerId" = (
+           SELECT id FROM "StripeCustomer" WHERE "ghlContactId" = $1 LIMIT 1
+         )
+       )
+       LIMIT 1`,
+      [ghlContactId]
+    )
+    return rows[0] || null
+  } catch {
+    return null
+  }
+}
+
 async function upsertZoomCall(record) {
   const {
     id, tenantId, meetingId, topic, hostEmail, hostName, startTime, duration,
     participants, recordingUrl, transcriptUrl, transcriptText,
     aiSummary, aiClassification, aiConfidence,
     ghlContactId, ghlContactName, ghlPipelineStage,
+    acronym, clientProfileId,
     status, syncedAt
   } = record
 
@@ -237,8 +264,9 @@ async function upsertZoomCall(record) {
       participants, "recordingUrl", "transcriptUrl", "transcriptText",
       "aiSummary", "aiClassification", "aiConfidence",
       "ghlContactId", "ghlContactName", "ghlPipelineStage",
+      "acronym", "clientProfileId",
       status, "syncedAt", "createdAt"
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,NOW())
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,NOW())
     ON CONFLICT (id) DO UPDATE SET
       topic = EXCLUDED.topic,
       "hostEmail" = EXCLUDED."hostEmail",
@@ -255,6 +283,8 @@ async function upsertZoomCall(record) {
       "ghlContactId" = COALESCE(EXCLUDED."ghlContactId", "ZoomCall"."ghlContactId"),
       "ghlContactName" = COALESCE(EXCLUDED."ghlContactName", "ZoomCall"."ghlContactName"),
       "ghlPipelineStage" = COALESCE(EXCLUDED."ghlPipelineStage", "ZoomCall"."ghlPipelineStage"),
+      "acronym" = COALESCE(EXCLUDED."acronym", "ZoomCall"."acronym"),
+      "clientProfileId" = COALESCE(EXCLUDED."clientProfileId", "ZoomCall"."clientProfileId"),
       "syncedAt" = EXCLUDED."syncedAt"
     `,
     [id, tenantId, meetingId, topic, hostEmail, hostName, startTime, duration,
@@ -262,6 +292,7 @@ async function upsertZoomCall(record) {
      recordingUrl, transcriptUrl, transcriptText,
      aiSummary, aiClassification, aiConfidence,
      ghlContactId, ghlContactName, ghlPipelineStage,
+     acronym || null, clientProfileId || null,
      status, syncedAt || new Date()]
   )
 }
@@ -375,6 +406,11 @@ async function main() {
       ghlPipelineStage: ghlMatch?.stage || null,
       status: 'pending',
       syncedAt: new Date(),
+      // ClientProfile linkage — look up acronym + id via GHL contact
+      ...await lookupClientProfile(ghlMatch?.id || null).then(cp => ({
+        acronym:         cp?.acronym         || null,
+        clientProfileId: cp?.clientProfileId || null,
+      })),
     })
 
     stats.synced++
