@@ -5,7 +5,16 @@
  *
  * Fields updated:
  *   latestFunnelMonth, avgMonthlyLeads, avgMonthlyTours, avgMonthlyRegistered,
- *   leadToTourRate, tourToRegRate, funnelDataMonths, funnelTrend, lastFunnelUpdated
+ *   leadToTourRate, tourToRegRate, funnelDataMonths, funnelTrend,
+ *   trendWindow, trendChangePct, lastFunnelUpdated
+ *
+ * Trend logic is seasonality-aware (YoY window comparison).
+ * Jan-Feb is intentionally excluded — genuinely slow, not a meaningful signal.
+ * Windows (checked in order, first with current+prior year data wins):
+ *   spring_camp        Mar-May  — Summer camp push
+ *   fall_enrollment_push Jun-Aug — Fall enrollment push (biggest lead-gen window)
+ *   fall_peak          Sep-Oct  — Peak enrollment
+ *   winter_enrollment  Nov-Dec  — Winter enrollment push (January starters)
  */
 
 import pg from 'pg'
@@ -37,28 +46,62 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 })
 
-// ─── Compute trend from monthly rows ─────────────────────────────────────────
-function computeTrend(monthlyRows) {
-  // monthlyRows sorted by month asc, each has leads
-  const sorted = [...monthlyRows].sort((a, b) => a.month.localeCompare(b.month))
-  if (sorted.length < 6) return 'stable'
+// ─── Seasonal comparison windows ─────────────────────────────────────────────
+// Checked in order. First window with ≥1 month of data in BOTH current and
+// prior year is used. Jan-Feb intentionally omitted (genuine slow period).
+const COMPARISON_WINDOWS = [
+  { label: 'spring_camp',          months: ['03', '04', '05'] }, // Summer camp push
+  { label: 'fall_enrollment_push', months: ['06', '07', '08'] }, // Fall enrollment push
+  { label: 'fall_peak',            months: ['09', '10']       }, // Peak enrollment
+  { label: 'winter_enrollment',    months: ['11', '12']       }, // Winter / Jan starters
+]
 
-  const last3 = sorted.slice(-3)
-  const prior3 = sorted.slice(-6, -3)
+// ─── Compute seasonality-aware YoY trend ─────────────────────────────────────
+// Returns { trend: 'up'|'down'|'stable'|null, window: string|null, changePct: number|null }
+function computeTrend(monthlyData) {
+  // monthlyData = array of { month: 'YYYY-MM', leads, ... }
+  const currentYear = new Date().getFullYear()
+  const priorYear   = currentYear - 1
 
-  const avgLast = last3.reduce((s, r) => s + Number(r.leads), 0) / 3
-  const avgPrior = prior3.reduce((s, r) => s + Number(r.leads), 0) / 3
+  for (const win of COMPARISON_WINDOWS) {
+    const current = monthlyData.filter(d => {
+      const [y, m] = d.month.split('-')
+      return parseInt(y) === currentYear && win.months.includes(m)
+    })
+    const prior = monthlyData.filter(d => {
+      const [y, m] = d.month.split('-')
+      return parseInt(y) === priorYear && win.months.includes(m)
+    })
 
-  if (avgPrior === 0) return avgLast > 0 ? 'up' : 'stable'
+    if (current.length < 1 || prior.length < 1) continue
 
-  const pct = (avgLast - avgPrior) / avgPrior * 100
-  if (pct > 10) return 'up'
-  if (pct < -10) return 'down'
-  return 'stable'
+    const currentAvg = current.reduce((s, d) => s + Number(d.leads || 0), 0) / current.length
+    const priorAvg   = prior.reduce((s, d)   => s + Number(d.leads || 0), 0) / prior.length
+
+    if (priorAvg === 0) continue // can't compute a meaningful ratio
+
+    const change    = (currentAvg - priorAvg) / priorAvg
+    const changePct = Math.round(change * 100)
+
+    if (change < -0.15) return { trend: 'down',   window: win.label, changePct }
+    if (change >  0.10) return { trend: 'up',     window: win.label, changePct }
+    return               { trend: 'stable', window: win.label, changePct }
+  }
+
+  // No meaningful seasonal window available — withhold judgment
+  return { trend: null, window: null, changePct: null }
 }
 
 async function main() {
   const TENANT = 'gyc'
+
+  // ── Step 0: Ensure new columns exist (idempotent) ──────────────────────────
+  await pool.query(`
+    ALTER TABLE "ClientProfile"
+      ADD COLUMN IF NOT EXISTS "trendWindow"    TEXT,
+      ADD COLUMN IF NOT EXISTS "trendChangePct" INTEGER
+  `)
+  console.log('Schema: trendWindow + trendChangePct columns ensured.')
 
   // ── Step 1: Pull summary stats per client ──────────────────────────────────
   const summaryRes = await pool.query(`
@@ -102,7 +145,7 @@ async function main() {
   let rateCount = 0
 
   for (const s of summaries) {
-    const trend = computeTrend(monthlyByClient[s.acronym] || [])
+    const { trend, window: trendWin, changePct } = computeTrend(monthlyByClient[s.acronym] || [])
 
     const result = await pool.query(`
       UPDATE "ClientProfile" SET
@@ -114,17 +157,21 @@ async function main() {
         "tourToRegRate"       = $6,
         "funnelDataMonths"    = $7,
         "funnelTrend"         = $8,
+        "trendWindow"         = $9,
+        "trendChangePct"      = $10,
         "lastFunnelUpdated"   = NOW()
-      WHERE "tenantId" = $9 AND acronym = $10
+      WHERE "tenantId" = $11 AND acronym = $12
     `, [
       s.latest_month,
-      s.avg_leads    != null ? Number(s.avg_leads).toFixed(2)    : null,
-      s.avg_tours    != null ? Number(s.avg_tours).toFixed(2)    : null,
+      s.avg_leads      != null ? Number(s.avg_leads).toFixed(2)      : null,
+      s.avg_tours      != null ? Number(s.avg_tours).toFixed(2)      : null,
       s.avg_registered != null ? Number(s.avg_registered).toFixed(2) : null,
-      s.lead_to_tour != null ? Number(s.lead_to_tour).toFixed(2) : null,
-      s.tour_to_reg  != null ? Number(s.tour_to_reg).toFixed(2)  : null,
+      s.lead_to_tour   != null ? Number(s.lead_to_tour).toFixed(2)   : null,
+      s.tour_to_reg    != null ? Number(s.tour_to_reg).toFixed(2)    : null,
       Number(s.months_of_data),
       trend,
+      trendWin,
+      changePct,
       TENANT,
       s.acronym,
     ])
@@ -149,13 +196,35 @@ async function main() {
   console.log(`  Fleet avg tour→reg:      ${avgTourToReg}%`)
   console.log(`────────────────────────────────────────────────────`)
 
-  // Trend breakdown
-  const trends = { up: 0, down: 0, stable: 0 }
-  for (const rows of Object.values(monthlyByClient)) {
-    const t = computeTrend(rows)
-    trends[t]++
+  // ── Trend breakdown & at-risk report ────────────────────────────────────────
+  const trends  = { up: 0, stable: 0, down: 0, null: 0 }
+  const windowHits = {}
+  const atRisk = []
+
+  for (const [clientId, rows] of Object.entries(monthlyByClient)) {
+    const { trend, window: win, changePct } = computeTrend(rows)
+    const key = trend ?? 'null'
+    trends[key] = (trends[key] || 0) + 1
+    if (win) windowHits[win] = (windowHits[win] || 0) + 1
+    if (trend === 'down' && changePct !== null && changePct <= -15) {
+      atRisk.push({ clientId, window: win, changePct })
+    }
   }
-  console.log(`  Trend breakdown → up: ${trends.up} | stable: ${trends.stable} | down: ${trends.down}`)
+
+  console.log(`  Trend breakdown → up: ${trends.up} | stable: ${trends.stable} | down: ${trends.down} | no-window: ${trends.null}`)
+  console.log(`  Window coverage:`)
+  for (const win of COMPARISON_WINDOWS) {
+    console.log(`    ${win.label.padEnd(22)} ${windowHits[win.label] || 0} clients`)
+  }
+
+  if (atRisk.length > 0) {
+    console.log(`\n  ⚠️  At-risk clients (>15% YoY decline in meaningful window):`)
+    for (const r of atRisk.sort((a, b) => a.changePct - b.changePct)) {
+      console.log(`    ${r.clientId.padEnd(12)} ${r.changePct}%  [${r.window}]`)
+    }
+  } else {
+    console.log(`  ✅ No clients showing >15% YoY decline in a meaningful window.`)
+  }
 
   await pool.end()
 
