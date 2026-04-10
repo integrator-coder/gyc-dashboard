@@ -2,12 +2,24 @@
 
 import { useEffect, useState } from 'react'
 
-const ROLES = ['superadmin', 'admin', 'staff']
+const ROLES = ['superadmin', 'admin', 'sales', 'ga', 'staff', 'cx']
+
+const ROLE_LABELS = {
+  superadmin: 'Super Admin',
+  admin: 'Admin',
+  sales: 'Sales',
+  ga: 'Growth Advisor',
+  staff: 'Staff',
+  cx: 'CX',
+}
 
 const ROLE_COLORS = {
   superadmin: 'bg-purple-900/60 text-purple-300 border-purple-700',
   admin: 'bg-violet-900/60 text-violet-300 border-violet-700',
+  sales: 'bg-blue-900/60 text-blue-300 border-blue-700',
+  ga: 'bg-teal-900/60 text-teal-300 border-teal-700',
   staff: 'bg-gray-800 text-gray-300 border-gray-700',
+  cx: 'bg-amber-900/60 text-amber-300 border-amber-700',
 }
 
 function RoleBadge({ role }) {
@@ -172,9 +184,12 @@ export default function AdminUsersClient({ currentUser }) {
                 onChange={(e) => setForm({ ...form, role: e.target.value })}
                 className="w-full rounded-lg px-3 py-2 text-sm text-white bg-black/40 border border-[#2a1a3e] focus:outline-none focus:border-violet-500"
               >
-                {isSuperadmin && <option value="superadmin">superadmin</option>}
-                <option value="admin">admin</option>
-                <option value="staff">staff</option>
+                {isSuperadmin && <option value="superadmin">Super Admin</option>}
+                <option value="admin">Admin</option>
+                <option value="sales">Sales</option>
+                <option value="ga">Growth Advisor</option>
+                <option value="staff">Staff</option>
+                <option value="cx">CX</option>
               </select>
             </div>
             <div className="sm:col-span-2 flex gap-3 justify-end">
@@ -233,9 +248,12 @@ export default function AdminUsersClient({ currentUser }) {
                           onChange={(e) => handleRoleChange(u.id, e.target.value)}
                           className="rounded px-2 py-1 text-xs text-white bg-black/60 border border-[#2a1a3e] focus:outline-none focus:border-violet-500"
                         >
-                          {isSuperadmin && <option value="superadmin">superadmin</option>}
-                          <option value="admin">admin</option>
-                          <option value="staff">staff</option>
+                          {isSuperadmin && <option value="superadmin">Super Admin</option>}
+                          <option value="admin">Admin</option>
+                          <option value="sales">Sales</option>
+                          <option value="ga">Growth Advisor</option>
+                          <option value="staff">Staff</option>
+                          <option value="cx">CX</option>
                         </select>
                       )}
                     </td>
