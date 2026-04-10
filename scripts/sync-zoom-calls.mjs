@@ -123,6 +123,20 @@ async function getTranscriptText(token, transcriptDownloadUrl) {
 }
 
 // ─── GHL helpers ─────────────────────────────────────────────────────────────
+/**
+ * Find a GHL contact by trying multiple participant emails.
+ * Skips internal GYC/Bruce emails. Returns first match.
+ */
+async function findGHLContact(emails) {
+  for (const email of emails) {
+    if (!email) continue
+    if (GYC_EMAILS.some(d => email.toLowerCase().includes(d.replace('@', '')))) continue
+    const match = await searchGhlContact(email)
+    if (match) return match
+  }
+  return null
+}
+
 async function searchGhlContact(email) {
   if (!GHL_API_KEY || !GHL_LOCATION_ID || !email) return null
   try {
@@ -178,33 +192,64 @@ async function generateCallSummary(transcript, topic, participants) {
 }
 
 // ─── AI Classification ────────────────────────────────────────────────────────
+const GYC_EMAILS = ['@growyourcenter.com', 'unstoppable@brucewspurr.com']
+const SALES_REPS = ['jesse@', 'briana@', 'pia@']
+const GAS = ['sebastian@', 'stefen@', 'jc@', 'zu@']
+const ONBOARDING_HOSTS = ['lada@', 'sebastian@', 'zu@']
+
 function classifyCall(meeting, participants, ghlMatch) {
   const topic = (meeting.topic || '').toLowerCase()
-  const emails = participants.map(p => (p.user_email || '').toLowerCase())
+  // Support both API format (user_email) and stored DB format (email)
+  const hostEmail = (meeting.host_email || '').toLowerCase()
+  const participantEmails = (participants || []).map(p => (p.user_email || p.email || '').toLowerCase())
+  const allEmails = [hostEmail, ...participantEmails].filter(Boolean)
 
-  // Rule 1: GHL pipeline match
-  if (ghlMatch) {
-    if (ghlMatch.pipeline === 'GYC Sales') return { type: 'sales', confidence: 0.9 }
-    if (ghlMatch.pipeline === 'Client Stage' && ghlMatch.stage === 'Onboarding') return { type: 'onboarding', confidence: 0.9 }
-    if (ghlMatch.pipeline === 'Client Stage') return { type: 'client_meeting', confidence: 0.85 }
-  }
+  // Count GYC staff vs external
+  const gycCount = allEmails.filter(e => GYC_EMAILS.some(d => e.includes(d))).length
+  const externalCount = allEmails.filter(e => e && !GYC_EMAILS.some(d => e.includes(d))).length
+
+  // Rule 1: GHL pipeline match → most reliable
+  if (ghlMatch?.pipeline === 'GYC Sales') return { type: 'sales', confidence: 0.90 }
+  if (ghlMatch?.pipeline === 'Client Stage' && ghlMatch?.stage === 'Onboarding') return { type: 'onboarding', confidence: 0.90 }
+  if (ghlMatch?.pipeline === 'Client Stage') return { type: 'client_meeting', confidence: 0.85 }
 
   // Rule 2: Topic keywords
-  if (topic.includes('discovery') || topic.includes('demo') || topic.includes('intro call'))
-    return { type: 'sales', confidence: 0.7 }
-  if (topic.includes('onboard') || topic.includes('kickoff') || topic.includes('vision'))
-    return { type: 'onboarding', confidence: 0.7 }
-  if (topic.includes('blueprint'))
-    return { type: 'blueprint', confidence: 0.8 }
-  if (topic.includes('l10') || topic.includes('team meeting') || topic.includes('standup') || topic.includes('stand up'))
-    return { type: 'internal', confidence: 0.8 }
-  if (topic.includes('1:1') || topic.includes('one on one') || topic.includes('one-on-one') || topic.includes('check in') || topic.includes('check-in'))
-    return { type: 'one_on_one', confidence: 0.75 }
+  if (/blueprint/i.test(topic)) return { type: 'blueprint', confidence: 0.85 }
+  if (/onboard|kickoff|kick.off|vision call/i.test(topic)) return { type: 'onboarding', confidence: 0.80 }
+  if (/marketing review|growth advisor|monthly meeting|client meeting/i.test(topic)) return { type: 'client_meeting', confidence: 0.80 }
+  if (/sales|discovery|demo|intro call/i.test(topic)) return { type: 'sales', confidence: 0.75 }
+  if (/marketing consultation|strategy consult|strategy call|follow.?up.*grow your center/i.test(topic)) return { type: 'sales', confidence: 0.75 }
+  if (/grow your center|gyc/i.test(topic) && /\|/.test(topic)) return { type: 'sales', confidence: 0.65 }
+  if (/review.*meta|review.*disney|review.*ads|paid media|office hours/i.test(topic)) return { type: 'client_meeting', confidence: 0.70 }
+  if (/l10|team meeting|standup|all.team|all staff|stand up/i.test(topic)) return { type: 'internal', confidence: 0.80 }
+  if (/1.1|one.on.one|check.in|check in/i.test(topic)) return { type: 'one_on_one', confidence: 0.75 }
 
-  // Rule 3: All-internal participants
-  const gycDomains = ['@growyourcenter.com', '@gyc', 'brucewspurr']
-  const allInternal = emails.length >= 2 && emails.every(e => gycDomains.some(d => e.includes(d)))
-  if (allInternal) return { type: 'internal', confidence: 0.7 }
+  // Rule 3: Host-based rules (with participant data)
+  if (SALES_REPS.some(r => hostEmail.includes(r)) && externalCount >= 1) return { type: 'sales', confidence: 0.70 }
+  if (GAS.some(r => hostEmail.includes(r)) && externalCount >= 1) return { type: 'client_meeting', confidence: 0.65 }
+
+  // Rule 4: All internal (everyone on call is GYC)
+  if (externalCount === 0 && gycCount >= 2) return { type: 'internal', confidence: 0.70 }
+
+  // Rule 5: No participant data but host email known — infer from host role
+  const noParticipantData = participantEmails.filter(Boolean).length === 0
+  if (noParticipantData && hostEmail) {
+    if (SALES_REPS.some(r => hostEmail.includes(r))) return { type: 'sales', confidence: 0.60 }
+    if (GAS.some(r => hostEmail.includes(r))) return { type: 'client_meeting', confidence: 0.55 }
+  }
+
+  // Rule 6: If host email is null but we have participants, infer from participant emails
+  if (!hostEmail && participantEmails.length > 0) {
+    const inferredHost = participantEmails.find(e => GYC_EMAILS.some(d => e.includes(d))) || ''
+    if (SALES_REPS.some(r => inferredHost.includes(r)) && externalCount >= 1) return { type: 'sales', confidence: 0.65 }
+    if (GAS.some(r => inferredHost.includes(r)) && externalCount >= 1) return { type: 'client_meeting', confidence: 0.60 }
+    if (externalCount === 0 && gycCount >= 2) return { type: 'internal', confidence: 0.65 }
+    if (externalCount >= 1 && gycCount >= 1) return { type: 'client_meeting', confidence: 0.55 }
+  }
+
+  // Rule 7: External present + GYC host identified
+  if (externalCount >= 1 && GAS.some(r => hostEmail.includes(r))) return { type: 'client_meeting', confidence: 0.60 }
+  if (externalCount >= 1 && SALES_REPS.some(r => hostEmail.includes(r))) return { type: 'sales', confidence: 0.60 }
 
   return { type: 'unknown', confidence: 0.0 }
 }
@@ -349,20 +394,16 @@ async function main() {
       transcriptText = await getTranscriptText(token, transcriptDownloadUrl)
     }
 
-    // GHL cross-reference — search by unique participant emails
+    // GHL cross-reference — search by unique participant emails (skip GYC staff)
     let ghlMatch = null
-    const externalEmails = participants
-      .map(p => p.user_email)
-      .filter(e => e && !['@growyourcenter.com', '@gyc', 'brucewspurr'].some(d => e.toLowerCase().includes(d)))
+    const allParticipantEmails = participants
+      .map(p => p.user_email || p.email)
+      .filter(Boolean)
 
-    for (const email of externalEmails.slice(0, 3)) {
-      const match = await searchGhlContact(email)
-      if (match) {
-        ghlMatch = match
-        stats.ghlMatches++
-        console.log(`    🔗 GHL match: ${match.name} (${match.pipeline || 'no pipeline'})`)
-        break
-      }
+    ghlMatch = await findGHLContact(allParticipantEmails)
+    if (ghlMatch) {
+      stats.ghlMatches++
+      console.log(`    🔗 GHL match: ${ghlMatch.name} (${ghlMatch.pipeline || 'no pipeline'})`)
     }
 
     // AI classification
