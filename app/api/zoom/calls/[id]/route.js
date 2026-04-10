@@ -30,6 +30,8 @@ export async function PATCH(request, { params }) {
     'classifiedAs', 'notes', 'assignedRepEmail', 'assignedRepName',
     'ghlContactId', 'ghlContactName', 'status', 'workflowTriggered',
     'clientProfileId', 'acronym',
+    'dealClosed', 'onboardingAgentEmail', 'onboardingAgentName',
+    'gaEmail', 'gaName',
   ]
 
   const updates = []

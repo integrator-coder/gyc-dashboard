@@ -13,50 +13,40 @@ const CLASSIFICATION_OPTIONS = [
   { value: 'other', label: 'Other' },
 ]
 
-const REPS_BY_TYPE = {
-  sales: [
-    { name: 'Jesse', email: 'jesse@growyourcenter.com' },
-    { name: 'Briana', email: 'briana@growyourcenter.com' },
-    { name: 'Pia', email: 'pia@growyourcenter.com' },
-  ],
-  onboarding: [
-    { name: 'Briana', email: 'briana@growyourcenter.com' },
-    { name: 'Zu', email: 'zu@growyourcenter.com' },
-  ],
-  client_meeting: [
-    { name: 'JC', email: 'jc@growyourcenter.com' },
-    { name: 'Stefen', email: 'stefen@growyourcenter.com' },
-    { name: 'Sebastian', email: 'sebastian@growyourcenter.com' },
-    { name: 'Zu', email: 'zu@growyourcenter.com' },
-  ],
-  blueprint: [
-    { name: 'Zu', email: 'zu@growyourcenter.com' },
-    { name: 'Briana', email: 'briana@growyourcenter.com' },
-  ],
-  internal: [
-    { name: 'Todd', email: 'todd@growyourcenter.com' },
-    { name: 'Bruce', email: 'bruce@growyourcenter.com' },
-    { name: 'Zac', email: 'zac@growyourcenter.com' },
-    { name: 'Carmella', email: 'carmella@growyourcenter.com' },
-    { name: 'Lex', email: 'lex@growyourcenter.com' },
-    { name: 'Travis', email: 'travis@growyourcenter.com' },
-    { name: 'Kaci', email: 'kaci@growyourcenter.com' },
-  ],
-  one_on_one: [
-    { name: 'Todd', email: 'todd@growyourcenter.com' },
-    { name: 'Bruce', email: 'bruce@growyourcenter.com' },
-    { name: 'Jesse', email: 'jesse@growyourcenter.com' },
-    { name: 'Briana', email: 'briana@growyourcenter.com' },
-    { name: 'Pia', email: 'pia@growyourcenter.com' },
-    { name: 'Lex', email: 'lex@growyourcenter.com' },
-    { name: 'Travis', email: 'travis@growyourcenter.com' },
-    { name: 'Zu', email: 'zu@growyourcenter.com' },
-    { name: 'JC', email: 'jc@growyourcenter.com' },
-    { name: 'Stefen', email: 'stefen@growyourcenter.com' },
-    { name: 'Kaci', email: 'kaci@growyourcenter.com' },
-    { name: 'Zac', email: 'zac@growyourcenter.com' },
-  ],
-}
+const SALES_REPS = [
+  { name: 'Jesse', email: 'jesse@growyourcenter.com' },
+  { name: 'Briana', email: 'briana@growyourcenter.com' },
+  { name: 'Pia', email: 'pia@growyourcenter.com' },
+]
+
+const GROWTH_ADVISORS = [
+  { name: 'Sebastian', email: 'sebastian@growyourcenter.com' },
+  { name: 'Stefen', email: 'stefen@growyourcenter.com' },
+  { name: 'JC', email: 'jc@growyourcenter.com' },
+  { name: 'Zu', email: 'zu@growyourcenter.com' },
+]
+
+const ONBOARDING_AGENTS = [
+  { name: 'Briana', email: 'briana@growyourcenter.com' },
+  { name: 'Zu', email: 'zu@growyourcenter.com' },
+]
+
+const ALL_GYC_STAFF = [
+  { name: 'Todd', email: 'todd@growyourcenter.com' },
+  { name: 'Bruce', email: 'bruce@growyourcenter.com' },
+  { name: 'Zac', email: 'zac@growyourcenter.com' },
+  { name: 'Carmella', email: 'carmella@growyourcenter.com' },
+  { name: 'Lex', email: 'lex@growyourcenter.com' },
+  { name: 'Travis', email: 'travis@growyourcenter.com' },
+  { name: 'Kaci', email: 'kaci@growyourcenter.com' },
+  { name: 'Jesse', email: 'jesse@growyourcenter.com' },
+  { name: 'Briana', email: 'briana@growyourcenter.com' },
+  { name: 'Pia', email: 'pia@growyourcenter.com' },
+  { name: 'Sebastian', email: 'sebastian@growyourcenter.com' },
+  { name: 'Stefen', email: 'stefen@growyourcenter.com' },
+  { name: 'JC', email: 'jc@growyourcenter.com' },
+  { name: 'Zu', email: 'zu@growyourcenter.com' },
+]
 
 const TYPE_COLORS = {
   sales: '#22c55e',
@@ -312,9 +302,6 @@ function GhlContactLinker({ callId, onLinked }) {
   )
 }
 
-// Types that require a client lookup field
-const CLIENT_LOOKUP_TYPES = ['client_meeting', 'onboarding', 'blueprint', 'sales']
-
 // ─── ClassificationForm ───────────────────────────────────────────────────────
 function ClassificationForm({ call: initialCall, onSaved }) {
   const [call, setCall] = useState(initialCall)
@@ -331,34 +318,71 @@ function ClassificationForm({ call: initialCall, onSaved }) {
   const [askAnswer, setAskAnswer] = useState('')
   const [asking, setAsking]   = useState(false)
 
+  // ── Smart form state ──────────────────────────────────────────────────────
+  const [dealClosed, setDealClosed]         = useState(false)
+  const [gaEmail, setGaEmail]               = useState('')
+  const [gaName, setGaName]                 = useState('')
+  const [onboardingEmail, setOnboardingEmail] = useState('')
+  const [onboardingName, setOnboardingName] = useState('')
+  const [staffTags, setStaffTags]           = useState([])
+  const [groupSession, setGroupSession]     = useState(false)
+
   // ── Client Lookup state ───────────────────────────────────────────────────
-  const [clientSearch, setClientSearch]     = useState('')
-  const [clientResults, setClientResults]   = useState([])
+  const [clientSearch, setClientSearch]       = useState('')
+  const [clientResults, setClientResults]     = useState([])
   const [clientSearching, setClientSearching] = useState(false)
-  const [selectedClient, setSelectedClient] = useState(null)
-  const [clientErr, setClientErr]           = useState('')
+  const [selectedClient, setSelectedClient]   = useState(null)
+  const [clientErr, setClientErr]             = useState('')
   const clientDebounceRef = useRef(null)
 
+  // ── Shared styles (defined early so inner functions can reference) ─────────
+  const sectionLabel = {
+    color: '#9ca3af', fontSize: 10, fontWeight: 700,
+    textTransform: 'uppercase', letterSpacing: '0.1em',
+    marginBottom: 6, display: 'block',
+  }
+  const divider = { borderTop: '1px solid #2a1a3e', margin: '10px 0' }
+  const selectStyle = {
+    width: '100%', background: '#1a0a2e', color: '#fff',
+    border: '1px solid #2a1a3e', borderRadius: 8, padding: '7px 10px', fontSize: 13,
+  }
+
+  // ── Auto-populate + reset on call change ─────────────────────────────────
   useEffect(() => {
+    const host         = (initialCall.hostEmail || '').toLowerCase()
+    const participants = Array.isArray(initialCall.participants) ? initialCall.participants : []
+
+    const matchedRep = SALES_REPS.find(r => r.email.toLowerCase() === host)
+    const matchedGA  = GROWTH_ADVISORS.find(r => r.email.toLowerCase() === host)
+
+    const gycParticipants = participants.filter(p => {
+      const email = (p.email || '').toLowerCase()
+      return GYC_DOMAINS.some(d => email.includes(d.toLowerCase()))
+    })
+
     setCall(initialCall)
     setForm({
       classifiedAs: initialCall.classifiedAs || initialCall.aiClassification || '',
-      assignedRepEmail: initialCall.assignedRepEmail || '',
-      assignedRepName: initialCall.assignedRepName || '',
+      assignedRepEmail: matchedRep?.email || initialCall.assignedRepEmail || '',
+      assignedRepName:  matchedRep?.name  || initialCall.assignedRepName  || '',
       notes: initialCall.notes || '',
     })
+    setGaEmail(matchedGA?.email || '')
+    setGaName(matchedGA?.name  || '')
+    setOnboardingEmail('')
+    setOnboardingName('')
+    setDealClosed(false)
+    setGroupSession(false)
+    setStaffTags(gycParticipants.map(p => ({ name: p.name || p.email || '', email: p.email || '' })))
     setAskAnswer('')
     setAskQ('')
     setError('')
     setSaved(false)
-    // Reset client lookup when switching calls
     setClientSearch('')
     setClientResults([])
     setSelectedClient(null)
     setClientErr('')
   }, [initialCall.id])
-
-  const reps = REPS_BY_TYPE[form.classifiedAs] || REPS_BY_TYPE.internal
 
   // ── Client lookup handlers ────────────────────────────────────────────────
   function handleClientSearch(e) {
@@ -390,9 +414,31 @@ function ClassificationForm({ call: initialCall, onSaved }) {
     setClientErr('')
   }
 
+  function clearClient() {
+    setSelectedClient(null)
+    setClientSearch('')
+    setClientResults([])
+  }
+
   function handleRepChange(email) {
-    const rep = reps.find(r => r.email === email)
+    const rep = SALES_REPS.find(r => r.email === email)
     setForm(f => ({ ...f, assignedRepEmail: email, assignedRepName: rep?.name || '' }))
+  }
+
+  function handleGaChange(email) {
+    const ga = GROWTH_ADVISORS.find(r => r.email === email)
+    setGaEmail(email)
+    setGaName(ga?.name || '')
+  }
+
+  function handleOnboardingChange(email) {
+    const agent = ONBOARDING_AGENTS.find(r => r.email === email)
+    setOnboardingEmail(email)
+    setOnboardingName(agent?.name || '')
+  }
+
+  function removeStaffTag(email) {
+    setStaffTags(prev => prev.filter(t => t.email !== email))
   }
 
   async function handleSave() {
@@ -401,7 +447,12 @@ function ClassificationForm({ call: initialCall, onSaved }) {
     setError('')
     try {
       const patchBody = {
-        ...form,
+        classifiedAs: form.classifiedAs,
+        notes: form.notes,
+        ...(form.assignedRepEmail ? { assignedRepEmail: form.assignedRepEmail, assignedRepName: form.assignedRepName } : {}),
+        ...(gaEmail ? { gaEmail, gaName } : {}),
+        ...(onboardingEmail ? { onboardingAgentEmail: onboardingEmail, onboardingAgentName: onboardingName } : {}),
+        dealClosed,
         ...(selectedClient ? { clientProfileId: selectedClient.id, acronym: selectedClient.acronym } : {}),
       }
       const res = await fetch(`/api/zoom/calls/${call.id}`, {
@@ -444,18 +495,222 @@ function ClassificationForm({ call: initialCall, onSaved }) {
     onSaved(updatedCall)
   }
 
+  // ── Client lookup field (reusable inside renderTypeFields) ───────────────
+  function ClientLookupField({ required = false }) {
+    return (
+      <div style={{ marginBottom: 10 }}>
+        <label style={{ ...sectionLabel, marginBottom: 5 }}>
+          Client (Acronym or Name){required && <span style={{ color: '#ef4444' }}> *</span>}
+        </label>
+        {selectedClient ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0a1a0d', border: '1px solid #22c55e44', borderRadius: 8, padding: '7px 12px', fontSize: 12 }}>
+            <div>
+              <span style={{ color: '#4ade80', fontWeight: 700 }}>{selectedClient.acronym}</span>
+              <span style={{ color: '#9ca3af' }}> — {selectedClient.companyName}</span>
+              <div style={{ color: '#6b7280', fontSize: 10, marginTop: 2 }}>
+                {selectedClient.assignedGA && <span>{selectedClient.assignedGA}</span>}
+                {selectedClient.status && <span> · {selectedClient.status}</span>}
+              </div>
+            </div>
+            <button onClick={clearClient} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: '0 2px' }} title="Clear client">✕</button>
+          </div>
+        ) : (
+          <div style={{ position: 'relative' }}>
+            <input
+              value={clientSearch}
+              onChange={handleClientSearch}
+              placeholder="Search by acronym or company name…"
+              style={{ width: '100%', boxSizing: 'border-box', background: '#1a0a2e', color: '#fff', border: '1px solid #2a1a3e', borderRadius: 8, padding: '7px 10px', fontSize: 12 }}
+            />
+            {clientSearching && (
+              <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#6b7280', fontSize: 10 }}>searching…</span>
+            )}
+          </div>
+        )}
+        {clientErr && <div style={{ color: '#f87171', fontSize: 11, marginTop: 4 }}>{clientErr}</div>}
+        {!selectedClient && clientResults.length > 0 && (
+          <div style={{ marginTop: 4, background: '#0d0d1a', border: '1px solid #3d1f6e', borderRadius: 8, overflow: 'hidden' }}>
+            {clientResults.map(c => (
+              <button
+                key={c.id}
+                onClick={() => selectClient(c)}
+                style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: '1px solid #2a1a3e', padding: '7px 10px', cursor: 'pointer', transition: 'background 0.1s' }}
+                onMouseEnter={e => e.currentTarget.style.background = '#1a0a2e'}
+                onMouseLeave={e => e.currentTarget.style.background = 'none'}
+              >
+                <span style={{ color: '#c4b5fd', fontWeight: 700, fontSize: 12 }}>{c.acronym}</span>
+                <span style={{ color: '#9ca3af', fontSize: 12 }}> — {c.companyName}</span>
+                <div style={{ color: '#6b7280', fontSize: 10, marginTop: 2 }}>
+                  {c.assignedGA && <span>{c.assignedGA}</span>}
+                  {c.status && <span> · {c.status}</span>}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+        {!selectedClient && clientSearch.length >= 1 && !clientSearching && clientResults.length === 0 && !clientErr && (
+          <div style={{ color: '#6b7280', fontSize: 11, marginTop: 5, textAlign: 'center' }}>No clients found for "{clientSearch}"</div>
+        )}
+      </div>
+    )
+  }
+
+  // ── Toggle button helper ───────────────────────────────────────────────────
+  function ToggleBtn({ value, label, active, activeColor, activeBg, activeBorder, onClick }) {
+    return (
+      <button
+        onClick={onClick}
+        style={{
+          padding: '5px 16px', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+          background: active ? activeBg : '#1a0a2e',
+          color: active ? activeColor : '#9ca3af',
+          border: `1px solid ${active ? activeBorder : '#2a1a3e'}`,
+        }}
+      >{label}</button>
+    )
+  }
+
+  // ── Type-specific fields ──────────────────────────────────────────────────
+  function renderTypeFields() {
+    const t = form.classifiedAs
+    if (!t) return null
+
+    if (t === 'sales') {
+      return (
+        <>
+          {/* Sales Rep */}
+          <div style={{ marginBottom: 10 }}>
+            <label style={{ ...sectionLabel, marginBottom: 5 }}>Sales Rep <span style={{ color: '#ef4444' }}>*</span></label>
+            <select value={form.assignedRepEmail} onChange={e => handleRepChange(e.target.value)} style={selectStyle}>
+              <option value="">— Select rep —</option>
+              {SALES_REPS.map(r => <option key={r.email} value={r.email}>{r.name}</option>)}
+            </select>
+          </div>
+          {/* Deal closed toggle */}
+          <div style={{ marginBottom: 10 }}>
+            <label style={{ ...sectionLabel, marginBottom: 5 }}>Did this call close the deal?</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <ToggleBtn label="No"  active={!dealClosed} onClick={() => setDealClosed(false)} activeColor="#9ca3af" activeBg="#2a1a3e" activeBorder="#4a3060" />
+              <ToggleBtn label="Yes" active={dealClosed}  onClick={() => setDealClosed(true)}  activeColor="#4ade80" activeBg="#22c55e22" activeBorder="#22c55e44" />
+            </div>
+          </div>
+          {/* If closed: Onboarding Agent + Growth Advisor */}
+          {dealClosed && (
+            <>
+              <div style={{ marginBottom: 10 }}>
+                <label style={{ ...sectionLabel, marginBottom: 5 }}>Onboarding Agent</label>
+                <select value={onboardingEmail} onChange={e => handleOnboardingChange(e.target.value)} style={selectStyle}>
+                  <option value="">— Select agent —</option>
+                  {ONBOARDING_AGENTS.map(r => <option key={r.email} value={r.email}>{r.name}</option>)}
+                </select>
+              </div>
+              <div style={{ marginBottom: 10 }}>
+                <label style={{ ...sectionLabel, marginBottom: 5 }}>Growth Advisor</label>
+                <select value={gaEmail} onChange={e => handleGaChange(e.target.value)} style={selectStyle}>
+                  <option value="">— Select GA —</option>
+                  {GROWTH_ADVISORS.map(r => <option key={r.email} value={r.email}>{r.name}</option>)}
+                </select>
+              </div>
+            </>
+          )}
+        </>
+      )
+    }
+
+    if (t === 'client_meeting') {
+      return (
+        <>
+          <div style={{ marginBottom: 10 }}>
+            <label style={{ ...sectionLabel, marginBottom: 5 }}>Growth Advisor</label>
+            <select value={gaEmail} onChange={e => handleGaChange(e.target.value)} style={selectStyle}>
+              <option value="">— Select GA —</option>
+              {GROWTH_ADVISORS.map(r => <option key={r.email} value={r.email}>{r.name}</option>)}
+            </select>
+          </div>
+          <ClientLookupField required />
+        </>
+      )
+    }
+
+    if (t === 'onboarding') {
+      return (
+        <>
+          <div style={{ marginBottom: 10 }}>
+            <label style={{ ...sectionLabel, marginBottom: 5 }}>Onboarding Agent</label>
+            <select value={onboardingEmail} onChange={e => handleOnboardingChange(e.target.value)} style={selectStyle}>
+              <option value="">— Select agent —</option>
+              {ONBOARDING_AGENTS.map(r => <option key={r.email} value={r.email}>{r.name}</option>)}
+            </select>
+          </div>
+          <div style={{ marginBottom: 10 }}>
+            <label style={{ ...sectionLabel, marginBottom: 5 }}>Growth Advisor</label>
+            <select value={gaEmail} onChange={e => handleGaChange(e.target.value)} style={selectStyle}>
+              <option value="">— Select GA —</option>
+              {GROWTH_ADVISORS.map(r => <option key={r.email} value={r.email}>{r.name}</option>)}
+            </select>
+          </div>
+          <ClientLookupField />
+        </>
+      )
+    }
+
+    if (t === 'blueprint') {
+      return (
+        <>
+          <div style={{ marginBottom: 10 }}>
+            <label style={{ ...sectionLabel, marginBottom: 5 }}>Growth Advisor</label>
+            <select value={gaEmail} onChange={e => handleGaChange(e.target.value)} style={selectStyle}>
+              <option value="">— Select GA —</option>
+              {GROWTH_ADVISORS.map(r => <option key={r.email} value={r.email}>{r.name}</option>)}
+            </select>
+          </div>
+          <div style={{ marginBottom: 10 }}>
+            <label style={{ ...sectionLabel, marginBottom: 5 }}>Group session?</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <ToggleBtn label="No"  active={!groupSession} onClick={() => setGroupSession(false)} activeColor="#9ca3af" activeBg="#2a1a3e" activeBorder="#4a3060" />
+              <ToggleBtn label="Yes" active={groupSession}  onClick={() => setGroupSession(true)}  activeColor="#93c5fd" activeBg="#3b82f622" activeBorder="#3b82f644" />
+            </div>
+          </div>
+          {!groupSession && <ClientLookupField />}
+        </>
+      )
+    }
+
+    if (t === 'internal' || t === 'one_on_one') {
+      return (
+        <div style={{ marginBottom: 10 }}>
+          <label style={{ ...sectionLabel, marginBottom: 5 }}>Staff</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {staffTags.map(tag => (
+              <span key={tag.email} style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                background: '#2a1a3e', color: '#c4b5fd', border: '1px solid #7c3aed44',
+                borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 500,
+              }}>
+                {tag.name}
+                <button onClick={() => removeStaffTag(tag.email)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: 12, padding: 0, lineHeight: 1 }}>✕</button>
+              </span>
+            ))}
+            {staffTags.length === 0 && (
+              <span style={{ color: '#4a3060', fontSize: 11, fontStyle: 'italic' }}>No GYC staff detected in participants</span>
+            )}
+          </div>
+        </div>
+      )
+    }
+
+    return null
+  }
+
   const participants = Array.isArray(call.participants) ? call.participants : []
   const gycStaff = participants.filter(p => isGycStaff(p.email || ''))
   const external  = participants.filter(p => !isGycStaff(p.email || ''))
   const badge = confidenceBadge(call.aiConfidence, call.aiClassification)
   const hasGhl = Boolean(call.ghlContactId)
 
-  const sectionLabel = {
-    color: '#9ca3af', fontSize: 10, fontWeight: 700,
-    textTransform: 'uppercase', letterSpacing: '0.1em',
-    marginBottom: 6, display: 'block',
-  }
-  const divider = { borderTop: '1px solid #2a1a3e', margin: '10px 0' }
+  const isConfirmDisabled = saving || !form.classifiedAs ||
+    (form.classifiedAs === 'client_meeting' && !selectedClient) ||
+    (form.classifiedAs === 'sales' && !form.assignedRepEmail)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -647,101 +902,8 @@ function ClassificationForm({ call: initialCall, onSaved }) {
         </select>
       </div>
 
-      {/* ── CLIENT LOOKUP ─────────────────────────────────────── */}
-      {CLIENT_LOOKUP_TYPES.includes(form.classifiedAs) && (
-        <div style={{ marginBottom: 10 }}>
-          <label style={{ ...sectionLabel, marginBottom: 5 }}>Client (Acronym or Name)</label>
-
-          {selectedClient ? (
-            <div style={
-              { display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                background: '#0a1a0d', border: '1px solid #22c55e44', borderRadius: 8,
-                padding: '7px 12px', fontSize: 12 }
-            }>
-              <div>
-                <span style={{ color: '#4ade80', fontWeight: 700 }}>{selectedClient.acronym}</span>
-                <span style={{ color: '#9ca3af' }}> — {selectedClient.companyName}</span>
-                <div style={{ color: '#6b7280', fontSize: 10, marginTop: 2 }}>
-                  {selectedClient.assignedGA && <span>{selectedClient.assignedGA}</span>}
-                  {selectedClient.status && <span> · {selectedClient.status}</span>}
-                </div>
-              </div>
-              <button
-                onClick={() => { setSelectedClient(null); setClientSearch(''); setClientResults([]) }}
-                style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: '0 2px' }}
-                title="Clear client"
-              >✕</button>
-            </div>
-          ) : (
-            <div style={{ position: 'relative' }}>
-              <input
-                value={clientSearch}
-                onChange={handleClientSearch}
-                placeholder="Search by acronym or company name…"
-                style={{
-                  width: '100%', boxSizing: 'border-box',
-                  background: '#1a0a2e', color: '#fff',
-                  border: '1px solid #2a1a3e', borderRadius: 8,
-                  padding: '7px 10px', fontSize: 12,
-                }}
-              />
-              {clientSearching && (
-                <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#6b7280', fontSize: 10 }}>searching…</span>
-              )}
-            </div>
-          )}
-
-          {clientErr && (
-            <div style={{ color: '#f87171', fontSize: 11, marginTop: 4 }}>{clientErr}</div>
-          )}
-
-          {!selectedClient && clientResults.length > 0 && (
-            <div style={{ marginTop: 4, background: '#0d0d1a', border: '1px solid #3d1f6e', borderRadius: 8, overflow: 'hidden' }}>
-              {clientResults.map(c => (
-                <button
-                  key={c.id}
-                  onClick={() => selectClient(c)}
-                  style={{
-                    display: 'block', width: '100%', textAlign: 'left',
-                    background: 'none', border: 'none', borderBottom: '1px solid #2a1a3e',
-                    padding: '7px 10px', cursor: 'pointer', transition: 'background 0.1s',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#1a0a2e'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                >
-                  <span style={{ color: '#c4b5fd', fontWeight: 700, fontSize: 12 }}>{c.acronym}</span>
-                  <span style={{ color: '#9ca3af', fontSize: 12 }}> — {c.companyName}</span>
-                  <div style={{ color: '#6b7280', fontSize: 10, marginTop: 2 }}>
-                    {c.assignedGA && <span>{c.assignedGA}</span>}
-                    {c.status && <span> · {c.status}</span>}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {!selectedClient && clientSearch.length >= 1 && !clientSearching && clientResults.length === 0 && !clientErr && (
-            <div style={{ color: '#6b7280', fontSize: 11, marginTop: 5, textAlign: 'center' }}>No clients found for "{clientSearch}"</div>
-          )}
-        </div>
-      )}
-
-      {/* Assigned To */}
-      {form.classifiedAs && (
-        <div style={{ marginBottom: 10 }}>
-          <label style={{ ...sectionLabel, marginBottom: 5 }}>Assigned To</label>
-          <select
-            value={form.assignedRepEmail}
-            onChange={e => handleRepChange(e.target.value)}
-            style={{ width: '100%', background: '#1a0a2e', color: '#fff', border: '1px solid #2a1a3e', borderRadius: 8, padding: '7px 10px', fontSize: 13 }}
-          >
-            <option value="">— Select rep —</option>
-            {reps.map(r => (
-              <option key={r.email} value={r.email}>{r.name}</option>
-            ))}
-          </select>
-        </div>
-      )}
+      {/* ── SMART TYPE-SPECIFIC FIELDS ────────────────────────────── */}
+      {renderTypeFields()}
 
       {/* Notes */}
       <div style={{ marginBottom: 12 }}>
@@ -761,13 +923,13 @@ function ClassificationForm({ call: initialCall, onSaved }) {
 
       <button
         onClick={handleSave}
-        disabled={saving || !form.classifiedAs}
+        disabled={isConfirmDisabled}
         style={{
           width: '100%',
-          background: saving || !form.classifiedAs ? '#2a1a3e' : 'linear-gradient(135deg, #731494, #AE2BCF)',
-          color: saving || !form.classifiedAs ? '#6b7280' : '#fff',
+          background: isConfirmDisabled ? '#2a1a3e' : 'linear-gradient(135deg, #731494, #AE2BCF)',
+          color: isConfirmDisabled ? '#6b7280' : '#fff',
           border: 'none', borderRadius: 8, padding: '10px 0',
-          fontSize: 13, fontWeight: 700, cursor: saving || !form.classifiedAs ? 'not-allowed' : 'pointer',
+          fontSize: 13, fontWeight: 700, cursor: isConfirmDisabled ? 'not-allowed' : 'pointer',
           transition: 'all 0.15s',
         }}
       >
@@ -905,7 +1067,7 @@ export default function ZoomClassifierPage({ embedded = false }) {
       </div>
 
       {/* Two-column layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 16, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '35% 65%', gap: 16, alignItems: 'start' }}>
         {/* Left — Call list */}
         <div style={{ overflowY: 'auto', maxHeight: listMaxH, paddingRight: 4 }}>
           {error && (
