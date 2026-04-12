@@ -50,7 +50,8 @@ const SCENARIOS = {
 }
 
 // ─── Avg deal MRR (base case new MRR ÷ ~11 deals/mo) ─────────────────────────
-const AVG_DEAL_MRR = Math.round(9974 / 11) // ≈ 907
+const AVG_DEAL_MRR = 748  // actual avg MRR per new deal (2025: $119,682 MRR / 160 deals)
+const AVG_DEAL_FIRST_PAYMENT = 2039  // avg first payment cash per deal (2025: $326,173 / 160 deals)
 
 // ─── Google Sheets helpers ─────────────────────────────────────────────────────
 async function fetchRenewalSchedule() {
@@ -183,9 +184,12 @@ function buildSensitivityMatrix(startMRR, ytdActuals, startMonth, renewalByMonth
   const matrix = dealCounts.map((deals) =>
     churnRates.map((churn) => {
       const newMRRPerMonth = deals * AVG_DEAL_MRR
+      // Add first-payment cash: each deal also brings avg $2,039 first payment (not just recurring MRR)
+      const monthsRemaining = 8.63  // May-Dec
+      const firstPaymentCash = deals * AVG_DEAL_FIRST_PAYMENT * monthsRemaining
       const scenario = { churnRate: churn, newMRRPerMonth, expansionMRR: 0, renewalRate: 0.75, roofingMRR: 0 }
       const { revenue2026 } = runScenario(scenario, startMRR, startMonth, renewalByMonth)
-      const total2026 = Math.round(ytdActuals + revenue2026)
+      const total2026 = Math.round(ytdActuals + revenue2026 + firstPaymentCash)
       return total2026
     })
   )

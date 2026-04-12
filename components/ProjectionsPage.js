@@ -275,10 +275,12 @@ function SensitivityHeatmap({ sensitivity }) {
   const { dealCounts, churnRates, matrix } = sensitivity
 
   function cellColor(value) {
-    if (value >= ANNUAL_TARGET) return { bg: '#065f46', text: '#34d399', border: '#10b981' }
-    if (value >= 4_000_000) return { bg: '#1a4731', text: '#6ee7b7', border: '#059669' }
-    if (value >= 3_500_000) return { bg: '#451a03', text: '#fcd34d', border: '#f59e0b' }
-    return { bg: '#450a0a', text: '#fca5a5', border: '#ef4444' }
+    // Thresholds calibrated to GYC's 2026 revenue range (YTD $987K + model remaining)
+    if (value >= 4_200_000) return { bg: '#065f46', text: '#34d399', border: '#10b981' }  // ≥ $4.2M target 🎯
+    if (value >= 3_800_000) return { bg: '#1a4731', text: '#6ee7b7', border: '#059669' }  // $3.8-4.2M
+    if (value >= 3_500_000) return { bg: '#1c2a1a', text: '#86efac', border: '#4ade80' }  // $3.5-3.8M
+    if (value >= 3_200_000) return { bg: '#451a03', text: '#fcd34d', border: '#f59e0b' }  // $3.2-3.5M
+    return { bg: '#450a0a', text: '#fca5a5', border: '#ef4444' }  // < $3.2M
   }
 
   return (
@@ -327,9 +329,10 @@ function SensitivityHeatmap({ sensitivity }) {
       {/* Legend */}
       <div style={{ display: 'flex', gap: 12, padding: '12px 14px', borderTop: `1px solid ${C.border}`, flexWrap: 'wrap' }}>
         {[
-          { label: '< $3.5M', bg: '#450a0a', text: '#fca5a5' },
-          { label: '$3.5M–$4.0M', bg: '#451a03', text: '#fcd34d' },
-          { label: '$4.0M–$4.2M', bg: '#1a4731', text: '#6ee7b7' },
+          { label: '< $3.2M', bg: '#450a0a', text: '#fca5a5' },
+          { label: '$3.2M–$3.5M', bg: '#451a03', text: '#fcd34d' },
+          { label: '$3.5M–$3.8M', bg: '#1c2a1a', text: '#86efac' },
+          { label: '$3.8M–$4.2M', bg: '#1a4731', text: '#6ee7b7' },
           { label: '≥ $4.2M 🎯', bg: '#065f46', text: '#34d399' },
         ].map((l) => (
           <span key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: l.text }}>
