@@ -215,6 +215,41 @@ function buildDealsVsChurnMatrix(startMRR, ytdActuals, startMonth, renewalByMont
   return { dealCounts, colValues: churnRates, colType: 'churn', matrix }
 }
 
+// Table 3: New Deals/Month × PIF Deals/Month (fixed 2% churn)
+function buildPIFMatrix(startMRR, ytdActuals, avgDealMRR, avgFirstPayment) {
+  const PIF_DEAL_COUNTS    = [0, 2, 4, 6, 8, 10]
+  const MONTHLY_DEAL_COUNTS = [8, 10, 12, 14, 16]
+  const AVG_PIF_AMOUNT     = 8693   // 2026 actual avg
+  const CHURN_FOR_PIF_TABLE = 0.020
+  const months = 9
+  const monthsRemaining = 8.63
+
+  const matrix = MONTHLY_DEAL_COUNTS.map((monthlyDeals) => {
+    // MRR run is independent of PIF count — compute once per row
+    const newMRRPerMonth = monthlyDeals * avgDealMRR
+    let mrrRun = startMRR
+    let revRemaining = 0
+    for (let m = 0; m < months; m++) {
+      mrrRun = mrrRun + newMRRPerMonth - mrrRun * CHURN_FOR_PIF_TABLE
+      revRemaining += mrrRun
+    }
+    const monthlyCash = monthlyDeals * avgFirstPayment * monthsRemaining
+
+    return PIF_DEAL_COUNTS.map((pifsPerMonth) => {
+      const pifCash = pifsPerMonth * AVG_PIF_AMOUNT * monthsRemaining
+      return Math.round(ytdActuals + revRemaining + monthlyCash + pifCash)
+    })
+  })
+
+  return {
+    dealCounts: MONTHLY_DEAL_COUNTS,
+    colValues: PIF_DEAL_COUNTS,
+    colType: 'pif',
+    avgPifAmount: AVG_PIF_AMOUNT,
+    matrix,
+  }
+}
+
 // ─── Main handler ─────────────────────────────────────────────────────────────
 export async function GET() {
   const dbClient = await pool.connect()
@@ -332,6 +367,7 @@ export async function GET() {
     const ytdActualsCash = ytdCash
     const sensitivityDealsExpansion = buildDealsVsExpansionMatrix(currentMRR, ytdActualsCash, projStartKey, renewalByMonth, AVG_DEAL_MRR, AVG_DEAL_FIRST_PAYMENT)
     const sensitivityDealsChurn     = buildDealsVsChurnMatrix(currentMRR, ytdActualsCash, projStartKey, renewalByMonth, AVG_DEAL_MRR, AVG_DEAL_FIRST_PAYMENT)
+    const sensitivityPIF            = buildPIFMatrix(currentMRR, ytdActualsCash, AVG_DEAL_MRR, AVG_DEAL_FIRST_PAYMENT)
 
     // ─── E. Forward MRR Bridge (6-month forward projection, Base Case) ─────────
     const BASE_SCENARIO = SCENARIOS.base
@@ -433,6 +469,7 @@ export async function GET() {
       forwardMrrBridge,
       sensitivityDealsExpansion,
       sensitivityDealsChurn,
+      sensitivityPIF,
       avgDealStats: { avgDealMRR: AVG_DEAL_MRR, avgFirstPayment: AVG_DEAL_FIRST_PAYMENT, dealCount: DEAL_COUNT_2025 },
       keyMetrics: { nrr, quickRatio, daysToTarget, churnCost, currentMRR },
       meta: {

@@ -316,7 +316,7 @@ const SENSITIVITY_LEGEND = [
 function SensitivityGrid({ data: sens, colHeader }) {
   if (!sens) return null
   const { dealCounts, colValues, colType, matrix } = sens
-  const fmtCol = (v) => colType === 'churn' ? `${(v * 100).toFixed(1)}%` : `$${(v / 1000).toFixed(0)}K`
+  const fmtCol = (v) => colType === 'churn' ? `${(v * 100).toFixed(1)}%` : colType === 'pif' ? `${v}` : `$${(v / 1000).toFixed(0)}K`
 
   return (
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'auto' }}>
@@ -629,6 +629,14 @@ export default function ProjectionsPage() {
               <p style={{ color: C.white, fontSize: 13, fontWeight: 600, margin: '0 0 4px' }}>Table 2 — New Deals × Churn Rate ($3K expansion fixed)</p>
               <p style={{ color: C.muted, fontSize: 11, margin: '0 0 10px' }}>Shows retention value. Assumes $3K/mo expansion MRR (moderate upsell). Churn reduction = permanent compounding gains.</p>
               <SensitivityGrid data={data?.sensitivityDealsChurn} colHeader="Deals/mo ↓ | Churn Rate →" />
+            </div>
+
+            {/* Table 3: Deals × PIF Volume */}
+            <div>
+              <p style={{ color: C.white, fontSize: 13, fontWeight: 600, margin: '0 0 4px' }}>📋 PIF Volume Impact</p>
+              <p style={{ color: C.muted, fontSize: 11, margin: '0 0 10px' }}>2026 total revenue by monthly recurring deals vs PIF deals/month (avg $8,693/deal, 2% churn fixed)</p>
+              <SensitivityGrid data={data?.sensitivityPIF} colHeader="Monthly deals/month ↓ | PIFs/month →" />
+              <p style={{ color: '#4a3060', fontSize: 11, marginTop: 8 }}>Current 2026 pace: ~6 PIFs/month · $182K PIF cash already collected YTD · PIFs add immediate cash but don't compound as MRR</p>
             </div>
           </div>
         )}
