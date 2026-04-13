@@ -5,6 +5,7 @@ import MetricTooltip from '@/components/MetricTooltip'
 import {
   ComposedChart,
   BarChart,
+  LineChart,
   Bar,
   Line,
   XAxis,
@@ -248,6 +249,121 @@ function ForwardMRRBridge({ bridge = [] }) {
           </tbody>
         </table>
       </div>
+    </div>
+  )
+}
+
+// ─── Section 3b: Monthly Revenue Composition ────────────────────────────────
+function MonthlyRevenueComposition({ scenarios }) {
+  if (!scenarios?.base?.points) return null
+  const mrrPoints = scenarios.base.points
+  const chartData = mrrPoints.map(p => ({
+    month: p.month.slice(5),
+    mrr: Math.round(p.mrr / 1000),
+    pif: 52,
+  }))
+
+  return (
+    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: '20px 16px' }}>
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={chartData} margin={{ top: 8, right: 16, bottom: 4, left: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#2a1a3e" vertical={false} />
+          <XAxis dataKey="month" tick={{ fill: C.muted, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis
+            tickFormatter={(v) => `$${v}K`}
+            tick={{ fill: C.muted, fontSize: 10 }}
+            axisLine={false}
+            tickLine={false}
+            width={62}
+            label={{ value: 'Monthly Revenue ($000s)', angle: -90, position: 'insideLeft', fill: C.muted, fontSize: 10, dx: -8 }}
+          />
+          <Tooltip
+            content={({ active, payload, label }) => {
+              if (!active || !payload?.length) return null
+              return (
+                <div style={{ background: '#1a0d2b', border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px' }}>
+                  <p style={{ color: C.white, fontWeight: 600, margin: '0 0 6px', fontSize: 13 }}>Month {label}</p>
+                  {payload.map((p, i) => (
+                    <p key={i} style={{ color: p.fill, margin: '2px 0', fontSize: 12 }}>
+                      {p.name}: ${p.value}K
+                    </p>
+                  ))}
+                  <p style={{ color: C.muted, margin: '4px 0 0', fontSize: 11 }}>
+                    Total: ${payload.reduce((s, p) => s + (p.value || 0), 0)}K
+                  </p>
+                </div>
+              )
+            }}
+          />
+          <Legend wrapperStyle={{ fontSize: 11, color: C.muted }} />
+          <Bar dataKey="mrr" name="Recurring MRR" stackId="a" fill="#731494" />
+          <Bar dataKey="pif" name="PIF Cash (~$52K)" stackId="a" fill="#C19C46" radius={[3,3,0,0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+// ─── Section 3c: Total Revenue Trajectory ────────────────────────────────────
+function TotalRevenueTrajectory({ scenarios }) {
+  if (!scenarios?.base?.points) return null
+
+  const allMonths = new Set()
+  for (const sc of Object.values(scenarios)) {
+    for (const p of (sc.points || [])) allMonths.add(p.month)
+  }
+  const sortedMonths = [...allMonths].sort()
+
+  const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  const chartData = sortedMonths.map(month => {
+    const [y, m] = month.split('-').map(Number)
+    const label = `${MONTH_LABELS[m - 1]} ${String(y).slice(2)}`
+    const row = { month, label, target: 4.2 }
+    for (const [key, sc] of Object.entries(scenarios)) {
+      const point = sc.points?.find(p => p.month === month)
+      if (point) {
+        row[key] = Math.round((point.mrr + 52000) * 12 / 10000) / 100  // $M, 2dp
+      }
+    }
+    return row
+  })
+
+  return (
+    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: '20px 16px' }}>
+      <ResponsiveContainer width="100%" height={320}>
+        <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 4, left: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#2a1a3e" vertical={false} />
+          <XAxis dataKey="label" tick={{ fill: C.muted, fontSize: 10 }} axisLine={false} tickLine={false} interval={1} />
+          <YAxis
+            domain={[3.0, 6.5]}
+            tickFormatter={(v) => `$${v}M`}
+            tick={{ fill: C.muted, fontSize: 10 }}
+            axisLine={false}
+            tickLine={false}
+            width={58}
+          />
+          <Tooltip
+            content={({ active, payload, label }) => {
+              if (!active || !payload?.length) return null
+              return (
+                <div style={{ background: '#1a0d2b', border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px', maxWidth: 220 }}>
+                  <p style={{ color: C.white, fontWeight: 600, margin: '0 0 6px', fontSize: 13 }}>{label}</p>
+                  {payload.map((p, i) => (
+                    <p key={i} style={{ color: p.stroke, margin: '2px 0', fontSize: 12 }}>
+                      {p.name}: ${typeof p.value === 'number' ? p.value.toFixed(2) : p.value}M annualized
+                    </p>
+                  ))}
+                </div>
+              )
+            }}
+          />
+          <Legend wrapperStyle={{ fontSize: 11, color: C.muted }} />
+          <Line type="monotone" dataKey="base"  name="Base Case"           stroke="#731494" strokeWidth={2} dot={false} connectNulls />
+          <Line type="monotone" dataKey="jesse" name="Jesse 15/mo"         stroke="#C19C46" strokeWidth={2} dot={false} connectNulls />
+          <Line type="monotone" dataKey="full"  name="Jesse + GA Upsells" stroke="#340B67" strokeWidth={2.5} dot={false} connectNulls />
+          <Line type="monotone" dataKey="target" name="$4.2M Goal"         stroke="#ef4444" strokeWidth={1.5} dot={false} strokeDasharray="5 3" />
+        </LineChart>
+      </ResponsiveContainer>
     </div>
   )
 }
@@ -639,6 +755,34 @@ export default function ProjectionsPage() {
           </div>
         ) : (
           <ForwardMRRBridge bridge={data?.forwardMrrBridge} />
+        )}
+      </Section>
+
+      {/* ── Section 3b: Monthly Revenue Composition ────────────────────────────── */}
+      <Section
+        title="Monthly Revenue: MRR + PIF Cash"
+        sub="Two distinct revenue streams — recurring subscriptions and annual upfront payments"
+      >
+        {loading ? (
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <p style={{ color: C.muted }}>Loading…</p>
+          </div>
+        ) : (
+          <MonthlyRevenueComposition scenarios={data?.scenarios} />
+        )}
+      </Section>
+
+      {/* ── Section 3c: Total Revenue Trajectory ─────────────────────────────── */}
+      <Section
+        title="Total Revenue Trajectory — MRR + PIF Cash"
+        sub="All three scenarios shown annualized. Red dashed line = $4.2M goal."
+      >
+        {loading ? (
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, height: 320, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <p style={{ color: C.muted }}>Loading…</p>
+          </div>
+        ) : (
+          <TotalRevenueTrajectory scenarios={data?.scenarios} />
         )}
       </Section>
 
