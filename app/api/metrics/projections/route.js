@@ -41,7 +41,9 @@ function runScenario(scenario, startMRR, startMonth, renewalByMonth) {
     const rawRenewal = renewalByMonth[key] || 0
     const appliedRenewal = rawRenewal * scenario.renewalRate
 
-    const newMrr = mrr * (1 - scenario.churnRate) + scenario.newMRRPerMonth + scenario.expansionMRR + appliedRenewal
+    // Correct MRR calc: start MRR + new additions - churn loss
+    const churnLoss = mrr * scenario.churnRate
+    const newMrr = mrr + scenario.newMRRPerMonth + scenario.expansionMRR + appliedRenewal - churnLoss
 
     points.push({
       month: key,
@@ -175,7 +177,7 @@ export async function GET() {
         churnRate: 0.025,
         newMRRPerMonth: 10 * AVG_DEAL_MRR,
         expansionMRR: 0,
-        renewalRate: 0.75,
+        renewalRate: 1.0,
         color: '#731494',
       },
       jesse: {
@@ -184,7 +186,7 @@ export async function GET() {
         churnRate: 0.020,
         newMRRPerMonth: 15 * AVG_DEAL_MRR,
         expansionMRR: 0,
-        renewalRate: 0.80,
+        renewalRate: 1.0,
         color: '#C19C46',
       },
       full: {
@@ -193,7 +195,7 @@ export async function GET() {
         churnRate: 0.018,
         newMRRPerMonth: 15 * AVG_DEAL_MRR,
         expansionMRR: 4500,
-        renewalRate: 0.85,
+        renewalRate: 1.0,
         color: '#340B67',
       },
     }
