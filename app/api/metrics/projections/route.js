@@ -86,7 +86,7 @@ function buildUnifiedMatrix(churnRate, currentMRR, ytdCash, avgDealMRR = 864) {
   ]
 
   const AVG_MRR_PER_MRR_DEAL      = avgDealMRR
-  const AVG_FIRST_PAYMENT_MRR_DEAL = 2039
+  const AVG_FIRST_PAYMENT_MRR_DEAL = 1033  // monthly deals only (PIFs tracked separately)
   const AVG_PIF_AMOUNT             = 8693
   const MONTHS_REMAINING           = 8.63
 
@@ -237,7 +237,7 @@ export async function GET() {
     const avgPIFAmount = 8693
     const monthlyRevenue = {
       mrrComponent: currentMRR,
-      firstPaymentComponent: avgDealsPerMonth * avgFirstPayment,
+      firstPaymentComponent: avgDealsPerMonth * 1033,  // monthly deals only, PIF tracked separately
       pifCashComponent: avgPIFPerMonth * avgPIFAmount,
       totalMonthlyRevenue: currentMRR + (avgDealsPerMonth * avgFirstPayment) + (avgPIFPerMonth * avgPIFAmount),
       totalAnnualized: (currentMRR + (avgDealsPerMonth * avgFirstPayment) + (avgPIFPerMonth * avgPIFAmount)) * 12,
