@@ -31,6 +31,10 @@ const C = {
   teal: '#14b8a6',
   gray: '#6b7280',
   white: '#ffffff',
+  // Scenario colours
+  scBase:  '#731494',
+  scJesse: '#C19C46',
+  scFull:  '#340B67',
 }
 
 const ANNUAL_TARGET = 4_200_000
@@ -128,7 +132,6 @@ function ActualsProjectionsChart({ data }) {
 
   const chartData = sortedKeys.map((key) => {
     const actual = actualsMap[key]
-    const isProjection = !actual && key >= projStartKey
     const [y, m] = key.split('-').map(Number)
     const label = `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1]} ${String(y).slice(2)}`
     const row = { key, label }
@@ -139,9 +142,9 @@ function ActualsProjectionsChart({ data }) {
     }
 
     if (key >= projStartKey) {
-      row.projBase = scenarios.base?.points?.find((p) => p.month === key)?.mrr
-      row.projTarget = scenarios.target?.points?.find((p) => p.month === key)?.mrr
-      row.projStretch = scenarios.stretch?.points?.find((p) => p.month === key)?.mrr
+      row.projBase  = scenarios.base?.points?.find((p) => p.month === key)?.mrr
+      row.projJesse = scenarios.jesse?.points?.find((p) => p.month === key)?.mrr
+      row.projFull  = scenarios.full?.points?.find((p) => p.month === key)?.mrr
     }
 
     return row
@@ -165,9 +168,9 @@ function ActualsProjectionsChart({ data }) {
           <Bar dataKey="actual2026" name="2026 Actuals" fill={C.indigo} radius={[3,3,0,0]} maxBarSize={18} />
 
           {/* Projection lines */}
-          <Line type="monotone" dataKey="projBase" name="Base Case" stroke={C.indigo} strokeWidth={2} dot={false} strokeDasharray="6 3" connectNulls />
-          <Line type="monotone" dataKey="projTarget" name="$4.2M Target" stroke={C.amber} strokeWidth={2} dot={false} strokeDasharray="6 3" connectNulls />
-          <Line type="monotone" dataKey="projStretch" name="Stretch" stroke={C.green} strokeWidth={2} dot={false} strokeDasharray="6 3" connectNulls />
+          <Line type="monotone" dataKey="projBase"  name="Base Case"             stroke={C.scBase}  strokeWidth={2} dot={false} strokeDasharray="6 3" connectNulls />
+          <Line type="monotone" dataKey="projJesse" name="Jesse 15/mo"           stroke={C.scJesse} strokeWidth={2} dot={false} strokeDasharray="6 3" connectNulls />
+          <Line type="monotone" dataKey="projFull"  name="Jesse + GA Upsells"   stroke={C.amber}   strokeWidth={2} dot={false} strokeDasharray="6 3" connectNulls />
 
           {/* $350K monthly target line */}
           <ReferenceLine
@@ -253,9 +256,9 @@ function ForwardMRRBridge({ bridge = [] }) {
 function ScenarioTable({ table, scenarios }) {
   if (!table?.rows) return null
 
-  const cols = ['base', 'target', 'stretch']
-  const colors = { base: C.indigo, target: C.amber, stretch: C.green }
-  const labels = { base: 'Base Case', target: '$4.2M Target', stretch: 'Stretch' }
+  const cols = ['base', 'jesse', 'full']
+  const colors = { base: C.scBase, jesse: C.scJesse, full: C.amber }
+  const labels = { base: 'Base Case', jesse: 'Jesse 15/mo', full: 'Jesse + GA' }
 
   return (
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden' }}>
@@ -568,6 +571,56 @@ export default function ProjectionsPage() {
         </div>
       </Section>
 
+      {/* ── Monthly Revenue Breakdown ──────────────────────────────────────── */}
+      <Section
+        title="Monthly Revenue Breakdown"
+        sub="MRR understates true monthly cash generation. PIF cash and first payments are real revenue not captured in Stripe MRR."
+      >
+        {loading ? (
+          <p style={{ color: C.muted }}>Loading…</p>
+        ) : (() => {
+          const rev = s?.monthlyRevenue
+          if (!rev) return <p style={{ color: C.muted }}>No data.</p>
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
+                <KpiCard
+                  title="Recurring MRR"
+                  value={fmtM(rev.mrrComponent)}
+                  sub="Stripe subscription MRR"
+                  icon="🔁"
+                  accent={C.purple}
+                />
+                <KpiCard
+                  title="New Deal First Payments"
+                  value={fmtM(rev.firstPaymentComponent)}
+                  sub={`10 deals × $2,039 avg`}
+                  icon="🤝"
+                  accent={C.teal}
+                />
+                <KpiCard
+                  title="PIF Cash"
+                  value={fmtM(rev.pifCashComponent)}
+                  sub={`6 PIFs × $8,693 avg`}
+                  icon="💰"
+                  accent={C.scJesse}
+                />
+                <KpiCard
+                  title="Total Monthly Cash"
+                  value={fmtM(rev.totalMonthlyRevenue)}
+                  sub={`Annualized: ${fmtM(rev.totalAnnualized)}`}
+                  icon="📈"
+                  accent={C.green}
+                />
+              </div>
+              <p style={{ color: C.muted, fontSize: 11, margin: 0 }}>
+                💡 MRR understates true monthly cash generation. PIF cash and first payments are real revenue not captured in Stripe MRR.
+              </p>
+            </div>
+          )
+        })()}
+      </Section>
+
       {/* ── Section 2: Actuals + Projections chart ───────────────────────────── */}
       <Section
         title="Actuals vs Projections"
@@ -665,7 +718,7 @@ export default function ProjectionsPage() {
 
               {/* Note */}
               <p style={{ color: '#6b7280', fontSize: 11, margin: 0 }}>
-                Current 2026 pace: ~6 PIFs/month · ~5 MRR deals/month · Avg PIF: $8,693 · Avg MRR deal: $864/mo
+                Current 2026 pace: ~6 PIFs/month · ~5 MRR deals/month · Avg PIF: $8,693 · Avg MRR deal: {data?.avgDealStats?.avgDealMRR ?? 864}/mo (live from DB)
               </p>
             </div>
           )

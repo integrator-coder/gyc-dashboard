@@ -3,112 +3,14 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import pkg from 'pg'
 const { Pool } = pkg
-import { createGoogleAuth } from '@/lib/google-auth'
-import { google } from 'googleapis'
 
 const pool = new Pool({
   connectionString: process.env.NEON_DATABASE_URL,
   ssl: { rejectUnauthorized: false },
 })
 
-const SHEET_ID = '1858s3B0oQ8YC4KEBDefJMc0WuD5nyjNIFxiQrqsuO-A'
 const ANNUAL_TARGET = 4_200_000
 const MONTHLY_TARGET = ANNUAL_TARGET / 12 // $350,000/mo
-
-// ─── Scenario definitions ─────────────────────────────────────────────────────
-const SCENARIOS = {
-  base: {
-    label: 'Base Case',
-    description: 'Current trends continue. 2025 sales pace, churn holds at 2.5%/mo.',
-    churnRate: 0.025,
-    newMRRPerMonth: 9974,
-    expansionMRR: 0,
-    renewalRate: 0.75,
-    roofingMRR: 0,
-    color: '#6366f1',
-  },
-  target: {
-    label: '$4.2M Target',
-    description: 'Close rate improves 25%, churn drops to 1.8%, expansion MRR from upsells begins.',
-    churnRate: 0.018,
-    newMRRPerMonth: 13000,
-    expansionMRR: 3000,
-    renewalRate: 0.82,
-    roofingMRR: 0,
-    color: '#f59e0b',
-  },
-  stretch: {
-    label: 'Stretch / Roofing 2027',
-    description: 'Execution excellence + roofing pilot launch Sept 2026.',
-    churnRate: 0.015,
-    newMRRPerMonth: 16000,
-    expansionMRR: 5000,
-    renewalRate: 0.88,
-    roofingMRR: 7500, // adds starting Oct 2026
-    color: '#10b981',
-  },
-}
-
-
-// ─── Google Sheets helpers ─────────────────────────────────────────────────────
-async function fetchRenewalSchedule() {
-  try {
-    const auth = createGoogleAuth(['https://www.googleapis.com/auth/spreadsheets.readonly'])
-    const client = await auth.getClient()
-    const sheets = google.sheets({ version: 'v4', auth: client })
-
-    const [res26, res25] = await Promise.all([
-      sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
-        range: '2026 Details!A1:R200',
-        valueRenderOption: 'UNFORMATTED_VALUE',
-        dateTimeRenderOption: 'FORMATTED_STRING',
-      }),
-      sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
-        range: '2025 Details!A1:R400',
-        valueRenderOption: 'UNFORMATTED_VALUE',
-        dateTimeRenderOption: 'FORMATTED_STRING',
-      }),
-    ])
-
-    const rows26 = res26.data.values || []
-    const rows25 = res25.data.values || []
-
-    const parseRows = (rows) =>
-      rows.slice(1).filter((r) => r[5]).map((r) => ({
-        date: r[5] || '',
-        pif: (r[11] || '').toString().trim().toUpperCase() === 'Y',
-        term: Number(r[8]) || 0,
-        renewalAmount: Number(r[12]) || 0,
-        mrr: Number(r[7]) || 0,
-        name: r[1] || '',
-      }))
-
-    const allDeals = [...parseRows(rows25), ...parseRows(rows26)]
-    const pifTermMonths = (term) => (term === 1 ? 12 : term)
-    const renewalByMonth = {}
-
-    for (const d of allDeals) {
-      if (!d.pif || !d.renewalAmount || !d.date) continue
-      const termMonths = pifTermMonths(d.term)
-      if (!termMonths) continue
-      const saleDate = new Date(d.date)
-      if (isNaN(saleDate)) continue
-      saleDate.setMonth(saleDate.getMonth() + termMonths)
-      const key = `${saleDate.getFullYear()}-${String(saleDate.getMonth() + 1).padStart(2, '0')}`
-      const year = saleDate.getFullYear()
-      if (year < 2026 || year > 2027) continue
-      if (!renewalByMonth[key]) renewalByMonth[key] = 0
-      renewalByMonth[key] += d.renewalAmount
-    }
-
-    return renewalByMonth
-  } catch (e) {
-    console.warn('Projections: could not fetch renewal schedule from Sheets:', e.message)
-    return {}
-  }
-}
 
 // ─── Month sequence generator ─────────────────────────────────────────────────
 function monthsFrom(startYYYYMM, count) {
@@ -125,7 +27,6 @@ function monthsFrom(startYYYYMM, count) {
 
 // ─── Run scenario projection ──────────────────────────────────────────────────
 function runScenario(scenario, startMRR, startMonth, renewalByMonth) {
-  // Generate months from startMonth to Dec 2027
   const endMonth = '2027-12'
   const startParts = startMonth.split('-').map(Number)
   const endParts = endMonth.split('-').map(Number)
@@ -137,36 +38,26 @@ function runScenario(scenario, startMRR, startMonth, renewalByMonth) {
   const points = []
 
   for (const key of months) {
-    const [year, mon] = key.split('-').map(Number)
     const rawRenewal = renewalByMonth[key] || 0
     const appliedRenewal = rawRenewal * scenario.renewalRate
 
-    // Add roofing MRR starting Oct 2026 for stretch
-    const isOct2026OrLater =
-      year > 2026 || (year === 2026 && mon >= 10)
-    const roofing = scenario.roofingMRR && isOct2026OrLater ? scenario.roofingMRR : 0
-
-    const newMrr = mrr * (1 - scenario.churnRate) + scenario.newMRRPerMonth + scenario.expansionMRR + appliedRenewal + roofing
+    const newMrr = mrr * (1 - scenario.churnRate) + scenario.newMRRPerMonth + scenario.expansionMRR + appliedRenewal
 
     points.push({
       month: key,
       mrr: Math.round(newMrr),
       renewalMRR: Math.round(appliedRenewal),
-      roofingMRR: Math.round(roofing),
     })
 
     mrr = newMrr
   }
 
-  // Split into 2026 (May–Dec) and 2027
   const points2026 = points.filter((p) => p.month >= startMonth && p.month <= '2026-12')
   const points2027 = points.filter((p) => p.month >= '2027-01' && p.month <= '2027-12')
 
-  // Dec 2026 and Dec 2027 MRR
   const dec2026Mrr = points2026.find((p) => p.month === '2026-12')?.mrr || 0
   const dec2027Mrr = points2027.find((p) => p.month === '2027-12')?.mrr || 0
 
-  // Revenue = sum of monthly MRR (simplified: MRR ≈ monthly cash)
   const revenue2026 = Math.round(points2026.reduce((s, p) => s + p.mrr, 0))
   const revenue2027 = Math.round(points2027.reduce((s, p) => s + p.mrr, 0))
 
@@ -174,8 +65,7 @@ function runScenario(scenario, startMRR, startMonth, renewalByMonth) {
 }
 
 // ─── Unified Deal Mix Matrix (Bruce's design) ────────────────────────────────
-// One table: rows = total deals/month, cols = MRR/PIF mix, toggled by churn rate
-function buildUnifiedMatrix(churnRate, currentMRR, ytdCash) {
+function buildUnifiedMatrix(churnRate, currentMRR, ytdCash, avgDealMRR = 864) {
   const totalDealCounts = [8, 10, 12, 14, 16, 18]
   const mixColumns = [
     { label: 'All MRR', mrrFraction: 1.0 },
@@ -187,7 +77,7 @@ function buildUnifiedMatrix(churnRate, currentMRR, ytdCash) {
     { label: 'All PIF', mrrFraction: 0.0 },
   ]
 
-  const AVG_MRR_PER_MRR_DEAL      = 864
+  const AVG_MRR_PER_MRR_DEAL      = avgDealMRR
   const AVG_FIRST_PAYMENT_MRR_DEAL = 2039
   const AVG_PIF_AMOUNT             = 8693
   const MONTHS_REMAINING           = 8.63
@@ -277,6 +167,37 @@ export async function GET() {
     const AVG_DEAL_FIRST_PAYMENT = Math.round(Number(dealMrrRow.avg_first_payment) || 2039)
     const DEAL_COUNT_2025 = Number(dealMrrRow.deal_count) || 0
 
+    // ─── Build scenarios dynamically using live avgDealMRR ────────────────────
+    const scenarios = {
+      base: {
+        label: 'Base Case',
+        description: 'Current pace — 10 deals/month, 2.5% churn, no GA expansion.',
+        churnRate: 0.025,
+        newMRRPerMonth: 10 * AVG_DEAL_MRR,
+        expansionMRR: 0,
+        renewalRate: 0.75,
+        color: '#731494',
+      },
+      jesse: {
+        label: 'Jesse Hits 15 Deals/Month',
+        description: 'Lead flow restored by May. Jesse at 15 deals/month. 2% churn.',
+        churnRate: 0.020,
+        newMRRPerMonth: 15 * AVG_DEAL_MRR,
+        expansionMRR: 0,
+        renewalRate: 0.80,
+        color: '#C19C46',
+      },
+      full: {
+        label: 'Jesse + GA Upsells',
+        description: 'Jesse at 15/month + GAs adding $4,500/month expansion MRR. 1.8% churn.',
+        churnRate: 0.018,
+        newMRRPerMonth: 15 * AVG_DEAL_MRR,
+        expansionMRR: 4500,
+        renewalRate: 0.85,
+        color: '#340B67',
+      },
+    }
+
     // Annualized from YTD
     const onTrackFor = daysElapsed > 0 ? Math.round((ytdCash / daysElapsed) * daysInYear) : 0
     const gapToTarget = ANNUAL_TARGET - onTrackFor
@@ -297,9 +218,22 @@ export async function GET() {
     const remaining = Math.max(ANNUAL_TARGET - ytdCash, 0)
     const daysToTarget = dailyRate > 0 ? Math.round(remaining / dailyRate) : null
 
-    // NRR approximation: (starting MRR + expansion - churn) / starting MRR
+    // NRR approximation
     const prevMrr = Number(previousMetrics.mrr || currentMRR)
     const nrr = prevMrr > 0 ? Math.round((currentMRR / prevMrr) * 100) : 100
+
+    // ─── Monthly revenue decomposition ───────────────────────────────────────
+    const avgDealsPerMonth = 10  // base assumption
+    const avgFirstPayment = 2039
+    const avgPIFPerMonth = 6
+    const avgPIFAmount = 8693
+    const monthlyRevenue = {
+      mrrComponent: currentMRR,
+      firstPaymentComponent: avgDealsPerMonth * avgFirstPayment,
+      pifCashComponent: avgPIFPerMonth * avgPIFAmount,
+      totalMonthlyRevenue: currentMRR + (avgDealsPerMonth * avgFirstPayment) + (avgPIFPerMonth * avgPIFAmount),
+      totalAnnualized: (currentMRR + (avgDealsPerMonth * avgFirstPayment) + (avgPIFPerMonth * avgPIFAmount)) * 12,
+    }
 
     // ─── B. Monthly Actuals ───────────────────────────────────────────────────
     const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
@@ -311,34 +245,44 @@ export async function GET() {
       revenue: r.revenue,
     }))
 
-    // ─── C. Renewal schedule from Google Sheets ───────────────────────────────
-    const renewalByMonth = await fetchRenewalSchedule()
+    // ─── C. Renewal schedule from DB (same source as New Business dashboard) ──
+    const { rows: renewalRows } = await dbClient.query(`
+      SELECT
+        to_char("dealDate"::date + (term * interval '1 month'), 'YYYY-MM') as renewal_month,
+        SUM("renewalAmount") as renewal_mrr
+      FROM "SalesDeal"
+      WHERE "tenantId" = 'gyc'
+        AND "renewalAmount" > 0
+        AND to_char("dealDate"::date + (term * interval '1 month'), 'YYYY-MM') BETWEEN '2026-01' AND '2027-12'
+      GROUP BY 1
+      ORDER BY 1
+    `)
+    const renewalByMonth = {}
+    renewalRows.forEach(r => { renewalByMonth[r.renewal_month] = parseFloat(r.renewal_mrr) })
 
     // Current projection start = next calendar month
     const projStartYear = now.getMonth() === 11 ? now.getFullYear() + 1 : now.getFullYear()
     const projStartMonth = now.getMonth() === 11 ? 1 : now.getMonth() + 2
     const projStartKey = `${projStartYear}-${String(projStartMonth).padStart(2, '0')}`
 
-    // ─── C. Three scenario projections ───────────────────────────────────────
+    // ─── D. Three scenario projections ───────────────────────────────────────
     const scenarioResults = {}
-    for (const [key, scenario] of Object.entries(SCENARIOS)) {
+    for (const [key, scenario] of Object.entries(scenarios)) {
       const result = runScenario(scenario, currentMRR, projStartKey, renewalByMonth)
       scenarioResults[key] = {
         ...scenario,
         ...result,
-        // For 2027 stretch with roofing, compute a "w/ roofing" variant
-        revenue2027WithRoofing: key === 'stretch' ? result.revenue2027 : null,
       }
     }
 
-    // ─── D. Unified deal mix matrices (4 churn rates) ───────────────────────────
-    const unifiedMatrix_2  = buildUnifiedMatrix(0.020, currentMRR, ytdCash)
-    const unifiedMatrix_25 = buildUnifiedMatrix(0.025, currentMRR, ytdCash)
-    const unifiedMatrix_3  = buildUnifiedMatrix(0.030, currentMRR, ytdCash)
-    const unifiedMatrix_4  = buildUnifiedMatrix(0.040, currentMRR, ytdCash)
+    // ─── E. Unified deal mix matrices (4 churn rates) ─────────────────────────
+    const unifiedMatrix_2  = buildUnifiedMatrix(0.020, currentMRR, ytdCash, AVG_DEAL_MRR)
+    const unifiedMatrix_25 = buildUnifiedMatrix(0.025, currentMRR, ytdCash, AVG_DEAL_MRR)
+    const unifiedMatrix_3  = buildUnifiedMatrix(0.030, currentMRR, ytdCash, AVG_DEAL_MRR)
+    const unifiedMatrix_4  = buildUnifiedMatrix(0.040, currentMRR, ytdCash, AVG_DEAL_MRR)
 
-    // ─── E. Forward MRR Bridge (6-month forward projection, Base Case) ─────────
-    const BASE_SCENARIO = SCENARIOS.base
+    // ─── F. Forward MRR Bridge (6-month forward projection, Base Case) ─────────
+    const BASE_SCENARIO = scenarios.base
     const bridgeMonths = ['May 26','Jun 26','Jul 26','Aug 26','Sep 26','Oct 26']
     const bridgeKeys =   ['2026-05','2026-06','2026-07','2026-08','2026-09','2026-10']
     const forwardMrrBridge = []
@@ -357,8 +301,8 @@ export async function GET() {
         beginMrr: Math.round(beginMrr),
         newMrr,
         renewalMrr,
-        churnMrr: -churnMrr,   // negative for chart display below zero line
-        churnMrrAbs: churnMrr, // absolute for table display
+        churnMrr: -churnMrr,
+        churnMrrAbs: churnMrr,
         netChange: endMrr - Math.round(beginMrr),
         endMrr,
       })
@@ -366,7 +310,7 @@ export async function GET() {
       mrrBridgeCurrent = endMrr
     }
 
-    // ─── F. Renewal pipeline by month (Jan–Dec 2026) ─────────────────────────
+    // ─── G. Renewal pipeline by month (Jan–Dec 2026) ─────────────────────────
     const renewalPipeline = []
     for (let m = 1; m <= 12; m++) {
       const key = `2026-${String(m).padStart(2, '0')}`
@@ -382,35 +326,28 @@ export async function GET() {
     // ─── Build scenario summary table rows ───────────────────────────────────
     const scenarioTable = {
       rows: [
-        { label: 'Churn Rate/mo', base: '2.5%', target: '1.8%', stretch: '1.5%' },
-        { label: 'New Deals/mo', base: '11', target: '~14', stretch: '~18' },
-        { label: 'Expansion MRR', base: '$0', target: '$3K', stretch: '$5K' },
+        { label: 'Churn Rate/mo', base: '2.5%', jesse: '2.0%', full: '1.8%' },
+        { label: 'New Deals/mo', base: '10', jesse: '15', full: '15' },
+        { label: 'Expansion MRR', base: '$0', jesse: '$0', full: '$4,500' },
         {
           label: 'Dec 2026 MRR',
           base: scenarioResults.base.dec2026Mrr,
-          target: scenarioResults.target.dec2026Mrr,
-          stretch: scenarioResults.stretch.dec2026Mrr,
+          jesse: scenarioResults.jesse.dec2026Mrr,
+          full: scenarioResults.full.dec2026Mrr,
           format: 'currency',
         },
         {
           label: '2026 Total Revenue (projected)',
           base: Math.round(ytdCash + scenarioResults.base.revenue2026),
-          target: Math.round(ytdCash + scenarioResults.target.revenue2026),
-          stretch: Math.round(ytdCash + scenarioResults.stretch.revenue2026),
+          jesse: Math.round(ytdCash + scenarioResults.jesse.revenue2026),
+          full: Math.round(ytdCash + scenarioResults.full.revenue2026),
           format: 'currency',
         },
         {
           label: '2027 Total Revenue',
           base: scenarioResults.base.revenue2027,
-          target: scenarioResults.target.revenue2027,
-          stretch: scenarioResults.stretch.revenue2027,
-          format: 'currency',
-        },
-        {
-          label: '2027 w/ Roofing',
-          base: null,
-          target: null,
-          stretch: scenarioResults.stretch.revenue2027,
+          jesse: scenarioResults.jesse.revenue2027,
+          full: scenarioResults.full.revenue2027,
           format: 'currency',
         },
       ],
@@ -429,6 +366,7 @@ export async function GET() {
         daysRemaining,
         daysToTarget,
         nrr,
+        monthlyRevenue,
       },
       monthlyActuals,
       scenarios: scenarioResults,
