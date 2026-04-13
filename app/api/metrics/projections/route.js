@@ -394,9 +394,9 @@ export async function GET() {
         },
         {
           label: '2026 Total Revenue (projected)',
-          base: Math.round(ytdActualsCash + scenarioResults.base.revenue2026),
-          target: Math.round(ytdActualsCash + scenarioResults.target.revenue2026),
-          stretch: Math.round(ytdActualsCash + scenarioResults.stretch.revenue2026),
+          base: Math.round(ytdCash + scenarioResults.base.revenue2026),
+          target: Math.round(ytdCash + scenarioResults.target.revenue2026),
+          stretch: Math.round(ytdCash + scenarioResults.stretch.revenue2026),
           format: 'currency',
         },
         {
