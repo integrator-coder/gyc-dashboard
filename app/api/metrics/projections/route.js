@@ -173,80 +173,48 @@ function runScenario(scenario, startMRR, startMonth, renewalByMonth) {
   return { points, points2026, points2027, dec2026Mrr, dec2027Mrr, revenue2026, revenue2027 }
 }
 
-// ─── Sensitivity matrices ─────────────────────────────────────────────────────
+// ─── Unified Deal Mix Matrix (Bruce's design) ────────────────────────────────
+// One table: rows = total deals/month, cols = MRR/PIF mix, toggled by churn rate
+function buildUnifiedMatrix(churnRate, currentMRR, ytdCash) {
+  const totalDealCounts = [8, 10, 12, 14, 16, 18]
+  const mixColumns = [
+    { label: 'All MRR', mrrFraction: 1.0 },
+    { label: '8/2',     mrrFraction: 0.8 },
+    { label: '6/4',     mrrFraction: 0.6 },
+    { label: '5/5',     mrrFraction: 0.5 },
+    { label: '4/6',     mrrFraction: 0.4 },
+    { label: '2/8',     mrrFraction: 0.2 },
+    { label: 'All PIF', mrrFraction: 0.0 },
+  ]
 
-// Table 1: New Deals/Month × Expansion MRR (fixed 2.5% churn)
-function buildDealsVsExpansionMatrix(startMRR, ytdActuals, startMonth, renewalByMonth, avgDealMRR, avgFirstPayment) {
-  const dealCounts    = [8, 10, 12, 14, 16, 18]
-  const expansionMRRs = [0, 2000, 4000, 6000, 8000, 10000]
-  const FIXED_CHURN   = 0.025
-  const monthsRemaining = 8.63
+  const AVG_MRR_PER_MRR_DEAL      = 864
+  const AVG_FIRST_PAYMENT_MRR_DEAL = 2039
+  const AVG_PIF_AMOUNT             = 8693
+  const MONTHS_REMAINING           = 8.63
 
-  const matrix = dealCounts.map((deals) =>
-    expansionMRRs.map((expansion) => {
-      const newMRRPerMonth = deals * avgDealMRR
-      const firstPaymentCash = deals * avgFirstPayment * monthsRemaining
-      const scenario = { churnRate: FIXED_CHURN, newMRRPerMonth, expansionMRR: expansion, renewalRate: 0.75, roofingMRR: 0 }
-      const { revenue2026 } = runScenario(scenario, startMRR, startMonth, renewalByMonth)
-      return Math.round(ytdActuals + revenue2026 + firstPaymentCash)
+  const matrix = totalDealCounts.map((totalDeals) =>
+    mixColumns.map(({ mrrFraction }) => {
+      const mrrDeals = Math.round(totalDeals * mrrFraction)
+      const pifDeals = totalDeals - mrrDeals
+      const newMRRPerMonth = mrrDeals * AVG_MRR_PER_MRR_DEAL
+      let mrr = currentMRR
+      let revRemaining = 0
+      for (let m = 0; m < 9; m++) {
+        mrr = mrr + newMRRPerMonth - mrr * churnRate
+        revRemaining += mrr
+      }
+      const monthlyCash = mrrDeals * AVG_FIRST_PAYMENT_MRR_DEAL * MONTHS_REMAINING
+      const pifCash     = pifDeals * AVG_PIF_AMOUNT * MONTHS_REMAINING
+      return Math.round(ytdCash + revRemaining + monthlyCash + pifCash)
     })
   )
-
-  return { dealCounts, colValues: expansionMRRs, colType: 'expansion', matrix }
-}
-
-// Table 2: New Deals/Month × Churn Rate (fixed $3K expansion)
-function buildDealsVsChurnMatrix(startMRR, ytdActuals, startMonth, renewalByMonth, avgDealMRR, avgFirstPayment) {
-  const dealCounts  = [8, 10, 12, 14, 16, 18, 20]
-  const churnRates  = [0.015, 0.020, 0.025, 0.030, 0.035]
-  const FIXED_EXPANSION = 3000
-  const monthsRemaining = 8.63
-
-  const matrix = dealCounts.map((deals) =>
-    churnRates.map((churn) => {
-      const newMRRPerMonth = deals * avgDealMRR
-      const firstPaymentCash = deals * avgFirstPayment * monthsRemaining
-      const scenario = { churnRate: churn, newMRRPerMonth, expansionMRR: FIXED_EXPANSION, renewalRate: 0.75, roofingMRR: 0 }
-      const { revenue2026 } = runScenario(scenario, startMRR, startMonth, renewalByMonth)
-      return Math.round(ytdActuals + revenue2026 + firstPaymentCash)
-    })
-  )
-
-  return { dealCounts, colValues: churnRates, colType: 'churn', matrix }
-}
-
-// Table 3: New Deals/Month × PIF Deals/Month (fixed 2% churn)
-function buildPIFMatrix(startMRR, ytdActuals, avgDealMRR, avgFirstPayment) {
-  const PIF_DEAL_COUNTS    = [0, 2, 4, 6, 8, 10]
-  const MONTHLY_DEAL_COUNTS = [8, 10, 12, 14, 16]
-  const AVG_PIF_AMOUNT     = 8693   // 2026 actual avg
-  const CHURN_FOR_PIF_TABLE = 0.020
-  const months = 9
-  const monthsRemaining = 8.63
-
-  const matrix = MONTHLY_DEAL_COUNTS.map((monthlyDeals) => {
-    // MRR run is independent of PIF count — compute once per row
-    const newMRRPerMonth = monthlyDeals * avgDealMRR
-    let mrrRun = startMRR
-    let revRemaining = 0
-    for (let m = 0; m < months; m++) {
-      mrrRun = mrrRun + newMRRPerMonth - mrrRun * CHURN_FOR_PIF_TABLE
-      revRemaining += mrrRun
-    }
-    const monthlyCash = monthlyDeals * avgFirstPayment * monthsRemaining
-
-    return PIF_DEAL_COUNTS.map((pifsPerMonth) => {
-      const pifCash = pifsPerMonth * AVG_PIF_AMOUNT * monthsRemaining
-      return Math.round(ytdActuals + revRemaining + monthlyCash + pifCash)
-    })
-  })
 
   return {
-    dealCounts: MONTHLY_DEAL_COUNTS,
-    colValues: PIF_DEAL_COUNTS,
-    colType: 'pif',
-    avgPifAmount: AVG_PIF_AMOUNT,
+    totalDealCounts,
+    mixColumns,
+    churnRate,
     matrix,
+    avgDealStats: { avgDealMRR: AVG_MRR_PER_MRR_DEAL, avgPifAmount: AVG_PIF_AMOUNT, avgFirstPayment: AVG_FIRST_PAYMENT_MRR_DEAL },
   }
 }
 
@@ -363,11 +331,11 @@ export async function GET() {
       }
     }
 
-    // ─── D. Sensitivity matrix ────────────────────────────────────────────────
-    const ytdActualsCash = ytdCash
-    const sensitivityDealsExpansion = buildDealsVsExpansionMatrix(currentMRR, ytdActualsCash, projStartKey, renewalByMonth, AVG_DEAL_MRR, AVG_DEAL_FIRST_PAYMENT)
-    const sensitivityDealsChurn     = buildDealsVsChurnMatrix(currentMRR, ytdActualsCash, projStartKey, renewalByMonth, AVG_DEAL_MRR, AVG_DEAL_FIRST_PAYMENT)
-    const sensitivityPIF            = buildPIFMatrix(currentMRR, ytdActualsCash, AVG_DEAL_MRR, AVG_DEAL_FIRST_PAYMENT)
+    // ─── D. Unified deal mix matrices (4 churn rates) ───────────────────────────
+    const unifiedMatrix_2  = buildUnifiedMatrix(0.020, currentMRR, ytdCash)
+    const unifiedMatrix_25 = buildUnifiedMatrix(0.025, currentMRR, ytdCash)
+    const unifiedMatrix_3  = buildUnifiedMatrix(0.030, currentMRR, ytdCash)
+    const unifiedMatrix_4  = buildUnifiedMatrix(0.040, currentMRR, ytdCash)
 
     // ─── E. Forward MRR Bridge (6-month forward projection, Base Case) ─────────
     const BASE_SCENARIO = SCENARIOS.base
@@ -467,9 +435,10 @@ export async function GET() {
       scenarioTable,
       renewalPipeline,
       forwardMrrBridge,
-      sensitivityDealsExpansion,
-      sensitivityDealsChurn,
-      sensitivityPIF,
+      unifiedMatrix_2,
+      unifiedMatrix_25,
+      unifiedMatrix_3,
+      unifiedMatrix_4,
       avgDealStats: { avgDealMRR: AVG_DEAL_MRR, avgFirstPayment: AVG_DEAL_FIRST_PAYMENT, dealCount: DEAL_COUNT_2025 },
       keyMetrics: { nrr, quickRatio, daysToTarget, churnCost, currentMRR },
       meta: {

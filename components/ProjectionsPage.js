@@ -313,35 +313,46 @@ const SENSITIVITY_LEGEND = [
   { label: '≥ $4.2M 🎯',  bg: '#065f46', text: '#34d399' },
 ]
 
-function SensitivityGrid({ data: sens, colHeader }) {
-  if (!sens) return null
-  const { dealCounts, colValues, colType, matrix } = sens
-  const fmtCol = (v) => colType === 'churn' ? `${(v * 100).toFixed(1)}%` : colType === 'pif' ? `${v}` : `$${(v / 1000).toFixed(0)}K`
+// Sub-labels per mix column (based on per-10-deal ratios)
+const MIX_SUBLABELS = {
+  'All MRR': '100% MRR',
+  '8/2':     '8 MRR + 2 PIF',
+  '6/4':     '6 MRR + 4 PIF',
+  '5/5':     '5 MRR + 5 PIF',
+  '4/6':     '4 MRR + 6 PIF',
+  '2/8':     '2 MRR + 8 PIF',
+  'All PIF': '100% PIF',
+}
+
+function UnifiedMatrix({ data }) {
+  if (!data) return null
+  const { totalDealCounts, mixColumns, matrix } = data
 
   return (
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
         <thead>
           <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-            <th style={{ padding: '10px 14px', textAlign: 'left', color: C.muted, fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap' }}>
-              {colHeader}
+            <th style={{ padding: '10px 14px', textAlign: 'left', color: C.muted, fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap', minWidth: 120 }}>
+              Total Deals/mo
             </th>
-            {colValues.map((v) => (
-              <th key={v} style={{ padding: '10px 14px', textAlign: 'center', color: C.muted, fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap' }}>
-                {fmtCol(v)}
+            {mixColumns.map((col) => (
+              <th key={col.label} style={{ padding: '10px 10px', textAlign: 'center', color: C.muted, fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                <div style={{ color: C.white, fontWeight: 700 }}>{col.label}</div>
+                <div style={{ color: C.muted, fontSize: 10, fontWeight: 400, marginTop: 2 }}>{MIX_SUBLABELS[col.label]}</div>
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {dealCounts.map((deals, ri) => (
-            <tr key={deals} style={{ borderBottom: ri < dealCounts.length - 1 ? `1px solid ${C.border}` : 'none' }}>
-              <td style={{ padding: '8px 14px', color: C.white, fontWeight: 600 }}>{deals}/mo</td>
-              {colValues.map((_, ci) => {
+          {totalDealCounts.map((deals, ri) => (
+            <tr key={deals} style={{ borderBottom: ri < totalDealCounts.length - 1 ? `1px solid ${C.border}` : 'none' }}>
+              <td style={{ padding: '8px 14px', color: C.white, fontWeight: 600 }}>{deals} deals/mo total</td>
+              {mixColumns.map((_, ci) => {
                 const val = matrix[ri][ci]
                 const { bg, text, border } = cellColor(val)
                 return (
-                  <td key={ci} style={{ padding: '8px 14px', textAlign: 'center' }}>
+                  <td key={ci} style={{ padding: '6px 8px', textAlign: 'center' }}>
                     <div style={{ background: bg, border: `1px solid ${border}`, borderRadius: 6, padding: '4px 8px', color: text, fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' }}>
                       {fmtM(val)}
                     </div>
@@ -451,6 +462,7 @@ export default function ProjectionsPage() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [activeChurn, setActiveChurn] = useState('25') // '2' | '25' | '3' | '4'
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -607,39 +619,57 @@ export default function ProjectionsPage() {
         )}
       </Section>
 
-      {/* ── Section 5: Sensitivity Tables ─────────────────────────────────────── */}
+      {/* ── Section 5: Deal Mix Projections ─────────────────────────────────────────── */}
       <Section
-        title="Lever Sensitivity — EOY 2026 Revenue"
-        sub={data?.avgDealStats ? `PIF deals use renewal amount as MRR; monthly deals use first payment. 2025 avg: $${data.avgDealStats.avgDealMRR.toLocaleString()} MRR/deal, $${data.avgDealStats.avgFirstPayment.toLocaleString()} first payment/deal.` : 'Green = hits $4.2M target.'}
+        title="Deal Mix Projections — EOY 2026 Revenue"
+        sub="Total 2026 revenue by deals/month and MRR vs PIF mix. Select monthly churn rate to model different retention scenarios."
       >
         {loading ? (
           <p style={{ color: C.muted }}>Loading…</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            {/* Table 1: Deals × Expansion MRR */}
-            <div>
-              <p style={{ color: C.white, fontSize: 13, fontWeight: 600, margin: '0 0 4px' }}>Table 1 — New Deals × Expansion MRR (2.5% churn fixed)</p>
-              <p style={{ color: C.muted, fontSize: 11, margin: '0 0 10px' }}>How upsells / expansion MRR from existing clients changes the outcome. Each column adds $X/mo from in-contract upsells.</p>
-              <SensitivityGrid data={data?.sensitivityDealsExpansion} colHeader="Deals/mo ↓ | Expansion MRR →" />
-              <p style={{ color: '#4a3060', fontSize: 11, marginTop: 8 }}>Assumes 2.5% monthly churn. Reducing churn adds ~$40K per 0.5% reduction.</p>
-            </div>
+        ) : (() => {
+          const churnOptions = [
+            { key: '2',  label: '2%',   dataKey: 'unifiedMatrix_2'  },
+            { key: '25', label: '2.5%', dataKey: 'unifiedMatrix_25' },
+            { key: '3',  label: '3%',   dataKey: 'unifiedMatrix_3'  },
+            { key: '4',  label: '4%',   dataKey: 'unifiedMatrix_4'  },
+          ]
+          const activeMatrix = data?.[churnOptions.find(o => o.key === activeChurn)?.dataKey]
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* Churn toggle */}
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <span style={{ color: C.muted, fontSize: 12, fontWeight: 600, marginRight: 4 }}>Monthly churn rate:</span>
+                {churnOptions.map((opt) => (
+                  <button
+                    key={opt.key}
+                    onClick={() => setActiveChurn(opt.key)}
+                    style={{
+                      padding: '6px 16px',
+                      borderRadius: 8,
+                      border: `1px solid ${activeChurn === opt.key ? C.purple : C.border}`,
+                      background: activeChurn === opt.key ? C.purple + '33' : 'transparent',
+                      color: activeChurn === opt.key ? C.purple : C.muted,
+                      fontWeight: activeChurn === opt.key ? 700 : 400,
+                      fontSize: 13,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
 
-            {/* Table 2: Deals × Churn */}
-            <div>
-              <p style={{ color: C.white, fontSize: 13, fontWeight: 600, margin: '0 0 4px' }}>Table 2 — New Deals × Churn Rate ($3K expansion fixed)</p>
-              <p style={{ color: C.muted, fontSize: 11, margin: '0 0 10px' }}>Shows retention value. Assumes $3K/mo expansion MRR (moderate upsell). Churn reduction = permanent compounding gains.</p>
-              <SensitivityGrid data={data?.sensitivityDealsChurn} colHeader="Deals/mo ↓ | Churn Rate →" />
-            </div>
+              {/* Matrix table */}
+              <UnifiedMatrix data={activeMatrix} />
 
-            {/* Table 3: Deals × PIF Volume */}
-            <div>
-              <p style={{ color: C.white, fontSize: 13, fontWeight: 600, margin: '0 0 4px' }}>📋 PIF Volume Impact</p>
-              <p style={{ color: C.muted, fontSize: 11, margin: '0 0 10px' }}>2026 total revenue by monthly recurring deals vs PIF deals/month (avg $8,693/deal, 2% churn fixed)</p>
-              <SensitivityGrid data={data?.sensitivityPIF} colHeader="Monthly deals/month ↓ | PIFs/month →" />
-              <p style={{ color: '#4a3060', fontSize: 11, marginTop: 8 }}>Current 2026 pace: ~6 PIFs/month · $182K PIF cash already collected YTD · PIFs add immediate cash but don't compound as MRR</p>
+              {/* Note */}
+              <p style={{ color: '#6b7280', fontSize: 11, margin: 0 }}>
+                Current 2026 pace: ~6 PIFs/month · ~5 MRR deals/month · Avg PIF: $8,693 · Avg MRR deal: $864/mo
+              </p>
             </div>
-          </div>
-        )}
+          )
+        })()}
       </Section>
 
       {/* ── Section 6: Renewal Pipeline ──────────────────────────────────────── */}
