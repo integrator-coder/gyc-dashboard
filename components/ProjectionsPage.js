@@ -194,30 +194,57 @@ function ActualsProjectionsChart({ data }) {
   )
 }
 
-// ─── Section 3: MRR Waterfall ─────────────────────────────────────────────────
-function MRRWaterfall({ waterfall = [] }) {
-  if (!waterfall.length) return <p style={{ color: C.muted, fontSize: 13 }}>No waterfall data available.</p>
-
-  // Show last 12 months
-  const data = waterfall.slice(-12)
+// ─── Section 3: Forward MRR Bridge ──────────────────────────────────────────────
+function ForwardMRRBridge({ bridge = [] }) {
+  if (!bridge.length) return <p style={{ color: C.muted, fontSize: 13 }}>No bridge data available.</p>
 
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: '20px 16px' }}>
-      <ResponsiveContainer width="100%" height={280}>
-        <BarChart data={data} margin={{ top: 8, right: 16, bottom: 4, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#2a1a3e" vertical={false} />
-          <XAxis dataKey="label" tick={{ fill: C.muted, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis tickFormatter={(v) => fmtM(v)} tick={{ fill: C.muted, fontSize: 10 }} axisLine={false} tickLine={false} width={58} />
-          <Tooltip content={<ChartTip />} />
-          <Legend wrapperStyle={{ fontSize: 11, color: C.muted }} />
-          <Bar dataKey="beginMrr" name="Beginning MRR" fill={C.indigo} radius={[3,3,0,0]} maxBarSize={22} />
-          <Bar dataKey="newMrr" name="New MRR +" fill={C.green} radius={[3,3,0,0]} maxBarSize={22} />
-          <Bar dataKey="churnMrr" name="Churned MRR −" maxBarSize={22} radius={[3,3,0,0]}>
-            {data.map((_, i) => <Cell key={i} fill={C.red} />)}
-          </Bar>
-          <Bar dataKey="endMrr" name="Ending MRR" fill={C.purple} radius={[3,3,0,0]} maxBarSize={22} />
-        </BarChart>
-      </ResponsiveContainer>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Chart */}
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: '20px 16px' }}>
+        <ResponsiveContainer width="100%" height={300}>
+          <ComposedChart data={bridge} margin={{ top: 16, right: 24, bottom: 4, left: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#2a1a3e" vertical={false} />
+            <XAxis dataKey="label" tick={{ fill: C.muted, fontSize: 11 }} axisLine={false} tickLine={false} />
+            <YAxis tickFormatter={(v) => fmtM(v)} tick={{ fill: C.muted, fontSize: 10 }} axisLine={false} tickLine={false} width={62} />
+            <ReferenceLine y={0} stroke={C.border} />
+            <Tooltip content={<ChartTip />} />
+            <Legend wrapperStyle={{ fontSize: 11, color: C.muted }} />
+            <Bar dataKey="newMrr" name="New MRR" stackId="pos" fill={C.teal} maxBarSize={40} />
+            <Bar dataKey="renewalMrr" name="Renewal MRR" stackId="pos" fill={C.indigo} radius={[3,3,0,0]} maxBarSize={40} />
+            <Bar dataKey="churnMrr" name="Churn MRR" stackId="neg" fill={C.red} radius={[0,0,3,3]} maxBarSize={40} />
+            <Line type="monotone" dataKey="endMrr" name="Ending MRR" stroke={C.purple} strokeWidth={2.5} dot={{ fill: C.purple, r: 4 }} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Numbers table */}
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+          <thead>
+            <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+              {['Month', 'Begin MRR', '+ New', '+ Renewal', '− Churn', 'Net', 'End MRR'].map((h) => (
+                <th key={h} style={{ padding: '8px 14px', textAlign: h === 'Month' ? 'left' : 'right', color: C.muted, fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {bridge.map((row, i) => (
+              <tr key={i} style={{ borderBottom: i < bridge.length - 1 ? `1px solid ${C.border}` : 'none', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
+                <td style={{ padding: '7px 14px', color: C.white, fontWeight: 600 }}>{row.label}</td>
+                <td style={{ padding: '7px 14px', textAlign: 'right', color: C.muted }}>{fmtM(row.beginMrr)}</td>
+                <td style={{ padding: '7px 14px', textAlign: 'right', color: C.teal }}>+{fmtM(row.newMrr)}</td>
+                <td style={{ padding: '7px 14px', textAlign: 'right', color: C.indigo }}>+{fmtM(row.renewalMrr)}</td>
+                <td style={{ padding: '7px 14px', textAlign: 'right', color: C.red }}>−{fmtM(row.churnMrrAbs)}</td>
+                <td style={{ padding: '7px 14px', textAlign: 'right', color: row.netChange >= 0 ? C.green : C.red, fontWeight: 600 }}>
+                  {row.netChange >= 0 ? '+' : ''}{fmtM(row.netChange)}
+                </td>
+                <td style={{ padding: '7px 14px', textAlign: 'right', color: C.purple, fontWeight: 700 }}>{fmtM(row.endMrr)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
@@ -269,19 +296,27 @@ function ScenarioTable({ table, scenarios }) {
   )
 }
 
-// ─── Section 5: Sensitivity Heatmap ──────────────────────────────────────────
-function SensitivityHeatmap({ sensitivity }) {
-  if (!sensitivity) return null
-  const { dealCounts, churnRates, matrix } = sensitivity
+// ─── Section 5: Sensitivity Heatmaps ─────────────────────────────────────────
+function cellColor(value) {
+  if (value >= 4_200_000) return { bg: '#065f46', text: '#34d399', border: '#10b981' }
+  if (value >= 3_800_000) return { bg: '#1a4731', text: '#6ee7b7', border: '#059669' }
+  if (value >= 3_500_000) return { bg: '#1c2a1a', text: '#86efac', border: '#4ade80' }
+  if (value >= 3_200_000) return { bg: '#451a03', text: '#fcd34d', border: '#f59e0b' }
+  return { bg: '#450a0a', text: '#fca5a5', border: '#ef4444' }
+}
 
-  function cellColor(value) {
-    // Thresholds calibrated to GYC's 2026 revenue range (YTD $987K + model remaining)
-    if (value >= 4_200_000) return { bg: '#065f46', text: '#34d399', border: '#10b981' }  // ≥ $4.2M target 🎯
-    if (value >= 3_800_000) return { bg: '#1a4731', text: '#6ee7b7', border: '#059669' }  // $3.8-4.2M
-    if (value >= 3_500_000) return { bg: '#1c2a1a', text: '#86efac', border: '#4ade80' }  // $3.5-3.8M
-    if (value >= 3_200_000) return { bg: '#451a03', text: '#fcd34d', border: '#f59e0b' }  // $3.2-3.5M
-    return { bg: '#450a0a', text: '#fca5a5', border: '#ef4444' }  // < $3.2M
-  }
+const SENSITIVITY_LEGEND = [
+  { label: '< $3.2M',      bg: '#450a0a', text: '#fca5a5' },
+  { label: '$3.2M–$3.5M', bg: '#451a03', text: '#fcd34d' },
+  { label: '$3.5M–$3.8M', bg: '#1c2a1a', text: '#86efac' },
+  { label: '$3.8M–$4.2M', bg: '#1a4731', text: '#6ee7b7' },
+  { label: '≥ $4.2M 🎯',  bg: '#065f46', text: '#34d399' },
+]
+
+function SensitivityGrid({ data: sens, colHeader }) {
+  if (!sens) return null
+  const { dealCounts, colValues, colType, matrix } = sens
+  const fmtCol = (v) => colType === 'churn' ? `${(v * 100).toFixed(1)}%` : `$${(v / 1000).toFixed(0)}K`
 
   return (
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'auto' }}>
@@ -289,11 +324,11 @@ function SensitivityHeatmap({ sensitivity }) {
         <thead>
           <tr style={{ borderBottom: `1px solid ${C.border}` }}>
             <th style={{ padding: '10px 14px', textAlign: 'left', color: C.muted, fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap' }}>
-              New Deals/mo ↓ | Churn % →
+              {colHeader}
             </th>
-            {churnRates.map((c) => (
-              <th key={c} style={{ padding: '10px 14px', textAlign: 'center', color: C.muted, fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap' }}>
-                {(c * 100).toFixed(1)}%
+            {colValues.map((v) => (
+              <th key={v} style={{ padding: '10px 14px', textAlign: 'center', color: C.muted, fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                {fmtCol(v)}
               </th>
             ))}
           </tr>
@@ -302,21 +337,12 @@ function SensitivityHeatmap({ sensitivity }) {
           {dealCounts.map((deals, ri) => (
             <tr key={deals} style={{ borderBottom: ri < dealCounts.length - 1 ? `1px solid ${C.border}` : 'none' }}>
               <td style={{ padding: '8px 14px', color: C.white, fontWeight: 600 }}>{deals}/mo</td>
-              {churnRates.map((_, ci) => {
+              {colValues.map((_, ci) => {
                 const val = matrix[ri][ci]
                 const { bg, text, border } = cellColor(val)
                 return (
                   <td key={ci} style={{ padding: '8px 14px', textAlign: 'center' }}>
-                    <div style={{
-                      background: bg,
-                      border: `1px solid ${border}`,
-                      borderRadius: 6,
-                      padding: '4px 8px',
-                      color: text,
-                      fontWeight: 700,
-                      fontSize: 12,
-                      whiteSpace: 'nowrap',
-                    }}>
+                    <div style={{ background: bg, border: `1px solid ${border}`, borderRadius: 6, padding: '4px 8px', color: text, fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' }}>
                       {fmtM(val)}
                     </div>
                   </td>
@@ -326,15 +352,8 @@ function SensitivityHeatmap({ sensitivity }) {
           ))}
         </tbody>
       </table>
-      {/* Legend */}
-      <div style={{ display: 'flex', gap: 12, padding: '12px 14px', borderTop: `1px solid ${C.border}`, flexWrap: 'wrap' }}>
-        {[
-          { label: '< $3.2M', bg: '#450a0a', text: '#fca5a5' },
-          { label: '$3.2M–$3.5M', bg: '#451a03', text: '#fcd34d' },
-          { label: '$3.5M–$3.8M', bg: '#1c2a1a', text: '#86efac' },
-          { label: '$3.8M–$4.2M', bg: '#1a4731', text: '#6ee7b7' },
-          { label: '≥ $4.2M 🎯', bg: '#065f46', text: '#34d399' },
-        ].map((l) => (
+      <div style={{ display: 'flex', gap: 12, padding: '10px 14px', borderTop: `1px solid ${C.border}`, flexWrap: 'wrap' }}>
+        {SENSITIVITY_LEGEND.map((l) => (
           <span key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: l.text }}>
             <span style={{ width: 12, height: 12, borderRadius: 3, background: l.bg, display: 'inline-block', border: `1px solid ${l.text}` }} />
             {l.label}
@@ -551,17 +570,17 @@ export default function ProjectionsPage() {
         )}
       </Section>
 
-      {/* ── Section 3: MRR Waterfall ─────────────────────────────────────────── */}
+      {/* ── Section 3: Forward MRR Bridge ────────────────────────────────────── */}
       <Section
-        title="MRR Waterfall — Trailing 12 Months"
-        sub="Beginning MRR + New MRR − Churned MRR = Ending MRR. Red bars = churn drag."
+        title="MRR Bridge — Next 6 Months (Base Case)"
+        sub="Projected MRR movement May–Oct 2026 assuming current sales pace and 2.5% monthly churn."
       >
         {loading ? (
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <p style={{ color: C.muted }}>Loading…</p>
           </div>
         ) : (
-          <MRRWaterfall waterfall={data?.mrrWaterfall} />
+          <ForwardMRRBridge bridge={data?.forwardMrrBridge} />
         )}
       </Section>
 
@@ -588,15 +607,30 @@ export default function ProjectionsPage() {
         )}
       </Section>
 
-      {/* ── Section 5: Lever Sensitivity Heatmap ─────────────────────────────── */}
+      {/* ── Section 5: Sensitivity Tables ─────────────────────────────────────── */}
       <Section
         title="Lever Sensitivity — EOY 2026 Revenue"
-        sub="What happens to total 2026 revenue if we change new deals/month and churn rate. Green = hits $4.2M target."
+        sub={data?.avgDealStats ? `PIF deals use renewal amount as MRR; monthly deals use first payment. 2025 avg: $${data.avgDealStats.avgDealMRR.toLocaleString()} MRR/deal, $${data.avgDealStats.avgFirstPayment.toLocaleString()} first payment/deal.` : 'Green = hits $4.2M target.'}
       >
         {loading ? (
           <p style={{ color: C.muted }}>Loading…</p>
         ) : (
-          <SensitivityHeatmap sensitivity={data?.sensitivity} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            {/* Table 1: Deals × Expansion MRR */}
+            <div>
+              <p style={{ color: C.white, fontSize: 13, fontWeight: 600, margin: '0 0 4px' }}>Table 1 — New Deals × Expansion MRR (2.5% churn fixed)</p>
+              <p style={{ color: C.muted, fontSize: 11, margin: '0 0 10px' }}>How upsells / expansion MRR from existing clients changes the outcome. Each column adds $X/mo from in-contract upsells.</p>
+              <SensitivityGrid data={data?.sensitivityDealsExpansion} colHeader="Deals/mo ↓ | Expansion MRR →" />
+              <p style={{ color: '#4a3060', fontSize: 11, marginTop: 8 }}>Assumes 2.5% monthly churn. Reducing churn adds ~$40K per 0.5% reduction.</p>
+            </div>
+
+            {/* Table 2: Deals × Churn */}
+            <div>
+              <p style={{ color: C.white, fontSize: 13, fontWeight: 600, margin: '0 0 4px' }}>Table 2 — New Deals × Churn Rate ($3K expansion fixed)</p>
+              <p style={{ color: C.muted, fontSize: 11, margin: '0 0 10px' }}>Shows retention value. Assumes $3K/mo expansion MRR (moderate upsell). Churn reduction = permanent compounding gains.</p>
+              <SensitivityGrid data={data?.sensitivityDealsChurn} colHeader="Deals/mo ↓ | Churn Rate →" />
+            </div>
+          </div>
         )}
       </Section>
 

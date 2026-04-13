@@ -49,9 +49,6 @@ const SCENARIOS = {
   },
 }
 
-// ─── Avg deal MRR (base case new MRR ÷ ~11 deals/mo) ─────────────────────────
-const AVG_DEAL_MRR = 748  // actual avg MRR per new deal (2025: $119,682 MRR / 160 deals)
-const AVG_DEAL_FIRST_PAYMENT = 2039  // avg first payment cash per deal (2025: $326,173 / 160 deals)
 
 // ─── Google Sheets helpers ─────────────────────────────────────────────────────
 async function fetchRenewalSchedule() {
@@ -176,25 +173,46 @@ function runScenario(scenario, startMRR, startMonth, renewalByMonth) {
   return { points, points2026, points2027, dec2026Mrr, dec2027Mrr, revenue2026, revenue2027 }
 }
 
-// ─── Sensitivity matrix ───────────────────────────────────────────────────────
-function buildSensitivityMatrix(startMRR, ytdActuals, startMonth, renewalByMonth) {
-  const dealCounts = [8, 10, 12, 14, 16]
-  const churnRates = [0.015, 0.020, 0.025, 0.030, 0.035]
+// ─── Sensitivity matrices ─────────────────────────────────────────────────────
+
+// Table 1: New Deals/Month × Expansion MRR (fixed 2.5% churn)
+function buildDealsVsExpansionMatrix(startMRR, ytdActuals, startMonth, renewalByMonth, avgDealMRR, avgFirstPayment) {
+  const dealCounts    = [8, 10, 12, 14, 16, 18]
+  const expansionMRRs = [0, 2000, 4000, 6000, 8000, 10000]
+  const FIXED_CHURN   = 0.025
+  const monthsRemaining = 8.63
 
   const matrix = dealCounts.map((deals) =>
-    churnRates.map((churn) => {
-      const newMRRPerMonth = deals * AVG_DEAL_MRR
-      // Add first-payment cash: each deal also brings avg $2,039 first payment (not just recurring MRR)
-      const monthsRemaining = 8.63  // May-Dec
-      const firstPaymentCash = deals * AVG_DEAL_FIRST_PAYMENT * monthsRemaining
-      const scenario = { churnRate: churn, newMRRPerMonth, expansionMRR: 0, renewalRate: 0.75, roofingMRR: 0 }
+    expansionMRRs.map((expansion) => {
+      const newMRRPerMonth = deals * avgDealMRR
+      const firstPaymentCash = deals * avgFirstPayment * monthsRemaining
+      const scenario = { churnRate: FIXED_CHURN, newMRRPerMonth, expansionMRR: expansion, renewalRate: 0.75, roofingMRR: 0 }
       const { revenue2026 } = runScenario(scenario, startMRR, startMonth, renewalByMonth)
-      const total2026 = Math.round(ytdActuals + revenue2026 + firstPaymentCash)
-      return total2026
+      return Math.round(ytdActuals + revenue2026 + firstPaymentCash)
     })
   )
 
-  return { dealCounts, churnRates, matrix }
+  return { dealCounts, colValues: expansionMRRs, colType: 'expansion', matrix }
+}
+
+// Table 2: New Deals/Month × Churn Rate (fixed $3K expansion)
+function buildDealsVsChurnMatrix(startMRR, ytdActuals, startMonth, renewalByMonth, avgDealMRR, avgFirstPayment) {
+  const dealCounts  = [8, 10, 12, 14, 16, 18, 20]
+  const churnRates  = [0.015, 0.020, 0.025, 0.030, 0.035]
+  const FIXED_EXPANSION = 3000
+  const monthsRemaining = 8.63
+
+  const matrix = dealCounts.map((deals) =>
+    churnRates.map((churn) => {
+      const newMRRPerMonth = deals * avgDealMRR
+      const firstPaymentCash = deals * avgFirstPayment * monthsRemaining
+      const scenario = { churnRate: churn, newMRRPerMonth, expansionMRR: FIXED_EXPANSION, renewalRate: 0.75, roofingMRR: 0 }
+      const { revenue2026 } = runScenario(scenario, startMRR, startMonth, renewalByMonth)
+      return Math.round(ytdActuals + revenue2026 + firstPaymentCash)
+    })
+  )
+
+  return { dealCounts, colValues: churnRates, colType: 'churn', matrix }
 }
 
 // ─── Main handler ─────────────────────────────────────────────────────────────
@@ -208,7 +226,7 @@ export async function GET() {
     const daysRemaining = daysInYear - daysElapsed
 
     // ─── A. Scoreboard KPIs from DB ───────────────────────────────────────────
-    const [metricsRes, activeClientsRes, ytdRes, monthlyActualsRes, mrrHistoryRes] =
+    const [metricsRes, activeClientsRes, ytdRes, monthlyActualsRes, dealMrrRes] =
       await Promise.all([
         dbClient.query(
           `SELECT * FROM "StripeMetrics" ORDER BY "syncedAt" DESC LIMIT 2`
@@ -230,19 +248,17 @@ export async function GET() {
           GROUP BY 1, 2
           ORDER BY 1, 2
         `),
-        // Trailing 14 months of monthly MRR snapshots (one per month, latest)
+        // Live avg deal MRR: PIF deals use renewalAmount, monthly deals use mrr
         dbClient.query(`
-          SELECT DISTINCT ON (date_trunc('month', "syncedAt"))
-            date_trunc('month', "syncedAt") AS month_ts,
-            to_char(date_trunc('month', "syncedAt"), 'YYYY-MM') AS month_key,
-            mrr,
-            "newCustomers",
-            "churnedCustomers",
-            "activeCustomers"
-          FROM "StripeMetrics"
-          WHERE "syncedAt" >= NOW() - INTERVAL '14 months'
-          ORDER BY date_trunc('month', "syncedAt") DESC, "syncedAt" DESC
-          LIMIT 14
+          SELECT
+            AVG(CASE WHEN pif = true THEN "renewalAmount" ELSE mrr END)::float AS avg_deal_mrr,
+            AVG("firstPayment")::float AS avg_first_payment,
+            COUNT(*) AS deal_count,
+            SUM(CASE WHEN pif = true THEN "renewalAmount" ELSE mrr END)::float AS total_deal_mrr
+          FROM "SalesDeal"
+          WHERE "tenantId" = 'gyc'
+            AND "dealDate" >= '2025-01-01' AND "dealDate" < '2026-01-01'
+            AND (mrr > 0 OR "renewalAmount" > 0)
         `),
       ])
 
@@ -251,6 +267,12 @@ export async function GET() {
     const activeClients = Number(activeClientsRes.rows[0]?.cnt || 0)
     const ytdCash = Number(ytdRes.rows[0]?.ytd_cash || 0)
     const currentMRR = Number(latestMetrics.mrr || 213334)
+
+    // Live avg deal MRR (fallback to 2025 hardcoded values if query fails)
+    const dealMrrRow = dealMrrRes.rows[0] || {}
+    const AVG_DEAL_MRR = Math.round(Number(dealMrrRow.avg_deal_mrr) || 748)
+    const AVG_DEAL_FIRST_PAYMENT = Math.round(Number(dealMrrRow.avg_first_payment) || 2039)
+    const DEAL_COUNT_2025 = Number(dealMrrRow.deal_count) || 0
 
     // Annualized from YTD
     const onTrackFor = daysElapsed > 0 ? Math.round((ytdCash / daysElapsed) * daysInYear) : 0
@@ -308,31 +330,36 @@ export async function GET() {
 
     // ─── D. Sensitivity matrix ────────────────────────────────────────────────
     const ytdActualsCash = ytdCash
-    const sensitivity = buildSensitivityMatrix(currentMRR, ytdActualsCash, projStartKey, renewalByMonth)
+    const sensitivityDealsExpansion = buildDealsVsExpansionMatrix(currentMRR, ytdActualsCash, projStartKey, renewalByMonth, AVG_DEAL_MRR, AVG_DEAL_FIRST_PAYMENT)
+    const sensitivityDealsChurn     = buildDealsVsChurnMatrix(currentMRR, ytdActualsCash, projStartKey, renewalByMonth, AVG_DEAL_MRR, AVG_DEAL_FIRST_PAYMENT)
 
-    // ─── E. MRR Waterfall (trailing 12 months) ───────────────────────────────
-    const mrrHistory = mrrHistoryRes.rows.reverse() // oldest first
-    const mrrWaterfall = []
-    for (let i = 0; i < mrrHistory.length; i++) {
-      const row = mrrHistory[i]
-      const prevRow = mrrHistory[i - 1]
-      const beginMrr = prevRow ? Number(prevRow.mrr || 0) : Number(row.mrr || 0)
-      const endMrr = Number(row.mrr || 0)
-      const newCustsM = Number(row.newCustomers || 0)
-      const churnedCustsM = Number(row.churnedCustomers || 0)
-      const avgMrrM = Number(row.activeCustomers || 1) > 0 ? endMrr / Number(row.activeCustomers) : avgMrr
-      const newMrrM = Math.round(newCustsM * avgMrrM)
-      const churnedMrrM = Math.round(churnedCustsM * avgMrrM)
+    // ─── E. Forward MRR Bridge (6-month forward projection, Base Case) ─────────
+    const BASE_SCENARIO = SCENARIOS.base
+    const bridgeMonths = ['May 26','Jun 26','Jul 26','Aug 26','Sep 26','Oct 26']
+    const bridgeKeys =   ['2026-05','2026-06','2026-07','2026-08','2026-09','2026-10']
+    const forwardMrrBridge = []
+    let mrrBridgeCurrent = currentMRR
 
-      mrrWaterfall.push({
-        month: row.month_key,
-        label: row.month_key ? row.month_key.replace(/^(\d{4})-0?(\d+)$/, (_, y, m) => `${MONTH_NAMES[Number(m) - 1]} ${y.slice(2)}`) : '',
+    for (let i = 0; i < 6; i++) {
+      const beginMrr = mrrBridgeCurrent
+      const newMrr = BASE_SCENARIO.newMRRPerMonth
+      const renewalMrr = Math.round((renewalByMonth[bridgeKeys[i]] || 0) * BASE_SCENARIO.renewalRate)
+      const churnMrr = Math.round(mrrBridgeCurrent * BASE_SCENARIO.churnRate)
+      const endMrr = Math.round(beginMrr + newMrr + renewalMrr - churnMrr)
+
+      forwardMrrBridge.push({
+        month: bridgeKeys[i],
+        label: bridgeMonths[i],
         beginMrr: Math.round(beginMrr),
-        newMrr: newMrrM,
-        churnMrr: churnedMrrM,
-        endMrr: Math.round(endMrr),
-        netChange: Math.round(endMrr - beginMrr),
+        newMrr,
+        renewalMrr,
+        churnMrr: -churnMrr,   // negative for chart display below zero line
+        churnMrrAbs: churnMrr, // absolute for table display
+        netChange: endMrr - Math.round(beginMrr),
+        endMrr,
       })
+
+      mrrBridgeCurrent = endMrr
     }
 
     // ─── F. Renewal pipeline by month (Jan–Dec 2026) ─────────────────────────
@@ -402,9 +429,11 @@ export async function GET() {
       monthlyActuals,
       scenarios: scenarioResults,
       scenarioTable,
-      sensitivity,
       renewalPipeline,
-      mrrWaterfall,
+      forwardMrrBridge,
+      sensitivityDealsExpansion,
+      sensitivityDealsChurn,
+      avgDealStats: { avgDealMRR: AVG_DEAL_MRR, avgFirstPayment: AVG_DEAL_FIRST_PAYMENT, dealCount: DEAL_COUNT_2025 },
       keyMetrics: { nrr, quickRatio, daysToTarget, churnCost, currentMRR },
       meta: {
         projStartKey,
