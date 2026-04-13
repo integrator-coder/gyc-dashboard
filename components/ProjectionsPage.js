@@ -574,7 +574,7 @@ export default function ProjectionsPage() {
       {/* ── Monthly Revenue Breakdown ──────────────────────────────────────── */}
       <Section
         title="Monthly Revenue Breakdown"
-        sub="MRR understates true monthly cash generation. PIF cash and first payments are real revenue not captured in Stripe MRR."
+        sub="GYC has two distinct revenue streams: MRR (recurring subscriptions) and PIF cash (annual upfront payments). Monthly deal first payments equal MRR — they are the same rate."
       >
         {loading ? (
           <p style={{ color: C.muted }}>Loading…</p>
@@ -587,21 +587,14 @@ export default function ProjectionsPage() {
                 <KpiCard
                   title="Recurring MRR"
                   value={fmtM(rev.mrrComponent)}
-                  sub="Stripe subscription MRR"
+                  sub="Active subscriptions billed monthly via Stripe"
                   icon="🔁"
                   accent={C.purple}
                 />
                 <KpiCard
-                  title="New Deal First Payments"
-                  value={fmtM(rev.firstPaymentComponent)}
-                  sub={`10 deals × $2,039 avg`}
-                  icon="🤝"
-                  accent={C.teal}
-                />
-                <KpiCard
                   title="PIF Cash"
                   value={fmtM(rev.pifCashComponent)}
-                  sub={`6 PIFs × $8,693 avg`}
+                  sub="~6 annual upfront deals × $8,693 avg/month"
                   icon="💰"
                   accent={C.scJesse}
                 />
@@ -614,7 +607,7 @@ export default function ProjectionsPage() {
                 />
               </div>
               <p style={{ color: C.muted, fontSize: 11, margin: 0 }}>
-                💡 MRR understates true monthly cash generation. PIF cash and first payments are real revenue not captured in Stripe MRR.
+                💡 Stripe MRR captures recurring subscriptions only. PIF clients pay annually upfront and show $0 in MRR — but are real clients generating real revenue that converts to MRR at renewal.
               </p>
             </div>
           )

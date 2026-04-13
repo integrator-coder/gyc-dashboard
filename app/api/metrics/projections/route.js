@@ -237,10 +237,10 @@ export async function GET() {
     const avgPIFAmount = 8693
     const monthlyRevenue = {
       mrrComponent: currentMRR,
-      firstPaymentComponent: avgDealsPerMonth * 1033,  // monthly deals only, PIF tracked separately
-      pifCashComponent: avgPIFPerMonth * avgPIFAmount,
-      totalMonthlyRevenue: currentMRR + (avgDealsPerMonth * avgFirstPayment) + (avgPIFPerMonth * avgPIFAmount),
-      totalAnnualized: (currentMRR + (avgDealsPerMonth * avgFirstPayment) + (avgPIFPerMonth * avgPIFAmount)) * 12,
+      // First payments = MRR (same rate) — not a separate stream
+            pifCashComponent: avgPIFPerMonth * avgPIFAmount,
+      totalMonthlyRevenue: currentMRR + (avgPIFPerMonth * avgPIFAmount),  // first payments = MRR rate
+      totalAnnualized: (currentMRR + (avgPIFPerMonth * avgPIFAmount)) * 12,
     }
 
     // ─── B. Monthly Actuals ───────────────────────────────────────────────────
