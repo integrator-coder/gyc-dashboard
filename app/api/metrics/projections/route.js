@@ -60,8 +60,14 @@ function runScenario(scenario, startMRR, startMonth, renewalByMonth) {
   const dec2026Mrr = points2026.find((p) => p.month === '2026-12')?.mrr || 0
   const dec2027Mrr = points2027.find((p) => p.month === '2027-12')?.mrr || 0
 
-  const revenue2026 = Math.round(points2026.reduce((s, p) => s + p.mrr, 0))
-  const revenue2027 = Math.round(points2027.reduce((s, p) => s + p.mrr, 0))
+  // Total revenue = MRR + new deal first payments + PIF cash (~6 PIFs/mo at $8,693 avg)
+  const dealsPerMonth = scenario.newMRRPerMonth > 0 ? Math.round(scenario.newMRRPerMonth / 748) : 10
+  const pifPerMonth = 6  // current GYC PIF pace
+  const AVG_FP = 2039    // avg first payment per monthly deal
+  const AVG_PIF = 8693   // avg PIF deal amount
+  const monthlyNonMRR = (dealsPerMonth * AVG_FP) + (pifPerMonth * AVG_PIF)  // ~$72K/mo
+  const revenue2026 = Math.round(points2026.reduce((s, p) => s + p.mrr + monthlyNonMRR, 0))
+  const revenue2027 = Math.round(points2027.reduce((s, p) => s + p.mrr + monthlyNonMRR, 0))
 
   return { points, points2026, points2027, dec2026Mrr, dec2027Mrr, revenue2026, revenue2027 }
 }
