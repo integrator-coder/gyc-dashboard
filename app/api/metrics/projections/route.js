@@ -253,7 +253,6 @@ export async function GET() {
       FROM "SalesDeal"
       WHERE "tenantId" = 'gyc'
         AND "renewalAmount" > 0
-        AND to_char("dealDate"::date + (term * interval '1 month'), 'YYYY-MM') BETWEEN '2026-01' AND '2027-12'
       GROUP BY 1
       ORDER BY 1
     `)
@@ -310,18 +309,28 @@ export async function GET() {
       mrrBridgeCurrent = endMrr
     }
 
-    // ─── G. Renewal pipeline by month (Jan–Dec 2026) ─────────────────────────
-    const renewalPipeline = []
-    for (let m = 1; m <= 12; m++) {
-      const key = `2026-${String(m).padStart(2, '0')}`
-      renewalPipeline.push({
+    // ─── G. Renewal pipeline by month (rolling 12-month forward window) ────────
+    const today = new Date()
+    const pipelineStart = today.toISOString().slice(0, 7) // current month YYYY-MM
+    const pipelineEndDate = new Date(today)
+    pipelineEndDate.setMonth(pipelineEndDate.getMonth() + 12)
+    const pipelineEnd = pipelineEndDate.toISOString().slice(0, 7)
+    const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+
+    const [psYear, psMonth] = pipelineStart.split('-').map(Number)
+    const [peYear, peMonth] = pipelineEnd.split('-').map(Number)
+    const pipelineMonthCount = (peYear - psYear) * 12 + (peMonth - psMonth) + 1
+
+    const renewalPipeline = monthsFrom(pipelineStart, pipelineMonthCount).map((key) => {
+      const [y, m] = key.split('-').map(Number)
+      return {
         key,
-        label: MONTH_NAMES[m - 1],
+        label: `${MONTH_NAMES[m - 1]} ${String(y).slice(2)}`,
         mrr: Math.round(renewalByMonth[key] || 0),
-        isPast: m < now.getMonth() + 1 || now.getFullYear() > 2026,
-        isCurrent: m === now.getMonth() + 1 && now.getFullYear() === 2026,
-      })
-    }
+        isPast: key < thisMonthKey,
+        isCurrent: key === thisMonthKey,
+      }
+    })
 
     // ─── Build scenario summary table rows ───────────────────────────────────
     const scenarioTable = {
