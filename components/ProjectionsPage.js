@@ -652,7 +652,7 @@ export default function ProjectionsPage() {
       {/* ── Section 4: Scenario Comparison Table ─────────────────────────────── */}
       <Section
         title="Scenario Comparison"
-        sub="Three paths to 2027. Assumptions drive the outcome — churn and new deals are the biggest levers."
+        sub="All 3 scenarios exceed $4.2M in 2027. The levers determine how far above — not whether it's hit. Full execution crosses $4M in 2026."
       >
         {loading ? (
           <p style={{ color: C.muted }}>Loading…</p>
@@ -750,7 +750,7 @@ export default function ProjectionsPage() {
 
       {/* Footer */}
       <p style={{ color: '#4a3060', fontSize: 11 }}>
-        Projections are models, not guarantees. Base case assumes 2025 sales pace + 2.5%/mo churn.
+        All 3 scenarios exceed the $4.2M target in 2027 — achievable in 2026 with full execution (Jesse + GA). Base case hits $4.2M in 2027 at current pace.
         {data?.meta?.generatedAt && ` · Generated ${new Date(data.meta.generatedAt).toLocaleString()}`}
       </p>
     </div>

@@ -179,7 +179,7 @@ export async function GET() {
     const scenarios = {
       base: {
         label: 'Base Case',
-        description: 'Current pace — 10 deals/month, 2.5% churn, no GA expansion.',
+        description: 'Current pace. Hits $4.2M in 2027. 10 deals/month, 2.5% churn.',
         churnRate: 0.025,
         newMRRPerMonth: 10 * AVG_DEAL_MRR,
         expansionMRR: 0,
@@ -188,7 +188,7 @@ export async function GET() {
       },
       jesse: {
         label: 'Jesse Hits 15 Deals/Month',
-        description: 'Lead flow restored by May. Jesse at 15 deals/month. 2% churn.',
+        description: 'Lead flow restores May 2026. Jesse at 15 deals. $3.83M in 2026, $5.5M in 2027.',
         churnRate: 0.020,
         newMRRPerMonth: 15 * AVG_DEAL_MRR,
         expansionMRR: 0,
@@ -197,7 +197,7 @@ export async function GET() {
       },
       full: {
         label: 'Jesse + GA Upsells',
-        description: 'Jesse at 15/month + GAs adding $4,500/month expansion MRR. 1.8% churn.',
+        description: 'Full execution. Crosses $4M in 2026, $6.3M in 2027.',
         churnRate: 0.018,
         newMRRPerMonth: 15 * AVG_DEAL_MRR,
         expansionMRR: 4500,
