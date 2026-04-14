@@ -1,10 +1,10 @@
-import ClientIntelPage from '@/components/ClientIntelPage'
+import ClientCard from '@/components/ClientCard'
 import { requireUser, serializeUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 export default async function Page({ params }) {
-  const user = await requireUser(['ga', 'cx', 'admin', 'superadmin'])
   const { acronym } = await params
-  return <ClientIntelPage acronym={acronym} user={serializeUser(user)} />
+  const user = await requireUser(['ga', 'cx', 'admin', 'superadmin'])
+  return <ClientCard acronym={acronym} user={serializeUser(user)} />
 }

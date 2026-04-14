@@ -1,9 +1,9 @@
-import ClientBrowserPage from '@/components/ClientBrowserPage'
+import ActiveClientList from '@/components/ActiveClientList'
 import { requireUser, serializeUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 export default async function Page() {
   const user = await requireUser(['ga', 'cx', 'admin', 'superadmin'])
-  return <ClientBrowserPage user={serializeUser(user)} />
+  return <ActiveClientList user={serializeUser(user)} />
 }

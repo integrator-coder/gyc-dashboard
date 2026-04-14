@@ -85,13 +85,21 @@ function buildDashboardGroup(user) {
   }
 }
 
+const CLIENT_MANAGEMENT_GROUP = {
+  label: 'Client Management',
+  emoji: '👥',
+  defaultOpen: true,
+  children: [
+    { label: 'Active Clients', emoji: '👥', href: '/clients', roles: ['ga', 'cx', 'admin', 'superadmin'] },
+  ],
+}
+
 const TEAM_PORTAL_GROUP = {
   label: 'Team Portal',
   emoji: '🧩',
   defaultOpen: true,
   children: [
     { label: 'CX Handoffs', emoji: '🧾', href: '/cx-handoff', roles: ['sales', 'ga', 'cx', 'admin', 'superadmin'] },
-    { label: 'Client Intel', emoji: '🧠', href: '/clients', roles: ['ga', 'cx', 'admin', 'superadmin'] },
     { label: 'Recon', emoji: '🔍', href: '/team/recon', roles: ['recon', 'admin', 'superadmin'] },
   ],
 }
@@ -208,6 +216,11 @@ export default function Sidebar() {
 
   const dashboardGroup = useMemo(() => buildDashboardGroup(session.user), [session.user])
 
+  const clientManagementGroup = useMemo(() => ({
+    ...CLIENT_MANAGEMENT_GROUP,
+    children: CLIENT_MANAGEMENT_GROUP.children.filter((item) => hasRole(session.user, item.roles)),
+  }), [session.user])
+
   const teamPortalGroup = useMemo(() => ({
     ...TEAM_PORTAL_GROUP,
     children: TEAM_PORTAL_GROUP.children.filter((item) => hasRole(session.user, item.roles)),
@@ -233,6 +246,9 @@ export default function Sidebar() {
 
       <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
         <CollapsibleGroup group={dashboardGroup} pathname={pathname} />
+        {clientManagementGroup.children.length > 0 && (
+          <CollapsibleGroup group={clientManagementGroup} pathname={pathname} />
+        )}
         <CollapsibleGroup group={teamPortalGroup} pathname={pathname} />
         {isAdminPlus(session.user) && (
           <CollapsibleGroup group={ADMIN_GROUP} pathname={pathname} />
