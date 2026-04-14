@@ -192,26 +192,64 @@ export async function GET(_request, { params }) {
 
 export async function PATCH(request, { params }) {
   try {
+    // Notes can be saved by any authenticated user
+    // GBP baseline fields require admin or superadmin
     const auth = await requireApiUser(['ga', 'cx', 'admin', 'superadmin'])
     if (auth.error) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
+    const { user }  = auth
     const { acronym } = await params
     const upper       = String(acronym || '').toUpperCase()
     const body        = await request.json()
-    const teamNotes   = typeof body.teamNotes === 'string' ? body.teamNotes : null
+
+    const sets = []
+    const vals = []
+    let idx = 1
+
+    // teamNotes — any authenticated user
+    if (typeof body.teamNotes === 'string') {
+      sets.push(`"teamNotes" = $${idx++}`)
+      vals.push(body.teamNotes)
+    }
+
+    // Admin-only fields
+    const isAdmin = userHasRole(user, ['admin', 'superadmin'])
+    if (isAdmin) {
+      if (body.gbpBaselineReviews !== undefined) {
+        sets.push(`"gbpBaselineReviews" = $${idx++}`)
+        vals.push(body.gbpBaselineReviews === null ? null : parseInt(body.gbpBaselineReviews, 10))
+      }
+      if (body.gbpBaselineRating !== undefined) {
+        sets.push(`"gbpBaselineRating" = $${idx++}`)
+        vals.push(body.gbpBaselineRating === null ? null : parseFloat(body.gbpBaselineRating))
+      }
+      if (body.gbpBaselineDate !== undefined) {
+        sets.push(`"gbpBaselineDate" = $${idx++}`)
+        vals.push(body.gbpBaselineDate || null)
+      }
+      if (typeof body.gmbAccess === 'string') {
+        sets.push(`"gmbAccess" = $${idx++}`)
+        vals.push(body.gmbAccess)
+      }
+    }
+
+    if (sets.length === 0) {
+      return NextResponse.json({ error: 'No updatable fields provided.' }, { status: 400 })
+    }
+
+    sets.push(`"updatedAt" = NOW()`)
+    vals.push(upper)
 
     await pool.query(
-      `UPDATE "ClientProfile"
-         SET "teamNotes" = $1, "updatedAt" = NOW()
-       WHERE "tenantId" = 'gyc' AND acronym = $2`,
-      [teamNotes, upper]
+      `UPDATE "ClientProfile" SET ${sets.join(', ')} WHERE "tenantId" = 'gyc' AND acronym = $${idx}`,
+      vals
     )
 
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('[PATCH /api/clients/[acronym]/profile]', error)
-    return NextResponse.json({ error: error.message || 'Failed to save notes.' }, { status: 500 })
+    return NextResponse.json({ error: error.message || 'Failed to save.' }, { status: 500 })
   }
 }

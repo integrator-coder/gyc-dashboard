@@ -16,13 +16,17 @@ import {
 
 function fmt$(v) {
   if (v == null) return '—'
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(Number(v))
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency', currency: 'USD', maximumFractionDigits: 0,
+  }).format(Number(v))
 }
 
 function fmtDate(v) {
   if (!v) return '—'
   try {
-    return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(v))
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric',
+    }).format(new Date(v))
   } catch { return '—' }
 }
 
@@ -41,7 +45,9 @@ function fmtMonth(v) {
   if (!v) return '—'
   const [y, m] = String(v).split('-')
   try {
-    return new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' }).format(new Date(Number(y), Number(m) - 1, 1))
+    return new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' }).format(
+      new Date(Number(y), Number(m) - 1, 1)
+    )
   } catch { return v }
 }
 
@@ -52,11 +58,6 @@ function fmtDuration(secs) {
   const m = Math.floor(totalSec / 60)
   const s = totalSec % 60
   return `${m}m${s > 0 ? ` ${s}s` : ''}`
-}
-
-function fmtDurationMins(mins) {
-  if (!mins) return null
-  return fmtDuration(Number(mins) * 60)
 }
 
 // ── Shared UI primitives ──────────────────────────────────────────────────────
@@ -78,38 +79,71 @@ function Badge({ label, className = '' }) {
 
 function StatusBadge({ status }) {
   const s = String(status || '').toLowerCase()
-  return <Badge label={s || 'unknown'} className={`capitalize ${STATUS_COLORS[s] || 'border-gray-500/30 bg-gray-500/10 text-gray-300'}`} />
-}
-
-function SectionCard({ title, eyebrow, children, action, id }) {
   return (
-    <section id={id} className="overflow-hidden rounded-3xl border border-[var(--brand-border)] bg-[radial-gradient(circle_at_top,#1a1024,transparent_45%),var(--brand-bg-card)]">
-      <div className="border-b border-[var(--brand-border)] px-6 py-4">
-        <div className="flex items-end justify-between">
-          <div>
-            {eyebrow && <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-400">{eyebrow}</div>}
-            <h2 className="mt-0.5 text-lg font-bold text-white">{title}</h2>
-          </div>
-          {action}
-        </div>
-      </div>
-      <div className="p-6">{children}</div>
-    </section>
+    <Badge
+      label={s || 'unknown'}
+      className={`capitalize ${STATUS_COLORS[s] || 'border-gray-500/30 bg-gray-500/10 text-gray-300'}`}
+    />
   )
 }
 
-function StatBox({ label, value, sub, warn }) {
+function Card({ children, className = '' }) {
   return (
-    <div className="rounded-2xl border border-[var(--brand-border)] bg-black/25 px-4 py-3">
-      <div className="text-[11px] uppercase tracking-wider text-gray-400">{label}</div>
-      <div className={`mt-1 text-xl font-bold ${warn ? 'text-rose-300' : 'text-white'}`}>{value ?? '—'}</div>
-      {sub && <div className="mt-0.5 text-xs text-gray-400">{sub}</div>}
+    <div className={`rounded-2xl border border-[var(--brand-border)] bg-black/25 px-4 py-3 ${className}`}>
+      {children}
     </div>
   )
 }
 
+function StatBox({ label, value, sub, warn, big }) {
+  return (
+    <Card>
+      <div className="text-[11px] uppercase tracking-wider text-gray-400">{label}</div>
+      <div className={`mt-1 font-bold ${big ? 'text-3xl' : 'text-xl'} ${warn ? 'text-rose-300' : 'text-white'}`}>
+        {value ?? '—'}
+      </div>
+      {sub && <div className="mt-0.5 text-xs text-gray-400">{sub}</div>}
+    </Card>
+  )
+}
+
 function Empty({ children }) {
-  return <div className="rounded-xl border border-dashed border-[var(--brand-border)] px-4 py-5 text-sm text-gray-500">{children}</div>
+  return (
+    <div className="rounded-xl border border-dashed border-[var(--brand-border)] px-4 py-5 text-sm text-gray-500">
+      {children}
+    </div>
+  )
+}
+
+function InfoRow({ label, value, href, mono }) {
+  return (
+    <div className="flex gap-3 text-sm">
+      <span className="w-32 shrink-0 text-gray-500">{label}</span>
+      {value ? (
+        href ? (
+          <a href={href} target="_blank" rel="noreferrer" className="text-violet-400 hover:underline break-all">
+            {value}
+          </a>
+        ) : (
+          <span className={`text-gray-200 break-all ${mono ? 'font-mono text-xs' : ''}`}>{value}</span>
+        )
+      ) : (
+        <span className="text-gray-600">—</span>
+      )}
+    </div>
+  )
+}
+
+function SectionTitle({ children }) {
+  return <h3 className="mb-3 text-sm font-semibold uppercase tracking-widest text-gray-400">{children}</h3>
+}
+
+function PlaceholderBanner({ icon = '🔌', message }) {
+  return (
+    <div className="rounded-xl border border-dashed border-violet-500/20 bg-violet-500/5 px-4 py-4 text-sm text-violet-300/70">
+      <span className="mr-2">{icon}</span>{message}
+    </div>
+  )
 }
 
 // ── Health score bar ──────────────────────────────────────────────────────────
@@ -117,12 +151,16 @@ function Empty({ children }) {
 function HealthScore({ score }) {
   const pct   = (score / 10) * 100
   const color = score >= 8 ? '#10b981' : score >= 5 ? '#f59e0b' : '#f43f5e'
+  const label = score >= 8 ? 'text-emerald-400' : score >= 5 ? 'text-amber-400' : 'text-rose-400'
   return (
     <div className="flex items-center gap-3">
       <div className="relative h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
-        <div className="absolute inset-y-0 left-0 rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
+        <div
+          className="absolute inset-y-0 left-0 rounded-full transition-all"
+          style={{ width: `${pct}%`, backgroundColor: color }}
+        />
       </div>
-      <span className="w-14 text-right text-sm font-semibold text-white">{score}/10</span>
+      <span className={`w-16 text-right text-sm font-bold ${label}`}>{score}/10</span>
     </div>
   )
 }
@@ -131,7 +169,13 @@ function HealthScore({ score }) {
 
 function ServiceTile({ icon, label, active }) {
   return (
-    <div className={`flex flex-col items-center gap-1.5 rounded-2xl border p-3 text-center ${active ? 'border-violet-500/40 bg-violet-500/15 text-violet-200' : 'border-[var(--brand-border)] bg-black/20 text-gray-600'}`}>
+    <div
+      className={`flex flex-col items-center gap-1.5 rounded-2xl border p-3 text-center ${
+        active
+          ? 'border-violet-500/40 bg-violet-500/15 text-violet-200'
+          : 'border-[var(--brand-border)] bg-black/20 text-gray-600'
+      }`}
+    >
       <span className="text-2xl">{icon}</span>
       <span className="text-[11px] font-medium leading-tight">{label}</span>
     </div>
@@ -150,7 +194,6 @@ function TrendBadge({ trend, changePct }) {
 
 function TranscriptViewer({ text }) {
   const [open, setOpen] = useState(false)
-
   if (!text) return null
   return (
     <div className="mt-3">
@@ -174,44 +217,35 @@ function TranscriptViewer({ text }) {
 
 function CallCard({ call, isPending }) {
   const [summaryOpen, setSummaryOpen] = useState(false)
-
   const classification = call.classifiedAs || call.aiClassification || null
-  const rep = call.assignedRepName || call.repName || call.hostName || call.gaName || null
+  const rep     = call.assignedRepName || call.repName || call.hostName || call.gaName || null
   const callDate = call.startTime || call.startedAt || call.callDate
   const durSecs  = call.durationSecs || (call.duration ? call.duration * 60 : null)
-  const hasTranscript = !!call.transcriptText
-  const hasAISummary  = !!call.aiSummary
-  const hasRecording  = !!call.recordingUrl || !!call.callLink
   const purposes = Array.isArray(call.purposes) ? call.purposes : []
-
-  // Recording link note
   const recUrl   = call.recordingUrl || call.callLink
-  const classifyUrl = `/team/classify?callId=${call.id}`
 
   return (
-    <div className={`rounded-2xl border ${isPending ? 'border-amber-500/25 bg-amber-500/5' : 'border-[var(--brand-border)] bg-black/20'} p-4 space-y-3`}>
-      {/* Header row */}
+    <div
+      className={`rounded-2xl border ${
+        isPending
+          ? 'border-amber-500/25 bg-amber-500/5'
+          : 'border-[var(--brand-border)] bg-black/20'
+      } p-4 space-y-3`}
+    >
       <div className="flex flex-wrap items-start gap-2">
-        {/* Date chip */}
         <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2.5 py-1 text-xs text-violet-200">
           {fmtDate(callDate)}
         </span>
-
-        {/* Duration */}
         {durSecs && (
           <span className="rounded-full border border-[var(--brand-border)] bg-black/30 px-2.5 py-1 text-xs text-gray-300">
             {fmtDuration(durSecs)}
           </span>
         )}
-
-        {/* Rep */}
         {rep && (
           <span className="rounded-full border border-[var(--brand-border)] bg-black/30 px-2.5 py-1 text-xs text-gray-300">
             {rep}
           </span>
         )}
-
-        {/* Classification */}
         {classification ? (
           <span className="rounded-full border border-fuchsia-500/30 bg-fuchsia-500/10 px-2.5 py-1 text-xs uppercase tracking-wide text-fuchsia-200">
             {classification}
@@ -221,41 +255,31 @@ function CallCard({ call, isPending }) {
             unclassified
           </span>
         )}
-
-        {/* Purposes */}
         {purposes.map((p) => (
           <span key={p} className="rounded-full border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-xs text-blue-300">
             {p}
           </span>
         ))}
-
-        {/* Deal closed */}
         {call.dealClosed && (
           <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-300">
             ✓ Deal closed
           </span>
         )}
-
-        {/* Asset availability chips */}
-        {hasTranscript && (
-          <span className="rounded-full border border-violet-500/20 bg-black/20 px-2 py-1 text-[10px] text-gray-400" title="Transcript saved permanently in our DB">
+        {call.transcriptText && (
+          <span className="rounded-full border border-violet-500/20 bg-black/20 px-2 py-1 text-[10px] text-gray-400">
             📄 transcript
           </span>
         )}
-        {hasAISummary && (
+        {call.aiSummary && (
           <span className="rounded-full border border-violet-500/20 bg-black/20 px-2 py-1 text-[10px] text-gray-400">
             🤖 AI summary
           </span>
         )}
       </div>
 
-      {/* Topic */}
-      <div className="font-semibold text-white">
-        {call.topic || 'Untitled call'}
-      </div>
+      <div className="font-semibold text-white">{call.topic || 'Untitled call'}</div>
 
-      {/* AI Summary (collapsible) */}
-      {hasAISummary && (
+      {call.aiSummary && (
         <div>
           <button
             onClick={() => setSummaryOpen((v) => !v)}
@@ -272,23 +296,20 @@ function CallCard({ call, isPending }) {
         </div>
       )}
 
-      {/* Transcript viewer */}
       <TranscriptViewer text={call.transcriptText} />
 
-      {/* Notes */}
       {call.notes && (
         <div className="rounded-xl bg-black/20 px-3 py-2 text-xs text-gray-400">{call.notes}</div>
       )}
 
-      {/* Action links */}
       <div className="flex flex-wrap gap-3 pt-1">
-        {hasRecording && (
+        {recUrl && (
           <a
             href={recUrl}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-1 text-xs text-violet-400 hover:underline"
-            title="Recording links expire after ~30–120 days on Zoom's plan"
+            title="Recording links may expire"
           >
             🎬 Recording
             <span className="text-[10px] text-gray-600">(may expire)</span>
@@ -296,7 +317,7 @@ function CallCard({ call, isPending }) {
         )}
         {isPending && (
           <Link
-            href={classifyUrl}
+            href={`/team/classify?callId=${call.id}`}
             className="inline-flex items-center gap-1 text-xs text-amber-400 hover:underline"
           >
             🏷 Classify this call →
@@ -307,114 +328,683 @@ function CallCard({ call, isPending }) {
   )
 }
 
-// ── Calls Panel ───────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// TAB PANELS
+// ─────────────────────────────────────────────────────────────────────────────
 
-function CallsPanel({ profile, allCalls, pendingCalls, potentialUnlinkedCount }) {
-  const [view, setView] = useState('all') // 'all' | 'pending'
+// ── Tab 1: Overview ───────────────────────────────────────────────────────────
 
-  const displayed = view === 'pending' ? pendingCalls : allCalls
-  const classifiedCount = allCalls.length - pendingCalls.length
-  const withTranscript  = allCalls.filter((c) => c.transcriptText).length
-  const withAI          = allCalls.filter((c) => c.aiSummary).length
+function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount }) {
+  const latestMonth  = funnelHistory.length > 0 ? funnelHistory[funnelHistory.length - 1] : null
+  const hasFunnel    = funnelHistory.length > 0 || profile.funnelDataMonths > 0
+
+  const alerts = []
+  if (profile.isOverdue)           alerts.push({ icon: '⚠️', msg: 'Overdue balance outstanding', color: 'border-rose-500/30 bg-rose-500/10 text-rose-300' })
+  if (profile.funnelTrend === 'down') alerts.push({ icon: '📉', msg: 'Funnel trending down (leads or tours decreasing)', color: 'border-amber-500/30 bg-amber-500/10 text-amber-300' })
+  if (potentialUnlinkedCount > 0)  alerts.push({ icon: '🔎', msg: `${potentialUnlinkedCount} potential unlinked call${potentialUnlinkedCount !== 1 ? 's' : ''} — review in Call Intelligence`, color: 'border-amber-500/30 bg-amber-500/10 text-amber-300' })
 
   return (
-    <SectionCard
-      title="Call Log"
-      eyebrow="Section 5"
-      id="calls"
-      action={
-        <div className="flex gap-2">
-          <span className="text-xs text-gray-500">{allCalls.length} total</span>
+    <div className="space-y-6">
+      {/* Alerts strip */}
+      {alerts.length > 0 && (
+        <div className="space-y-2">
+          {alerts.map((a, i) => (
+            <div key={i} className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm ${a.color}`}>
+              <span>{a.icon}</span> {a.msg}
+            </div>
+          ))}
         </div>
-      }
-    >
-      {/* Potential unlinked calls banner */}
-      {potentialUnlinkedCount > 0 && (
-        <div className="mb-5 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
-          <span className="text-lg">🔎</span>
-          <div>
-            <div className="text-sm font-semibold text-amber-300">
-              {potentialUnlinkedCount} potential call{potentialUnlinkedCount !== 1 ? 's' : ''} found via email match
+      )}
+
+      {/* Health score */}
+      <div>
+        <SectionTitle>Client Health</SectionTitle>
+        <Card>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-medium text-gray-300">Health Score</span>
+            <span className={`text-2xl font-black ${
+              profile.healthScore >= 8 ? 'text-emerald-400' :
+              profile.healthScore >= 5 ? 'text-amber-400' : 'text-rose-400'
+            }`}>
+              {profile.healthScore}/10
+            </span>
+          </div>
+          <HealthScore score={profile.healthScore} />
+          <div className="mt-2 text-xs text-gray-500">
+            {profile.healthScore >= 8 ? 'Healthy — no significant concerns' :
+             profile.healthScore >= 5 ? 'Moderate — some issues to watch' :
+             'Needs attention — action required'}
+          </div>
+        </Card>
+      </div>
+
+      {/* This Month Funnel */}
+      <div>
+        <SectionTitle>
+          This Month Funnel
+          {latestMonth && <span className="ml-2 normal-case text-[10px] font-normal text-gray-500">({fmtMonth(latestMonth.month)})</span>}
+        </SectionTitle>
+        {!hasFunnel ? (
+          <Empty>No funnel data available for this client.</Empty>
+        ) : (
+          <div className="grid grid-cols-3 gap-3">
+            <StatBox label="Leads" value={latestMonth ? fmtNum(latestMonth.leads) : '—'} big />
+            <StatBox label="Tours" value={latestMonth ? fmtNum(latestMonth.tours) : '—'} big />
+            <StatBox label="Registrations" value={latestMonth ? fmtNum(latestMonth.registered) : '—'} big />
+          </div>
+        )}
+      </div>
+
+      {/* 12-Month Trend */}
+      {funnelHistory.length > 1 && (
+        <div>
+          <SectionTitle>12-Month Trend</SectionTitle>
+          <Card className="pt-4">
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={funnelHistory} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                  <XAxis dataKey="month" tick={{ fill: '#6b7280', fontSize: 10 }} tickFormatter={fmtMonth} />
+                  <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} width={28} />
+                  <Tooltip
+                    contentStyle={{ background: '#0a0a0a', border: '1px solid #2a1a3e', borderRadius: 12 }}
+                    labelStyle={{ color: '#9ca3af' }}
+                    labelFormatter={fmtMonth}
+                  />
+                  <Line type="monotone" dataKey="leads"      stroke="#AE2BCF" strokeWidth={2} dot={false} name="Leads" />
+                  <Line type="monotone" dataKey="tours"      stroke="#3b82f6" strokeWidth={2} dot={false} name="Tours" />
+                  <Line type="monotone" dataKey="registered" stroke="#10b981" strokeWidth={2} dot={false} name="Enrolled" />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
-            <div className="mt-0.5 text-xs text-amber-200/70">
-              These calls have participant emails matching this client but aren't linked yet.{' '}
-              <Link href="/team/classify" className="underline hover:text-amber-300">
-                Review in Call Intelligence →
-              </Link>
+            <div className="mt-2 flex gap-4 text-xs">
+              <span style={{ color: '#AE2BCF' }}>● Leads</span>
+              <span style={{ color: '#3b82f6' }}>● Tours</span>
+              <span style={{ color: '#10b981' }}>● Enrolled</span>
             </div>
+            <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+              <span>{profile.funnelDataMonths || 0} month(s) of data</span>
+              <TrendBadge trend={profile.funnelTrend} changePct={profile.trendChangePct} />
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Avg conversion rates */}
+      {hasFunnel && (
+        <div>
+          <SectionTitle>Conversion Rates (12-mo avg)</SectionTitle>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <StatBox label="Avg Leads/mo"    value={fmtNum(profile.avgMonthlyLeads)} />
+            <StatBox label="Avg Tours/mo"    value={fmtNum(profile.avgMonthlyTours)} />
+            <StatBox label="Avg Enrollments" value={fmtNum(profile.avgMonthlyRegistered)} />
+            <StatBox label="Lead→Tour"        value={profile.leadToTourRate != null ? fmtPct(Number(profile.leadToTourRate)) : '—'} />
           </div>
         </div>
       )}
 
-      {/* Stats strip */}
-      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatBox label="Total calls" value={allCalls.length} />
-        <StatBox label="Classified" value={classifiedCount} />
-        <StatBox label="With transcript" value={withTranscript} sub="Permanent record" />
-        <StatBox label="AI summaries" value={withAI} />
+      {/* Services */}
+      <div>
+        <SectionTitle>Active Services</SectionTitle>
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+          <ServiceTile icon="🌐" label="Website"    active={!!profile.hasWebsite} />
+          <ServiceTile icon="📈" label="SEO"        active={!!profile.hasSEO} />
+          <ServiceTile icon="🤝" label="CRM"        active={!!profile.hasCRM} />
+          <ServiceTile icon="📊" label="Blueprint"  active={!!profile.hasBlueprint} />
+          <ServiceTile icon="📢" label="Google Ads" active={!!profile.hasGoogleAds} />
+          <ServiceTile icon="💰" label="Paid Media" active={!!profile.hasPaidMedia} />
+        </div>
+        {profile.serviceList?.length > 0 && (
+          <div className="mt-2 text-xs text-gray-500">Services: {profile.serviceList.join(' · ')}</div>
+        )}
       </div>
 
-      {/* View toggle */}
-      {pendingCalls.length > 0 && (
-        <div className="mb-4 flex gap-2">
-          {[
-            { key: 'all',     label: `All calls (${allCalls.length})` },
-            { key: 'pending', label: `Needs classification (${pendingCalls.length})` },
-          ].map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setView(key)}
-              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                view === key
-                  ? key === 'pending'
-                    ? 'border-amber-500/50 bg-amber-500/15 text-amber-200'
-                    : 'border-violet-500/50 bg-violet-500/15 text-violet-200'
-                  : 'border-[var(--brand-border)] text-gray-400 hover:text-white'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Needs classification note */}
-      {view === 'pending' && pendingCalls.length > 0 && (
-        <div className="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-2.5 text-xs text-amber-300">
-          These calls are linked to this client but haven't been classified yet.
-          Click <strong>"Classify this call →"</strong> on any row to open Call Intelligence.
-        </div>
-      )}
-
-      {/* Call list */}
-      {displayed.length === 0 ? (
-        <Empty>
-          {view === 'pending'
-            ? 'All calls are classified — great!'
-            : 'No Zoom calls on record for this client.'}
-        </Empty>
-      ) : (
-        <div className="space-y-4">
-          {displayed.map((call) => (
-            <CallCard
-              key={call.id}
-              call={call}
-              isPending={!call.classifiedAs && !call.aiClassification && (!call.purposes || call.purposes.length === 0)}
-            />
-          ))}
-        </div>
-      )}
-    </SectionCard>
+      {/* Key contact info */}
+      <div>
+        <SectionTitle>Contact Snapshot</SectionTitle>
+        <Card>
+          <div className="space-y-2.5">
+            <InfoRow label="Owner"    value={profile.ownerName} />
+            <InfoRow label="Email"    value={profile.email}    href={profile.email ? `mailto:${profile.email}` : null} />
+            <InfoRow label="Phone"    value={profile.phone}    href={profile.phone ? `tel:${profile.phone}` : null} />
+            {profile.directorName && <InfoRow label="Director" value={profile.directorName} />}
+            <InfoRow label="Location" value={[profile.city, profile.state].filter(Boolean).join(', ')} />
+            <InfoRow label="Since"    value={profile.startDate ? fmtDate(profile.startDate) : null} />
+          </div>
+        </Card>
+      </div>
+    </div>
   )
 }
 
-// ── Notes section ─────────────────────────────────────────────────────────────
+// ── Tab 2: Financial ──────────────────────────────────────────────────────────
 
-function NotesSection({ acronym, initialNotes }) {
-  const [notes, setNotes] = useState(initialNotes || '')
+function FinancialTab({ profile }) {
+  const isPIF = profile.lifetimeValue && profile.mrr && Number(profile.lifetimeValue) > Number(profile.mrr) * 10
+
+  return (
+    <div className="space-y-6">
+      {/* Primary metrics */}
+      <div>
+        <SectionTitle>Revenue</SectionTitle>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <StatBox label="MRR" value={profile.mrr ? fmt$(profile.mrr) : '—'} big />
+          <StatBox label="Lifetime Value" value={profile.lifetimeValue ? fmt$(profile.lifetimeValue) : '—'} />
+          <StatBox label="Overdue Amount" value={profile.overdueAmount ? fmt$(profile.overdueAmount) : '—'} warn={!!profile.isOverdue} />
+        </div>
+        {isPIF && (
+          <div className="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm text-emerald-300">
+            💰 Paid-in-full indicator — lifetime value is significantly above MRR
+          </div>
+        )}
+      </div>
+
+      {/* Stripe */}
+      <div>
+        <SectionTitle>Stripe Status</SectionTitle>
+        <Card>
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-400">Status:</span>
+                <span className={`text-sm font-semibold ${
+                  profile.stripeStatus === 'active' ? 'text-emerald-400' :
+                  profile.stripeStatus === 'past_due' ? 'text-rose-400' :
+                  'text-gray-300'
+                }`}>
+                  {profile.stripeStatus || '—'}
+                </span>
+              </div>
+              {profile.isOverdue && (
+                <div className="text-sm text-rose-300">⚠️ Account is overdue</div>
+              )}
+            </div>
+            {profile.stripeCustomerId && (
+              <a
+                href={`https://dashboard.stripe.com/customers/${profile.stripeCustomerId}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm text-violet-400 hover:underline"
+              >
+                View in Stripe ↗
+              </a>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {/* Dunning history */}
+      <div>
+        <SectionTitle>Dunning History</SectionTitle>
+        {!profile.overdueCount || profile.overdueCount === 0 ? (
+          <Empty>No overdue history on record.</Empty>
+        ) : (
+          <Card>
+            <div className="mb-3 flex items-center gap-2">
+              <span className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${
+                profile.overdueCount >= 3
+                  ? 'border-rose-500/40 bg-rose-500/15 text-rose-300'
+                  : 'border-amber-500/40 bg-amber-500/15 text-amber-300'
+              }`}>
+                {profile.overdueCount >= 3 ? '🔴 Repeat offender' : '⚠️ Has overdue history'}
+              </span>
+              <span className="text-xs text-gray-400">{profile.overdueCount} episode{profile.overdueCount !== 1 ? 's' : ''}</span>
+            </div>
+            <div className="space-y-2">
+              <InfoRow label="Last overdue"    value={fmtDate(profile.lastOverdueDate)} />
+              <InfoRow label="Last reason"     value={profile.lastOverdueReason} />
+              <InfoRow label="Catch-up rate"   value={profile.catchUpRate != null ? fmtPct(Number(profile.catchUpRate) * 100) : null} />
+              <InfoRow label="Avg days to pay" value={profile.avgDaysToCatchUp ? `${profile.avgDaysToCatchUp} days` : null} />
+            </div>
+          </Card>
+        )}
+      </div>
+
+      {/* GHL pipeline */}
+      {(profile.ghlContactId || profile.ghlPipelineStage) && (
+        <div>
+          <SectionTitle>GHL Pipeline</SectionTitle>
+          <Card>
+            <div className="space-y-2">
+              <InfoRow label="Stage" value={profile.ghlPipelineStage} />
+              {profile.ghlContactId && (
+                <InfoRow
+                  label="GHL Contact"
+                  value="Open in GHL ↗"
+                  href={`https://app.gohighlevel.com/contacts/${profile.ghlContactId}`}
+                />
+              )}
+            </div>
+          </Card>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Tab 3: Website (always visible) ──────────────────────────────────────────
+
+function WebsiteTab({ profile, acronym, user }) {
+  const isGYCWebsite = !!profile.hasWebsite
+  const websiteUrl   = profile.website || null
+
+  return (
+    <div className="space-y-6">
+      {/* Badge row */}
+      <div className="flex flex-wrap gap-2">
+        {isGYCWebsite ? (
+          <Badge label="🌐 GYC Website" className="border-violet-500/40 bg-violet-500/15 text-violet-200" />
+        ) : (
+          <Badge label="🌐 Client's Own Website" className="border-gray-500/30 bg-gray-500/10 text-gray-300" />
+        )}
+        {profile.status && <StatusBadge status={profile.status} />}
+      </div>
+
+      {/* URL */}
+      <div>
+        <SectionTitle>Website URL</SectionTitle>
+        <Card>
+          {websiteUrl ? (
+            <a
+              href={websiteUrl.startsWith('http') ? websiteUrl : `https://${websiteUrl}`}
+              target="_blank"
+              rel="noreferrer"
+              className="text-violet-400 hover:underline break-all"
+            >
+              {websiteUrl}
+            </a>
+          ) : (
+            <span className="text-gray-500 text-sm">No website URL on record</span>
+          )}
+        </Card>
+      </div>
+
+      {/* GYC-built section */}
+      {isGYCWebsite ? (
+        <div>
+          <SectionTitle>GYC Website Details</SectionTitle>
+          <Card>
+            <div className="space-y-2.5">
+              <InfoRow label="Service tier" value={profile.crmType ? `Website (${profile.crmType})` : 'GYC Website'} />
+              <InfoRow label="Launch date"  value={profile.startDate ? fmtDate(profile.startDate) : null} />
+              {profile.clientFolderUrl && (
+                <InfoRow label="Client folder" value="Open folder ↗" href={profile.clientFolderUrl} />
+              )}
+            </div>
+          </Card>
+          <div className="mt-3">
+            <PlaceholderBanner icon="📊" message="Google Analytics traffic data — integration pending" />
+          </div>
+        </div>
+      ) : (
+        <div>
+          <SectionTitle>Client Website Info</SectionTitle>
+          <Card>
+            <div className="text-sm text-gray-400">
+              This client manages their own website — GYC is not the web provider.
+            </div>
+            {profile.timeZone && (
+              <div className="mt-2.5">
+                <InfoRow label="Time zone" value={profile.timeZone} />
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
+      {/* Audit placeholders — always shown */}
+      <div>
+        <SectionTitle>Quality Audit</SectionTitle>
+        <div className="space-y-2">
+          <PlaceholderBanner icon="⚡" message="Page speed score — DataForSEO integration pending" />
+          <PlaceholderBanner icon="📱" message="Mobile-friendliness check — coming soon" />
+          <PlaceholderBanner icon="🔍" message="Technical SEO audit — coming soon" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Tab 4: SEO ────────────────────────────────────────────────────────────────
+
+function SEOTab({ profile }) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <SectionTitle>SEO Service Details</SectionTitle>
+        <Card>
+          <div className="space-y-2.5">
+            <InfoRow label="Service level" value={
+              profile.serviceList?.find(s => s.toLowerCase().includes('seo')) ||
+              (profile.hasSEO ? 'SEO Active' : null)
+            } />
+            <InfoRow label="Start date"    value={profile.startDate ? fmtDate(profile.startDate) : null} />
+            <InfoRow label="Assigned GA"   value={profile.assignedGA} />
+          </div>
+        </Card>
+      </div>
+
+      <div>
+        <SectionTitle>Baseline (Before GYC)</SectionTitle>
+        <Card>
+          <div className="mb-2 text-xs text-gray-500">Captured at onboarding — pre-GYC performance</div>
+          <div className="space-y-2.5">
+            <InfoRow label="Avg rank"       value="Not captured yet" />
+            <InfoRow label="Share of voice" value="Not captured yet" />
+            <InfoRow label="Baseline date"  value="Not captured yet" />
+          </div>
+        </Card>
+      </div>
+
+      <div>
+        <SectionTitle>Current Performance</SectionTitle>
+        <PlaceholderBanner icon="📈" message="Rank tracking data via DataForSEO — integration pending" />
+      </div>
+
+      {profile.clientFolderUrl && (
+        <div>
+          <SectionTitle>Resources</SectionTitle>
+          <Card>
+            <InfoRow label="Client folder" value="Open folder ↗" href={profile.clientFolderUrl} />
+          </Card>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Tab 5: GBP ────────────────────────────────────────────────────────────────
+
+function GBPTab({ profile, acronym, user }) {
+  const isAdmin = ['admin', 'superadmin'].includes(user?.role)
+
+  const [reviews, setReviews] = useState(profile.gbpBaselineReviews ?? '')
+  const [rating,  setRating]  = useState(profile.gbpBaselineRating  ?? '')
+  const [date,    setDate]    = useState(
+    profile.gbpBaselineDate
+      ? String(profile.gbpBaselineDate).split('T')[0]
+      : ''
+  )
+  const [saving,  setSaving]  = useState(false)
+  const [saved,   setSaved]   = useState(false)
+  const [err,     setErr]     = useState('')
+  const timer = useRef(null)
+
+  async function saveBaseline() {
+    setSaving(true)
+    setErr('')
+    try {
+      const res = await fetch(`/api/clients/${acronym}/profile`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gbpBaselineReviews: reviews === '' ? null : Number(reviews),
+          gbpBaselineRating:  rating  === '' ? null : Number(rating),
+          gbpBaselineDate:    date    || null,
+        }),
+      })
+      if (!res.ok) { const j = await res.json(); throw new Error(j.error || 'Save failed') }
+      setSaved(true)
+      clearTimeout(timer.current)
+      timer.current = setTimeout(() => setSaved(false), 2500)
+    } catch (e) {
+      setErr(e.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* GMB Access */}
+      <div>
+        <SectionTitle>Google Business Profile Access</SectionTitle>
+        <Card>
+          <div className="space-y-2.5">
+            <InfoRow label="Access level"  value={profile.gmbAccess || 'Not recorded'} />
+            <InfoRow label="GBP claimed"   value={profile.gmbAccess ? 'Yes — verified' : 'Unknown'} />
+          </div>
+        </Card>
+      </div>
+
+      {/* Baseline */}
+      <div>
+        <SectionTitle>Baseline (Before GYC)</SectionTitle>
+        <Card>
+          <div className="mb-2 text-xs text-gray-500">Captured at onboarding</div>
+          <div className="space-y-2.5">
+            <InfoRow
+              label="Review count"
+              value={profile.gbpBaselineReviews != null ? String(profile.gbpBaselineReviews) : 'Not captured'}
+            />
+            <InfoRow
+              label="Star rating"
+              value={profile.gbpBaselineRating != null ? `${Number(profile.gbpBaselineRating).toFixed(1)} ★` : 'Not captured'}
+            />
+            <InfoRow
+              label="Baseline date"
+              value={profile.gbpBaselineDate ? fmtDate(profile.gbpBaselineDate) : 'Not captured'}
+            />
+          </div>
+        </Card>
+      </div>
+
+      {/* Admin: baseline entry form */}
+      {isAdmin && (
+        <div>
+          <SectionTitle>Update Baseline</SectionTitle>
+          <Card>
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="mb-1 block text-xs text-gray-400">Review Count</label>
+                  <input
+                    type="number"
+                    value={reviews}
+                    onChange={(e) => setReviews(e.target.value)}
+                    placeholder="e.g. 42"
+                    className="w-full rounded-lg border border-[var(--brand-border)] bg-black/40 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-violet-500/50 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-gray-400">Star Rating</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="1"
+                    max="5"
+                    value={rating}
+                    onChange={(e) => setRating(e.target.value)}
+                    placeholder="e.g. 4.2"
+                    className="w-full rounded-lg border border-[var(--brand-border)] bg-black/40 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-violet-500/50 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-gray-400">Baseline Date</label>
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="w-full rounded-lg border border-[var(--brand-border)] bg-black/40 px-3 py-2 text-sm text-white focus:border-violet-500/50 focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={saveBaseline}
+                  disabled={saving}
+                  className="rounded-xl border border-violet-500/40 bg-violet-500/15 px-4 py-2 text-sm font-medium text-violet-300 hover:bg-violet-500/25 disabled:opacity-50 transition"
+                >
+                  {saving ? 'Saving…' : 'Save Baseline'}
+                </button>
+                {saved && <span className="text-sm text-emerald-400">✓ Saved</span>}
+                {err   && <span className="text-sm text-rose-400">{err}</span>}
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Current GBP performance */}
+      <div>
+        <SectionTitle>Current Performance</SectionTitle>
+        <PlaceholderBanner icon="⭐" message="Live GBP data via DataForSEO — integration pending" />
+      </div>
+
+      {/* Credentials */}
+      <div>
+        <SectionTitle>Credentials</SectionTitle>
+        <Card>
+          <div className="space-y-2.5">
+            <InfoRow label="GMB access"    value={profile.gmbAccess} />
+            <InfoRow label="Login creds"   value="Stored in password manager — add link here" />
+          </div>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// ── Tab 6: CRM ────────────────────────────────────────────────────────────────
+
+function CRMTab({ profile }) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <SectionTitle>CRM Details</SectionTitle>
+        <Card>
+          <div className="space-y-2.5">
+            <InfoRow label="Platform"      value={profile.crmType || 'Not specified'} />
+            <InfoRow label="Access status" value="See Notion for access details" />
+            <InfoRow label="Locations"     value={profile.locationCount ? `${profile.locationCount} location${profile.locationCount !== 1 ? 's' : ''}` : null} />
+          </div>
+        </Card>
+      </div>
+
+      <div>
+        <SectionTitle>Director Contact</SectionTitle>
+        {profile.directorName ? (
+          <Card>
+            <div className="space-y-2.5">
+              <InfoRow label="Director"  value={profile.directorName} />
+              <InfoRow label="Email"     value={profile.directorEmail} href={profile.directorEmail ? `mailto:${profile.directorEmail}` : null} />
+              <InfoRow label="Phone"     value={profile.directorPhone} href={profile.directorPhone ? `tel:${profile.directorPhone}` : null} />
+            </div>
+          </Card>
+        ) : (
+          <Empty>No director info — add in Notion and re-sync.</Empty>
+        )}
+      </div>
+
+      <div>
+        <SectionTitle>Center Info</SectionTitle>
+        <Card>
+          <div className="space-y-2.5">
+            <InfoRow label="Enrollment"    value={profile.currentEnrollment} />
+            <InfoRow label="Capacity"      value={profile.centerCapacity} />
+            <InfoRow label="Avg tuition"   value={profile.avgTuition ? fmt$(profile.avgTuition) : null} />
+            <InfoRow label="School year"   value={profile.schoolYearBegins} />
+            <InfoRow label="Time zone"     value={profile.timeZone} />
+          </div>
+        </Card>
+      </div>
+
+      {profile.leadDataUrl && (
+        <div>
+          <SectionTitle>Data Sources</SectionTitle>
+          <Card>
+            <InfoRow label="Lead data" value="Open spreadsheet ↗" href={profile.leadDataUrl} />
+          </Card>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Tab 7: Blueprint ──────────────────────────────────────────────────────────
+
+function BlueprintTab({ profile }) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <SectionTitle>Blueprint Enrollment</SectionTitle>
+        <Card>
+          <div className="space-y-2.5">
+            <InfoRow label="Enrolled"      value={profile.startDate ? fmtDate(profile.startDate) : null} />
+            <InfoRow label="Skool access"  value="Check with Zu's team" />
+            <InfoRow label="Blueprint sheet" value={profile.clientFolderUrl ? 'Open folder ↗' : null} href={profile.clientFolderUrl || null} />
+            <InfoRow label="M3 workspace"  value="Not configured" />
+          </div>
+        </Card>
+      </div>
+
+      <div>
+        <SectionTitle>Client Details</SectionTitle>
+        <Card>
+          <div className="space-y-2.5">
+            <InfoRow label="Company"       value={profile.companyName} />
+            <InfoRow label="Owner"         value={profile.ownerName} />
+            <InfoRow label="Locations"     value={profile.locationCount ? `${profile.locationCount}` : null} />
+            <InfoRow label="Enrollment"    value={profile.currentEnrollment} />
+            <InfoRow label="Avg tuition"   value={profile.avgTuition ? fmt$(profile.avgTuition) : null} />
+          </div>
+        </Card>
+      </div>
+
+      <PlaceholderBanner icon="📊" message="M3 workspace status — integration coming" />
+    </div>
+  )
+}
+
+// ── Tab 8: Paid Media ─────────────────────────────────────────────────────────
+
+function PaidMediaTab({ profile }) {
+  const services = []
+  if (profile.hasGoogleAds) services.push('Google Ads')
+  if (profile.hasPaidMedia) services.push('Paid Media')
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <SectionTitle>Paid Media Services</SectionTitle>
+        <Card>
+          <div className="space-y-2.5">
+            <InfoRow label="Active services" value={services.join(', ') || 'Unspecified'} />
+            <InfoRow label="Assigned GA"     value={profile.assignedGA} />
+            <InfoRow label="Start date"      value={profile.startDate ? fmtDate(profile.startDate) : null} />
+          </div>
+        </Card>
+      </div>
+
+      <div>
+        <SectionTitle>Account Links</SectionTitle>
+        <Card>
+          <div className="space-y-2.5">
+            <InfoRow label="Google Ads"    value="Add account ID" />
+            <InfoRow label="FB Ads Mgr"   value="Add account ID" />
+            <InfoRow label="Client folder" value={profile.clientFolderUrl ? 'Open folder ↗' : null} href={profile.clientFolderUrl || null} />
+          </div>
+        </Card>
+      </div>
+
+      <div>
+        <SectionTitle>Performance</SectionTitle>
+        <PlaceholderBanner icon="📢" message="Google Ads performance data — API integration pending" />
+        <div className="mt-2">
+          <PlaceholderBanner icon="📘" message="Meta Ads performance data — API integration pending" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Tab 9: Notes ──────────────────────────────────────────────────────────────
+
+function NotesTab({ profile, acronym }) {
+  const [notes, setNotes] = useState(profile.teamNotes || '')
   const [saving, setSaving] = useState(false)
-  const [saved, setSaved]   = useState(false)
-  const [error, setError]   = useState('')
+  const [saved,   setSaved] = useState(false)
+  const [error,   setError] = useState('')
   const timer = useRef(null)
 
   async function save() {
@@ -438,26 +1028,138 @@ function NotesSection({ acronym, initialNotes }) {
   }
 
   return (
-    <SectionCard title="Team Notes" eyebrow="Section 7" id="notes">
-      <textarea
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-        rows={5}
-        placeholder="Add internal notes for the team…"
-        className="w-full rounded-xl border border-[var(--brand-border)] bg-black/40 p-3 text-sm text-gray-200 placeholder-gray-600 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/30"
-      />
-      <div className="mt-3 flex items-center gap-3">
-        <button
-          onClick={save}
-          disabled={saving}
-          className="rounded-xl border border-violet-500/40 bg-violet-500/15 px-4 py-2 text-sm font-medium text-violet-300 transition hover:bg-violet-500/25 disabled:opacity-50"
-        >
-          {saving ? 'Saving…' : 'Save Notes'}
-        </button>
-        {saved && <span className="text-sm text-emerald-400">✓ Saved</span>}
-        {error && <span className="text-sm text-rose-400">{error}</span>}
+    <div className="space-y-6">
+      <div>
+        <SectionTitle>Team Notes</SectionTitle>
+        <div>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={6}
+            placeholder="Add internal notes for the team — strategy decisions, known issues, context…"
+            className="w-full rounded-xl border border-[var(--brand-border)] bg-black/40 p-3 text-sm text-gray-200 placeholder-gray-600 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/30"
+          />
+          <div className="mt-3 flex items-center gap-3">
+            <button
+              onClick={save}
+              disabled={saving}
+              className="rounded-xl border border-violet-500/40 bg-violet-500/15 px-4 py-2 text-sm font-medium text-violet-300 hover:bg-violet-500/25 disabled:opacity-50 transition"
+            >
+              {saving ? 'Saving…' : 'Save Notes'}
+            </button>
+            {saved && <span className="text-sm text-emerald-400">✓ Saved</span>}
+            {error && <span className="text-sm text-rose-400">{error}</span>}
+          </div>
+        </div>
       </div>
-    </SectionCard>
+
+      {/* Notion contact notes (read-only) */}
+      {profile.notes && (
+        <div>
+          <SectionTitle>Notion Contact Notes <span className="normal-case font-normal text-gray-600">(read-only, from Notion)</span></SectionTitle>
+          <Card>
+            <pre className="whitespace-pre-wrap text-sm text-gray-300 leading-relaxed">{profile.notes}</pre>
+          </Card>
+        </div>
+      )}
+
+      {/* Timestamps */}
+      <div className="text-xs text-gray-600 space-y-1">
+        {profile.lastEnrichedAt && <div>Last synced: {fmtDate(profile.lastEnrichedAt)}</div>}
+        {profile.updatedAt      && <div>Profile updated: {fmtDate(profile.updatedAt)}</div>}
+        {profile.notionPageId   && <div>Notion page ID: <span className="font-mono">{profile.notionPageId}</span></div>}
+      </div>
+    </div>
+  )
+}
+
+// ── Tab 10: Calls ─────────────────────────────────────────────────────────────
+
+function CallsTab({ profile, allCalls, pendingCalls, potentialUnlinkedCount }) {
+  const [view, setView] = useState('all')
+  const displayed       = view === 'pending' ? pendingCalls : allCalls
+  const withTranscript  = allCalls.filter((c) => c.transcriptText).length
+  const withAI          = allCalls.filter((c) => c.aiSummary).length
+  const classifiedCount = allCalls.length - pendingCalls.length
+
+  return (
+    <div className="space-y-5">
+      {/* Potential unlinked calls banner */}
+      {potentialUnlinkedCount > 0 && (
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
+          <span className="text-lg">🔎</span>
+          <div>
+            <div className="text-sm font-semibold text-amber-300">
+              {potentialUnlinkedCount} potential call{potentialUnlinkedCount !== 1 ? 's' : ''} found via email match
+            </div>
+            <div className="mt-0.5 text-xs text-amber-200/70">
+              These calls have participant emails matching this client but aren't linked yet.{' '}
+              <Link href="/team/classify" className="underline hover:text-amber-300">
+                Review in Call Intelligence →
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stats strip */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatBox label="Total calls"    value={allCalls.length} />
+        <StatBox label="Classified"     value={classifiedCount} />
+        <StatBox label="With transcript" value={withTranscript} sub="Permanent record" />
+        <StatBox label="AI summaries"   value={withAI} />
+      </div>
+
+      {/* View toggle */}
+      {pendingCalls.length > 0 && (
+        <div className="flex gap-2">
+          {[
+            { key: 'all',     label: `All calls (${allCalls.length})` },
+            { key: 'pending', label: `Needs classification (${pendingCalls.length})` },
+          ].map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setView(key)}
+              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                view === key
+                  ? key === 'pending'
+                    ? 'border-amber-500/50 bg-amber-500/15 text-amber-200'
+                    : 'border-violet-500/50 bg-violet-500/15 text-violet-200'
+                  : 'border-[var(--brand-border)] text-gray-400 hover:text-white'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {view === 'pending' && pendingCalls.length > 0 && (
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-2.5 text-xs text-amber-300">
+          These calls are linked to this client but haven't been classified yet.
+          Click <strong>"Classify this call →"</strong> on any row to open Call Intelligence.
+        </div>
+      )}
+
+      {/* Call list */}
+      {displayed.length === 0 ? (
+        <Empty>
+          {view === 'pending'
+            ? 'All calls are classified — great!'
+            : 'No Zoom calls on record for this client.'}
+        </Empty>
+      ) : (
+        <div className="space-y-4">
+          {displayed.map((call) => (
+            <CallCard
+              key={call.id}
+              call={call}
+              isPending={!call.classifiedAs && !call.aiClassification && (!call.purposes || call.purposes.length === 0)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -486,12 +1188,37 @@ function RawDataSection({ profile, user }) {
   )
 }
 
+// ── Tab nav ───────────────────────────────────────────────────────────────────
+
+function TabNav({ tabs, activeTab, onChange }) {
+  return (
+    <div className="overflow-x-auto">
+      <div className="flex min-w-max gap-1 rounded-2xl border border-[var(--brand-border)] bg-black/30 p-1">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => onChange(tab.key)}
+            className={`whitespace-nowrap rounded-xl px-3 py-2 text-xs font-semibold transition ${
+              activeTab === tab.key
+                ? 'bg-violet-600 text-white shadow'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ── Main ClientCard ───────────────────────────────────────────────────────────
 
 export default function ClientCard({ acronym, user }) {
-  const [data, setData]       = useState(null)
+  const [data,    setData]    = useState(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError]     = useState('')
+  const [error,   setError]   = useState('')
+  const [activeTab, setActiveTab] = useState('overview')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -533,32 +1260,70 @@ export default function ClientCard({ acronym, user }) {
 
   if (!data) return null
 
-  const { profile, allCalls = [], pendingCalls = [], activityLog = [], funnelHistory = [], potentialUnlinkedCount = 0 } = data
-  const hasFunnel = funnelHistory.length > 0 || profile.funnelDataMonths > 0
-  const ghlUrl = profile.ghlContactId ? `https://app.gohighlevel.com/contacts/${profile.ghlContactId}` : null
+  const {
+    profile,
+    allCalls = [],
+    pendingCalls = [],
+    funnelHistory = [],
+    potentialUnlinkedCount = 0,
+  } = data
+
+  // ── Build visible tabs ───────────────────────────────────────────────────
+  const ALL_TABS = [
+    { key: 'overview',   label: 'Overview',              show: true },
+    { key: 'financial',  label: 'Financial',             show: true },
+    { key: 'website',    label: 'Website',               show: true },                             // always visible
+    { key: 'seo',        label: 'SEO',                   show: !!profile.hasSEO },
+    { key: 'gbp',        label: 'GBP',                   show: !!profile.hasSEO },
+    { key: 'crm',        label: 'CRM',                   show: !!profile.hasCRM },
+    { key: 'blueprint',  label: 'Blueprint',             show: !!profile.hasBlueprint },
+    { key: 'paidmedia',  label: 'Paid Media',            show: !!(profile.hasGoogleAds || profile.hasPaidMedia) },
+    { key: 'notes',      label: 'Notes',                 show: true },
+    { key: 'calls',      label: `Calls (${allCalls.length})`, show: true },
+  ]
+  const visibleTabs = ALL_TABS.filter((t) => t.show)
+
+  // Ensure activeTab is still valid after data loads
+  const currentTab =
+    visibleTabs.find((t) => t.key === activeTab) ? activeTab : visibleTabs[0]?.key
+
+  const ghlUrl = profile.ghlContactId
+    ? `https://app.gohighlevel.com/contacts/${profile.ghlContactId}`
+    : null
 
   return (
-    <div className="mx-auto max-w-[1200px] space-y-6">
+    <div className="mx-auto max-w-[1200px] space-y-5">
 
       {/* Back nav */}
-      <Link href="/clients" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-violet-300 transition">
+      <Link
+        href="/clients"
+        className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-violet-300 transition"
+      >
         ← All Clients
       </Link>
 
-      {/* ── Header ─────────────────────────────────────────────────────── */}
+      {/* ── Hero header ───────────────────────────────────────────────────── */}
       <div className="overflow-hidden rounded-3xl border border-[var(--brand-border)] bg-[radial-gradient(circle_at_top_left,#1a1024,transparent_60%),var(--brand-bg-card)] p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <div style={{ color: '#AE2BCF' }} className="text-5xl font-black tracking-tight">{profile.acronym}</div>
+            <div style={{ color: '#AE2BCF' }} className="text-5xl font-black tracking-tight leading-none">
+              {profile.acronym}
+            </div>
             <div className="mt-1 text-xl font-semibold text-white">{profile.companyName || '—'}</div>
             <div className="mt-0.5 text-sm text-gray-400">{profile.ownerName || '—'}</div>
             <div className="mt-3 flex flex-wrap gap-2">
               <StatusBadge status={profile.status} />
               {profile.assignedGA && (
-                <Badge label={`👤 ${profile.assignedGA}`} className="border-violet-500/30 bg-violet-500/10 text-violet-200" />
+                <Badge
+                  label={`👤 ${profile.assignedGA}`}
+                  className="border-violet-500/30 bg-violet-500/10 text-violet-200"
+                />
               )}
               {profile.crmType && (
-                <Badge label={`🔗 ${profile.crmType}`} className="border-[var(--brand-border)] bg-black/30 text-gray-300" />
+                <Badge
+                  label={`🔗 ${profile.crmType}`}
+                  className="border-[var(--brand-border)] bg-black/30 text-gray-300"
+                />
               )}
               {profile.isOverdue && (
                 <Badge label="⚠️ Overdue" className="border-rose-500/40 bg-rose-500/15 text-rose-300" />
@@ -569,8 +1334,20 @@ export default function ClientCard({ acronym, user }) {
                   className="border-amber-500/30 bg-amber-500/10 text-amber-300"
                 />
               )}
+              {ghlUrl && (
+                <a
+                  href={ghlUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center rounded-full border border-[var(--brand-border)] bg-black/30 px-2.5 py-0.5 text-xs text-gray-300 hover:text-violet-300 transition"
+                >
+                  GHL ↗
+                </a>
+              )}
             </div>
           </div>
+
+          {/* Quick stats */}
           <div className="grid grid-cols-3 gap-3 text-center lg:w-72">
             <div className="rounded-2xl border border-[var(--brand-border)] bg-black/30 px-3 py-3">
               <div className="text-[11px] text-gray-400 uppercase tracking-wide">MRR</div>
@@ -581,205 +1358,66 @@ export default function ClientCard({ acronym, user }) {
               <div className="mt-1 text-lg font-bold text-white">{profile.locationCount || '—'}</div>
             </div>
             <div className="rounded-2xl border border-[var(--brand-border)] bg-black/30 px-3 py-3">
-              <div className="text-[11px] text-gray-400 uppercase tracking-wide">Calls</div>
-              <div className="mt-1 text-lg font-bold text-white">{allCalls.length}</div>
+              <div className="text-[11px] text-gray-400 uppercase tracking-wide">Health</div>
+              <div className={`mt-1 text-lg font-bold ${
+                profile.healthScore >= 8 ? 'text-emerald-400' :
+                profile.healthScore >= 5 ? 'text-amber-400' : 'text-rose-400'
+              }`}>
+                {profile.healthScore}/10
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Section 1: Services ─────────────────────────────────────────── */}
-      <SectionCard title="Services" eyebrow="Section 1" id="services">
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
-          <ServiceTile icon="🌐" label="Website"    active={!!profile.hasWebsite} />
-          <ServiceTile icon="📈" label="SEO"        active={!!profile.hasSEO} />
-          <ServiceTile icon="🤝" label="CRM"        active={!!profile.hasCRM} />
-          <ServiceTile icon="📊" label="Blueprint"  active={!!profile.hasBlueprint} />
-          <ServiceTile icon="📢" label="Google Ads" active={!!profile.hasGoogleAds} />
-          <ServiceTile icon="💰" label="Paid Media" active={!!profile.hasPaidMedia} />
-        </div>
-        {profile.serviceList?.length > 0 && (
-          <div className="mt-3 text-xs text-gray-500">Services: {profile.serviceList.join(' · ')}</div>
+      {/* ── Tab navigation ─────────────────────────────────────────────── */}
+      <TabNav tabs={visibleTabs} activeTab={currentTab} onChange={setActiveTab} />
+
+      {/* ── Tab content ────────────────────────────────────────────────── */}
+      <div className="overflow-hidden rounded-3xl border border-[var(--brand-border)] bg-[radial-gradient(circle_at_top,#1a1024,transparent_45%),var(--brand-bg-card)] p-6">
+        {currentTab === 'overview' && (
+          <OverviewTab
+            profile={profile}
+            funnelHistory={funnelHistory}
+            allCalls={allCalls}
+            potentialUnlinkedCount={potentialUnlinkedCount}
+          />
         )}
-      </SectionCard>
-
-      {/* ── Section 2: Business Metrics ─────────────────────────────────── */}
-      <SectionCard title="Business Metrics" eyebrow="Section 2" id="metrics">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <StatBox label="MRR"            value={profile.mrr ? fmt$(profile.mrr) : '—'} />
-          <StatBox label="Lifetime Value" value={profile.lifetimeValue ? fmt$(profile.lifetimeValue) : '—'} />
-          <StatBox label="Overdue Amount" value={profile.overdueAmount ? fmt$(profile.overdueAmount) : '—'} warn={!!profile.isOverdue} />
-        </div>
-
-        {profile.isOverdue && (
-          <div className="mt-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm">
-            <div className="font-semibold text-rose-300 mb-2">Overdue History</div>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-gray-300">
-              <span className="text-gray-500">Episodes:</span>        <span>{profile.overdueCount || '—'}</span>
-              <span className="text-gray-500">Last date:</span>       <span>{fmtDate(profile.lastOverdueDate)}</span>
-              <span className="text-gray-500">Catch-up rate:</span>   <span>{profile.catchUpRate != null ? fmtPct(Number(profile.catchUpRate) * 100) : '—'}</span>
-              <span className="text-gray-500">Avg days:</span>        <span>{profile.avgDaysToCatchUp ?? '—'}</span>
-              {profile.lastOverdueReason && (
-                <><span className="text-gray-500">Reason:</span><span>{profile.lastOverdueReason}</span></>
-              )}
-            </div>
-          </div>
+        {currentTab === 'financial' && (
+          <FinancialTab profile={profile} />
         )}
-
-        <div className="mt-4">
-          <div className="mb-2 text-sm font-medium text-gray-300">Health Score</div>
-          <HealthScore score={profile.healthScore} />
-        </div>
-
-        {profile.stripeStatus && (
-          <div className="mt-3 text-xs text-gray-500">
-            Stripe:{' '}
-            <span className={`font-medium ${profile.stripeStatus === 'active' ? 'text-emerald-400' : profile.stripeStatus === 'past_due' ? 'text-rose-400' : 'text-gray-300'}`}>
-              {profile.stripeStatus}
-            </span>
-            {profile.stripeCustomerId && (
-              <a
-                href={`https://dashboard.stripe.com/customers/${profile.stripeCustomerId}`}
-                target="_blank"
-                rel="noreferrer"
-                className="ml-2 text-violet-400 hover:underline"
-              >
-                View in Stripe ↗
-              </a>
-            )}
-          </div>
+        {currentTab === 'website' && (
+          <WebsiteTab profile={profile} acronym={acronym} user={user} />
         )}
-      </SectionCard>
-
-      {/* ── Section 3: Enrollment Funnel ────────────────────────────────── */}
-      <SectionCard title="Enrollment Funnel" eyebrow="Section 3" id="funnel">
-        {!hasFunnel ? (
-          <Empty>No funnel data available for this client.</Empty>
-        ) : (
-          <div className="space-y-5">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <StatBox label="Avg Monthly Leads"       value={fmtNum(profile.avgMonthlyLeads)} />
-              <StatBox label="Avg Monthly Tours"       value={fmtNum(profile.avgMonthlyTours)} />
-              <StatBox label="Avg Enrollments"         value={fmtNum(profile.avgMonthlyRegistered)} />
-              <StatBox label="Funnel Trend"            value={<TrendBadge trend={profile.funnelTrend} changePct={profile.trendChangePct} />} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <StatBox label="Lead → Tour Rate"        value={profile.leadToTourRate != null ? fmtPct(Number(profile.leadToTourRate)) : '—'} />
-              <StatBox label="Tour → Enrollment Rate"  value={profile.tourToRegRate  != null ? fmtPct(Number(profile.tourToRegRate))  : '—'} />
-            </div>
-
-            {funnelHistory.length > 0 && (
-              <div>
-                <div className="mb-2 text-sm font-medium text-gray-300">Last 12 months — Leads / Tours / Enrolled</div>
-                <div className="h-52">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={funnelHistory} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                      <XAxis dataKey="month" tick={{ fill: '#6b7280', fontSize: 11 }} tickFormatter={fmtMonth} />
-                      <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} width={32} />
-                      <Tooltip
-                        contentStyle={{ background: '#0a0a0a', border: '1px solid #2a1a3e', borderRadius: 12 }}
-                        labelStyle={{ color: '#9ca3af' }}
-                        labelFormatter={fmtMonth}
-                      />
-                      <Line type="monotone" dataKey="leads"      stroke="#AE2BCF" strokeWidth={2} dot={false} name="Leads" />
-                      <Line type="monotone" dataKey="tours"      stroke="#3b82f6" strokeWidth={2} dot={false} name="Tours" />
-                      <Line type="monotone" dataKey="registered" stroke="#10b981" strokeWidth={2} dot={false} name="Enrolled" />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="mt-2 flex gap-4 text-xs">
-                  <span style={{ color: '#AE2BCF' }}>● Leads</span>
-                  <span style={{ color: '#3b82f6' }}>● Tours</span>
-                  <span style={{ color: '#10b981' }}>● Enrolled</span>
-                </div>
-              </div>
-            )}
-            <div className="text-xs text-gray-500">
-              {profile.funnelDataMonths || 0} month(s) of data
-              {profile.latestFunnelMonth ? ` · Latest: ${fmtMonth(profile.latestFunnelMonth)}` : ''}
-            </div>
-          </div>
+        {currentTab === 'seo' && (
+          <SEOTab profile={profile} />
         )}
-      </SectionCard>
-
-      {/* ── Section 4: Contact Info ──────────────────────────────────────── */}
-      <SectionCard title="Contact Info" eyebrow="Section 4" id="contact">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="space-y-2.5 text-sm">
-            {[
-              ['Owner',   profile.ownerName],
-              ['Email',   profile.email,   `mailto:${profile.email}`],
-              ['Phone',   profile.phone,   `tel:${profile.phone}`],
-              ['Website', profile.website, profile.website?.startsWith('http') ? profile.website : `https://${profile.website}`],
-            ].map(([label, value, href]) => (
-              <div key={label} className="flex gap-3">
-                <span className="w-20 shrink-0 text-gray-500">{label}</span>
-                {value ? (
-                  href
-                    ? <a href={href} target={href.startsWith('http') ? '_blank' : '_self'} rel="noreferrer" className="text-violet-400 hover:underline break-all">{value}</a>
-                    : <span className="text-gray-200">{value}</span>
-                ) : <span className="text-gray-600">—</span>}
-              </div>
-            ))}
-          </div>
-          <div className="space-y-2.5 text-sm">
-            {[
-              ['GHL Stage', profile.ghlPipelineStage],
-              ['City', [profile.city, profile.state].filter(Boolean).join(', ')],
-              ['CRM', profile.crmType],
-              ['Since', profile.startDate ? fmtDate(profile.startDate) : null],
-            ].map(([label, value]) => (
-              <div key={label} className="flex gap-3">
-                <span className="w-20 shrink-0 text-gray-500">{label}</span>
-                <span className="text-gray-200">{value || '—'}</span>
-              </div>
-            ))}
-            {ghlUrl && (
-              <div className="flex gap-3">
-                <span className="w-20 shrink-0 text-gray-500">GHL</span>
-                <a href={ghlUrl} target="_blank" rel="noreferrer" className="text-violet-400 hover:underline">Open contact ↗</a>
-              </div>
-            )}
-          </div>
-        </div>
-      </SectionCard>
-
-      {/* ── Section 5: Call Log (full panel) ────────────────────────────── */}
-      <CallsPanel
-        profile={profile}
-        allCalls={allCalls}
-        pendingCalls={pendingCalls}
-        potentialUnlinkedCount={potentialUnlinkedCount}
-      />
-
-      {/* ── Section 6: Activity Log ──────────────────────────────────────── */}
-      <SectionCard title="Activity Log" eyebrow="Section 6" id="activity">
-        {activityLog.length === 0 ? (
-          <Empty>No activity events recorded yet.</Empty>
-        ) : (
-          <div className="space-y-2">
-            {activityLog.slice(0, 10).map((event) => (
-              <div key={event.id} className="flex gap-3 rounded-xl border border-[var(--brand-border)] bg-black/20 px-4 py-3">
-                <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-violet-500" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm text-white">{event.summary || event.type || 'Event'}</div>
-                  <div className="mt-0.5 flex gap-3 text-xs text-gray-500">
-                    <span>{fmtDate(event.createdAt)}</span>
-                    {event.actorName && <span>· {event.actorName}</span>}
-                    {event.type     && <span>· {event.type}</span>}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+        {currentTab === 'gbp' && (
+          <GBPTab profile={profile} acronym={acronym} user={user} />
         )}
-      </SectionCard>
+        {currentTab === 'crm' && (
+          <CRMTab profile={profile} />
+        )}
+        {currentTab === 'blueprint' && (
+          <BlueprintTab profile={profile} />
+        )}
+        {currentTab === 'paidmedia' && (
+          <PaidMediaTab profile={profile} />
+        )}
+        {currentTab === 'notes' && (
+          <NotesTab profile={profile} acronym={acronym} />
+        )}
+        {currentTab === 'calls' && (
+          <CallsTab
+            profile={profile}
+            allCalls={allCalls}
+            pendingCalls={pendingCalls}
+            potentialUnlinkedCount={potentialUnlinkedCount}
+          />
+        )}
+      </div>
 
-      {/* ── Section 7: Team Notes ────────────────────────────────────────── */}
-      <NotesSection acronym={profile.acronym} initialNotes={profile.teamNotes} />
-
-      {/* ── Section 8: Raw Data (admin only) ────────────────────────────── */}
+      {/* ── Admin: raw data ─────────────────────────────────────────────── */}
       <RawDataSection profile={profile} user={user} />
     </div>
   )
