@@ -372,6 +372,201 @@ async function upsertClientProfile(profile) {
   return rows[0]?.id
 }
 
+// ─── Source 6: Notion Database ──────────────────────────────────────────────
+const NOTION_KEY = process.env.NOTION_API_KEY || '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'
+const NOTION_DB_ID = process.env.NOTION_DATABASE_ID || '780557c864f442d2bb0ac9a9d2e47121'
+
+async function fetchNotionDatabase(databaseId, notionKey) {
+  const pages = []
+  let cursor = undefined
+  while (true) {
+    const body = { page_size: 100 }
+    if (cursor) body.start_cursor = cursor
+    const res = await fetch(`https://api.notion.com/v1/databases/${databaseId}/query`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${notionKey}`,
+        'Notion-Version': '2022-06-28',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(`Notion API error: ${data.message || JSON.stringify(data)}`)
+    pages.push(...(data.results || []))
+    if (!data.has_more) break
+    cursor = data.next_cursor
+  }
+  return pages
+}
+
+function extractNotionText(prop) {
+  return prop?.rich_text?.[0]?.plain_text || prop?.title?.[0]?.plain_text || null
+}
+function extractNotionEmail(prop) { return prop?.email || prop?.rich_text?.[0]?.plain_text || null }
+function extractNotionPhone(prop) { return prop?.phone_number || prop?.rich_text?.[0]?.plain_text || null }
+function extractNotionSelect(prop) { return prop?.select?.name || null }
+function extractNotionMultiSelect(prop) { return prop?.multi_select?.map(s => s.name).join(', ') || null }
+function extractNotionUrl(prop) { return prop?.url || null }
+function extractNotionNumber(prop) { return prop?.number ?? null }
+
+function mapNotionBillingStatus(val) {
+  if (!val) return null
+  const v = val.toLowerCase()
+  if (v === 'active' || v === 'current') return 'active'
+  if (v === 'paused')                    return 'paused'
+  if (v === 'cancelled' || v === 'canceled') return 'cancelled'
+  return null
+}
+
+async function syncFromNotion(pgPool) {
+  console.log('  🔔 Fetching Notion database...')
+  const pages = await fetchNotionDatabase(NOTION_DB_ID, NOTION_KEY)
+  console.log(`    → ${pages.length} Notion pages fetched`)
+
+  let matched = 0, skipped = 0
+  const fieldCounters = {
+    directorName: 0, directorEmail: 0, directorPhone: 0,
+    avgTuition: 0, currentEnrollment: 0, centerCapacity: 0,
+    schoolYearBegins: 0, timeZone: 0, clientFolderUrl: 0, leadDataUrl: 0,
+    ownerName: 0, email: 0, phone: 0,
+    crmType: 0, assignedGA: 0, locationCount: 0,
+    hasWebsite: 0, hasSEO: 0, hasBlueprint: 0, hasGoogleAds: 0, hasPaidMedia: 0,
+    status: 0,
+  }
+
+  for (const page of pages) {
+    const props = page.properties || {}
+
+    // Match key: Acronym — Notion title contains "Company Name (ACR)", extract just the ACR
+    const rawTitle = extractNotionText(props['Acronym'] || props['Name'])
+    const acronym = extractAcronymFromName(rawTitle)
+    if (!acronym) { skipped++; continue }
+
+    // Check if ClientProfile exists by acronym (case-insensitive)
+    const existing = await pgPool.query(
+      `SELECT id, "ownerName", email, phone, "crmType", "assignedGA", status
+       FROM "ClientProfile"
+       WHERE "tenantId" = 'gyc' AND LOWER(acronym) = LOWER($1)
+       LIMIT 1`,
+      [acronym]
+    )
+    if (!existing.rows.length) { skipped++; continue }
+    matched++
+
+    const cp = existing.rows[0]
+    const cpId = cp.id
+
+    // Extract all Notion fields
+    const ownerName       = extractNotionText(props["Owner's Name"])
+    const ownerEmail      = extractNotionEmail(props["Owner's Email"])
+    const ownerPhone      = extractNotionPhone(props["Owner's Phone"])
+    // Note: some Notion field names have trailing spaces
+    const directorName    = extractNotionText(props["Director's Name "] || props["Director's Name"])
+    const directorEmail   = extractNotionEmail(props["Director's Email (1)"] || props["Director's Email"])
+    const directorPhone   = extractNotionPhone(props["Director's Phone (1)"] || props["Director's Phone"])
+    const avgTuition      = extractNotionNumber(props['Average Tuition'])
+    const currentEnroll   = extractNotionText(props['Current enrollment'])
+    const capacity        = extractNotionText(props['Capacity'])
+    const schoolYearBegins = extractNotionText(props['School Year Begins'])
+    const timeZone        = extractNotionText(props['Time Zone'])
+    const crmType         = extractNotionSelect(props['CRM'])
+    const assignedGA      = extractNotionSelect(props['MC'])
+    const locationCount   = extractNotionMultiSelect(props['# of Locations'])
+    const websiteVal      = extractNotionSelect(props['Website'])
+    const seoVal          = extractNotionMultiSelect(props['SEO'])
+    const blueprintVal    = extractNotionSelect(props['Blueprint'])
+    const googleAdsVal    = extractNotionSelect(props['Google Ads'])
+    const paidAdsVal      = extractNotionSelect(props['Paid Ads '] || props['Paid Ads'])
+    const clientFolderUrl = extractNotionUrl(props['Client Folder'])
+    const leadDataUrl     = extractNotionUrl(props['Lead Data'])
+    const billingStatus   = mapNotionBillingStatus(extractNotionSelect(props['Billing Status']))
+
+    // Build SET clauses — Notion enrichment layer:
+    // Director fields: always update (Notion-only source)
+    // Other fields: only fill if currently null in DB
+    const sets = []
+    const vals = []
+    let idx = 1
+
+    const addSet = (col, val, forceOverwrite = false) => {
+      if (val === null || val === undefined) return
+      if (forceOverwrite) {
+        sets.push(`"${col}" = $${idx++}`)
+      } else {
+        sets.push(`"${col}" = COALESCE("${col}", $${idx++})`)
+      }
+      vals.push(val)
+      fieldCounters[col] = (fieldCounters[col] || 0) + 1
+    }
+
+    // Director info — Notion-only, always write
+    addSet('directorName',  directorName,  true)
+    addSet('directorEmail', directorEmail, true)
+    addSet('directorPhone', directorPhone, true)
+
+    // Enrichment — only fill nulls
+    addSet('avgTuition',       avgTuition)
+    addSet('currentEnrollment', currentEnroll)
+    addSet('centerCapacity',   capacity)
+    addSet('schoolYearBegins', schoolYearBegins)
+    addSet('timeZone',         timeZone)
+    addSet('clientFolderUrl',  clientFolderUrl)
+    addSet('leadDataUrl',      leadDataUrl)
+    addSet('ownerName',        ownerName)
+    addSet('email',            ownerEmail)
+    addSet('phone',            ownerPhone)
+    addSet('crmType',          crmType)
+    addSet('assignedGA',       assignedGA)
+
+    // locationCount — parse number from multi_select string
+    if (locationCount) {
+      const n = parseInt(locationCount, 10)
+      if (!isNaN(n)) {
+        sets.push(`"locationCount" = COALESCE("locationCount", $${idx++})`)
+        vals.push(n)
+        fieldCounters['locationCount'] = (fieldCounters['locationCount'] || 0) + 1
+      }
+    }
+
+    // Service flags — set true if Notion has a value (never downgrade to false)
+    if (websiteVal)   { sets.push(`"hasWebsite" = CASE WHEN $${idx++} THEN true ELSE "hasWebsite" END`);   vals.push(true);  fieldCounters['hasWebsite']++  }
+    if (seoVal)       { sets.push(`"hasSEO" = CASE WHEN $${idx++} THEN true ELSE "hasSEO" END`);           vals.push(true);  fieldCounters['hasSEO']++      }
+    if (blueprintVal) { sets.push(`"hasBlueprint" = CASE WHEN $${idx++} THEN true ELSE "hasBlueprint" END`); vals.push(true); fieldCounters['hasBlueprint']++ }
+    if (googleAdsVal) { sets.push(`"hasGoogleAds" = CASE WHEN $${idx++} THEN true ELSE "hasGoogleAds" END`); vals.push(true); fieldCounters['hasGoogleAds']++ }
+    if (paidAdsVal)   { sets.push(`"hasPaidMedia" = CASE WHEN $${idx++} THEN true ELSE "hasPaidMedia" END`); vals.push(true); fieldCounters['hasPaidMedia']++ }
+
+    // Billing status — overwrite only if null
+    if (billingStatus) {
+      sets.push(`"status" = COALESCE("status", $${idx++})`)
+      vals.push(billingStatus)
+      fieldCounters['status'] = (fieldCounters['status'] || 0) + 1
+    }
+
+    // Always store Notion page ID
+    sets.push(`"notionPageId" = $${idx++}`)
+    vals.push(page.id)
+    sets.push(`"updatedAt" = NOW()`)
+
+    if (sets.length > 2) { // more than just notionPageId + updatedAt
+      vals.push(cpId)
+      await pgPool.query(
+        `UPDATE "ClientProfile" SET ${sets.join(', ')} WHERE id = $${idx}`,
+        vals
+      )
+    }
+  }
+
+  console.log(`    → Matched: ${matched}  Skipped (no acronym match): ${skipped}`)
+  console.log('    → Fields populated from Notion:')
+  const populated = Object.entries(fieldCounters).filter(([, v]) => v > 0)
+  for (const [col, count] of populated) {
+    console.log(`       ${col}: ${count}`)
+  }
+
+  return { fetched: pages.length, matched, skipped, fieldCounters }
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 async function main() {
   console.log('🚀 ClientProfile Sync — starting\n')
@@ -528,6 +723,15 @@ async function main() {
   }
   if (stripeOnly > 0) console.log(`  + ${stripeOnly} Stripe-only profiles added`)
 
+  // ── Source 6: Notion enrichment layer ───────────────────────────────────────
+  console.log('\n🔔 Syncing from Notion enrichment layer...')
+  let notionResults = { fetched: 0, matched: 0, skipped: 0, fieldCounters: {} }
+  try {
+    notionResults = await syncFromNotion(pool)
+  } catch (e) {
+    console.warn('  ⚠️  Notion sync error (non-fatal):', e.message)
+  }
+
   // ── Post-sync: backfill StripeCustomer.acronym ────────────────────────────
   console.log('\n🏷️  Backfilling StripeCustomer.acronym...')
   const { rowCount: acBackfilled } = await pool.query(`
@@ -622,6 +826,17 @@ async function main() {
     SELECT COUNT(*) as n FROM "ClientProfile" WHERE "tenantId"='gyc' AND "ghlContactId" IS NOT NULL
   `)
   console.log(`  🔗 With GHL link:    ${ghlMatchedRows[0].n}`)
+
+  const { rows: notionLinkedRows } = await pool.query(`
+    SELECT COUNT(*) as n FROM "ClientProfile" WHERE "tenantId"='gyc' AND "notionPageId" IS NOT NULL
+  `)
+  console.log(`  🔔 With Notion link: ${notionLinkedRows[0].n}`)
+  console.log(`     Fetched: ${notionResults.fetched}  Matched: ${notionResults.matched}  Skipped: ${notionResults.skipped}`)
+
+  const { rows: directorRows } = await pool.query(`
+    SELECT COUNT(*) as n FROM "ClientProfile" WHERE "tenantId"='gyc' AND "directorName" IS NOT NULL
+  `)
+  console.log(`  👤 With director info: ${directorRows[0].n}`)
 
   console.log('\n' + '─'.repeat(50))
   console.log('✅ ClientProfile sync complete!\n')
