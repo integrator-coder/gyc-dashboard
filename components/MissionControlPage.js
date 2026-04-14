@@ -254,7 +254,7 @@ function AgentOrgChart({ agents }) {
   // Todd label sits above Wall·E.
 
   // Card heights: xl=240, md=200, sm=195. Gap between rows=70.
-  const XH = 240, MH = 200, SH = 195, GAP = 90
+  const XH = 260, MH = 210, SH = 200, GAP = 110
   const R0 = 0
   const R1 = 60
   const R2 = R1 + XH + GAP    // 370
@@ -263,7 +263,7 @@ function AgentOrgChart({ agents }) {
   const R5 = R4 + SH + GAP    // 1165
   const R6 = R5 + SH + GAP    // 1430
 
-  const COL = { A: 110, B: 360, C: 620, D: 890, E: 1150 }
+  const COL = { A: 100, B: 360, C: 640, D: 920, E: 1210 }
   const CANVAS_W = 1300
   const TODD_CX = COL.C
 
