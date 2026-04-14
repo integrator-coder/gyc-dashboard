@@ -10,6 +10,7 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
+  Legend,
 } from 'recharts'
 
 // ── Formatters ────────────────────────────────────────────────────────────────
@@ -394,6 +395,84 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount 
           </div>
         )}
       </div>
+
+      {/* Conversion Rate Cards — Current Month */}
+      {hasFunnel && latestMonth && (() => {
+        const leads      = Number(latestMonth.leads)      || 0
+        const tours      = Number(latestMonth.tours)      || 0
+        const registered = Number(latestMonth.registered) || 0
+        const tourRate  = leads > 0 ? `${(tours      / leads * 100).toFixed(1)}%` : '—'
+        const closeRate = tours > 0 ? `${(registered / tours * 100).toFixed(1)}%` : '—'
+        const convRate  = leads > 0 ? `${(registered / leads * 100).toFixed(1)}%` : '—'
+        return (
+          <div>
+            <SectionTitle>
+              Conversion Rates
+              <span className="ml-2 normal-case text-[10px] font-normal text-gray-500">({fmtMonth(latestMonth.month)})</span>
+            </SectionTitle>
+            <div className="grid grid-cols-3 gap-3">
+              <Card>
+                <div className="text-[11px] uppercase tracking-wider text-gray-400">Tour Rate</div>
+                <div className="mt-1 font-bold text-xl" style={{ color: '#06b6d4' }}>{tourRate}</div>
+                <div className="mt-0.5 text-xs text-gray-400">Leads that booked a tour</div>
+              </Card>
+              <Card>
+                <div className="text-[11px] uppercase tracking-wider text-gray-400">Closing Rate</div>
+                <div className="mt-1 font-bold text-xl" style={{ color: '#8b5cf6' }}>{closeRate}</div>
+                <div className="mt-0.5 text-xs text-gray-400">Tours that enrolled</div>
+              </Card>
+              <Card>
+                <div className="text-[11px] uppercase tracking-wider text-gray-400">Conversion Rate</div>
+                <div className="mt-1 font-bold text-xl" style={{ color: '#C19C46' }}>{convRate}</div>
+                <div className="mt-0.5 text-xs text-gray-400">Lead to enrollment</div>
+              </Card>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* Funnel Conversion Rates — 12 Month Trend */}
+      {funnelHistory.length > 1 && (() => {
+        const rateData = funnelHistory
+          .filter(m => Number(m.leads) > 0)
+          .map(m => {
+            const l = Number(m.leads)      || 0
+            const t = Number(m.tours)      || 0
+            const r = Number(m.registered) || 0
+            return {
+              month:     m.month,
+              tourRate:  l > 0 ? +(t / l * 100).toFixed(1) : null,
+              closeRate: t > 0 ? +(r / t * 100).toFixed(1) : null,
+              convRate:  l > 0 ? +(r / l * 100).toFixed(1) : null,
+            }
+          })
+        return (
+          <div>
+            <SectionTitle>Funnel Conversion Rates — 12 Month Trend</SectionTitle>
+            <Card className="pt-4">
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={rateData} margin={{ left: 8, right: 8, top: 4, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                    <XAxis dataKey="month" tick={{ fill: '#6b7280', fontSize: 10 }} tickFormatter={fmtMonth} />
+                    <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} width={40} domain={[0, 100]} tickFormatter={v => `${v}%`} label={{ value: 'Rate (%)', angle: -90, position: 'insideLeft', fill: '#6b7280', fontSize: 10, dx: -4 }} />
+                    <Tooltip
+                      contentStyle={{ background: '#0a0a0a', border: '1px solid #2a1a3e', borderRadius: 12 }}
+                      labelStyle={{ color: '#9ca3af' }}
+                      labelFormatter={fmtMonth}
+                      formatter={(val) => val != null ? `${val}%` : '—'}
+                    />
+                    <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: 11 }} />
+                    <Line type="monotone" dataKey="tourRate"  stroke="#06b6d4" strokeWidth={2} dot={false} name="Tour Rate"       connectNulls />
+                    <Line type="monotone" dataKey="closeRate" stroke="#731494" strokeWidth={2} dot={false} name="Closing Rate"    connectNulls />
+                    <Line type="monotone" dataKey="convRate"  stroke="#C19C46" strokeWidth={2} dot={false} name="Conversion Rate" connectNulls />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          </div>
+        )
+      })()}
 
       {/* 12-Month Trend */}
       {funnelHistory.length > 1 && (
