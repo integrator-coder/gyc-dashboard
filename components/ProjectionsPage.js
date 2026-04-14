@@ -257,11 +257,13 @@ function ForwardMRRBridge({ bridge = [] }) {
 function MonthlyRevenueComposition({ scenarios }) {
   if (!scenarios?.base?.points) return null
   const mrrPoints = scenarios.base.points
-  const chartData = mrrPoints.map(p => ({
-    month: p.month.slice(5),
-    mrr: Math.round(p.mrr / 1000),
-    pif: 52,
-  }))
+  const MONTH_NAMES = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  const chartData = mrrPoints.map(p => {
+    const parts = p.month.split('-')
+    const yr = parts[0].slice(2)
+    const mo = parseInt(parts[1])
+    return { month: `${MONTH_NAMES[mo]} '${yr}`, mrr: Math.round(p.mrr / 1000), pif: 52 }
+  })
 
   return (
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: '20px 16px' }}>
@@ -298,6 +300,7 @@ function MonthlyRevenueComposition({ scenarios }) {
           <Legend wrapperStyle={{ fontSize: 11, color: C.muted }} />
           <Bar dataKey="mrr" name="Recurring MRR" stackId="a" fill="#731494" />
           <Bar dataKey="pif" name="PIF Cash (~$52K)" stackId="a" fill="#C19C46" radius={[3,3,0,0]} />
+          <ReferenceLine y={350} stroke="#ef4444" strokeDasharray="6 3" strokeWidth={2} label={{ value: '$350K Goal', position: 'right', fill: '#ef4444', fontSize: 10 }} />
         </BarChart>
       </ResponsiveContainer>
     </div>
