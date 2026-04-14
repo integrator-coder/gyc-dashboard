@@ -1230,9 +1230,9 @@ export default function ClientCard({ acronym, user }) {
   const ALL_TABS = [
     { key: 'overview',   label: 'Overview',              show: true },
     { key: 'financial',  label: 'Financial',             show: true },
+    { key: 'gbp',        label: 'GBP',                   show: !!profile.hasSEO },
     { key: 'website',    label: 'Website',               show: true },                             // always visible
     { key: 'seo',        label: 'SEO',                   show: !!profile.hasSEO },
-    { key: 'gbp',        label: 'GBP',                   show: !!profile.hasSEO },
     { key: 'crm',        label: 'CRM',                   show: !!profile.hasCRM },
     { key: 'blueprint',  label: 'Blueprint',             show: !!profile.hasBlueprint },
     { key: 'paidmedia',  label: 'Paid Media',            show: !!(profile.hasGoogleAds || profile.hasPaidMedia) },
