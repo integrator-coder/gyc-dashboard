@@ -542,11 +542,11 @@ function FinancialTab({ profile }) {
           <Card>
             <div className="mb-3 flex items-center gap-2">
               <span className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${
-                profile.overdueCount >= 3
+                profile.overdueCount >= 2
                   ? 'border-rose-500/40 bg-rose-500/15 text-rose-300'
                   : 'border-amber-500/40 bg-amber-500/15 text-amber-300'
               }`}>
-                {profile.overdueCount >= 3 ? '🔴 Repeat offender' : '⚠️ Has overdue history'}
+                {profile.overdueCount >= 2 ? '⚠️ Repeat Offender' : '⚠️ Has overdue history'}
               </span>
               <span className="text-xs text-gray-400">{profile.overdueCount} episode{profile.overdueCount !== 1 ? 's' : ''}</span>
             </div>
@@ -1001,57 +1001,15 @@ function PaidMediaTab({ profile }) {
 // ── Tab 9: Notes ──────────────────────────────────────────────────────────────
 
 function NotesTab({ profile, acronym }) {
-  const [notes, setNotes] = useState(profile.teamNotes || '')
-  const [saving, setSaving] = useState(false)
-  const [saved,   setSaved] = useState(false)
-  const [error,   setError] = useState('')
-  const timer = useRef(null)
-
-  async function save() {
-    setSaving(true)
-    setError('')
-    try {
-      const res = await fetch(`/api/clients/${acronym}/profile`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ teamNotes: notes }),
-      })
-      if (!res.ok) { const j = await res.json(); throw new Error(j.error || 'Save failed') }
-      setSaved(true)
-      clearTimeout(timer.current)
-      timer.current = setTimeout(() => setSaved(false), 2500)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setSaving(false)
-    }
-  }
-
   return (
     <div className="space-y-6">
-      <div>
-        <SectionTitle>Team Notes</SectionTitle>
-        <div>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={6}
-            placeholder="Add internal notes for the team — strategy decisions, known issues, context…"
-            className="w-full rounded-xl border border-[var(--brand-border)] bg-black/40 p-3 text-sm text-gray-200 placeholder-gray-600 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/30"
-          />
-          <div className="mt-3 flex items-center gap-3">
-            <button
-              onClick={save}
-              disabled={saving}
-              className="rounded-xl border border-violet-500/40 bg-violet-500/15 px-4 py-2 text-sm font-medium text-violet-300 hover:bg-violet-500/25 disabled:opacity-50 transition"
-            >
-              {saving ? 'Saving…' : 'Save Notes'}
-            </button>
-            {saved && <span className="text-sm text-emerald-400">✓ Saved</span>}
-            {error && <span className="text-sm text-rose-400">{error}</span>}
-          </div>
-        </div>
-      </div>
+      <EditableNotes
+        label="Team Notes"
+        value={profile.teamNotes}
+        field="teamNotes"
+        acronym={acronym}
+        placeholder="Add internal notes for the team — strategy decisions, known issues, context…"
+      />
 
       {/* Notion contact notes (read-only) */}
       {profile.notes && (

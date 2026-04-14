@@ -15,13 +15,10 @@ import { pool } from '@/lib/pg'
 
 function computeHealthScore(row) {
   let score = 10
-  if (row.isOverdue)                          score -= 2
-  if (Number(row.overdueCount || 0) > 2)      score -= 1
+  if (row.isOverdue)                          score -= 3
   if (row.funnelTrend === 'down')             score -= 2
+  if (Number(row.overdueCount || 0) > 1)      score -= 1
   if (row.stripeStatus === 'past_due')        score -= 2
-  if (row.stripeStatus === 'canceled')        score -= 3
-  if (row.status === 'paused')               score -= 1
-  if (row.status === 'cancelled')            score -= 3
   return Math.max(1, Math.min(10, score))
 }
 
@@ -212,6 +209,19 @@ export async function PATCH(request, { params }) {
     if (typeof body.teamNotes === 'string') {
       sets.push(`"teamNotes" = $${idx++}`)
       vals.push(body.teamNotes)
+    }
+    // note fields — any authenticated user (internal team notes)
+    if (typeof body.websiteNotes === 'string') {
+      sets.push(`"websiteNotes" = $${idx++}`)
+      vals.push(body.websiteNotes)
+    }
+    if (typeof body.seoNotes === 'string') {
+      sets.push(`"seoNotes" = $${idx++}`)
+      vals.push(body.seoNotes)
+    }
+    if (typeof body.crmNotes === 'string') {
+      sets.push(`"crmNotes" = $${idx++}`)
+      vals.push(body.crmNotes)
     }
 
     // Admin-only fields
