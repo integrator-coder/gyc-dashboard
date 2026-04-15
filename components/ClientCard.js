@@ -5,6 +5,8 @@ import Link from 'next/link'
 import {
   ResponsiveContainer,
   LineChart,
+  BarChart,
+  Bar,
   Line,
   XAxis,
   YAxis,
@@ -946,11 +948,29 @@ function GBPTab({ profile, acronym, user }) {
 
 // ── Tab 6: CRM ────────────────────────────────────────────────────────────────
 
-function CRMTab({ profile }) {
+function CRMTab({ profile, acronym, funnelByLocation = [], locations = [], funnelAggregate = [] }) {
+  const [openLocs, setOpenLocs] = useState(locations.length > 0 ? [locations[0]] : [])
+
+  function toggleLoc(loc) {
+    setOpenLocs(prev => prev.includes(loc) ? prev.filter(l => l !== loc) : [...prev, loc])
+  }
+
+  // Group rows by locationName (already DESC by month → index 0 = latest)
+  const byLoc = {}
+  for (const row of funnelByLocation) {
+    if (!byLoc[row.locationName]) byLoc[row.locationName] = []
+    byLoc[row.locationName].push(row)
+  }
+
+  function getLatest(loc) { return (byLoc[loc] || [])[0] || null }
+  function getLast12(loc)  { return (byLoc[loc] || []).slice(0, 12).reverse() }
+
   return (
     <div className="space-y-6">
+
+      {/* ── Section 1: CRM Platform ── */}
       <div>
-        <SectionTitle>CRM Details</SectionTitle>
+        <SectionTitle>CRM Platform</SectionTitle>
         <Card>
           <div className="space-y-2.5">
             <InfoRow label="Platform"      value={profile.crmType || 'Not specified'} />
@@ -960,42 +980,187 @@ function CRMTab({ profile }) {
         </Card>
       </div>
 
-      <div>
-        <SectionTitle>Director Contact</SectionTitle>
-        {profile.directorName ? (
-          <Card>
-            <div className="space-y-2.5">
-              <InfoRow label="Director"  value={profile.directorName} />
-              <InfoRow label="Email"     value={profile.directorEmail} href={profile.directorEmail ? `mailto:${profile.directorEmail}` : null} />
-              <InfoRow label="Phone"     value={profile.directorPhone} href={profile.directorPhone ? `tel:${profile.directorPhone}` : null} />
-            </div>
-          </Card>
-        ) : (
-          <Empty>No director info — add in Notion and re-sync.</Empty>
-        )}
-      </div>
-
-      <div>
-        <SectionTitle>Center Info</SectionTitle>
-        <Card>
-          <div className="space-y-2.5">
-            <InfoRow label="Enrollment"    value={profile.currentEnrollment} />
-            <InfoRow label="Capacity"      value={profile.centerCapacity} />
-            <InfoRow label="Avg tuition"   value={profile.avgTuition ? fmt$(profile.avgTuition) : null} />
-            <InfoRow label="School year"   value={profile.schoolYearBegins} />
-            <InfoRow label="Time zone"     value={profile.timeZone} />
-          </div>
-        </Card>
-      </div>
-
-      {profile.leadDataUrl && (
+      {/* ── Section 2 + 3: Location Data ── */}
+      {locations.length === 0 ? (
         <div>
-          <SectionTitle>Data Sources</SectionTitle>
-          <Card>
-            <InfoRow label="Lead data" value="Open spreadsheet ↗" href={profile.leadDataUrl} />
+          <SectionTitle>Location Data</SectionTitle>
+          <Empty>No location data available yet.</Empty>
+        </div>
+      ) : (
+        <>
+          {/* Section 2: Locations Summary */}
+          <div>
+            <SectionTitle>Locations — Latest Month</SectionTitle>
+            <div className="overflow-x-auto rounded-2xl border border-[var(--brand-border)] bg-black/20">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/5 text-left text-[11px] uppercase tracking-wider text-gray-500">
+                    <th className="px-4 py-2.5">Location</th>
+                    <th className="px-3 py-2.5 text-center" style={{ color: '#6366f1' }}>Leads</th>
+                    <th className="px-3 py-2.5 text-center" style={{ color: '#C19C46' }}>Tours</th>
+                    <th className="px-3 py-2.5 text-center" style={{ color: '#10b981' }}>Enrolled</th>
+                    <th className="px-3 py-2.5 text-center" style={{ color: '#06b6d4' }}>Tour Rate</th>
+                    <th className="px-3 py-2.5 text-center" style={{ color: '#731494' }}>Close Rate</th>
+                    <th className="px-3 py-2.5 text-center" style={{ color: '#C19C46' }}>Conv Rate</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {locations.map(loc => {
+                    const r = getLatest(loc)
+                    return (
+                      <tr key={loc} className="hover:bg-white/[0.02] transition">
+                        <td className="px-4 py-2.5 font-semibold text-white">{loc}</td>
+                        <td className="px-3 py-2.5 text-center" style={{ color: '#6366f1' }}>{r ? r.leads : '—'}</td>
+                        <td className="px-3 py-2.5 text-center" style={{ color: '#C19C46' }}>{r ? r.tours : '—'}</td>
+                        <td className="px-3 py-2.5 text-center" style={{ color: '#10b981' }}>{r ? r.registered : '—'}</td>
+                        <td className="px-3 py-2.5 text-center" style={{ color: '#06b6d4' }}>{r ? `${r.tourRate}%` : '—'}</td>
+                        <td className="px-3 py-2.5 text-center" style={{ color: '#731494' }}>{r ? `${r.closeRate}%` : '—'}</td>
+                        <td className="px-3 py-2.5 text-center" style={{ color: '#C19C46' }}>{r ? `${r.convRate}%` : '—'}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Section 3: Trendlines per Location */}
+          <div>
+            <SectionTitle>Location Trendlines</SectionTitle>
+            <div className="space-y-3">
+              {locations.map((loc) => {
+                const isOpen = openLocs.includes(loc)
+                const data12 = getLast12(loc)
+                return (
+                  <div key={loc} className="overflow-hidden rounded-2xl border border-[var(--brand-border)] bg-black/20">
+                    <button
+                      onClick={() => toggleLoc(loc)}
+                      className="flex w-full items-center justify-between px-4 py-3 text-left transition hover:bg-white/5"
+                    >
+                      <span className="font-semibold text-white">{loc}</span>
+                      <span className={`text-lg text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`}>›</span>
+                    </button>
+                    {isOpen && (
+                      <div className="border-t border-[var(--brand-border)] px-4 pb-4 pt-3">
+                        {data12.length === 0 ? (
+                          <Empty>No trend data for this location.</Empty>
+                        ) : (
+                          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                            {/* Volume bar chart */}
+                            <div>
+                              <div className="mb-2 text-xs font-medium text-gray-400">Volume — Leads / Tours / Enrolled</div>
+                              <div style={{ height: 200 }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <BarChart data={data12} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                                    <XAxis dataKey="month" tick={{ fill: '#6b7280', fontSize: 9 }} tickFormatter={fmtMonth} />
+                                    <YAxis tick={{ fill: '#6b7280', fontSize: 9 }} width={24} />
+                                    <Tooltip
+                                      contentStyle={{ background: '#0a0a0a', border: '1px solid #2a1a3e', borderRadius: 12 }}
+                                      labelStyle={{ color: '#9ca3af' }}
+                                      labelFormatter={fmtMonth}
+                                    />
+                                    <Bar dataKey="leads"      fill="#6366f1" name="Leads"    radius={[2,2,0,0]} />
+                                    <Bar dataKey="tours"      fill="#C19C46" name="Tours"    radius={[2,2,0,0]} />
+                                    <Bar dataKey="registered" fill="#10b981" name="Enrolled" radius={[2,2,0,0]} />
+                                  </BarChart>
+                                </ResponsiveContainer>
+                              </div>
+                            </div>
+                            {/* Rate line chart */}
+                            <div>
+                              <div className="mb-2 text-xs font-medium text-gray-400">Rates — Tour / Close / Conversion</div>
+                              <div style={{ height: 200 }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <LineChart data={data12} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                                    <XAxis dataKey="month" tick={{ fill: '#6b7280', fontSize: 9 }} tickFormatter={fmtMonth} />
+                                    <YAxis tick={{ fill: '#6b7280', fontSize: 9 }} width={32} domain={[0, 100]} tickFormatter={v => `${v}%`} />
+                                    <Tooltip
+                                      contentStyle={{ background: '#0a0a0a', border: '1px solid #2a1a3e', borderRadius: 12 }}
+                                      labelStyle={{ color: '#9ca3af' }}
+                                      labelFormatter={fmtMonth}
+                                      formatter={(val) => val != null ? `${val}%` : '—'}
+                                    />
+                                    <Line type="monotone" dataKey="tourRate"  stroke="#06b6d4" strokeWidth={2} dot={false} name="Tour Rate"  connectNulls />
+                                    <Line type="monotone" dataKey="closeRate" stroke="#731494" strokeWidth={2} dot={false} name="Close Rate" connectNulls />
+                                    <Line type="monotone" dataKey="convRate"  stroke="#C19C46" strokeWidth={2} dot={false} name="Conv Rate"  connectNulls />
+                                  </LineChart>
+                                </ResponsiveContainer>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── Section 4: Aggregate Summary ── */}
+      {funnelAggregate.length > 0 && (
+        <div>
+          <SectionTitle>Aggregate Summary — All Locations</SectionTitle>
+          <Card className="pt-4">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <div>
+                <div className="mb-2 text-xs font-medium text-gray-400">Combined Volume (12 months)</div>
+                <div style={{ height: 200 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={funnelAggregate} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                      <XAxis dataKey="month" tick={{ fill: '#6b7280', fontSize: 9 }} tickFormatter={fmtMonth} />
+                      <YAxis tick={{ fill: '#6b7280', fontSize: 9 }} width={24} />
+                      <Tooltip
+                        contentStyle={{ background: '#0a0a0a', border: '1px solid #2a1a3e', borderRadius: 12 }}
+                        labelStyle={{ color: '#9ca3af' }}
+                        labelFormatter={fmtMonth}
+                      />
+                      <Bar dataKey="leads"      fill="#6366f1" name="Leads"    radius={[2,2,0,0]} />
+                      <Bar dataKey="tours"      fill="#C19C46" name="Tours"    radius={[2,2,0,0]} />
+                      <Bar dataKey="registered" fill="#10b981" name="Enrolled" radius={[2,2,0,0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div>
+                <div className="mb-2 text-xs font-medium text-gray-400">Overall Rates (12 months)</div>
+                <div style={{ height: 200 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={funnelAggregate} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                      <XAxis dataKey="month" tick={{ fill: '#6b7280', fontSize: 9 }} tickFormatter={fmtMonth} />
+                      <YAxis tick={{ fill: '#6b7280', fontSize: 9 }} width={32} domain={[0, 100]} tickFormatter={v => `${v}%`} />
+                      <Tooltip
+                        contentStyle={{ background: '#0a0a0a', border: '1px solid #2a1a3e', borderRadius: 12 }}
+                        labelStyle={{ color: '#9ca3af' }}
+                        labelFormatter={fmtMonth}
+                        formatter={(val) => val != null ? `${val}%` : '—'}
+                      />
+                      <Line type="monotone" dataKey="tourRate"  stroke="#06b6d4" strokeWidth={2} dot={false} name="Tour Rate"  connectNulls />
+                      <Line type="monotone" dataKey="closeRate" stroke="#731494" strokeWidth={2} dot={false} name="Close Rate" connectNulls />
+                      <Line type="monotone" dataKey="convRate"  stroke="#C19C46" strokeWidth={2} dot={false} name="Conv Rate"  connectNulls />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
           </Card>
         </div>
       )}
+
+      {/* ── Section 5: CRM Notes ── */}
+      <EditableNotes
+        label="CRM Notes"
+        value={profile.crmNotes}
+        field="crmNotes"
+        acronym={acronym}
+        placeholder="CRM platform notes, access details, integration info…"
+      />
     </div>
   )
 }
@@ -1073,6 +1238,62 @@ function PaidMediaTab({ profile }) {
           <PlaceholderBanner icon="📘" message="Meta Ads performance data — API integration pending" />
         </div>
       </div>
+    </div>
+  )
+}
+
+// ── Editable notes widget ────────────────────────────────────────────────────
+
+function EditableNotes({ label, value, field, acronym, placeholder }) {
+  const [text, setText] = useState(value || '')
+  const [saving, setSaving] = useState(false)
+  const [saved,  setSaved]  = useState(false)
+  const [err,    setErr]    = useState('')
+  const timer = useRef(null)
+
+  async function save() {
+    setSaving(true)
+    setErr('')
+    try {
+      const res = await fetch(`/api/clients/${acronym}/profile`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: text }),
+      })
+      if (!res.ok) { const j = await res.json(); throw new Error(j.error || 'Save failed') }
+      setSaved(true)
+      clearTimeout(timer.current)
+      timer.current = setTimeout(() => setSaved(false), 2500)
+    } catch (e) {
+      setErr(e.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div>
+      <SectionTitle>{label}</SectionTitle>
+      <Card>
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={placeholder}
+          rows={5}
+          className="w-full rounded-xl border border-[var(--brand-border)] bg-black/40 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-violet-500/50 focus:outline-none resize-y"
+        />
+        <div className="mt-2 flex items-center gap-3">
+          <button
+            onClick={save}
+            disabled={saving}
+            className="rounded-xl border border-violet-500/40 bg-violet-500/15 px-4 py-2 text-sm font-medium text-violet-300 hover:bg-violet-500/25 disabled:opacity-50 transition"
+          >
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+          {saved && <span className="text-sm text-emerald-400">✓ Saved</span>}
+          {err   && <span className="text-sm text-rose-400">{err}</span>}
+        </div>
+      </Card>
     </div>
   )
 }
@@ -1302,6 +1523,9 @@ export default function ClientCard({ acronym, user }) {
     allCalls = [],
     pendingCalls = [],
     funnelHistory = [],
+    funnelByLocation = [],
+    funnelAggregate = [],
+    locations = [],
     potentialUnlinkedCount = 0,
   } = data
 
@@ -1433,7 +1657,13 @@ export default function ClientCard({ acronym, user }) {
           <GBPTab profile={profile} acronym={acronym} user={user} />
         )}
         {currentTab === 'crm' && (
-          <CRMTab profile={profile} />
+          <CRMTab
+            profile={profile}
+            acronym={acronym}
+            funnelByLocation={funnelByLocation}
+            funnelAggregate={funnelAggregate}
+            locations={locations}
+          />
         )}
         {currentTab === 'blueprint' && (
           <BlueprintTab profile={profile} />

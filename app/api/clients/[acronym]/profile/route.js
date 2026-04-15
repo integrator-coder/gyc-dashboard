@@ -97,7 +97,7 @@ export async function GET(_request, { params }) {
     const ghlId = profileRow.ghlContactId || '__none__'
     const profileId = profileRow.id || -1
 
-    const [callsRes, activityRes, funnelRes, potentialCallsRes] = await Promise.all([
+    const [callsRes, activityRes, funnelRes, funnelByLocationRes, funnelAggregateRes, potentialCallsRes] = await Promise.all([
 
       // All ZoomCall rows linked by acronym, clientProfileId, or ghlContactId
       pool.query(`
@@ -119,7 +119,7 @@ export async function GET(_request, { params }) {
         LIMIT 20
       `, [upper]).catch(() => ({ rows: [] })),
 
-      // Last 12 months funnel (chronological)
+      // Last 12 months funnel aggregate (chronological)
       pool.query(`
         SELECT month,
                SUM(leads)::int      AS leads,
@@ -131,6 +131,36 @@ export async function GET(_request, { params }) {
         ORDER BY month ASC
         LIMIT 12
       `, [upper]).catch(() => ({ rows: [] })),
+
+      // Per-location funnel data, last 24 months (DESC for latest-first)
+      pool.query(`
+        SELECT "locationName", month, leads, tours, registered,
+          ROUND(("leadToTour" * 100)::numeric, 1) as "tourRate",
+          ROUND(("tourToReg" * 100)::numeric, 1) as "closeRate",
+          ROUND(("leadToReg" * 100)::numeric, 1) as "convRate"
+        FROM "ClientFunnelMonth"
+        WHERE "tenantId" = 'gyc' AND "clientId" = $1
+          AND "locationName" != 'default'
+          AND leads > 0
+        ORDER BY month DESC, "locationName" ASC
+        LIMIT 500
+      `, [upper]).catch(() => ({ rows: [] })),
+
+      // Aggregate (default) rows, last 12 months chronological
+      pool.query(`
+        SELECT month, leads::int, tours::int, registered::int,
+          ROUND(("leadToTour" * 100)::numeric, 1) as "tourRate",
+          ROUND(("tourToReg" * 100)::numeric, 1) as "closeRate",
+          ROUND(("leadToReg" * 100)::numeric, 1) as "convRate"
+        FROM "ClientFunnelMonth"
+        WHERE "tenantId" = 'gyc' AND "clientId" = $1
+          AND "locationName" = 'default'
+          AND leads > 0
+        ORDER BY month ASC
+        LIMIT 12
+      `, [upper]).catch(() => ({ rows: [] })),
+
+      // Per-location funnel data already added above
 
       // Potential unlinked calls: participant emails match client email or ghlContactId,
       // but not already linked by acronym or clientProfileId
@@ -176,8 +206,11 @@ export async function GET(_request, { params }) {
       classifiedCalls,
       pendingCalls,
       // Sidebar data
-      activityLog:    activityRes.rows,
-      funnelHistory:  funnelRes.rows,
+      activityLog:      activityRes.rows,
+      funnelHistory:    funnelRes.rows,
+      funnelByLocation: funnelByLocationRes.rows,
+      funnelAggregate:  funnelAggregateRes.rows,
+      locations:        [...new Set(funnelByLocationRes.rows.map(r => r.locationName))],
       // Auto-classification banner
       potentialUnlinkedCount: Number(potentialCallsRes.rows[0]?.count || 0),
     })
