@@ -560,7 +560,7 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount 
 
 // ── Tab 2: Financial ──────────────────────────────────────────────────────────
 
-function FinancialTab({ profile }) {
+function FinancialTab({ profile, recentPayments = [] }) {
   const isPIF = profile.lifetimeValue && profile.mrr && Number(profile.lifetimeValue) > Number(profile.mrr) * 10
 
   return (
@@ -571,7 +571,11 @@ function FinancialTab({ profile }) {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <StatBox label="MRR" value={profile.mrr ? fmt$(profile.mrr) : '—'} big />
           <StatBox label="Lifetime Value" value={profile.lifetimeValue ? fmt$(profile.lifetimeValue) : '—'} />
-          <StatBox label="Overdue Amount" value={profile.overdueAmount ? fmt$(profile.overdueAmount) : '—'} warn={!!profile.isOverdue} />
+          <StatBox
+            label="Overdue Amount"
+            value={profile.isOverdue ? fmt$(profile.overdueAmount || 0) : (profile.overdueAmount ? fmt$(profile.overdueAmount) : '$0')}
+            warn={!!profile.isOverdue}
+          />
         </div>
         {isPIF && (
           <div className="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm text-emerald-300">
@@ -596,8 +600,10 @@ function FinancialTab({ profile }) {
                   {profile.stripeStatus || '—'}
                 </span>
               </div>
-              {profile.isOverdue && (
+              {profile.isOverdue ? (
                 <div className="text-sm text-rose-300">⚠️ Account is overdue</div>
+              ) : (
+                <div className="text-sm text-emerald-400">✅ No overdue balance</div>
               )}
             </div>
             {profile.stripeCustomerId && (
@@ -640,6 +646,35 @@ function FinancialTab({ profile }) {
           </Card>
         )}
       </div>
+
+      {/* Recent Payments */}
+      {recentPayments.length > 0 && (
+        <div>
+          <SectionTitle>Recent Payments</SectionTitle>
+          <Card>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #2a1a3e' }}>
+                  <th style={{ textAlign: 'left', padding: '8px 12px', color: '#9ca3af' }}>Date</th>
+                  <th style={{ textAlign: 'left', padding: '8px 12px', color: '#9ca3af' }}>Description</th>
+                  <th style={{ textAlign: 'right', padding: '8px 12px', color: '#9ca3af' }}>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentPayments.map((pmt, i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid #1a0a2e' }}>
+                    <td style={{ padding: '8px 12px', color: '#9ca3af' }}>{pmt.date}</td>
+                    <td style={{ padding: '8px 12px', color: '#fff' }}>{pmt.description}</td>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', color: '#4ade80', fontWeight: 600 }}>
+                      ${pmt.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Card>
+        </div>
+      )}
 
       {/* GHL pipeline */}
       {(profile.ghlContactId || profile.ghlPipelineStage) && (
@@ -1527,6 +1562,7 @@ export default function ClientCard({ acronym, user }) {
     funnelAggregate = [],
     locations = [],
     potentialUnlinkedCount = 0,
+    recentPayments = [],
   } = data
 
   // ── Build visible tabs ───────────────────────────────────────────────────
@@ -1645,7 +1681,7 @@ export default function ClientCard({ acronym, user }) {
           />
         )}
         {currentTab === 'financial' && (
-          <FinancialTab profile={profile} />
+          <FinancialTab profile={profile} recentPayments={recentPayments} />
         )}
         {currentTab === 'website' && (
           <WebsiteTab profile={profile} acronym={acronym} user={user} />
