@@ -831,152 +831,482 @@ function SEOTab({ profile }) {
 
 // ── Tab 5: GBP ────────────────────────────────────────────────────────────────
 
+const GBP_CHECKLIST = [
+  { field: 'isClaimed',              label: 'GBP claimed & verified' },
+  { field: 'primaryCategoryCorrect', label: 'Primary category correct' },
+  { field: 'secondaryCategoriesSet', label: 'Secondary categories set' },
+  { field: 'descriptionComplete',    label: 'Description complete (750 chars)' },
+  { field: 'websiteLinked',          label: 'Website linked' },
+  { field: 'phoneListened',          label: 'Phone number listed' },
+  { field: 'hoursComplete',          label: 'Hours complete (all 7 days)' },
+  { field: 'has50Reviews',           label: '50+ reviews' },
+  { field: 'ratingAbove4',           label: '4.0+ star rating' },
+  { field: 'respondedToReviews',     label: 'Responded to last 5 reviews' },
+  { field: 'photoRecentMonth',       label: 'Photo posted in last 30 days' },
+  { field: 'postRecentWeek',         label: 'Post in last 7 days' },
+  { field: 'qaActive',               label: 'Q&A section active' },
+  { field: 'servicesListed',         label: 'Services listed' },
+  { field: 'serviceAreaConfigured',  label: 'Service area configured' },
+]
+
+const CHECKLIST_FIELDS = GBP_CHECKLIST.map(c => c.field)
+
+function calcGbpScore(form) {
+  const answered = CHECKLIST_FIELDS.filter(f => form[f] !== null && form[f] !== undefined)
+  const passed   = CHECKLIST_FIELDS.filter(f => form[f] === true)
+  return answered.length > 0 ? Math.round((passed.length / answered.length) * 100) : 0
+}
+
+function GbpScoreBadge({ score }) {
+  if (score == null) return <span className="text-gray-500 text-xs">—</span>
+  const color = score >= 80 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+              : score >= 50 ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+              : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+  return (
+    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold ${color}`}>
+      {score}/100
+    </span>
+  )
+}
+
+const INPUT_CLS = 'w-full rounded-lg border border-[var(--brand-border)] bg-black/40 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-violet-500/50 focus:outline-none'
+const BTN_CLS   = 'rounded-xl border border-violet-500/40 bg-violet-500/15 px-4 py-2 text-sm font-medium text-violet-300 hover:bg-violet-500/25 disabled:opacity-50 transition'
+const BTN_SM    = 'rounded-lg border border-[var(--brand-border)] bg-black/30 px-3 py-1.5 text-xs font-medium text-gray-300 hover:border-violet-500/40 hover:text-violet-300 transition'
+
 function GBPTab({ profile, acronym, user }) {
   const isAdmin = ['admin', 'superadmin'].includes(user?.role)
 
-  const [reviews, setReviews] = useState(profile.gbpBaselineReviews ?? '')
-  const [rating,  setRating]  = useState(profile.gbpBaselineRating  ?? '')
-  const [date,    setDate]    = useState(
-    profile.gbpBaselineDate
-      ? String(profile.gbpBaselineDate).split('T')[0]
-      : ''
-  )
-  const [saving,  setSaving]  = useState(false)
-  const [saved,   setSaved]   = useState(false)
-  const [err,     setErr]     = useState('')
-  const timer = useRef(null)
+  // GBP-specific state
+  const [gbpData,              setGbpData]              = useState(null)
+  const [gbpLoading,           setGbpLoading]           = useState(true)
+  const [gbpErr,               setGbpErr]               = useState('')
+  const [showAddLocation,      setShowAddLocation]      = useState(false)
+  const [activeAuditLocationId,setActiveAuditLocationId]= useState(null)
+  const [expandedHistory,      setExpandedHistory]      = useState(null)
+  const [saving,               setSaving]               = useState(false)
 
-  async function saveBaseline() {
-    setSaving(true)
-    setErr('')
+  // Audit form state
+  const emptyAudit = () => ({
+    triggerType: 'manual',
+    reviewCount: '',
+    avgRating: '',
+    photoCount: '',
+    notes: '',
+    ...Object.fromEntries(CHECKLIST_FIELDS.map(f => [f, null])),
+    ...Object.fromEntries(CHECKLIST_FIELDS.map(f => [f + '_notes', ''])),
+  })
+  const [auditForm, setAuditForm] = useState(emptyAudit())
+
+  // Add-location form state
+  const emptyLoc = () => ({ name: '', gbpUrl: '', gbpPlaceId: '', address: '', city: '', state: '' })
+  const [locForm,  setLocForm]  = useState(emptyLoc())
+  const [locErr,   setLocErr]   = useState('')
+
+  async function loadGbp() {
+    setGbpLoading(true)
+    setGbpErr('')
     try {
-      const res = await fetch(`/api/clients/${acronym}/profile`, {
-        method: 'PATCH',
+      const res = await fetch(`/api/clients/${acronym}/gbp`)
+      if (!res.ok) throw new Error('Failed to load GBP data')
+      const j = await res.json()
+      setGbpData(j)
+    } catch (e) {
+      setGbpErr(e.message)
+    } finally {
+      setGbpLoading(false)
+    }
+  }
+
+  useEffect(() => { loadGbp() }, [acronym])
+
+  function openAuditForm(loc) {
+    setActiveAuditLocationId(loc.id)
+    setAuditForm({
+      ...emptyAudit(),
+      reviewCount: loc.lastAudit?.reviewCount ?? '',
+      avgRating:   loc.lastAudit?.avgRating   ?? '',
+      photoCount:  loc.lastAudit?.photoCount  ?? '',
+    })
+  }
+
+  async function saveAudit() {
+    setSaving(true)
+    try {
+      const payload = {
+        locationId: activeAuditLocationId,
+        triggerType: auditForm.triggerType,
+        reviewCount: auditForm.reviewCount !== '' ? Number(auditForm.reviewCount) : null,
+        avgRating:   auditForm.avgRating   !== '' ? Number(auditForm.avgRating)   : null,
+        photoCount:  auditForm.photoCount  !== '' ? Number(auditForm.photoCount)  : null,
+        notes: auditForm.notes || null,
+        ...Object.fromEntries(CHECKLIST_FIELDS.map(f => [f, auditForm[f]])),
+        ...Object.fromEntries(CHECKLIST_FIELDS.map(f => [f + '_notes', auditForm[f + '_notes'] || null])),
+      }
+      const res = await fetch(`/api/clients/${acronym}/gbp/audit`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          gbpBaselineReviews: reviews === '' ? null : Number(reviews),
-          gbpBaselineRating:  rating  === '' ? null : Number(rating),
-          gbpBaselineDate:    date    || null,
-        }),
+        body: JSON.stringify(payload),
       })
       if (!res.ok) { const j = await res.json(); throw new Error(j.error || 'Save failed') }
-      setSaved(true)
-      clearTimeout(timer.current)
-      timer.current = setTimeout(() => setSaved(false), 2500)
+      setActiveAuditLocationId(null)
+      setAuditForm(emptyAudit())
+      await loadGbp()
     } catch (e) {
-      setErr(e.message)
+      alert(e.message)
     } finally {
       setSaving(false)
     }
   }
 
+  async function saveLocation() {
+    setLocErr('')
+    setSaving(true)
+    try {
+      if (!locForm.name.trim()) throw new Error('Location name is required')
+      const res = await fetch(`/api/clients/${acronym}/gbp/locations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(locForm),
+      })
+      if (!res.ok) { const j = await res.json(); throw new Error(j.error || 'Save failed') }
+      setShowAddLocation(false)
+      setLocForm(emptyLoc())
+      await loadGbp()
+    } catch (e) {
+      setLocErr(e.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function setAuditField(field, value) {
+    setAuditForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  const liveScore = calcGbpScore(auditForm)
+
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
-      {/* GMB Access */}
-      <div>
-        <SectionTitle>Google Business Profile Access</SectionTitle>
-        <Card>
-          <div className="space-y-2.5">
-            <InfoRow label="Access level"  value={profile.gmbAccess || 'Not recorded'} />
-            <InfoRow label="GBP claimed"   value={profile.gmbAccess ? 'Yes — verified' : 'Unknown'} />
-          </div>
-        </Card>
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-semibold text-white">Google Business Profile</h2>
+        {isAdmin && (
+          <button onClick={() => setShowAddLocation(v => !v)} className={BTN_CLS}>
+            {showAddLocation ? 'Cancel' : '+ Add Location'}
+          </button>
+        )}
       </div>
 
-      {/* Baseline */}
-      <div>
-        <SectionTitle>Baseline (Before GYC)</SectionTitle>
-        <Card>
-          <div className="mb-2 text-xs text-gray-500">Captured at onboarding</div>
-          <div className="space-y-2.5">
-            <InfoRow
-              label="Review count"
-              value={profile.gbpBaselineReviews != null ? String(profile.gbpBaselineReviews) : 'Not captured'}
-            />
-            <InfoRow
-              label="Star rating"
-              value={profile.gbpBaselineRating != null ? `${Number(profile.gbpBaselineRating).toFixed(1)} ★` : 'Not captured'}
-            />
-            <InfoRow
-              label="Baseline date"
-              value={profile.gbpBaselineDate ? fmtDate(profile.gbpBaselineDate) : 'Not captured'}
-            />
-          </div>
-        </Card>
-      </div>
+      {/* Loading / error */}
+      {gbpLoading && <div className="text-sm text-gray-500">Loading GBP data…</div>}
+      {gbpErr && <div className="text-sm text-rose-400">{gbpErr}</div>}
 
-      {/* Admin: baseline entry form */}
-      {isAdmin && (
-        <div>
-          <SectionTitle>Update Baseline</SectionTitle>
-          <Card>
-            <div className="space-y-3">
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="mb-1 block text-xs text-gray-400">Review Count</label>
-                  <input
-                    type="number"
-                    value={reviews}
-                    onChange={(e) => setReviews(e.target.value)}
-                    placeholder="e.g. 42"
-                    className="w-full rounded-lg border border-[var(--brand-border)] bg-black/40 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-violet-500/50 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs text-gray-400">Star Rating</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="1"
-                    max="5"
-                    value={rating}
-                    onChange={(e) => setRating(e.target.value)}
-                    placeholder="e.g. 4.2"
-                    className="w-full rounded-lg border border-[var(--brand-border)] bg-black/40 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-violet-500/50 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs text-gray-400">Baseline Date</label>
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full rounded-lg border border-[var(--brand-border)] bg-black/40 px-3 py-2 text-sm text-white focus:border-violet-500/50 focus:outline-none"
-                  />
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={saveBaseline}
-                  disabled={saving}
-                  className="rounded-xl border border-violet-500/40 bg-violet-500/15 px-4 py-2 text-sm font-medium text-violet-300 hover:bg-violet-500/25 disabled:opacity-50 transition"
-                >
-                  {saving ? 'Saving…' : 'Save Baseline'}
-                </button>
-                {saved && <span className="text-sm text-emerald-400">✓ Saved</span>}
-                {err   && <span className="text-sm text-rose-400">{err}</span>}
-              </div>
-            </div>
-          </Card>
-        </div>
+      {/* No locations */}
+      {!gbpLoading && !gbpErr && gbpData && gbpData.locations?.length === 0 && (
+        <Empty>
+          No GBP locations set up yet.
+          {isAdmin && (
+            <button
+              onClick={() => setShowAddLocation(true)}
+              className="ml-3 text-violet-400 underline hover:no-underline"
+            >
+              Add one now
+            </button>
+          )}
+        </Empty>
       )}
 
-      {/* Current GBP performance */}
-      <div>
-        <SectionTitle>Current Performance</SectionTitle>
-        <PlaceholderBanner icon="⭐" message="Live GBP data via DataForSEO — integration pending" />
-      </div>
+      {/* Locations */}
+      {!gbpLoading && !gbpErr && gbpData?.locations?.map(loc => {
+        const isAuditing = activeAuditLocationId === loc.id
+        const histOpen   = expandedHistory === loc.id
+        const lastAudit  = loc.lastAudit
 
-      {/* Credentials */}
-      <div>
-        <SectionTitle>Credentials</SectionTitle>
-        <Card>
-          <div className="space-y-2.5">
-            <InfoRow label="GMB access"    value={profile.gmbAccess} />
-            <InfoRow label="Login creds"   value="Stored in password manager — add link here" />
+        return (
+          <div key={loc.id} className="rounded-2xl border border-[var(--brand-border)] bg-black/20 overflow-hidden">
+
+            {/* Location header row */}
+            <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-[var(--brand-border)]">
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-white truncate">{loc.name}</div>
+                {loc.address && (
+                  <div className="text-xs text-gray-500 mt-0.5">
+                    {[loc.address, loc.city, loc.state].filter(Boolean).join(', ')}
+                  </div>
+                )}
+                {loc.gbpUrl && (
+                  <a href={loc.gbpUrl} target="_blank" rel="noreferrer"
+                     className="text-xs text-violet-400 hover:underline mt-0.5 block">
+                    View on Google ↗
+                  </a>
+                )}
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => isAuditing ? setActiveAuditLocationId(null) : openAuditForm(loc)}
+                  className={BTN_SM}
+                >
+                  {isAuditing ? 'Cancel Audit' : 'Run Audit'}
+                </button>
+                {isAdmin && (
+                  <button className={BTN_SM} disabled title="Edit — coming soon">Edit</button>
+                )}
+              </div>
+            </div>
+
+            {/* Last audit summary */}
+            <div className="px-4 py-2.5 text-xs text-gray-400 flex flex-wrap gap-x-4 gap-y-1">
+              {lastAudit ? (
+                <>
+                  <span>
+                    Last audit: <GbpScoreBadge score={lastAudit.score} />{' '}
+                    <span className="text-gray-500">— {fmtDate(lastAudit.createdAt)}</span>
+                  </span>
+                  {lastAudit.avgRating != null && (
+                    <span>⭐ {Number(lastAudit.avgRating).toFixed(1)}{lastAudit.reviewCount != null ? ` (${lastAudit.reviewCount} reviews)` : ''}</span>
+                  )}
+                  {lastAudit.photoCount != null && (
+                    <span>📸 {lastAudit.photoCount} photos</span>
+                  )}
+                </>
+              ) : (
+                <span className="text-gray-600">No audits yet</span>
+              )}
+            </div>
+
+            {/* Audit form */}
+            {isAuditing && (
+              <div className="border-t border-[var(--brand-border)] bg-black/30 px-4 py-4 space-y-4">
+                <SectionTitle>Audit — {loc.name}</SectionTitle>
+
+                {/* Trigger + metrics */}
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className="mb-1 block text-xs text-gray-400">Trigger</label>
+                    <select
+                      value={auditForm.triggerType}
+                      onChange={e => setAuditField('triggerType', e.target.value)}
+                      className={INPUT_CLS}
+                    >
+                      <option value="manual">Manual</option>
+                      <option value="recon">Recon</option>
+                      <option value="monthly-report">Monthly Report</option>
+                      <option value="quarterly-meeting">Quarterly Meeting</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-gray-400">Review Count</label>
+                    <input
+                      type="number" value={auditForm.reviewCount}
+                      onChange={e => setAuditField('reviewCount', e.target.value)}
+                      placeholder="e.g. 37" className={INPUT_CLS}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-gray-400">Avg Rating</label>
+                    <input
+                      type="number" step="0.1" min="1" max="5" value={auditForm.avgRating}
+                      onChange={e => setAuditField('avgRating', e.target.value)}
+                      placeholder="e.g. 4.8" className={INPUT_CLS}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-gray-400">Photo Count</label>
+                    <input
+                      type="number" value={auditForm.photoCount}
+                      onChange={e => setAuditField('photoCount', e.target.value)}
+                      placeholder="e.g. 24" className={INPUT_CLS}
+                    />
+                  </div>
+                </div>
+
+                {/* Checklist */}
+                <div>
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">Checklist</div>
+                  <div className="space-y-2">
+                    {GBP_CHECKLIST.map(({ field, label }) => (
+                      <div key={field} className="flex items-start gap-3 rounded-xl border border-[var(--brand-border)] bg-black/20 px-3 py-2">
+                        {/* tri-state: null → unchecked → true → false */}
+                        <div className="flex gap-2 items-center shrink-0 pt-0.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const cur = auditForm[field]
+                              setAuditField(field, cur === null ? true : cur === true ? false : null)
+                            }}
+                            className={`w-5 h-5 rounded border flex items-center justify-center text-xs font-bold transition ${
+                              auditForm[field] === true  ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
+                            : auditForm[field] === false ? 'border-rose-500 bg-rose-500/20 text-rose-400'
+                            : 'border-gray-600 bg-black/40 text-gray-600'
+                            }`}
+                          >
+                            {auditForm[field] === true ? '✓' : auditForm[field] === false ? '✗' : '—'}
+                          </button>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm text-gray-200">{label}</div>
+                          <input
+                            type="text"
+                            value={auditForm[field + '_notes']}
+                            onChange={e => setAuditField(field + '_notes', e.target.value)}
+                            placeholder="Notes…"
+                            className="mt-1 w-full rounded border border-[var(--brand-border)] bg-black/30 px-2 py-1 text-xs text-gray-300 placeholder-gray-600 focus:border-violet-500/50 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Audit notes + score + save */}
+                <div>
+                  <label className="mb-1 block text-xs text-gray-400">Audit Notes</label>
+                  <textarea
+                    value={auditForm.notes}
+                    onChange={e => setAuditField('notes', e.target.value)}
+                    rows={3}
+                    placeholder="Overall observations, recommendations…"
+                    className={INPUT_CLS + ' resize-none'}
+                  />
+                </div>
+
+                <div className="flex items-center gap-4 flex-wrap">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-gray-400">Score preview:</span>
+                    <GbpScoreBadge score={liveScore} />
+                  </div>
+                  <button
+                    onClick={saveAudit}
+                    disabled={saving}
+                    className={BTN_CLS}
+                  >
+                    {saving ? 'Saving…' : 'Save Audit'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Audit history toggle */}
+            <div className="border-t border-[var(--brand-border)]">
+              <button
+                onClick={() => setExpandedHistory(histOpen ? null : loc.id)}
+                className="w-full flex items-center gap-2 px-4 py-2.5 text-xs text-gray-500 hover:text-gray-300 transition"
+              >
+                <span className={`transition-transform ${histOpen ? 'rotate-90' : ''}`}>›</span>
+                {histOpen ? 'Hide' : 'Show'} audit history
+                {loc.auditHistory?.length > 0 && (
+                  <span className="ml-1 rounded-full bg-white/10 px-1.5 py-0.5">{loc.auditHistory.length}</span>
+                )}
+              </button>
+
+              {histOpen && (
+                <div className="px-4 pb-4">
+                  {!loc.auditHistory?.length ? (
+                    <div className="text-xs text-gray-600">No audit history yet.</div>
+                  ) : (
+                    <div className="overflow-x-auto rounded-xl border border-[var(--brand-border)]">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="border-b border-[var(--brand-border)] text-gray-500">
+                            <th className="px-3 py-2 text-left font-medium">Date</th>
+                            <th className="px-3 py-2 text-left font-medium">Trigger</th>
+                            <th className="px-3 py-2 text-left font-medium">Score</th>
+                            <th className="px-3 py-2 text-left font-medium">Notes</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {loc.auditHistory.slice(0, 5).map(audit => (
+                            <tr key={audit.id} className="border-b border-[var(--brand-border)]/50 hover:bg-white/5">
+                              <td className="px-3 py-2 text-gray-300 whitespace-nowrap">{fmtDate(audit.createdAt)}</td>
+                              <td className="px-3 py-2 text-gray-400 capitalize">{(audit.triggerType || '').replace(/-/g, ' ')}</td>
+                              <td className="px-3 py-2"><GbpScoreBadge score={audit.score} /></td>
+                              <td className="px-3 py-2 text-gray-500 max-w-[200px] truncate">{audit.notes || '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-        </Card>
-      </div>
+        )
+      })}
+
+      {/* Add Location Form */}
+      {isAdmin && showAddLocation && (
+        <div className="rounded-2xl border border-violet-500/30 bg-violet-500/5 px-4 py-4 space-y-4">
+          <SectionTitle>Add GBP Location</SectionTitle>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-xs text-gray-400">Location Name *</label>
+              <input
+                value={locForm.name}
+                onChange={e => setLocForm(p => ({ ...p, name: e.target.value }))}
+                placeholder="e.g. Sunshine Daycare — Downtown"
+                className={INPUT_CLS}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-gray-400">GBP URL</label>
+              <input
+                value={locForm.gbpUrl}
+                onChange={e => setLocForm(p => ({ ...p, gbpUrl: e.target.value }))}
+                placeholder="https://maps.google.com/…"
+                className={INPUT_CLS}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-gray-400">GBP Place ID</label>
+              <input
+                value={locForm.gbpPlaceId}
+                onChange={e => setLocForm(p => ({ ...p, gbpPlaceId: e.target.value }))}
+                placeholder="ChIJ…"
+                className={INPUT_CLS}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-xs text-gray-400">Address</label>
+              <input
+                value={locForm.address}
+                onChange={e => setLocForm(p => ({ ...p, address: e.target.value }))}
+                placeholder="123 Main St"
+                className={INPUT_CLS}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-gray-400">City</label>
+              <input
+                value={locForm.city}
+                onChange={e => setLocForm(p => ({ ...p, city: e.target.value }))}
+                placeholder="Toronto"
+                className={INPUT_CLS}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-gray-400">State / Province</label>
+              <input
+                value={locForm.state}
+                onChange={e => setLocForm(p => ({ ...p, state: e.target.value }))}
+                placeholder="ON"
+                className={INPUT_CLS}
+              />
+            </div>
+          </div>
+          {locErr && <div className="text-sm text-rose-400">{locErr}</div>}
+          <div className="flex gap-3">
+            <button onClick={saveLocation} disabled={saving} className={BTN_CLS}>
+              {saving ? 'Saving…' : 'Save Location'}
+            </button>
+            <button onClick={() => { setShowAddLocation(false); setLocForm(emptyLoc()); setLocErr('') }} className={BTN_SM}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
