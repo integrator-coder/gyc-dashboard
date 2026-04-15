@@ -1025,7 +1025,12 @@ function CRMTab({ profile, acronym, funnelByLocation = [], locations = [], funne
         <>
           {/* Section 2: Locations Summary */}
           <div>
-            <SectionTitle>Locations — Latest Month</SectionTitle>
+            <SectionTitle>
+              Locations — {funnelByLocation[0] ? (() => {
+                const [y, m] = funnelByLocation[0].month.split('-')
+                return new Date(parseInt(y), parseInt(m)-1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+              })() : 'Latest Month'}
+            </SectionTitle>
             <div className="overflow-x-auto rounded-2xl border border-[var(--brand-border)] bg-black/20">
               <table className="w-full text-sm">
                 <thead>
