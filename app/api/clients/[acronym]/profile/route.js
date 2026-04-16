@@ -128,8 +128,9 @@ export async function GET(_request, { params }) {
                SUM(registered)::int AS registered
         FROM "ClientFunnelMonth"
         WHERE "clientId" = $1
+          AND "locationName" = 'default'
         GROUP BY month
-        ORDER BY month ASC
+        ORDER BY month DESC
         LIMIT 12
       `, [upper]).catch(() => ({ rows: [] })),
 

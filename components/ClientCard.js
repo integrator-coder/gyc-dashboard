@@ -338,7 +338,10 @@ function CallCard({ call, isPending }) {
 // ── Tab 1: Overview ───────────────────────────────────────────────────────────
 
 function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount }) {
-  const latestMonth  = funnelHistory.length > 0 ? funnelHistory[funnelHistory.length - 1] : null
+  // API returns DESC order (latest first) — index 0 is most recent month
+  const latestMonth  = funnelHistory.length > 0 ? funnelHistory[0] : null
+  // For charts, reverse to chronological order
+  const funnelHistoryAsc = [...funnelHistory].reverse()
   const hasFunnel    = funnelHistory.length > 0 || profile.funnelDataMonths > 0
 
   const alerts = []
@@ -434,8 +437,8 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount 
       })()}
 
       {/* Funnel Conversion Rates — 12 Month Trend */}
-      {funnelHistory.length > 1 && (() => {
-        const rateData = funnelHistory
+      {funnelHistoryAsc.length > 1 && (() => {
+        const rateData = funnelHistoryAsc
           .filter(m => Number(m.leads) > 0)
           .map(m => {
             const l = Number(m.leads)      || 0
@@ -477,13 +480,13 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount 
       })()}
 
       {/* 12-Month Trend */}
-      {funnelHistory.length > 1 && (
+      {funnelHistoryAsc.length > 1 && (
         <div>
           <SectionTitle>12-Month Trend</SectionTitle>
           <Card className="pt-4">
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={funnelHistory} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
+                <LineChart data={funnelHistoryAsc} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
                   <XAxis dataKey="month" tick={{ fill: '#6b7280', fontSize: 10 }} tickFormatter={fmtMonth} />
                   <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} width={28} />
