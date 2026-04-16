@@ -142,7 +142,36 @@ export default function LeadershipPage() {
     cashAtSigning25: m['2025'] || 0,
     mrr26: m.mrr26 || 0,
   }))
-  const renewalsChart = newBusiness?.renewalProjection || []
+  // Forward 13-month renewal window (starts next month, rolling)
+  const _now = new Date()
+  const _windowStart = new Date(_now.getFullYear(), _now.getMonth() + 1, 1)
+  const _windowEnd = new Date(_windowStart)
+  _windowEnd.setMonth(_windowEnd.getMonth() + 13)
+  const _wStartStr = _windowStart.toISOString().slice(0, 7) // YYYY-MM
+  const _wEndStr = _windowEnd.toISOString().slice(0, 7)
+  const renewalsChart = (newBusiness?.renewalProjection || []).filter(r => r.key >= _wStartStr && r.key < _wEndStr)
+
+  // Dynamic label for the pipeline window
+  const _wStartLabel = _windowStart.toLocaleString('default', { month: 'short', year: 'numeric' })
+  const _wEndMonthDate = new Date(_windowEnd.getFullYear(), _windowEnd.getMonth() - 1, 1)
+  const _wEndLabel = _wEndMonthDate.toLocaleString('default', { month: 'short', year: 'numeric' })
+  const renewalPipelineLabel = `Forward 13-Month Renewal Pipeline (${_wStartLabel} – ${_wEndLabel})`
+
+  // Summary card calculations
+  const _nextMonthMRR = renewalsChart.find(r => r.key === _wStartStr)?.mrr || 0
+  const _full13Total = renewalsChart.reduce((s, r) => s + r.mrr, 0)
+  const _curQ = Math.floor(_now.getMonth() / 3)
+  const _curY = _now.getFullYear()
+  const _thisQtrRemaining = renewalsChart.filter(r => {
+    const [y, m] = r.key.split('-').map(Number)
+    return y === _curY && Math.floor((m - 1) / 3) === _curQ
+  }).reduce((s, r) => s + r.mrr, 0)
+  const _nextQIdx = (_curQ + 1) % 4
+  const _nextQYear = _curQ === 3 ? _curY + 1 : _curY
+  const _nextQtrMRR = renewalsChart.filter(r => {
+    const [y, m] = r.key.split('-').map(Number)
+    return y === _nextQYear && Math.floor((m - 1) / 3) === _nextQIdx
+  }).reduce((s, r) => s + r.mrr, 0)
 
   const newMoneyMetricConfig = {
     contractValue: {
@@ -271,8 +300,27 @@ export default function LeadershipPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <Panel title="Projected MRR Renewals" sub="From New Business renewal forecast" href="/new-business" tone="neutral">
-          <ResponsiveContainer width="100%" height={240}>
+        <Panel title="Projected MRR Renewals" sub={renewalPipelineLabel} href="/new-business" tone="neutral">
+          {/* Summary cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <div className="rounded-lg bg-gray-900/60 border border-gray-800 p-3 text-center">
+              <div className="text-[10px] uppercase tracking-wider text-gray-400 mb-1">Next Month</div>
+              <div className="text-lg font-bold text-teal-300">{fmt$(_nextMonthMRR)}</div>
+            </div>
+            <div className="rounded-lg bg-gray-900/60 border border-gray-800 p-3 text-center">
+              <div className="text-[10px] uppercase tracking-wider text-gray-400 mb-1">This Qtr Remaining</div>
+              <div className="text-lg font-bold text-teal-300">{fmt$(_thisQtrRemaining)}</div>
+            </div>
+            <div className="rounded-lg bg-gray-900/60 border border-gray-800 p-3 text-center">
+              <div className="text-[10px] uppercase tracking-wider text-gray-400 mb-1">Next Quarter</div>
+              <div className="text-lg font-bold text-teal-300">{fmt$(_nextQtrMRR)}</div>
+            </div>
+            <div className="rounded-lg bg-gray-900/60 border border-gray-800 p-3 text-center">
+              <div className="text-[10px] uppercase tracking-wider text-gray-400 mb-1">Full 13-Month Pipeline</div>
+              <div className="text-lg font-bold text-teal-300">{fmt$(_full13Total)}</div>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={200}>
             <BarChart data={renewalsChart}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
               <XAxis dataKey="label" tick={{ fill: '#9CA3AF', fontSize: 10 }} interval={0} angle={-20} textAnchor="end" height={52} />
