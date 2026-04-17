@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
   ResponsiveContainer,
@@ -564,7 +564,34 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount 
 // ── Tab 2: Financial ──────────────────────────────────────────────────────────
 
 function FinancialTab({ profile, recentPayments = [] }) {
+  const [paymentSearch, setPaymentSearch] = useState('')
   const isPIF = profile.lifetimeValue && profile.mrr && Number(profile.lifetimeValue) > Number(profile.mrr) * 10
+
+  // Build year-by-year summary from full payment history
+  const annualSummary = useMemo(() => {
+    const byYear = {}
+    for (const pmt of recentPayments) {
+      const yr = pmt.date ? pmt.date.slice(0, 4) : 'Unknown'
+      if (!byYear[yr]) byYear[yr] = { total: 0, count: 0 }
+      byYear[yr].total += pmt.amount
+      byYear[yr].count += 1
+    }
+    return Object.entries(byYear)
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([year, data]) => ({ year, ...data }))
+  }, [recentPayments])
+
+  // Filtered payment list
+  const filteredPayments = useMemo(() => {
+    if (!paymentSearch.trim()) return recentPayments
+    const q = paymentSearch.toLowerCase()
+    return recentPayments.filter(p =>
+      (p.date && p.date.includes(q)) ||
+      (p.description && p.description.toLowerCase().includes(q))
+    )
+  }, [recentPayments, paymentSearch])
+
+  const totalPaid = recentPayments.reduce((s, p) => s + p.amount, 0)
 
   return (
     <div className="space-y-6">
@@ -650,31 +677,93 @@ function FinancialTab({ profile, recentPayments = [] }) {
         )}
       </div>
 
-      {/* Recent Payments */}
-      {recentPayments.length > 0 && (
+      {/* Annual Payment Summary */}
+      {annualSummary.length > 0 && (
         <div>
-          <SectionTitle>Recent Payments</SectionTitle>
+          <SectionTitle>Annual Payment Summary</SectionTitle>
           <Card>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #2a1a3e' }}>
-                  <th style={{ textAlign: 'left', padding: '8px 12px', color: '#9ca3af' }}>Date</th>
-                  <th style={{ textAlign: 'left', padding: '8px 12px', color: '#9ca3af' }}>Description</th>
-                  <th style={{ textAlign: 'right', padding: '8px 12px', color: '#9ca3af' }}>Amount</th>
+                  <th style={{ textAlign: 'left', padding: '6px 12px', color: '#9ca3af' }}>Year</th>
+                  <th style={{ textAlign: 'right', padding: '6px 12px', color: '#9ca3af' }}>Total Paid</th>
+                  <th style={{ textAlign: 'right', padding: '6px 12px', color: '#9ca3af' }}>Payments</th>
                 </tr>
               </thead>
               <tbody>
-                {recentPayments.map((pmt, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid #1a0a2e' }}>
-                    <td style={{ padding: '8px 12px', color: '#9ca3af' }}>{pmt.date}</td>
-                    <td style={{ padding: '8px 12px', color: '#fff' }}>{pmt.description}</td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', color: '#4ade80', fontWeight: 600 }}>
-                      ${pmt.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                {annualSummary.map(row => (
+                  <tr key={row.year} style={{ borderBottom: '1px solid #1a0a2e' }}>
+                    <td style={{ padding: '7px 12px', color: '#e2e8f0', fontWeight: 600 }}>{row.year}</td>
+                    <td style={{ padding: '7px 12px', textAlign: 'right', color: '#4ade80', fontWeight: 600 }}>
+                      ${row.total.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                     </td>
+                    <td style={{ padding: '7px 12px', textAlign: 'right', color: '#9ca3af' }}>{row.count}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </Card>
+        </div>
+      )}
+
+      {/* Full Payment History */}
+      {recentPayments.length > 0 && (
+        <div>
+          <SectionTitle>
+            Payment History
+            <span style={{ marginLeft: 8, fontSize: 12, fontWeight: 400, color: '#9ca3af' }}>
+              {recentPayments.length} payments — ${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} total
+            </span>
+          </SectionTitle>
+          {/* Search input */}
+          <div style={{ marginBottom: 8 }}>
+            <input
+              type="text"
+              placeholder="Search by date or description…"
+              value={paymentSearch}
+              onChange={e => setPaymentSearch(e.target.value)}
+              style={{
+                width: '100%',
+                background: '#1a0a2e',
+                border: '1px solid #2a1a3e',
+                borderRadius: 8,
+                padding: '7px 12px',
+                color: '#e2e8f0',
+                fontSize: 13,
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+          <Card style={{ padding: 0 }}>
+            <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead style={{ position: 'sticky', top: 0, background: '#120827', zIndex: 1 }}>
+                  <tr style={{ borderBottom: '1px solid #2a1a3e' }}>
+                    <th style={{ textAlign: 'left', padding: '8px 12px', color: '#9ca3af' }}>Date</th>
+                    <th style={{ textAlign: 'left', padding: '8px 12px', color: '#9ca3af' }}>Description</th>
+                    <th style={{ textAlign: 'right', padding: '8px 12px', color: '#9ca3af' }}>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPayments.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} style={{ padding: '12px', textAlign: 'center', color: '#6b7280' }}>No payments match your search.</td>
+                    </tr>
+                  ) : (
+                    filteredPayments.map((pmt, i) => (
+                      <tr key={pmt.id || i} style={{ borderBottom: '1px solid #1a0a2e' }}>
+                        <td style={{ padding: '7px 12px', color: '#9ca3af', whiteSpace: 'nowrap' }}>{pmt.date}</td>
+                        <td style={{ padding: '7px 12px', color: '#fff' }}>{pmt.description}</td>
+                        <td style={{ padding: '7px 12px', textAlign: 'right', color: '#4ade80', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                          ${pmt.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </Card>
         </div>
       )}

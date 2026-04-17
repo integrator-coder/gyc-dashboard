@@ -209,32 +209,39 @@ export async function GET(_request, { params }) {
       try {
         const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' })
 
-        const charges = await stripe.charges.list({
-          customer: profile.stripeCustomerId,
-          limit: 6,
-          expand: ['data.invoice'],
-        })
-        recentPayments = charges.data
-          .filter(c => c.status === 'succeeded')
-          .map(c => ({
+        // Fetch ALL charges via pagination
+        let allCharges = []
+        let hasMore = true
+        let startingAfter = undefined
+
+        while (hasMore) {
+          const params = { customer: profile.stripeCustomerId, limit: 100 }
+          if (startingAfter) params.starting_after = startingAfter
+          const batch = await stripe.charges.list(params)
+          const succeeded = batch.data.filter(c => c.status === 'succeeded')
+          allCharges = allCharges.concat(succeeded.map(c => ({
             date: new Date(c.created * 1000).toISOString().slice(0, 10),
             amount: c.amount / 100,
             description: c.description || 'Payment',
-            invoiceId: c.invoice?.id || null,
-          }))
+            id: c.id,
+          })))
+          hasMore = batch.has_more
+          if (batch.data.length > 0) startingAfter = batch.data[batch.data.length - 1].id
+        }
 
-        if (!finalLtv || finalLtv === 0) {
-          const allCharges = await stripe.charges.list({ customer: profile.stripeCustomerId, limit: 100 })
-          finalLtv = allCharges.data
-            .filter(c => c.status === 'succeeded')
-            .reduce((s, c) => s + c.amount, 0) / 100
-          if (finalLtv > 0) {
-            await pool.query(
-              `UPDATE "ClientProfile" SET "lifetimeValue" = $1 WHERE "tenantId" = 'gyc' AND acronym = $2`,
-              [finalLtv, upper]
-            )
-            profile.lifetimeValue = finalLtv
-          }
+        recentPayments = allCharges // all of them, already DESC from Stripe
+
+        // Calculate real LTV from all succeeded charges
+        const ltv = allCharges.reduce((s, c) => s + c.amount, 0)
+        finalLtv = ltv
+
+        // Update DB with correct LTV if different
+        if (Math.abs(ltv - (profile.lifetimeValue || 0)) > 1) {
+          await pool.query(
+            `UPDATE "ClientProfile" SET "lifetimeValue" = $1 WHERE "tenantId" = 'gyc' AND acronym = $2`,
+            [ltv, upper]
+          )
+          profile.lifetimeValue = ltv
         }
       } catch (e) {
         console.error('Stripe error for', upper, e.message)
