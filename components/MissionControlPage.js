@@ -677,6 +677,83 @@ export default function MissionControlPage() {
             </div>
           </div>
 
+          {/* ── Fleet Hierarchy & Delegation Rules ─────────────────────── */}
+          <div className="mb-8">
+            <h2 style={{ color: '#731494', fontSize: 16, fontWeight: 700, marginBottom: 16, letterSpacing: '0.02em' }}>
+              Fleet Hierarchy &amp; Delegation Rules
+            </h2>
+
+            {/* Hierarchy Visual */}
+            <div style={{ background: '#0d0d1a', border: '1px solid #2a1a3e', borderRadius: 12, padding: '20px 24px', marginBottom: 16, overflowX: 'auto' }}>
+              <div style={{ fontFamily: 'monospace', fontSize: 13, lineHeight: 1.8 }}>
+                <div><span style={{ color: '#ffffff', fontWeight: 700 }}>Todd</span></div>
+                <div><span style={{ color: '#ffffff' }}>{'  └── '}</span><span style={{ color: '#731494', fontWeight: 700 }}>Wall·E (Orchestrator)</span></div>
+                <div><span style={{ color: '#ffffff' }}>{'        ├── '}</span><span style={{ color: '#C19C46', fontWeight: 600 }}>Yoda (Division Lead — Analysis &amp; Architecture)</span></div>
+                <div><span style={{ color: '#ffffff' }}>{'        │     └── '}</span><span style={{ color: '#6b7280' }}>Morpheus (Memory Dreaming)</span></div>
+                <div><span style={{ color: '#ffffff' }}>{'        ├── '}</span><span style={{ color: '#C19C46', fontWeight: 600 }}>Thrawn (Division Lead — Business Intelligence)</span></div>
+                <div><span style={{ color: '#ffffff' }}>{'        │     ├── '}</span><span style={{ color: '#6b7280' }}>Soundwave (Call Analysis)</span></div>
+                <div><span style={{ color: '#ffffff' }}>{'        │     └── '}</span><span style={{ color: '#6b7280' }}>Ratchet (Fleet Watchdog)</span></div>
+                <div><span style={{ color: '#ffffff' }}>{'        ├── '}</span><span style={{ color: '#C19C46', fontWeight: 600 }}>Echo (Division Lead — Operations &amp; Delivery)</span></div>
+                <div><span style={{ color: '#ffffff' }}>{'        │     ├── '}</span><span style={{ color: '#6b7280' }}>R2 (Builder)</span></div>
+                <div><span style={{ color: '#ffffff' }}>{'        │     └── '}</span><span style={{ color: '#6b7280' }}>C3PO (QA Validation)</span></div>
+                <div><span style={{ color: '#ffffff' }}>{'        └── '}</span><span style={{ color: '#C19C46', fontWeight: 600 }}>Eve (Mac Studio Node Lead)</span></div>
+                <div><span style={{ color: '#ffffff' }}>{'              ├── '}</span><span style={{ color: '#6b7280' }}>BB-8 (Builder)</span></div>
+                <div><span style={{ color: '#ffffff' }}>{'              ├── '}</span><span style={{ color: '#6b7280' }}>Fulcrum (Research)</span></div>
+                <div><span style={{ color: '#ffffff' }}>{'              └── '}</span><span style={{ color: '#6b7280' }}>Vision (Security)</span></div>
+              </div>
+            </div>
+            {/* Delegation Rules — 3 cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, alignItems: 'stretch' }}>
+              {/* Card 1: How Tasks Flow */}
+              <div style={{ background: '#0d0d1a', border: '1px solid #2a1a3e', borderRadius: 12, padding: '16px 18px' }}>
+                <div style={{ color: '#731494', fontWeight: 700, fontSize: 13, marginBottom: 10, letterSpacing: '0.03em', textTransform: 'uppercase' }}>How Tasks Flow</div>
+                <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 7 }}>
+                  {[
+                    'Simple builds (1 file, urgent) → Wall·E → R2 directly',
+                    'Complex builds (2+ files) → Wall·E → Echo → R2 → C3PO → ships',
+                    'Analysis requests → Wall·E → Thrawn → (Soundwave/Ratchet if needed)',
+                    'Deep review → Wall·E → Yoda',
+                    "Research → Wall·E → Fulcrum (Eve's node)",
+                  ].map((item, i) => (
+                    <li key={i} style={{ fontSize: 12, color: '#d1d5db', lineHeight: 1.5, paddingLeft: 12, borderLeft: '2px solid #2a1a3e' }}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Card 2: Reporting Cadence */}
+              <div style={{ background: '#0d0d1a', border: '1px solid #2a1a3e', borderRadius: 12, padding: '16px 18px' }}>
+                <div style={{ color: '#731494', fontWeight: 700, fontSize: 13, marginBottom: 10, letterSpacing: '0.03em', textTransform: 'uppercase' }}>Reporting Cadence</div>
+                <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 7 }}>
+                  {[
+                    'Specialists report to their Division Lead',
+                    'Division Leads consolidate and report to Wall·E every 4 hours',
+                    'No skipping levels except genuine emergencies',
+                    'Todd can speak directly to any agent at any time',
+                    'If Todd gives an agent a task, that agent notifies Wall·E before executing anything on live systems',
+                  ].map((item, i) => (
+                    <li key={i} style={{ fontSize: 12, color: '#d1d5db', lineHeight: 1.5, paddingLeft: 12, borderLeft: '2px solid #2a1a3e' }}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Card 3: Proof Standard */}
+              <div style={{ background: '#0d0d1a', border: '1px solid #2a1a3e', borderRadius: 12, padding: '16px 18px' }}>
+                <div style={{ color: '#731494', fontWeight: 700, fontSize: 13, marginBottom: 10, letterSpacing: '0.03em', textTransform: 'uppercase' }}>Proof Standard</div>
+                <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 7 }}>
+                  {[
+                    'No task is "done" without proof',
+                    'Builds: commit hash + build result + live verification',
+                    'Analysis: structured memo with sources',
+                    'QA: explicit pass/fail with test output',
+                    'Division Leads do not report complete without proof from their specialists',
+                  ].map((item, i) => (
+                    <li key={i} style={{ fontSize: 12, color: '#d1d5db', lineHeight: 1.5, paddingLeft: 12, borderLeft: '2px solid #2a1a3e' }}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+
           <AgentOrgChart agents={data?.agents || []} />
         </Panel>
       )}
