@@ -1,6 +1,16 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  Legend,
+} from 'recharts'
 import BrandGuide from '@/components/BrandGuide'
 import FulcrumIntel from '@/components/FulcrumIntel'
 import ClientHealthMonitor from '@/components/ClientHealthMonitor'
@@ -960,6 +970,8 @@ export default function MissionControlPage() {
 
       {tab === 'cost' && (
         <Panel title="Cost Monitor">
+          <DailyTokenChart />
+          <div className="mt-6" />
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-3 text-sm">
               <div className="text-white">Monthly Budget</div>
@@ -1021,6 +1033,169 @@ export default function MissionControlPage() {
           <ZoomClassifierPage embedded />
         </Panel>
       )}
+    </div>
+  )
+}
+
+// ─── Daily Token Usage Chart ────────────────────────────────────────────────
+function fmtDate(dateStr) {
+  // Shorten YYYY-MM-DD to M/D for axis labels
+  if (!dateStr) return ''
+  const parts = dateStr.split('-')
+  if (parts.length < 3) return dateStr
+  return `${Number(parts[1])}/${Number(parts[2])}`
+}
+
+function fmtK(n) {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`
+  return String(n)
+}
+
+function DailyTokenCustomTooltip({ active, payload, label }) {
+  if (!active || !payload || !payload.length) return null
+  const d = payload[0]?.payload || {}
+  return (
+    <div style={{
+      background: '#0e0414',
+      border: '1px solid #4a3060',
+      borderRadius: 10,
+      padding: '10px 14px',
+      fontSize: 12,
+      minWidth: 190,
+    }}>
+      <div style={{ color: '#c4b5fd', fontWeight: 700, marginBottom: 6 }}>{d.date || label}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+          <span style={{ color: '#60a5fa' }}>● Input (est.)</span>
+          <span style={{ color: '#fff' }}>{fmtK(d.inputTokens || 0)}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+          <span style={{ color: '#731494' }}>● Output (est.)</span>
+          <span style={{ color: '#fff' }}>{fmtK(d.outputTokens || 0)}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+          <span style={{ color: '#9ca3af' }}>● Cache (est.)</span>
+          <span style={{ color: '#fff' }}>{fmtK(d.cacheTokens || 0)}</span>
+        </div>
+        <div style={{ borderTop: '1px solid #2a1a3e', marginTop: 4, paddingTop: 4, display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+          <span style={{ color: '#fbbf24' }}>Total (est.)</span>
+          <span style={{ color: '#fbbf24', fontWeight: 700 }}>{fmtK(d.totalTokens || 0)}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginTop: 2 }}>
+          <span style={{ color: '#34d399' }}>Cost (actual)</span>
+          <span style={{ color: '#34d399', fontWeight: 700 }}>${Number(d.estimatedCost || 0).toFixed(2)}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function DailyTokenChart() {
+  const [chartData, setChartData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    setLoading(true)
+    fetch('/api/mission-control/usage-daily', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.error) { setError(json.error); setLoading(false); return }
+        setChartData(json.data || [])
+        setLoading(false)
+      })
+      .catch((e) => { setError(e.message); setLoading(false) })
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="rounded-xl border border-[var(--brand-border)] bg-black/20 p-5">
+        <div className="text-xs font-semibold uppercase tracking-widest text-violet-300 mb-1">Daily Token Usage</div>
+        <div className="text-sm text-gray-400 py-8 text-center">Loading usage data…</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-5">
+        <div className="text-xs font-semibold uppercase tracking-widest text-violet-300 mb-1">Daily Token Usage</div>
+        <div className="text-sm text-rose-300">{error}</div>
+      </div>
+    )
+  }
+
+  if (!chartData || chartData.length === 0) {
+    return (
+      <div className="rounded-xl border border-[var(--brand-border)] bg-black/20 p-5">
+        <div className="text-xs font-semibold uppercase tracking-widest text-violet-300 mb-1">Daily Token Usage</div>
+        <div className="text-sm text-gray-400 py-8 text-center">No usage data available yet.</div>
+      </div>
+    )
+  }
+
+  const totalCost = chartData.reduce((s, d) => s + (d.estimatedCost || 0), 0)
+  const peakDay = chartData.reduce((best, d) => (d.estimatedCost > (best?.estimatedCost || 0) ? d : best), null)
+
+  return (
+    <div className="rounded-xl border border-[var(--brand-border)] bg-black/20 p-5">
+      {/* Header */}
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-widest text-violet-300 mb-0.5">Daily Token Usage</div>
+          <div className="text-base font-bold text-white">AI Spend — Last 30 Days</div>
+          <div className="text-xs text-gray-400 mt-0.5">Token counts are estimated from cost using Claude Sonnet pricing ratios</div>
+        </div>
+        <div className="flex gap-3">
+          <div className="text-center">
+            <div className="text-lg font-bold text-emerald-300">${totalCost.toFixed(2)}</div>
+            <div className="text-[11px] text-gray-400 uppercase tracking-wide">30d Total</div>
+          </div>
+          {peakDay && (
+            <div className="text-center">
+              <div className="text-lg font-bold text-amber-300">${Number(peakDay.estimatedCost).toFixed(2)}</div>
+              <div className="text-[11px] text-gray-400 uppercase tracking-wide">Peak Day</div>
+              <div className="text-[11px] text-gray-500">{peakDay.date}</div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Chart */}
+      <ResponsiveContainer width="100%" height={240}>
+        <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} barCategoryGap="20%">
+          <CartesianGrid strokeDasharray="3 3" stroke="#1a1a2e" vertical={false} />
+          <XAxis
+            dataKey="date"
+            tickFormatter={fmtDate}
+            tick={{ fill: '#6b7280', fontSize: 10 }}
+            axisLine={false}
+            tickLine={false}
+            interval={Math.floor(chartData.length / 8)}
+          />
+          <YAxis
+            tickFormatter={(v) => `$${v < 1 ? v.toFixed(2) : v.toFixed(0)}`}
+            tick={{ fill: '#6b7280', fontSize: 10 }}
+            axisLine={false}
+            tickLine={false}
+            width={48}
+          />
+          <RechartsTooltip content={<DailyTokenCustomTooltip />} cursor={{ fill: 'rgba(115, 20, 148, 0.08)' }} />
+          <Legend
+            formatter={(value) => <span style={{ color: '#9ca3af', fontSize: 11 }}>{value}</span>}
+            wrapperStyle={{ paddingTop: 8 }}
+          />
+          <Bar dataKey="estimatedCost" name="Daily Cost ($)" fill="#731494" radius={[3, 3, 0, 0]} maxBarSize={32} />
+        </BarChart>
+      </ResponsiveContainer>
+
+      {/* Legend note */}
+      <div className="mt-3 flex flex-wrap gap-4 text-[11px] text-gray-400">
+        <span className="flex items-center gap-1.5"><span style={{ width: 10, height: 10, borderRadius: 2, background: '#60a5fa', display: 'inline-block' }} /> Input tokens (est. 35% of cost @ $3/MTok)</span>
+        <span className="flex items-center gap-1.5"><span style={{ width: 10, height: 10, borderRadius: 2, background: '#731494', display: 'inline-block' }} /> Output tokens (est. 55% of cost @ $15/MTok)</span>
+        <span className="flex items-center gap-1.5"><span style={{ width: 10, height: 10, borderRadius: 2, background: '#6b7280', display: 'inline-block' }} /> Cache reads (est. 10% of cost @ $0.30/MTok)</span>
+      </div>
     </div>
   )
 }
