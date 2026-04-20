@@ -133,6 +133,11 @@ export default function LeadershipPage() {
   const { finance, churn, dunning, sales, leads, dealSize, newBusiness, clientHealth } = data
   const { metrics, todayCash, yesterdayCash, avg7, latestChurn, nrr, serviceByType, qStats, alerts } = derived
 
+  // Dynamic Est. Annual Revenue — YTD ÷ actual days elapsed × 365 (never stale)
+  const ytdCash = data?.finance?.ytdCash || 0
+  const daysElapsed = Math.max(1, Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 1).getTime()) / 86400000) + 1)
+  const estAnnualRevenue = ytdCash > 0 ? (ytdCash / daysElapsed) * 365 : Number(metrics?.totalRevenue || 0) * 12
+
   const dailyCashChart = (finance?.dailyRevenue || []).map(d => ({ label: new Date(d.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), amount: d.amount }))
   const newMoneyChart = (newBusiness?.monthlyComparison || []).map(m => ({
     month: m.month,
@@ -231,11 +236,11 @@ export default function LeadershipPage() {
         <Card label="MRR" value={fmt$(metrics?.mrr)} tooltip="Monthly Recurring Revenue: total contracted monthly subscription revenue from all active clients. Source: Stripe. Updated every 8h via snapshot cache." />
         <Card label="Revenue (30d)" value={fmt$(metrics?.totalRevenue)} tooltip="Total cash collected in the last 30 days across all Stripe payments. Includes one-time fees, signing payments, and recurring charges. Source: Stripe." />
         <Card label="ARR" value={fmt$(Number(metrics?.mrr || 0) * 12)} tooltip="Annualized Recurring Revenue: MRR × 12. A forward-looking measure of annual subscription run-rate. Assumes current MRR holds flat. Source: Stripe MRR." />
-        <Card label="Est Annual Revenue" value={fmt$(Number(metrics?.totalRevenue || 0) * 12)} tooltip="Estimated annual revenue: 30-day cash collected × 12. Includes one-time fees and signing payments — not a pure recurring measure. Source: Stripe 30d cash." />
+        <Card label="Est Annual Revenue" value={fmt$(estAnnualRevenue)} tooltip={`Estimated annual revenue: YTD cash collected ÷ ${daysElapsed} days elapsed × 365. Dynamically updates every day of the year. Source: Stripe YTD.`} />
         <Card label="Active Clients" value={fmtN(metrics?.activeCustomers)} tooltip="Number of clients with at least one active Stripe subscription. Source: Stripe." />
         <Card label="Churned (30d)" value={fmtN(metrics?.churnedCustomers)} tone={Number(metrics?.churnedCustomers || 0) > 10 ? 'bad' : 'warn'} tooltip="Number of clients whose subscriptions were cancelled in the last 30 days. Source: Stripe." />
         <Card label="RPE (MRR)" value={fmt$(Number(metrics?.mrr || 0) * 12 / 18.5)} sub="MRR x12 / 18.5" tooltip="Revenue Per Employee based on MRR: (MRR × 12) ÷ 18.5 headcount. Measures annualized MRR productivity per team member. Headcount fixed at 18.5." />
-        <Card label="RPE (Revenue)" value={fmt$(Number(metrics?.totalRevenue || 0) * 12 / 18.5)} sub="30d x12 / 18.5" tooltip="Revenue Per Employee based on 30-day cash: (30d revenue × 12) ÷ 18.5 headcount. Includes one-time fees. Headcount fixed at 18.5." />
+        <Card label="RPE (Revenue)" value={fmt$(estAnnualRevenue / 18.5)} sub={`YTD ann. / 18.5`} tooltip={`Revenue Per Employee based on YTD annualized revenue: (YTD ÷ ${daysElapsed}d × 365) ÷ 18.5 headcount. Includes one-time fees. Headcount fixed at 18.5.`} />
         <Card label="Today's Cash" value={fmt$(todayCash)} tooltip="Total cash collected today from Stripe payments. Resets at midnight. Source: Stripe daily revenue feed." />
         <Card label="Yesterday" value={fmt$(yesterdayCash)} sub={`7d avg ${fmt$(avg7)}`} tooltip="Total cash collected yesterday from Stripe. Sub-label shows rolling 7-day average for comparison. Source: Stripe daily revenue feed." />
       </div>
