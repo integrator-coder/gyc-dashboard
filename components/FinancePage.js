@@ -157,7 +157,7 @@ export default function FinancePage() {
 
   // RPE calculations
   const rpeMrr = metrics ? (metrics.mrr * 12) / NORMALIZED_EMPLOYEES : null
-  const rpeRevenue = metrics ? (metrics.totalRevenue * 12) / NORMALIZED_EMPLOYEES : null
+  const rpeRevenue = estAnnualRevenue ? estAnnualRevenue / NORMALIZED_EMPLOYEES : metrics ? (metrics.totalRevenue * 12) / NORMALIZED_EMPLOYEES : null
   const rpeProgress = rpeMrr ? Math.min((rpeMrr / RPE_TARGET) * 100, 100) : 0
   const rpeRevenueProgress = rpeRevenue ? Math.min((rpeRevenue / RPE_TARGET) * 100, 100) : 0
   const rpeTrend = previous
@@ -334,10 +334,10 @@ export default function FinancePage() {
             <div>
               <h3 className="text-white font-semibold flex items-center">
                 RPE — Revenue Based
-                <MetricTooltip text={`(Revenue 30d × 12) ÷ ${NORMALIZED_EMPLOYEES} normalized employees. Annualizes the last 30 days of actual cash collected (recurring + one-time) and divides by headcount. Captures total revenue productivity including project/PIF payments.`} />
+                <MetricTooltip text={`(YTD cash ÷ ${daysElapsed} days elapsed × 365) ÷ ${NORMALIZED_EMPLOYEES} normalized employees. Annualizes actual YTD cash collected and divides by headcount. Updates every day of the year.`} />
               </h3>
               <p style={{ color: B.muted }} className="text-xs mt-0.5">
-                30d Cash × 12 ÷ {NORMALIZED_EMPLOYEES} employees · Target: {formatCurrency(RPE_TARGET)}/yr
+                YTD ann. ÷ {NORMALIZED_EMPLOYEES} employees · Target: {formatCurrency(RPE_TARGET)}/yr
               </p>
             </div>
             <div className="text-right">
