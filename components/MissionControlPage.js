@@ -598,6 +598,7 @@ export default function MissionControlPage() {
             ['health', '🏥 Client Health'],
             ['log', '📋 Agent Log'],
             ['calls', '📞 Call Intelligence'],
+            ['quality', '🔬 Data Quality'],
           ].map(([key, label]) => (
             <button
               key={key}
@@ -1033,6 +1034,8 @@ export default function MissionControlPage() {
           <ZoomClassifierPage embedded />
         </Panel>
       )}
+
+      {tab === 'quality' && <DataQualityTab />}
     </div>
   )
 }
@@ -1506,6 +1509,202 @@ function IdeaBoard() {
               onDelete={handleDelete}
             />
           ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Data Quality Tab (C3PO) ──────────────────────────────────────────────────
+function DataQualityTab() {
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [lastChecked, setLastChecked] = useState(null)
+
+  const runChecks = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch('/api/metrics/data-quality', { cache: 'no-store' })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to run data quality checks')
+      setData(json)
+      setLastChecked(new Date())
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { runChecks() }, [runChecks])
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div
+        style={{
+          background: 'radial-gradient(circle at top left, #1a1202, transparent 60%), #0d0d1a',
+          border: '1px solid #2a1a3e',
+          borderRadius: 16,
+          padding: '20px 24px',
+        }}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div style={{ color: '#ca8a04', fontSize: 11, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 4 }}>
+              🤖 C3PO · Data Quality Monitor
+            </div>
+            <h2 style={{ color: '#fff', fontSize: 20, fontWeight: 700, margin: 0 }}>Data Integrity Checks</h2>
+            <p style={{ color: '#9ca3af', fontSize: 13, marginTop: 4 }}>
+              7 automated sanity checks against live data — finance freshness, MRR/ARR consistency, YTD cash, RPE bounds, and more.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {lastChecked && (
+              <div style={{ color: '#6b7280', fontSize: 12 }}>
+                Last checked: {lastChecked.toLocaleTimeString()}
+              </div>
+            )}
+            <button
+              onClick={runChecks}
+              disabled={loading}
+              style={{
+                background: loading ? '#1a1a2e' : 'rgba(202, 138, 4, 0.15)',
+                border: '1px solid rgba(202, 138, 4, 0.4)',
+                borderRadius: 10,
+                color: loading ? '#6b7280' : '#fbbf24',
+                fontSize: 13,
+                fontWeight: 600,
+                padding: '8px 16px',
+                cursor: loading ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {loading ? 'Running…' : '▶ Run Now'}
+            </button>
+          </div>
+        </div>
+
+        {/* Overall status banner */}
+        {!loading && data && (
+          <div
+            style={{
+              marginTop: 16,
+              borderRadius: 10,
+              padding: '10px 16px',
+              background: data.allClear ? 'rgba(52, 211, 153, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+              border: `1px solid ${data.allClear ? 'rgba(52, 211, 153, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              fontSize: 14,
+              fontWeight: 700,
+              color: data.allClear ? '#34d399' : '#f87171',
+            }}
+          >
+            <span style={{ fontSize: 20 }}>{data.allClear ? '✅' : '🚨'}</span>
+            {data.allClear
+              ? `All ${data.checks.length} checks passed — data looks clean`
+              : `${data.failures.length} of ${data.checks.length} checks failed — review below`
+            }
+          </div>
+        )}
+      </div>
+
+      {error && (
+        <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 10, padding: '12px 16px', color: '#f87171', fontSize: 13 }}>
+          {error}
+        </div>
+      )}
+
+      {/* Check cards */}
+      {loading && !data ? (
+        <div style={{ textAlign: 'center', color: '#6b7280', fontSize: 14, padding: '40px 0' }}>Running checks…</div>
+      ) : data ? (
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {data.checks.map((check, i) => (
+            <div
+              key={i}
+              style={{
+                background: '#0d0d1a',
+                border: `1px solid ${check.pass ? 'rgba(52, 211, 153, 0.25)' : 'rgba(239, 68, 68, 0.35)'}`,
+                borderRadius: 12,
+                padding: '16px 18px',
+                position: 'relative',
+                boxShadow: check.pass ? 'none' : '0 0 20px rgba(239, 68, 68, 0.08)',
+              }}
+            >
+              {/* Status strip at top */}
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 16,
+                right: 16,
+                height: 2,
+                background: check.pass
+                  ? 'linear-gradient(90deg, transparent, rgba(52, 211, 153, 0.6), transparent)'
+                  : 'linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.6), transparent)',
+                borderRadius: 2,
+              }} />
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                <div style={{ color: check.pass ? '#d1d5db' : '#fff', fontWeight: 600, fontSize: 13, lineHeight: 1.3 }}>
+                  {check.name}
+                </div>
+                <span style={{ fontSize: 18, flexShrink: 0, lineHeight: 1 }}>
+                  {check.pass ? '✅' : '❌'}
+                </span>
+              </div>
+
+              <div style={{ marginTop: 8, color: check.pass ? '#34d399' : '#fbbf24', fontSize: 13, fontWeight: 600 }}>
+                {check.value}
+              </div>
+
+              {check.note && (
+                <div style={{
+                  marginTop: 8,
+                  background: 'rgba(239, 68, 68, 0.08)',
+                  border: '1px solid rgba(239, 68, 68, 0.2)',
+                  borderRadius: 7,
+                  padding: '6px 10px',
+                  color: '#fca5a5',
+                  fontSize: 11.5,
+                  lineHeight: 1.5,
+                }}>
+                  ⚠ {check.note}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {/* Failures summary */}
+      {data && data.failures.length > 0 && (
+        <div
+          style={{
+            background: '#0d0d1a',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: 12,
+            padding: '16px 20px',
+          }}
+        >
+          <div style={{ color: '#f87171', fontWeight: 700, fontSize: 13, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            🚨 Failures Summary
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {data.failures.map((f, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: '#d1d5db' }}>
+                <span style={{ color: '#f87171', flexShrink: 0 }}>❌</span>
+                <span>
+                  <span style={{ color: '#fff', fontWeight: 600 }}>{f.name}:</span>{' '}
+                  <span style={{ color: '#fbbf24' }}>{f.value}</span>
+                  {f.note && <span style={{ color: '#9ca3af' }}> — {f.note}</span>}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
