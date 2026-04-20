@@ -920,30 +920,7 @@ export default function MissionControlPage() {
         </Panel>
       )}
 
-      {tab === 'schedule' && (
-        <Panel title="Scheduler View">
-          <div className="grid gap-3 md:grid-cols-1 xl:grid-cols-3">
-            {(data?.scheduler || []).map((job) => (
-              <div key={job.id} className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-3 text-sm">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="font-medium text-white">{job.id}</div>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${job.status === 'ok' ? 'bg-emerald-500/20 text-emerald-200' : 'bg-amber-500/20 text-amber-200'}`}>{job.status}</span>
-                </div>
-                <div className="text-gray-400">{job.cadence}</div>
-                <div className="mt-2 text-xs text-violet-200">Last check: {fmtEpoch(job.lastCheckEpoch)}</div>
-                <div className="mt-3 rounded-lg border border-[var(--brand-border)] bg-black/20 p-2">
-                  <div className="text-[11px] uppercase tracking-wider text-gray-300">What we learned</div>
-                  <div className="mt-1 text-gray-200">{job.finding || 'No finding recorded.'}</div>
-                </div>
-                <div className="mt-2 rounded-lg border border-[var(--brand-border)] bg-black/20 p-2">
-                  <div className="text-[11px] uppercase tracking-wider text-gray-300">Follow-up</div>
-                  <div className="mt-1 text-gray-200">{job.followUp || 'None.'}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Panel>
-      )}
+      {tab === 'schedule' && <SchedulerTab />}
 
       {tab === 'risk' && (
         <Panel title="Escalation Radar (Multifactor)">
@@ -1708,5 +1685,148 @@ function DataQualityTab() {
         </div>
       )}
     </div>
+  )
+}
+
+// ─── Scheduler Tab ──────────────────────────────────────────────────────────
+function SchedulerTab() {
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [nodeFilter, setNodeFilter] = useState('all')
+  const [lastRefresh, setLastRefresh] = useState(null)
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch('/api/mission-control/crons')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const json = await res.json()
+      setData(json)
+      setLastRefresh(new Date())
+      setError(null)
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    load()
+    const t = setInterval(load, 60000)
+    return () => clearInterval(t)
+  }, [load])
+
+  const jobs = data?.all || []
+  const filtered = nodeFilter === 'all' ? jobs : jobs.filter(j => j.node === nodeFilter)
+  const summary = data?.summary || { total: 0, ok: 0, error: 0, idle: 0 }
+
+  const statusColor = (s) => {
+    if (s === 'ok') return 'bg-emerald-500/20 text-emerald-200 border-emerald-500/30'
+    if (s === 'error') return 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+    if (s === 'idle') return 'bg-gray-500/20 text-gray-300 border-gray-500/30'
+    return 'bg-amber-500/20 text-amber-200 border-amber-500/30'
+  }
+
+  return (
+    <Panel
+      title="Scheduler"
+      action={
+        <span className="text-xs text-gray-500">
+          {lastRefresh ? `Updated ${lastRefresh.toLocaleTimeString()}` : 'Loading...'}
+        </span>
+      }
+    >
+      {loading && !data && (
+        <div className="py-8 text-center text-sm text-gray-400">Loading cron jobs…</div>
+      )}
+      {error && (
+        <div className="mb-4 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+          ⚠ Failed to load: {error}
+        </div>
+      )}
+      {data && (
+        <>
+          {/* Summary bar */}
+          <div className="mb-4 flex flex-wrap gap-3">
+            <div className="flex items-center gap-2 rounded-xl border border-[var(--brand-border)] bg-black/30 px-4 py-2">
+              <span className="text-xs text-gray-400">Total</span>
+              <span className="text-lg font-bold text-white">{summary.total}</span>
+            </div>
+            <div className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2">
+              <span className="text-xs text-emerald-400">OK</span>
+              <span className="text-lg font-bold text-emerald-200">{summary.ok}</span>
+            </div>
+            <div className="flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2">
+              <span className="text-xs text-rose-400">Error</span>
+              <span className="text-lg font-bold text-rose-200">{summary.error}</span>
+            </div>
+            <div className="flex items-center gap-2 rounded-xl border border-gray-500/30 bg-gray-500/10 px-4 py-2">
+              <span className="text-xs text-gray-400">Idle</span>
+              <span className="text-lg font-bold text-gray-200">{summary.idle}</span>
+            </div>
+          </div>
+
+          {/* Node filter */}
+          <div className="mb-4 flex gap-2">
+            {['all', 'Mac Mini', 'Mac Studio'].map(n => (
+              <button
+                key={n}
+                onClick={() => setNodeFilter(n)}
+                className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                  nodeFilter === n
+                    ? 'border-violet-500/50 bg-violet-500/20 text-violet-200'
+                    : 'border-[var(--brand-border)] bg-black/20 text-gray-400 hover:text-white'
+                }`}
+              >
+                {n === 'all' ? `All (${jobs.length})` : `${n} (${n === 'Mac Mini' ? (data?.mini?.length || 0) : (data?.eve?.length || 0)})`}
+              </button>
+            ))}
+          </div>
+
+          {/* Table */}
+          {filtered.length === 0 ? (
+            <div className="py-6 text-center text-sm text-gray-500">No cron jobs found.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--brand-border)] text-xs text-gray-500">
+                    <th className="pb-2 pr-4 text-left font-medium">Name</th>
+                    <th className="pb-2 pr-4 text-left font-medium">Node</th>
+                    <th className="pb-2 pr-4 text-left font-medium">Schedule</th>
+                    <th className="pb-2 pr-4 text-left font-medium">Next</th>
+                    <th className="pb-2 pr-4 text-left font-medium">Last</th>
+                    <th className="pb-2 pr-4 text-left font-medium">Status</th>
+                    <th className="pb-2 text-left font-medium">Agent</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--brand-border)]">
+                  {filtered.map(j => (
+                    <tr key={`${j.node}-${j.id}`} className="group hover:bg-white/5">
+                      <td className="py-2.5 pr-4 font-medium text-white">{j.name}</td>
+                      <td className="py-2.5 pr-4">
+                        <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2 py-0.5 text-xs text-violet-300">
+                          {j.node}
+                        </span>
+                      </td>
+                      <td className="py-2.5 pr-4 font-mono text-xs text-gray-300">{j.schedule}</td>
+                      <td className="py-2.5 pr-4 text-gray-300">{j.next}</td>
+                      <td className="py-2.5 pr-4 text-gray-400">{j.last}</td>
+                      <td className="py-2.5 pr-4">
+                        <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold uppercase ${statusColor(j.status)}`}>
+                          {j.status}
+                        </span>
+                      </td>
+                      <td className="py-2.5 max-w-[140px] truncate text-xs text-gray-400" title={j.agentId}>{j.agentId}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+    </Panel>
   )
 }
