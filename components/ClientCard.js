@@ -436,6 +436,54 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount 
         )
       })()}
 
+      {/* Avg conversion rates */}
+      {hasFunnel && (
+        <div>
+          <SectionTitle>Conversion Rates (12-mo avg)</SectionTitle>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <StatBox label="Avg Leads/mo"    value={fmtNum(profile.avgMonthlyLeads)} />
+            <StatBox label="Avg Tours/mo"    value={fmtNum(profile.avgMonthlyTours)} />
+            <StatBox label="Avg Enrollments" value={fmtNum(profile.avgMonthlyRegistered)} />
+            <StatBox label="Lead→Tour"        value={profile.leadToTourRate != null ? fmtPct(Number(profile.leadToTourRate)) : '—'} />
+          </div>
+        </div>
+      )}
+
+      {/* 12-Month Trend */}
+      {funnelHistoryAsc.length > 1 && (
+        <div>
+          <SectionTitle>12-Month Trend</SectionTitle>
+          <Card className="pt-4">
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={funnelHistoryAsc} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                  <XAxis dataKey="month" tick={{ fill: '#6b7280', fontSize: 10 }} tickFormatter={fmtMonth} />
+                  <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} width={28} />
+                  <Tooltip
+                    contentStyle={{ background: '#0a0a0a', border: '1px solid #2a1a3e', borderRadius: 12 }}
+                    labelStyle={{ color: '#9ca3af' }}
+                    labelFormatter={fmtMonth}
+                  />
+                  <Line type="monotone" dataKey="leads"      stroke="#AE2BCF" strokeWidth={2} dot={false} name="Leads" />
+                  <Line type="monotone" dataKey="tours"      stroke="#3b82f6" strokeWidth={2} dot={false} name="Tours" />
+                  <Line type="monotone" dataKey="registered" stroke="#10b981" strokeWidth={2} dot={false} name="Enrolled" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="mt-2 flex gap-4 text-xs">
+              <span style={{ color: '#AE2BCF' }}>● Leads</span>
+              <span style={{ color: '#3b82f6' }}>● Tours</span>
+              <span style={{ color: '#10b981' }}>● Enrolled</span>
+            </div>
+            <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+              <span>{profile.funnelDataMonths || 0} month(s) of data</span>
+              <TrendBadge trend={profile.funnelTrend} changePct={profile.trendChangePct} />
+            </div>
+          </Card>
+        </div>
+      )}
+
       {/* Funnel Conversion Rates — 12 Month Trend */}
       {funnelHistoryAsc.length > 1 && (() => {
         const rateData = funnelHistoryAsc
@@ -478,54 +526,6 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount 
           </div>
         )
       })()}
-
-      {/* 12-Month Trend */}
-      {funnelHistoryAsc.length > 1 && (
-        <div>
-          <SectionTitle>12-Month Trend</SectionTitle>
-          <Card className="pt-4">
-            <div className="h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={funnelHistoryAsc} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                  <XAxis dataKey="month" tick={{ fill: '#6b7280', fontSize: 10 }} tickFormatter={fmtMonth} />
-                  <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} width={28} />
-                  <Tooltip
-                    contentStyle={{ background: '#0a0a0a', border: '1px solid #2a1a3e', borderRadius: 12 }}
-                    labelStyle={{ color: '#9ca3af' }}
-                    labelFormatter={fmtMonth}
-                  />
-                  <Line type="monotone" dataKey="leads"      stroke="#AE2BCF" strokeWidth={2} dot={false} name="Leads" />
-                  <Line type="monotone" dataKey="tours"      stroke="#3b82f6" strokeWidth={2} dot={false} name="Tours" />
-                  <Line type="monotone" dataKey="registered" stroke="#10b981" strokeWidth={2} dot={false} name="Enrolled" />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="mt-2 flex gap-4 text-xs">
-              <span style={{ color: '#AE2BCF' }}>● Leads</span>
-              <span style={{ color: '#3b82f6' }}>● Tours</span>
-              <span style={{ color: '#10b981' }}>● Enrolled</span>
-            </div>
-            <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-              <span>{profile.funnelDataMonths || 0} month(s) of data</span>
-              <TrendBadge trend={profile.funnelTrend} changePct={profile.trendChangePct} />
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* Avg conversion rates */}
-      {hasFunnel && (
-        <div>
-          <SectionTitle>Conversion Rates (12-mo avg)</SectionTitle>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <StatBox label="Avg Leads/mo"    value={fmtNum(profile.avgMonthlyLeads)} />
-            <StatBox label="Avg Tours/mo"    value={fmtNum(profile.avgMonthlyTours)} />
-            <StatBox label="Avg Enrollments" value={fmtNum(profile.avgMonthlyRegistered)} />
-            <StatBox label="Lead→Tour"        value={profile.leadToTourRate != null ? fmtPct(Number(profile.leadToTourRate)) : '—'} />
-          </div>
-        </div>
-      )}
 
       {/* Services */}
       <div>
