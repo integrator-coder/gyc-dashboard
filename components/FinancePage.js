@@ -149,7 +149,7 @@ export default function FinancePage() {
     date: d.date
   }))
 
-  // YTD annualized Est. Annual Revenue
+  // YTD Annualized Revenue
   const now = new Date()
   const startOfYear = new Date(now.getFullYear(), 0, 1)
   const daysElapsed = Math.floor((now - startOfYear) / 86400000) + 1
@@ -247,11 +247,11 @@ export default function FinancePage() {
           tooltip="MRR × 12. Represents the annualized value of current recurring subscriptions if the subscriber base stayed flat for a full year."
         />
         <MetricCard
-          title="Est. Annual Revenue"
+          title="YTD Annualized Revenue"
           value={formatCurrency(estAnnualRevenue)}
-          subtitle={`YTD ÷ ${daysElapsed}d × 365`}
+          subtitle={`YTD cash annualized (${daysElapsed}d)`}
           icon="🟢"
-          tooltip="Year-to-date cash collected ÷ days elapsed × 365. Based on actual YTD collections annualized forward. More stable than 30-day rolling estimate."
+          tooltip="Year-to-date cash collected, annualized using actual elapsed days: YTD cash ÷ days elapsed × 365. Includes recurring and one-time cash collected."
         />
       </div>
 
