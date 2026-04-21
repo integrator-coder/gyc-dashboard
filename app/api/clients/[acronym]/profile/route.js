@@ -117,7 +117,7 @@ export async function GET(_request, { params }) {
     const ghlId = profileRow.ghlContactId || '__none__'
     const profileId = profileRow.id || -1
 
-    const [callsRes, activityRes, funnelRes, funnelByLocationRes, funnelAggregateRes, potentialCallsRes] = await Promise.all([
+    const [callsRes, activityRes, funnelRes, funnelByLocationRes, funnelAggregateRes, potentialCallsRes, gbpLocationsRes] = await Promise.all([
 
       // All ZoomCall rows linked by acronym, clientProfileId, or ghlContactId
       pool.query(`
@@ -198,6 +198,13 @@ export async function GET(_request, { params }) {
           `, [upper, profileId, profileRow.email.toLowerCase(), `%${profileRow.email.toLowerCase()}%`]
           ).catch(() => ({ rows: [{ count: 0 }] }))
         : Promise.resolve({ rows: [{ count: 0 }] }),
+
+      pool.query(`
+        SELECT id, "locationName", address, city, state, "gbpUrl", "isActive"
+        FROM "GBPLocation"
+        WHERE "tenantId" = 'gyc' AND "clientAcronym" = $1
+        ORDER BY "locationName" ASC
+      `, [upper]).catch(() => ({ rows: [] })),
     ])
 
     const allCalls = callsRes.rows
@@ -295,6 +302,7 @@ export async function GET(_request, { params }) {
       funnelByLocation: funnelByLocationRes.rows,
       funnelAggregate:  funnelAggregateRes.rows,
       locations:        [...new Set(funnelByLocationRes.rows.map(r => r.locationName))],
+      gbpLocations:     gbpLocationsRes.rows,
       // Auto-classification banner
       potentialUnlinkedCount: Number(potentialCallsRes.rows[0]?.count || 0),
       // Recent Stripe payments

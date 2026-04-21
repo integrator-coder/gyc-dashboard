@@ -1803,7 +1803,130 @@ function EditableNotes({ label, value, field, acronym, placeholder }) {
   )
 }
 
-// ── Tab 9: Notes ──────────────────────────────────────────────────────────────
+// ── Tab 9: Contacts ───────────────────────────────────────────────────────────
+
+function ContactsTab({ profile, gbpLocations = [] }) {
+  const ghlUrl = profile.ghlContactId
+    ? `https://app.gohighlevel.com/contacts/${profile.ghlContactId}`
+    : null
+
+  const contactRows = [
+    { label: 'Owner', value: profile.ownerName },
+    { label: 'Main Email', value: profile.email, href: profile.email ? `mailto:${profile.email}` : null },
+    { label: 'Main Phone', value: profile.phone, href: profile.phone ? `tel:${profile.phone}` : null },
+    { label: 'Director', value: profile.directorName },
+    { label: 'Director Email', value: profile.directorEmail, href: profile.directorEmail ? `mailto:${profile.directorEmail}` : null },
+    { label: 'Director Phone', value: profile.directorPhone, href: profile.directorPhone ? `tel:${profile.directorPhone}` : null },
+    { label: 'Assigned GA', value: profile.assignedGA },
+    { label: 'Assigned GA Email', value: profile.assignedGAEmail, href: profile.assignedGAEmail ? `mailto:${profile.assignedGAEmail}` : null },
+    { label: 'GHL Contact', value: profile.ghlContactId, href: ghlUrl, mono: true },
+  ]
+
+  const noteSections = [
+    { label: 'Team Notes', value: profile.teamNotes },
+    { label: 'General Notes', value: profile.notes },
+    { label: 'Website Notes', value: profile.websiteNotes },
+    { label: 'SEO Notes', value: profile.seoNotes },
+    { label: 'CRM Notes', value: profile.crmNotes },
+  ].filter((note) => note.value && String(note.value).trim())
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <SectionTitle>Primary Contacts</SectionTitle>
+        <Card>
+          <div className="space-y-2.5">
+            {contactRows.map((row) => (
+              <InfoRow
+                key={row.label}
+                label={row.label}
+                value={row.value}
+                href={row.href}
+                mono={row.mono}
+              />
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      <div>
+        <SectionTitle>Locations &amp; Addresses</SectionTitle>
+        {gbpLocations.length > 0 ? (
+          <div className="space-y-3">
+            {gbpLocations.map((location) => {
+              const fullAddress = [location.address, location.city, location.state].filter(Boolean).join(', ')
+              const cityState = [location.city, location.state].filter(Boolean).join(', ')
+
+              return (
+                <Card key={location.id}>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-semibold text-white">{location.locationName || 'Unnamed location'}</div>
+                      <div className="mt-2 space-y-2.5">
+                        <InfoRow label="Address" value={fullAddress} />
+                        <InfoRow label="City / State" value={cityState} />
+                        <InfoRow label="GBP Link" value={location.gbpUrl ? 'View GBP ↗' : null} href={location.gbpUrl || null} />
+                      </div>
+                    </div>
+                    <Badge
+                      label={location.isActive ? 'Active' : 'Inactive'}
+                      className={location.isActive
+                        ? 'border-emerald-500/30 bg-emerald-500/15 text-emerald-300'
+                        : 'border-gray-500/30 bg-gray-500/10 text-gray-300'}
+                    />
+                  </div>
+                </Card>
+              )
+            })}
+          </div>
+        ) : (
+          <Card>
+            <div className="space-y-2.5">
+              <InfoRow label="City / State" value={[profile.city, profile.state].filter(Boolean).join(', ')} />
+              <InfoRow
+                label="Locations"
+                value={profile.locationCount != null ? `${profile.locationCount} location${profile.locationCount === 1 ? '' : 's'}` : null}
+              />
+              <div className="pt-1 text-sm text-gray-400">Detailed location records not yet connected</div>
+            </div>
+          </Card>
+        )}
+      </div>
+
+      <div>
+        <SectionTitle>Links &amp; Systems</SectionTitle>
+        <Card>
+          <div className="space-y-2.5">
+            <InfoRow label="Website" value={profile.website} href={profile.website ? (profile.website.startsWith('http') ? profile.website : `https://${profile.website}`) : null} />
+            <InfoRow label="Client Folder" value={profile.clientFolderUrl ? 'Open folder ↗' : null} href={profile.clientFolderUrl || null} />
+            <InfoRow label="Lead Data Sheet" value={profile.leadDataUrl ? 'Open sheet ↗' : null} href={profile.leadDataUrl || null} />
+            <InfoRow label="GHL Contact" value={profile.ghlContactId ? 'Open contact ↗' : null} href={ghlUrl} />
+          </div>
+        </Card>
+      </div>
+
+      <div>
+        <SectionTitle>Special Notes</SectionTitle>
+        {noteSections.length === 0 ? (
+          <Empty>No notes on record yet.</Empty>
+        ) : (
+          <div className="space-y-3">
+            {noteSections.map((note) => (
+              <Card key={note.label}>
+                <div className="text-[11px] uppercase tracking-wider text-gray-400">{note.label}</div>
+                <pre className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-200 font-sans">
+                  {note.value}
+                </pre>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Tab 10: Notes ─────────────────────────────────────────────────────────────
 
 function NotesTab({ profile, acronym }) {
   return (
@@ -1836,7 +1959,7 @@ function NotesTab({ profile, acronym }) {
   )
 }
 
-// ── Tab 10: Calls ─────────────────────────────────────────────────────────────
+// ── Tab 11: Calls ─────────────────────────────────────────────────────────────
 
 function CallsTab({ profile, allCalls, pendingCalls, potentialUnlinkedCount }) {
   const [view, setView] = useState('all')
@@ -2031,6 +2154,7 @@ export default function ClientCard({ acronym, user }) {
     funnelByLocation = [],
     funnelAggregate = [],
     locations = [],
+    gbpLocations = [],
     potentialUnlinkedCount = 0,
     recentPayments = [],
   } = data
@@ -2045,6 +2169,7 @@ export default function ClientCard({ acronym, user }) {
     { key: 'crm',        label: 'CRM',                   show: !!profile.hasCRM },
     { key: 'blueprint',  label: 'Blueprint',             show: !!profile.hasBlueprint },
     { key: 'paidmedia',  label: 'Paid Media',            show: !!(profile.hasGoogleAds || profile.hasPaidMedia) },
+    { key: 'contacts',   label: 'Contacts',              show: true },
     { key: 'notes',      label: 'Notes',                 show: true },
     { key: 'calls',      label: `Calls (${allCalls.length})`, show: true },
   ]
@@ -2179,6 +2304,9 @@ export default function ClientCard({ acronym, user }) {
         )}
         {currentTab === 'paidmedia' && (
           <PaidMediaTab profile={profile} />
+        )}
+        {currentTab === 'contacts' && (
+          <ContactsTab profile={profile} gbpLocations={gbpLocations} />
         )}
         {currentTab === 'notes' && (
           <NotesTab profile={profile} acronym={acronym} />
