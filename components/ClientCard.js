@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
   ResponsiveContainer,
@@ -1755,7 +1755,7 @@ function CRMTab({ profile, acronym, funnelByLocation = [], locations = [], gbpLo
                     const dirty = isLocationDirty(loc)
 
                     return (
-                      <React.Fragment key={loc}>
+                      <Fragment key={loc}>
                         <tr className="hover:bg-white/[0.02] transition">
                           <td className="px-4 py-2.5 font-semibold text-white">{loc}</td>
                           <td className="px-3 py-2.5 text-center" style={{ color: '#6366f1' }}>{r ? r.leads : '—'}</td>
@@ -1817,7 +1817,7 @@ function CRMTab({ profile, acronym, funnelByLocation = [], locations = [], gbpLo
                             </button>
                           </td>
                         </tr>
-                      </React.Fragment>
+                      </Fragment>
                     )
                   })}
                 </tbody>
