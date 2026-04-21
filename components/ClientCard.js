@@ -170,18 +170,42 @@ function HealthScore({ score }) {
 
 // ── Service tile ──────────────────────────────────────────────────────────────
 
-function ServiceTile({ icon, label, active }) {
+function ServiceTile({ icon, label, active, saving, onToggle, onJump }) {
+  const clickTimer = useRef(null)
+
+  function handleClick() {
+    if (clickTimer.current) clearTimeout(clickTimer.current)
+    clickTimer.current = setTimeout(() => {
+      onToggle?.()
+      clickTimer.current = null
+    }, 220)
+  }
+
+  function handleDoubleClick() {
+    if (clickTimer.current) {
+      clearTimeout(clickTimer.current)
+      clickTimer.current = null
+    }
+    onJump?.()
+  }
+
   return (
-    <div
-      className={`flex flex-col items-center gap-1.5 rounded-2xl border p-3 text-center ${
+    <button
+      type="button"
+      onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
+      disabled={saving}
+      title={active ? 'Click to turn off, double click to open tab' : 'Click to turn on, double click to open tab'}
+      className={`flex flex-col items-center gap-1.5 rounded-2xl border p-3 text-center transition ${
         active
           ? 'border-violet-500/40 bg-violet-500/15 text-violet-200'
           : 'border-[var(--brand-border)] bg-black/20 text-gray-600'
-      }`}
+      } ${saving ? 'cursor-wait opacity-60' : 'cursor-pointer hover:border-violet-400/50 hover:bg-violet-500/10'}`}
     >
       <span className="text-2xl">{icon}</span>
       <span className="text-[11px] font-medium leading-tight">{label}</span>
-    </div>
+      {saving && <span className="text-[10px] text-gray-400">Saving…</span>}
+    </button>
   )
 }
 
@@ -337,17 +361,36 @@ function CallCard({ call, isPending }) {
 
 // ── Tab 1: Overview ───────────────────────────────────────────────────────────
 
-function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount }) {
+function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount, acronym, onJumpTab, onRefresh }) {
   // API returns DESC order (latest first) — index 0 is most recent month
   const latestMonth  = funnelHistory.length > 0 ? funnelHistory[0] : null
   // For charts, reverse to chronological order
   const funnelHistoryAsc = [...funnelHistory].reverse()
   const hasFunnel    = funnelHistory.length > 0 || profile.funnelDataMonths > 0
+  const [savingService, setSavingService] = useState('')
 
   const alerts = []
   if (profile.isOverdue)           alerts.push({ icon: '⚠️', msg: 'Overdue balance outstanding', color: 'border-rose-500/30 bg-rose-500/10 text-rose-300' })
   if (profile.funnelTrend === 'down') alerts.push({ icon: '📉', msg: 'Funnel trending down (leads or tours decreasing)', color: 'border-amber-500/30 bg-amber-500/10 text-amber-300' })
   if (potentialUnlinkedCount > 0)  alerts.push({ icon: '🔎', msg: `${potentialUnlinkedCount} potential unlinked call${potentialUnlinkedCount !== 1 ? 's' : ''} — review in Call Intelligence`, color: 'border-amber-500/30 bg-amber-500/10 text-amber-300' })
+
+  async function toggleService(field, nextValue) {
+    setSavingService(field)
+    try {
+      const res = await fetch(`/api/clients/${acronym}/profile`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: nextValue }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(json.error || 'Failed to update service')
+      await onRefresh?.()
+    } catch (err) {
+      alert(err.message || 'Failed to update service')
+    } finally {
+      setSavingService('')
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -531,12 +574,12 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount 
       <div>
         <SectionTitle>Active Services</SectionTitle>
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
-          <ServiceTile icon="🌐" label="Website"    active={!!profile.hasWebsite} />
-          <ServiceTile icon="📈" label="SEO"        active={!!profile.hasSEO} />
-          <ServiceTile icon="🤝" label="CRM"        active={!!profile.hasCRM} />
-          <ServiceTile icon="📊" label="Blueprint"  active={!!profile.hasBlueprint} />
-          <ServiceTile icon="📢" label="Google Ads" active={!!profile.hasGoogleAds} />
-          <ServiceTile icon="💰" label="Paid Media" active={!!profile.hasPaidMedia} />
+          <ServiceTile icon="🌐" label="Website"    active={!!profile.hasWebsite} saving={savingService === 'hasWebsite'} onToggle={() => toggleService('hasWebsite', !profile.hasWebsite)} onJump={() => onJumpTab?.('website')} />
+          <ServiceTile icon="📈" label="SEO"        active={!!profile.hasSEO} saving={savingService === 'hasSEO'} onToggle={() => toggleService('hasSEO', !profile.hasSEO)} onJump={() => onJumpTab?.('seo')} />
+          <ServiceTile icon="🤝" label="CRM"        active={!!profile.hasCRM} saving={savingService === 'hasCRM'} onToggle={() => toggleService('hasCRM', !profile.hasCRM)} onJump={() => onJumpTab?.('crm')} />
+          <ServiceTile icon="📊" label="Blueprint"  active={!!profile.hasBlueprint} saving={savingService === 'hasBlueprint'} onToggle={() => toggleService('hasBlueprint', !profile.hasBlueprint)} onJump={() => onJumpTab?.('blueprint')} />
+          <ServiceTile icon="📢" label="Google Ads" active={!!profile.hasGoogleAds} saving={savingService === 'hasGoogleAds'} onToggle={() => toggleService('hasGoogleAds', !profile.hasGoogleAds)} onJump={() => onJumpTab?.('paidmedia')} />
+          <ServiceTile icon="💰" label="Paid Media" active={!!profile.hasPaidMedia} saving={savingService === 'hasPaidMedia'} onToggle={() => toggleService('hasPaidMedia', !profile.hasPaidMedia)} onJump={() => onJumpTab?.('paidmedia')} />
         </div>
         {profile.serviceList?.length > 0 && (
           <div className="mt-2 text-xs text-gray-500">Services: {profile.serviceList.join(' · ')}</div>
@@ -2105,6 +2148,9 @@ export default function ClientCard({ acronym, user }) {
             funnelHistory={funnelHistory}
             allCalls={allCalls}
             potentialUnlinkedCount={potentialUnlinkedCount}
+            acronym={acronym}
+            onJumpTab={setActiveTab}
+            onRefresh={load}
           />
         )}
         {currentTab === 'financial' && (

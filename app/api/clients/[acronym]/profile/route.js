@@ -343,6 +343,24 @@ export async function PATCH(request, { params }) {
       vals.push(body.crmNotes)
     }
 
+    // Service toggles — any authenticated user
+    const serviceFields = [
+      'hasWebsite',
+      'hasSEO',
+      'hasCRM',
+      'hasBlueprint',
+      'hasGoogleAds',
+      'hasPaidMedia',
+    ]
+    const serviceUpdates = {}
+    for (const field of serviceFields) {
+      if (typeof body[field] === 'boolean') {
+        sets.push(`"${field}" = $${idx++}`)
+        vals.push(body[field])
+        serviceUpdates[field] = body[field]
+      }
+    }
+
     // Admin-only fields
     const isAdmin = userHasRole(user, ['admin', 'superadmin'])
     if (isAdmin) {
@@ -375,6 +393,35 @@ export async function PATCH(request, { params }) {
       `UPDATE "ClientProfile" SET ${sets.join(', ')} WHERE "tenantId" = 'gyc' AND acronym = $${idx}`,
       vals
     )
+
+    if (Object.keys(serviceUpdates).length > 0) {
+      const { rows } = await pool.query(
+        `SELECT "hasWebsite", "hasSEO", "hasCRM", "hasBlueprint", "hasGoogleAds", "hasPaidMedia", "hasCommand"
+         FROM "ClientProfile"
+         WHERE "tenantId" = 'gyc' AND acronym = $1
+         LIMIT 1`,
+        [upper]
+      )
+      const row = rows[0]
+      if (row) {
+        const serviceList = [
+          row.hasWebsite ? 'Website' : null,
+          row.hasSEO ? 'SEO' : null,
+          row.hasCRM ? 'CRM' : null,
+          row.hasBlueprint ? 'Blueprint' : null,
+          row.hasGoogleAds ? 'Google Ads' : null,
+          row.hasPaidMedia ? 'Paid Media' : null,
+          row.hasCommand ? 'Command' : null,
+        ].filter(Boolean)
+
+        await pool.query(
+          `UPDATE "ClientProfile"
+           SET "serviceList" = $1, "updatedAt" = NOW()
+           WHERE "tenantId" = 'gyc' AND acronym = $2`,
+          [serviceList.length ? serviceList : null, upper]
+        )
+      }
+    }
 
     return NextResponse.json({ ok: true })
   } catch (error) {
