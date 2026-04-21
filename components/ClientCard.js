@@ -599,7 +599,7 @@ function FinancialTab({ profile, recentPayments = [] }) {
       <div>
         <SectionTitle>Revenue</SectionTitle>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <StatBox label="MRR" value={profile.mrr ? fmt$(profile.mrr) : '—'} big />
+          <StatBox label="MRR" value={profile.mrr ? fmt$(profile.mrr) : '—'} sub={profile.stripeCustomerId ? 'Live Stripe subscriptions' : null} big />
           <StatBox label="Lifetime Value" value={profile.lifetimeValue ? fmt$(profile.lifetimeValue) : '—'} />
           <StatBox
             label="Overdue Amount"

@@ -44,7 +44,7 @@ async function run() {
   const client = await pool.connect()
   try {
     let synced = 0
-    let page = 0
+    const customersById = new Map()
 
     for await (const sub of stripe.subscriptions.list({
       status: 'active',
@@ -54,11 +54,23 @@ async function run() {
       const customer = sub.customer
       if (typeof customer === 'string') continue // not expanded — skip
 
-      const mrr = calcMrr(sub)
-      const name = customer.name || customer.email || 'Unknown'
-      const email = customer.email || null
-      const createdAt = new Date(sub.created * 1000)
+      const subMrr = calcMrr(sub)
+      const existing = customersById.get(customer.id)
+      if (!existing) {
+        customersById.set(customer.id, {
+          id: customer.id,
+          name: customer.name || customer.email || 'Unknown',
+          email: customer.email || null,
+          mrr: subMrr,
+          createdAt: new Date(sub.created * 1000),
+        })
+      } else {
+        existing.mrr += subMrr
+        if (new Date(sub.created * 1000) < existing.createdAt) existing.createdAt = new Date(sub.created * 1000)
+      }
+    }
 
+    for (const customer of customersById.values()) {
       await client.query(`
         INSERT INTO "StripeCustomer" (id, name, email, status, mrr, "createdAt", "canceledAt", "updatedAt", "organizationId")
         VALUES ($1, $2, $3, 'active', $4, $5, NULL, NOW(), $6)
@@ -70,7 +82,7 @@ async function run() {
           "canceledAt" = NULL,
           "updatedAt" = NOW(),
           "organizationId" = EXCLUDED."organizationId"
-      `, [customer.id, name, email, mrr, createdAt, ORG_ID])
+      `, [customer.id, customer.name, customer.email, customer.mrr, customer.createdAt, ORG_ID])
 
       synced++
       if (synced % 50 === 0) console.log(`  synced ${synced} customers...`)

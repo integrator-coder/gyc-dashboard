@@ -23,6 +23,25 @@ function computeHealthScore(row) {
   return Math.max(1, Math.min(10, score))
 }
 
+function calcSubscriptionMrr(sub) {
+  const items = sub?.items?.data || []
+  return items.reduce((sum, item) => {
+    const price = item?.price || {}
+    const qty = item?.quantity || 1
+    const unit = (price.unit_amount || 0) / 100
+    const interval = price?.recurring?.interval || 'month'
+    const count = price?.recurring?.interval_count || 1
+
+    let monthly = unit * qty
+    if (interval === 'year') monthly = (unit * qty) / (12 * count)
+    else if (interval === 'month') monthly = (unit * qty) / count
+    else if (interval === 'week') monthly = (unit * qty * 52) / (12 * count)
+    else if (interval === 'day') monthly = (unit * qty * 365) / (12 * count)
+
+    return sum + monthly
+  }, 0)
+}
+
 // All ZoomCall columns we want to surface on the client card
 const CALL_SELECT = `
   zc.id,
@@ -204,10 +223,21 @@ export async function GET(_request, { params }) {
     // ── Stripe: recent payments + LTV recalculation ──────────────────────
     let recentPayments = []
     let finalLtv = profile.lifetimeValue || 0
+    let liveMrr = profile.mrr || 0
 
     if (profile.stripeCustomerId && process.env.STRIPE_SECRET_KEY) {
       try {
         const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' })
+
+        // Fetch live subscriptions to compute true customer-level MRR
+        const subs = await stripe.subscriptions.list({
+          customer: profile.stripeCustomerId,
+          status: 'all',
+          limit: 100,
+          expand: ['data.items.data.price'],
+        })
+        const liveSubs = subs.data.filter(s => ['active', 'past_due', 'trialing'].includes(s.status))
+        liveMrr = liveSubs.reduce((sum, sub) => sum + calcSubscriptionMrr(sub), 0)
 
         // Fetch ALL charges via pagination
         let allCharges = []
@@ -235,13 +265,18 @@ export async function GET(_request, { params }) {
         const ltv = allCharges.reduce((s, c) => s + c.amount, 0)
         finalLtv = ltv
 
-        // Update DB with correct LTV if different
-        if (Math.abs(ltv - (profile.lifetimeValue || 0)) > 1) {
+        // Update DB with correct LTV / MRR if different
+        if (Math.abs(ltv - (profile.lifetimeValue || 0)) > 1 || Math.abs(liveMrr - (profile.mrr || 0)) > 1) {
           await pool.query(
-            `UPDATE "ClientProfile" SET "lifetimeValue" = $1 WHERE "tenantId" = 'gyc' AND acronym = $2`,
-            [ltv, upper]
+            `UPDATE "ClientProfile" SET "lifetimeValue" = $1, "mrr" = $2 WHERE "tenantId" = 'gyc' AND acronym = $3`,
+            [ltv, liveMrr, upper]
           )
+          await pool.query(
+            `UPDATE "StripeCustomer" SET "mrr" = $1 WHERE id = $2`,
+            [liveMrr, profile.stripeCustomerId]
+          ).catch(() => null)
           profile.lifetimeValue = ltv
+          profile.mrr = liveMrr
         }
       } catch (e) {
         console.error('Stripe error for', upper, e.message)
@@ -249,7 +284,7 @@ export async function GET(_request, { params }) {
     }
 
     return NextResponse.json({
-      profile: { ...profile, lifetimeValue: finalLtv },
+      profile: { ...profile, mrr: liveMrr || profile.mrr, lifetimeValue: finalLtv },
       // All calls (classified + pending) for the tab
       allCalls,
       classifiedCalls,

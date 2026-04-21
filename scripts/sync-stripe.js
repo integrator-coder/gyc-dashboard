@@ -101,28 +101,45 @@ async function sync() {
   }
   console.log(`Found ${canceledSubs.length} canceled subs in last 30 days`)
 
-  // Calculate MRR and build customer list
+  // Calculate total MRR and aggregate at the customer level
   let mrr = 0
-  const customers = []
+  const customersById = new Map()
 
   for (const sub of allSubscriptions) {
     const subMrr = calcSubMrr(sub)
     mrr += subMrr
 
     const customer = sub.customer
-    customers.push({
-      id: typeof customer === 'string' ? customer : customer.id,
-      name: typeof customer === 'object' ? (customer.name || customer.email || 'Unknown') : 'Unknown',
-      email: typeof customer === 'object' ? customer.email : null,
-      status: sub._syncStatus,
-      mrr: subMrr,
-      createdAt: new Date(sub.created * 1000)
-    })
+    const id = typeof customer === 'string' ? customer : customer.id
+    const name = typeof customer === 'object' ? (customer.name || customer.email || 'Unknown') : 'Unknown'
+    const email = typeof customer === 'object' ? customer.email : null
+    const createdAt = new Date(sub.created * 1000)
+
+    const existing = customersById.get(id)
+    if (!existing) {
+      customersById.set(id, {
+        id,
+        name,
+        email,
+        status: sub._syncStatus,
+        mrr: subMrr,
+        createdAt,
+      })
+      continue
+    }
+
+    existing.mrr += subMrr
+    if (createdAt < existing.createdAt) existing.createdAt = createdAt
+    if (existing.status !== 'active' && sub._syncStatus === 'active') existing.status = 'active'
+    else if (existing.status === 'trialing' && sub._syncStatus === 'past_due') existing.status = 'past_due'
   }
 
-  // Count distinct customers (not subscriptions) — one client may have multiple subs
+  const customers = Array.from(customersById.values())
+
+  // Count distinct customers (not subscriptions)
   const newSubsWindow = allSubscriptions.filter(s => s.created >= thirtyDaysAgo)
-  const newCustomers = new Set(newSubsWindow.map(s => s.customer)).size
+  const newCustomerIds = new Set(newSubsWindow.map(s => typeof s.customer === 'string' ? s.customer : s.customer.id))
+  const newCustomers = newCustomerIds.size
 
   // Clear old customer data and insert fresh
   console.log('Clearing old data...')
