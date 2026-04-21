@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
  *   + ActivityLog + ClientFunnelMonth + unlinked call detection
  *
  * PATCH /api/clients/[acronym]/profile
- *   Update teamNotes. Body: { teamNotes: string }
+ *   Update editable client-card fields, including notes and enrollment snapshot values.
  */
 
 import { NextResponse } from 'next/server'
@@ -40,6 +40,29 @@ function calcSubscriptionMrr(sub) {
 
     return sum + monthly
   }, 0)
+}
+
+function hasOwn(obj, key) {
+  return Object.prototype.hasOwnProperty.call(obj, key)
+}
+
+function parseNullableNumber(value, { label, integer = false } = {}) {
+  if (value === null || value === '') return null
+
+  const parsed = typeof value === 'number' ? value : Number(String(value).trim())
+  if (!Number.isFinite(parsed)) {
+    const err = new Error(`${label || 'Value'} must be a valid number.`)
+    err.status = 400
+    throw err
+  }
+
+  if (integer && !Number.isInteger(parsed)) {
+    const err = new Error(`${label || 'Value'} must be a whole number.`)
+    err.status = 400
+    throw err
+  }
+
+  return integer ? parsed : parsed
 }
 
 // All ZoomCall columns we want to surface on the client card
@@ -218,6 +241,9 @@ export async function GET(_request, { params }) {
       mrr:                  profileRow.mrr                  != null ? Number(profileRow.mrr)                  : null,
       overdueAmount:        profileRow.overdueAmount        != null ? Number(profileRow.overdueAmount)        : null,
       lifetimeValue:        profileRow.lifetimeValue        != null ? Number(profileRow.lifetimeValue)        : null,
+      currentEnrollment:    profileRow.currentEnrollment    != null ? Number(profileRow.currentEnrollment)    : null,
+      centerCapacity:       profileRow.centerCapacity       != null ? Number(profileRow.centerCapacity)       : null,
+      avgTuition:           profileRow.avgTuition           != null ? Number(profileRow.avgTuition)           : null,
       catchUpRate:          profileRow.catchUpRate          != null ? Number(profileRow.catchUpRate)          : null,
       avgMonthlyLeads:      profileRow.avgMonthlyLeads      != null ? Number(profileRow.avgMonthlyLeads)      : null,
       avgMonthlyTours:      profileRow.avgMonthlyTours      != null ? Number(profileRow.avgMonthlyTours)      : null,
@@ -349,6 +375,20 @@ export async function PATCH(request, { params }) {
     if (typeof body.crmNotes === 'string') {
       sets.push(`"crmNotes" = $${idx++}`)
       vals.push(body.crmNotes)
+    }
+
+    // Enrollment snapshot fields — any authenticated user
+    if (hasOwn(body, 'currentEnrollment')) {
+      sets.push(`"currentEnrollment" = $${idx++}`)
+      vals.push(parseNullableNumber(body.currentEnrollment, { label: 'Current enrollment', integer: true }))
+    }
+    if (hasOwn(body, 'centerCapacity')) {
+      sets.push(`"centerCapacity" = $${idx++}`)
+      vals.push(parseNullableNumber(body.centerCapacity, { label: 'Center capacity', integer: true }))
+    }
+    if (hasOwn(body, 'avgTuition')) {
+      sets.push(`"avgTuition" = $${idx++}`)
+      vals.push(parseNullableNumber(body.avgTuition, { label: 'Avg tuition' }))
     }
 
     // Service toggles — any authenticated user

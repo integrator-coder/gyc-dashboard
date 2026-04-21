@@ -24,6 +24,20 @@ function fmt$(v) {
   }).format(Number(v))
 }
 
+function fmtMoney(v, opts = {}) {
+  if (v == null) return '—'
+  const n = Number(v)
+  return Number.isNaN(n)
+    ? '—'
+    : new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+        ...opts,
+      }).format(n)
+}
+
 function fmtDate(v) {
   if (!v) return '—'
   try {
@@ -42,6 +56,47 @@ function fmtPct(v) {
 function fmtNum(v) {
   if (v == null) return '—'
   return new Intl.NumberFormat('en-US').format(Number(v))
+}
+
+function toFiniteNumber(v) {
+  if (v == null || v === '') return null
+  const n = Number(v)
+  return Number.isFinite(n) ? n : null
+}
+
+function getEnrollmentMetrics(source) {
+  const currentEnrollment = toFiniteNumber(source?.currentEnrollment)
+  const centerCapacity = toFiniteNumber(source?.centerCapacity)
+  const avgTuition = toFiniteNumber(source?.avgTuition)
+  const hasAllSourceNumbers = [currentEnrollment, centerCapacity, avgTuition].every((v) => v != null)
+
+  if (!hasAllSourceNumbers) {
+    return {
+      currentEnrollment,
+      centerCapacity,
+      avgTuition,
+      hasAllSourceNumbers: false,
+      enrollmentGap: null,
+      monthlyOpportunity: null,
+      annualOpportunity: null,
+      isFull: false,
+    }
+  }
+
+  const enrollmentGap = Math.max(centerCapacity - currentEnrollment, 0)
+  const monthlyOpportunity = enrollmentGap * avgTuition
+  const annualOpportunity = monthlyOpportunity * 12
+
+  return {
+    currentEnrollment,
+    centerCapacity,
+    avgTuition,
+    hasAllSourceNumbers: true,
+    enrollmentGap,
+    monthlyOpportunity,
+    annualOpportunity,
+    isFull: enrollmentGap === 0,
+  }
 }
 
 function fmtMonth(v) {
@@ -98,11 +153,11 @@ function Card({ children, className = '' }) {
   )
 }
 
-function StatBox({ label, value, sub, warn, big }) {
+function StatBox({ label, value, sub, warn, big, cardClassName = '', valueClassName = '' }) {
   return (
-    <Card>
+    <Card className={cardClassName}>
       <div className="text-[11px] uppercase tracking-wider text-gray-400">{label}</div>
-      <div className={`mt-1 font-bold ${big ? 'text-3xl' : 'text-xl'} ${warn ? 'text-rose-300' : 'text-white'}`}>
+      <div className={`mt-1 font-bold ${big ? 'text-3xl' : 'text-xl'} ${warn ? 'text-rose-300' : 'text-white'} ${valueClassName}`}>
         {value ?? '—'}
       </div>
       {sub && <div className="mt-0.5 text-xs text-gray-400">{sub}</div>}
@@ -426,6 +481,14 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount,
           </div>
         </Card>
       </div>
+
+      <EnrollmentSnapshotSection
+        title="Enrollment Snapshot"
+        note="Growth Advisors update these figures during monthly client meetings."
+        profile={profile}
+        acronym={acronym}
+        onRefresh={onRefresh}
+      />
 
       {/* This Month Funnel */}
       <div>
@@ -1448,7 +1511,7 @@ function GBPTab({ profile, acronym, user }) {
 
 // ── Tab 6: CRM ────────────────────────────────────────────────────────────────
 
-function CRMTab({ profile, acronym, funnelByLocation = [], locations = [], funnelAggregate = [] }) {
+function CRMTab({ profile, acronym, funnelByLocation = [], locations = [], funnelAggregate = [], onRefresh }) {
   const [openLocs, setOpenLocs] = useState(locations.length > 0 ? [locations[0]] : [])
 
   function toggleLoc(loc) {
@@ -1467,6 +1530,13 @@ function CRMTab({ profile, acronym, funnelByLocation = [], locations = [], funne
 
   return (
     <div className="space-y-6">
+
+      <EnrollmentSnapshotSection
+        title="Enrollment & Revenue Opportunity"
+        profile={profile}
+        acronym={acronym}
+        onRefresh={onRefresh}
+      />
 
       {/* ── Section 1: CRM Platform ── */}
       <div>
@@ -1695,7 +1765,7 @@ function BlueprintTab({ profile }) {
             <InfoRow label="Owner"         value={profile.ownerName} />
             <InfoRow label="Locations"     value={profile.locationCount ? `${profile.locationCount}` : null} />
             <InfoRow label="Enrollment"    value={profile.currentEnrollment} />
-            <InfoRow label="Avg tuition"   value={profile.avgTuition ? fmt$(profile.avgTuition) : null} />
+            <InfoRow label="Avg tuition"   value={profile.avgTuition ? fmtMoney(profile.avgTuition) : null} />
           </div>
         </Card>
       </div>
@@ -1799,6 +1869,177 @@ function EditableNotes({ label, value, field, acronym, placeholder }) {
           {err   && <span className="text-sm text-rose-400">{err}</span>}
         </div>
       </Card>
+    </div>
+  )
+}
+
+function EnrollmentSnapshotSection({ title, note, profile, acronym, onRefresh, editable = true }) {
+  const [form, setForm] = useState({
+    currentEnrollment: profile.currentEnrollment ?? '',
+    centerCapacity: profile.centerCapacity ?? '',
+    avgTuition: profile.avgTuition ?? '',
+  })
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [err, setErr] = useState('')
+  const timer = useRef(null)
+
+  useEffect(() => {
+    setForm({
+      currentEnrollment: profile.currentEnrollment ?? '',
+      centerCapacity: profile.centerCapacity ?? '',
+      avgTuition: profile.avgTuition ?? '',
+    })
+  }, [profile.currentEnrollment, profile.centerCapacity, profile.avgTuition])
+
+  const metrics = getEnrollmentMetrics(form)
+  const currentEnrollmentInvalid = form.currentEnrollment !== '' && (!Number.isFinite(Number(form.currentEnrollment)) || !Number.isInteger(Number(form.currentEnrollment)))
+  const centerCapacityInvalid = form.centerCapacity !== '' && (!Number.isFinite(Number(form.centerCapacity)) || !Number.isInteger(Number(form.centerCapacity)))
+  const avgTuitionInvalid = form.avgTuition !== '' && !Number.isFinite(Number(form.avgTuition))
+
+  const validationError = currentEnrollmentInvalid
+    ? 'Current Enrollment must be a whole number.'
+    : centerCapacityInvalid
+      ? 'Capacity must be a whole number.'
+      : avgTuitionInvalid
+        ? 'Avg Tuition must be a valid number.'
+        : ''
+
+  const dirty =
+    String(form.currentEnrollment) !== String(profile.currentEnrollment ?? '') ||
+    String(form.centerCapacity) !== String(profile.centerCapacity ?? '') ||
+    String(form.avgTuition) !== String(profile.avgTuition ?? '')
+
+  const hasOpportunity = metrics.hasAllSourceNumbers && metrics.enrollmentGap > 0
+
+  async function save() {
+    if (!editable || !dirty) return
+    if (validationError) {
+      setErr(validationError)
+      return
+    }
+
+    setSaving(true)
+    setErr('')
+    try {
+      const res = await fetch(`/api/clients/${acronym}/profile`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentEnrollment: form.currentEnrollment === '' ? null : Number(form.currentEnrollment),
+          centerCapacity: form.centerCapacity === '' ? null : Number(form.centerCapacity),
+          avgTuition: form.avgTuition === '' ? null : Number(form.avgTuition),
+        }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(json.error || 'Failed to save enrollment snapshot')
+      setSaved(true)
+      clearTimeout(timer.current)
+      timer.current = setTimeout(() => setSaved(false), 2500)
+      await onRefresh?.()
+    } catch (e) {
+      setErr(e.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function updateField(field, value) {
+    setErr('')
+    setForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  function EditableMetricCard({ label, field, sub, type = 'number', step = '1', placeholder }) {
+    return (
+      <Card>
+        <div className="text-[11px] uppercase tracking-wider text-gray-400">{label}</div>
+        <input
+          type={type}
+          step={step}
+          value={form[field]}
+          onChange={(e) => updateField(field, e.target.value)}
+          placeholder={placeholder}
+          className="mt-2 w-full rounded-xl border border-[var(--brand-border)] bg-black/40 px-3 py-2 text-lg font-semibold text-white placeholder-gray-600 focus:border-violet-500/50 focus:outline-none"
+        />
+        <div className="mt-1 text-xs text-gray-500">{sub}</div>
+      </Card>
+    )
+  }
+
+  return (
+    <div>
+      <SectionTitle>{title}</SectionTitle>
+      <div className="space-y-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {editable ? (
+            <>
+              <EditableMetricCard
+                label="Capacity"
+                field="centerCapacity"
+                sub="Licensed capacity"
+                placeholder="e.g. 126"
+              />
+              <EditableMetricCard
+                label="Current Enrollment"
+                field="currentEnrollment"
+                sub="Currently enrolled children"
+                placeholder="e.g. 97"
+              />
+              <EditableMetricCard
+                label="Avg Tuition"
+                field="avgTuition"
+                sub="Average monthly tuition"
+                step="0.01"
+                placeholder="e.g. 1450"
+              />
+            </>
+          ) : (
+            <>
+              <StatBox label="Capacity" value={fmtNum(profile.centerCapacity)} sub="Licensed capacity" />
+              <StatBox label="Current Enrollment" value={fmtNum(profile.currentEnrollment)} sub="Currently enrolled children" />
+              <StatBox label="Avg Tuition" value={fmtMoney(profile.avgTuition)} sub="Average monthly tuition" />
+            </>
+          )}
+
+          <StatBox
+            label="Enrollment Gap"
+            value={!metrics.hasAllSourceNumbers ? '—' : metrics.isFull ? 'Full' : fmtNum(metrics.enrollmentGap)}
+            sub={!metrics.hasAllSourceNumbers ? 'Add all 3 inputs to calculate' : metrics.isFull ? 'At capacity' : 'Open seats available'}
+            cardClassName={metrics.hasAllSourceNumbers && metrics.isFull ? 'border-white/10 bg-black/20' : ''}
+            valueClassName={metrics.hasAllSourceNumbers && metrics.isFull ? 'text-gray-200' : metrics.hasAllSourceNumbers ? 'text-amber-300' : ''}
+          />
+          <StatBox
+            label="Monthly Opportunity"
+            value={metrics.hasAllSourceNumbers ? fmtMoney(metrics.monthlyOpportunity) : '—'}
+            sub="Enrollment Gap × Avg Tuition"
+            cardClassName={hasOpportunity ? 'border-amber-500/30 bg-amber-500/10' : ''}
+            valueClassName={hasOpportunity ? 'text-amber-300' : ''}
+          />
+          <StatBox
+            label="Annual Opportunity"
+            value={metrics.hasAllSourceNumbers ? fmtMoney(metrics.annualOpportunity) : '—'}
+            sub="Monthly Opportunity × 12"
+            cardClassName={hasOpportunity ? 'border-emerald-500/30 bg-emerald-500/10' : ''}
+            valueClassName={hasOpportunity ? 'text-emerald-300' : ''}
+          />
+        </div>
+
+        {editable && (
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={save}
+              disabled={saving || !dirty}
+              className="rounded-xl border border-violet-500/40 bg-violet-500/15 px-4 py-2 text-sm font-medium text-violet-300 hover:bg-violet-500/25 disabled:opacity-50 transition"
+            >
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+            {saved && <span className="text-sm text-emerald-400">✓ Saved</span>}
+            {(err || validationError) && <span className="text-sm text-rose-400">{err || validationError}</span>}
+          </div>
+        )}
+
+        {note && <div className="text-xs text-gray-500">{note}</div>}
+      </div>
     </div>
   )
 }
@@ -2240,11 +2481,13 @@ export default function ClientCard({ acronym, user }) {
           </div>
 
           {/* Quick stats */}
-          <div className="grid grid-cols-3 gap-3 text-center lg:w-72">
-            <div className="rounded-2xl border border-[var(--brand-border)] bg-black/30 px-3 py-3">
-              <div className="text-[11px] text-gray-400 uppercase tracking-wide">MRR</div>
-              <div className="mt-1 text-lg font-bold text-white">{profile.mrr ? fmt$(profile.mrr) : '—'}</div>
-            </div>
+          <div className={`grid gap-3 text-center ${currentTab === 'overview' ? 'grid-cols-2 lg:w-48' : 'grid-cols-3 lg:w-72'}`}>
+            {currentTab !== 'overview' && (
+              <div className="rounded-2xl border border-[var(--brand-border)] bg-black/30 px-3 py-3">
+                <div className="text-[11px] text-gray-400 uppercase tracking-wide">MRR</div>
+                <div className="mt-1 text-lg font-bold text-white">{profile.mrr ? fmt$(profile.mrr) : '—'}</div>
+              </div>
+            )}
             <div className="rounded-2xl border border-[var(--brand-border)] bg-black/30 px-3 py-3">
               <div className="text-[11px] text-gray-400 uppercase tracking-wide">Locations</div>
               <div className="mt-1 text-lg font-bold text-white">{profile.locationCount || '—'}</div>
@@ -2297,6 +2540,7 @@ export default function ClientCard({ acronym, user }) {
             funnelByLocation={funnelByLocation}
             funnelAggregate={funnelAggregate}
             locations={locations}
+            onRefresh={load}
           />
         )}
         {currentTab === 'blueprint' && (
