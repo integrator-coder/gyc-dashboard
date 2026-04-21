@@ -1740,21 +1740,84 @@ function CRMTab({ profile, acronym, funnelByLocation = [], locations = [], gbpLo
                   {locationNames.map(loc => {
                     const r = getLatest(loc)
                     const locationRecord = getLocationRecord(loc)
-                    const locationMetrics = getLocationEnrollmentMetrics(locationRecord)
+                    const savedMetrics = getLocationEnrollmentMetrics(locationRecord)
+                    const form = getLocationForm(loc)
+                    const editMetrics = getLocationEnrollmentMetrics({
+                      capacity: form.capacity,
+                      currentEnrollment: form.currentEnrollment,
+                      avgTuition: form.avgTuition,
+                    })
+                    const key = normalizeLocationKey(loc)
+                    const validationError = getLocationValidationError(form)
+                    const isSaving = savingLocationKey === key
+                    const isSaved = savedLocationKey === key
+                    const error = locationErrors[key]
+                    const dirty = isLocationDirty(loc)
+
                     return (
-                      <tr key={loc} className="hover:bg-white/[0.02] transition">
-                        <td className="px-4 py-2.5 font-semibold text-white">{loc}</td>
-                        <td className="px-3 py-2.5 text-center" style={{ color: '#6366f1' }}>{r ? r.leads : '—'}</td>
-                        <td className="px-3 py-2.5 text-center" style={{ color: '#C19C46' }}>{r ? r.tours : '—'}</td>
-                        <td className="px-3 py-2.5 text-center" style={{ color: '#10b981' }}>{r ? r.registered : '—'}</td>
-                        <td className="px-3 py-2.5 text-center" style={{ color: '#06b6d4' }}>{r ? `${r.tourRate}%` : '—'}</td>
-                        <td className="px-3 py-2.5 text-center" style={{ color: '#731494' }}>{r ? `${r.closeRate}%` : '—'}</td>
-                        <td className="px-3 py-2.5 text-center" style={{ color: '#C19C46' }}>{r ? `${r.convRate}%` : '—'}</td>
-                        <td className="px-3 py-2.5 text-center text-gray-200">{fmtNum(locationRecord?.capacity)}</td>
-                        <td className="px-3 py-2.5 text-center text-gray-200">{fmtNum(locationRecord?.currentEnrollment)}</td>
-                        <td className="px-3 py-2.5 text-center text-gray-200">{fmtMoney(locationRecord?.avgTuition)}</td>
-                        <td className="px-3 py-2.5 text-center text-amber-300">{locationMetrics.hasAllSourceNumbers ? fmtMoney(locationMetrics.monthlyOpportunity) : '—'}</td>
-                      </tr>
+                      <React.Fragment key={loc}>
+                        <tr className="hover:bg-white/[0.02] transition">
+                          <td className="px-4 py-2.5 font-semibold text-white">{loc}</td>
+                          <td className="px-3 py-2.5 text-center" style={{ color: '#6366f1' }}>{r ? r.leads : '—'}</td>
+                          <td className="px-3 py-2.5 text-center" style={{ color: '#C19C46' }}>{r ? r.tours : '—'}</td>
+                          <td className="px-3 py-2.5 text-center" style={{ color: '#10b981' }}>{r ? r.registered : '—'}</td>
+                          <td className="px-3 py-2.5 text-center" style={{ color: '#06b6d4' }}>{r ? `${r.tourRate}%` : '—'}</td>
+                          <td className="px-3 py-2.5 text-center" style={{ color: '#731494' }}>{r ? `${r.closeRate}%` : '—'}</td>
+                          <td className="px-3 py-2.5 text-center" style={{ color: '#C19C46' }}>{r ? `${r.convRate}%` : '—'}</td>
+                          <td className="px-3 py-2.5 text-center text-gray-200">{fmtNum(locationRecord?.capacity)}</td>
+                          <td className="px-3 py-2.5 text-center text-gray-200">{fmtNum(locationRecord?.currentEnrollment)}</td>
+                          <td className="px-3 py-2.5 text-center text-gray-200">{fmtMoney(locationRecord?.avgTuition)}</td>
+                          <td className="px-3 py-2.5 text-center text-amber-300">{savedMetrics.hasAllSourceNumbers ? fmtMoney(savedMetrics.monthlyOpportunity) : '—'}</td>
+                        </tr>
+                        <tr className="bg-white/[0.02] align-top">
+                          <td colSpan={7} className="px-4 py-3 text-xs text-gray-400">
+                            <div className="font-medium text-gray-300">Location Enrollment Inputs</div>
+                            <div>Update current live enrollment, capacity, and average tuition here.</div>
+                            {(error || validationError) && <div className="mt-1 text-rose-400">{error || validationError}</div>}
+                            {isSaved && <div className="mt-1 text-emerald-400">✓ Saved</div>}
+                          </td>
+                          <td className="px-2 py-3">
+                            <input
+                              type="number"
+                              step="1"
+                              value={form.capacity}
+                              onChange={(event) => updateLocationForm(loc, 'capacity', event.target.value)}
+                              placeholder="Capacity"
+                              className="w-24 rounded-lg border border-[var(--brand-border)] bg-black/30 px-2 py-1.5 text-sm text-white outline-none focus:border-violet-500/50"
+                            />
+                          </td>
+                          <td className="px-2 py-3">
+                            <input
+                              type="number"
+                              step="1"
+                              value={form.currentEnrollment}
+                              onChange={(event) => updateLocationForm(loc, 'currentEnrollment', event.target.value)}
+                              placeholder="Registrations"
+                              className="w-24 rounded-lg border border-[var(--brand-border)] bg-black/30 px-2 py-1.5 text-sm text-white outline-none focus:border-violet-500/50"
+                            />
+                          </td>
+                          <td className="px-2 py-3">
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={form.avgTuition}
+                              onChange={(event) => updateLocationForm(loc, 'avgTuition', event.target.value)}
+                              placeholder="Ave Tuition"
+                              className="w-28 rounded-lg border border-[var(--brand-border)] bg-black/30 px-2 py-1.5 text-sm text-white outline-none focus:border-violet-500/50"
+                            />
+                          </td>
+                          <td className="px-2 py-3 text-center">
+                            <div className="text-sm font-semibold text-amber-300">{editMetrics.hasAllSourceNumbers ? fmtMoney(editMetrics.monthlyOpportunity) : '—'}</div>
+                            <button
+                              onClick={() => saveLocationMetrics(loc)}
+                              disabled={isSaving || !dirty}
+                              className="mt-2 rounded-lg border border-violet-500/40 bg-violet-500/15 px-3 py-1.5 text-xs font-medium text-violet-300 hover:bg-violet-500/25 disabled:opacity-50 transition"
+                            >
+                              {isSaving ? 'Saving…' : 'Save'}
+                            </button>
+                          </td>
+                        </tr>
+                      </React.Fragment>
                     )
                   })}
                 </tbody>
