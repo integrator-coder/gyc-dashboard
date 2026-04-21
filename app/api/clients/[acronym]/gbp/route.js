@@ -12,9 +12,9 @@ import { NextResponse } from 'next/server'
 import { requireApiUser } from '@/lib/auth'
 import { pool } from '@/lib/pg'
 
-export async function GET(req, { params }) {
-  const user = await requireApiUser(req)
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export async function GET(_req, { params }) {
+  const auth = await requireApiUser(['ga', 'cx', 'admin', 'superadmin'])
+  if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
   const { acronym } = await params
 
@@ -44,6 +44,9 @@ export async function GET(req, { params }) {
       )
       return {
         ...loc,
+        capacity: loc.capacity != null ? Number(loc.capacity) : null,
+        currentEnrollment: loc.currentEnrollment != null ? Number(loc.currentEnrollment) : null,
+        avgTuition: loc.avgTuition != null ? Number(loc.avgTuition) : null,
         latestAudit: audits[0] ?? null,
         latestSnapshot: snapshots[0] ?? null,
       }

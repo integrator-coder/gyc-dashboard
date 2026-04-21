@@ -223,7 +223,7 @@ export async function GET(_request, { params }) {
         : Promise.resolve({ rows: [{ count: 0 }] }),
 
       pool.query(`
-        SELECT id, "locationName", address, city, state, "gbpUrl", "isActive"
+        SELECT id, "locationName", address, city, state, "gbpUrl", "isActive", capacity, "currentEnrollment", "avgTuition"
         FROM "GBPLocation"
         WHERE "tenantId" = 'gyc' AND "clientAcronym" = $1
         ORDER BY "locationName" ASC
@@ -316,6 +316,13 @@ export async function GET(_request, { params }) {
       }
     }
 
+    const gbpLocations = gbpLocationsRes.rows.map((row) => ({
+      ...row,
+      capacity: row.capacity != null ? Number(row.capacity) : null,
+      currentEnrollment: row.currentEnrollment != null ? Number(row.currentEnrollment) : null,
+      avgTuition: row.avgTuition != null ? Number(row.avgTuition) : null,
+    }))
+
     return NextResponse.json({
       profile: { ...profile, mrr: liveMrr || profile.mrr, lifetimeValue: finalLtv },
       // All calls (classified + pending) for the tab
@@ -327,8 +334,8 @@ export async function GET(_request, { params }) {
       funnelHistory:    funnelRes.rows,
       funnelByLocation: funnelByLocationRes.rows,
       funnelAggregate:  funnelAggregateRes.rows,
-      locations:        [...new Set(funnelByLocationRes.rows.map(r => r.locationName))],
-      gbpLocations:     gbpLocationsRes.rows,
+      locations:        [...new Set([...funnelByLocationRes.rows.map((r) => r.locationName), ...gbpLocations.map((r) => r.locationName)].filter(Boolean))],
+      gbpLocations,
       // Auto-classification banner
       potentialUnlinkedCount: Number(potentialCallsRes.rows[0]?.count || 0),
       // Recent Stripe payments

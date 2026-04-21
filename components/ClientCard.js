@@ -64,6 +64,10 @@ function toFiniteNumber(v) {
   return Number.isFinite(n) ? n : null
 }
 
+function normalizeLocationKey(value) {
+  return String(value || '').trim().toLowerCase()
+}
+
 function getEnrollmentMetrics(source) {
   const currentEnrollment = toFiniteNumber(source?.currentEnrollment)
   const centerCapacity = toFiniteNumber(source?.centerCapacity)
@@ -97,6 +101,14 @@ function getEnrollmentMetrics(source) {
     annualOpportunity,
     isFull: enrollmentGap === 0,
   }
+}
+
+function getLocationEnrollmentMetrics(location) {
+  return getEnrollmentMetrics({
+    currentEnrollment: location?.currentEnrollment,
+    centerCapacity: location?.capacity,
+    avgTuition: location?.avgTuition,
+  })
 }
 
 function fmtMonth(v) {
@@ -1511,22 +1523,163 @@ function GBPTab({ profile, acronym, user }) {
 
 // ── Tab 6: CRM ────────────────────────────────────────────────────────────────
 
-function CRMTab({ profile, acronym, funnelByLocation = [], locations = [], funnelAggregate = [], onRefresh }) {
-  const [openLocs, setOpenLocs] = useState(locations.length > 0 ? [locations[0]] : [])
+function CRMTab({ profile, acronym, funnelByLocation = [], locations = [], gbpLocations = [], funnelAggregate = [], onRefresh }) {
+  const locationNames = useMemo(() => {
+    const ordered = []
+    const seen = new Set()
+
+    for (const name of [
+      ...locations,
+      ...funnelByLocation.map((row) => row.locationName),
+      ...gbpLocations.map((location) => location.locationName),
+    ]) {
+      const key = normalizeLocationKey(name)
+      if (!key || seen.has(key)) continue
+      seen.add(key)
+      ordered.push(name)
+    }
+
+    return ordered
+  }, [locations, funnelByLocation, gbpLocations])
+
+  const [openLocs, setOpenLocs] = useState(locationNames.length > 0 ? [locationNames[0]] : [])
+  const [locationForms, setLocationForms] = useState({})
+  const [savingLocationKey, setSavingLocationKey] = useState('')
+  const [savedLocationKey, setSavedLocationKey] = useState('')
+  const [locationErrors, setLocationErrors] = useState({})
+  const saveTimer = useRef(null)
+
+  useEffect(() => {
+    if (locationNames.length === 0) {
+      setOpenLocs([])
+      return
+    }
+
+    setOpenLocs((prev) => {
+      const next = prev.filter((loc) => locationNames.some((name) => normalizeLocationKey(name) === normalizeLocationKey(loc)))
+      return next.length > 0 ? next : [locationNames[0]]
+    })
+  }, [locationNames])
+
+  useEffect(() => {
+    const nextForms = {}
+    for (const name of locationNames) {
+      const match = gbpLocations.find((location) => normalizeLocationKey(location.locationName) === normalizeLocationKey(name))
+      nextForms[normalizeLocationKey(name)] = {
+        capacity: match?.capacity ?? '',
+        currentEnrollment: match?.currentEnrollment ?? '',
+        avgTuition: match?.avgTuition ?? '',
+      }
+    }
+    setLocationForms(nextForms)
+  }, [locationNames, gbpLocations])
+
+  useEffect(() => () => clearTimeout(saveTimer.current), [])
 
   function toggleLoc(loc) {
     setOpenLocs(prev => prev.includes(loc) ? prev.filter(l => l !== loc) : [...prev, loc])
   }
 
-  // Group rows by locationName (already DESC by month → index 0 = latest)
   const byLoc = {}
   for (const row of funnelByLocation) {
     if (!byLoc[row.locationName]) byLoc[row.locationName] = []
     byLoc[row.locationName].push(row)
   }
 
+  const gbpByKey = useMemo(() => {
+    const map = {}
+    for (const location of gbpLocations) {
+      map[normalizeLocationKey(location.locationName)] = location
+    }
+    return map
+  }, [gbpLocations])
+
   function getLatest(loc) { return (byLoc[loc] || [])[0] || null }
   function getLast12(loc)  { return (byLoc[loc] || []).slice(0, 12).reverse() }
+  function getLocationRecord(loc) { return gbpByKey[normalizeLocationKey(loc)] || null }
+  function getLocationForm(loc) {
+    return locationForms[normalizeLocationKey(loc)] || {
+      capacity: '',
+      currentEnrollment: '',
+      avgTuition: '',
+    }
+  }
+
+  function updateLocationForm(loc, field, value) {
+    const key = normalizeLocationKey(loc)
+    setLocationErrors((prev) => ({ ...prev, [key]: '' }))
+    setLocationForms((prev) => ({
+      ...prev,
+      [key]: {
+        ...(prev[key] || { capacity: '', currentEnrollment: '', avgTuition: '' }),
+        [field]: value,
+      },
+    }))
+  }
+
+  function getLocationValidationError(form) {
+    if (form.currentEnrollment !== '' && (!Number.isFinite(Number(form.currentEnrollment)) || !Number.isInteger(Number(form.currentEnrollment)))) {
+      return 'Registrations must be a whole number.'
+    }
+    if (form.capacity !== '' && (!Number.isFinite(Number(form.capacity)) || !Number.isInteger(Number(form.capacity)))) {
+      return 'Capacity must be a whole number.'
+    }
+    if (form.avgTuition !== '' && !Number.isFinite(Number(form.avgTuition))) {
+      return 'Ave Tuition must be a valid number.'
+    }
+    return ''
+  }
+
+  function isLocationDirty(loc) {
+    const form = getLocationForm(loc)
+    const record = getLocationRecord(loc)
+    return (
+      String(form.capacity) !== String(record?.capacity ?? '') ||
+      String(form.currentEnrollment) !== String(record?.currentEnrollment ?? '') ||
+      String(form.avgTuition) !== String(record?.avgTuition ?? '')
+    )
+  }
+
+  async function saveLocationMetrics(loc) {
+    const key = normalizeLocationKey(loc)
+    const form = getLocationForm(loc)
+    const validationError = getLocationValidationError(form)
+
+    if (validationError) {
+      setLocationErrors((prev) => ({ ...prev, [key]: validationError }))
+      return
+    }
+
+    setSavingLocationKey(key)
+    setSavedLocationKey('')
+    setLocationErrors((prev) => ({ ...prev, [key]: '' }))
+
+    try {
+      const record = getLocationRecord(loc)
+      const res = await fetch(`/api/clients/${acronym}/gbp/locations`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          locationId: record?.id ?? null,
+          locationName: record?.locationName || loc,
+          capacity: form.capacity === '' ? null : Number(form.capacity),
+          currentEnrollment: form.currentEnrollment === '' ? null : Number(form.currentEnrollment),
+          avgTuition: form.avgTuition === '' ? null : Number(form.avgTuition),
+        }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(json.error || 'Failed to save location metrics')
+
+      setSavedLocationKey(key)
+      clearTimeout(saveTimer.current)
+      saveTimer.current = setTimeout(() => setSavedLocationKey(''), 2500)
+      await onRefresh?.()
+    } catch (error) {
+      setLocationErrors((prev) => ({ ...prev, [key]: error.message || 'Failed to save location metrics' }))
+    } finally {
+      setSavingLocationKey('')
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -1551,7 +1704,7 @@ function CRMTab({ profile, acronym, funnelByLocation = [], locations = [], funne
       </div>
 
       {/* ── Section 2 + 3: Location Data ── */}
-      {locations.length === 0 ? (
+      {locationNames.length === 0 ? (
         <div>
           <SectionTitle>Location Data</SectionTitle>
           <Empty>No location data available yet.</Empty>
@@ -1577,11 +1730,17 @@ function CRMTab({ profile, acronym, funnelByLocation = [], locations = [], funne
                     <th className="px-3 py-2.5 text-center" style={{ color: '#06b6d4' }}>Tour Rate</th>
                     <th className="px-3 py-2.5 text-center" style={{ color: '#731494' }}>Close Rate</th>
                     <th className="px-3 py-2.5 text-center" style={{ color: '#C19C46' }}>Conv Rate</th>
+                    <th className="px-3 py-2.5 text-center">Capacity</th>
+                    <th className="px-3 py-2.5 text-center">Registrations</th>
+                    <th className="px-3 py-2.5 text-center">Ave Tuition</th>
+                    <th className="px-3 py-2.5 text-center">MLoT</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {locations.map(loc => {
+                  {locationNames.map(loc => {
                     const r = getLatest(loc)
+                    const locationRecord = getLocationRecord(loc)
+                    const locationMetrics = getLocationEnrollmentMetrics(locationRecord)
                     return (
                       <tr key={loc} className="hover:bg-white/[0.02] transition">
                         <td className="px-4 py-2.5 font-semibold text-white">{loc}</td>
@@ -1591,6 +1750,10 @@ function CRMTab({ profile, acronym, funnelByLocation = [], locations = [], funne
                         <td className="px-3 py-2.5 text-center" style={{ color: '#06b6d4' }}>{r ? `${r.tourRate}%` : '—'}</td>
                         <td className="px-3 py-2.5 text-center" style={{ color: '#731494' }}>{r ? `${r.closeRate}%` : '—'}</td>
                         <td className="px-3 py-2.5 text-center" style={{ color: '#C19C46' }}>{r ? `${r.convRate}%` : '—'}</td>
+                        <td className="px-3 py-2.5 text-center text-gray-200">{fmtNum(locationRecord?.capacity)}</td>
+                        <td className="px-3 py-2.5 text-center text-gray-200">{fmtNum(locationRecord?.currentEnrollment)}</td>
+                        <td className="px-3 py-2.5 text-center text-gray-200">{fmtMoney(locationRecord?.avgTuition)}</td>
+                        <td className="px-3 py-2.5 text-center text-amber-300">{locationMetrics.hasAllSourceNumbers ? fmtMoney(locationMetrics.monthlyOpportunity) : '—'}</td>
                       </tr>
                     )
                   })}
@@ -1603,9 +1766,21 @@ function CRMTab({ profile, acronym, funnelByLocation = [], locations = [], funne
           <div>
             <SectionTitle>Location Trendlines</SectionTitle>
             <div className="space-y-3">
-              {locations.map((loc) => {
+              {locationNames.map((loc) => {
                 const isOpen = openLocs.includes(loc)
                 const data12 = getLast12(loc)
+                const key = normalizeLocationKey(loc)
+                const form = getLocationForm(loc)
+                const validationError = getLocationValidationError(form)
+                const locationMetrics = getLocationEnrollmentMetrics({
+                  capacity: form.capacity,
+                  currentEnrollment: form.currentEnrollment,
+                  avgTuition: form.avgTuition,
+                })
+                const isSaving = savingLocationKey === key
+                const isSaved = savedLocationKey === key
+                const error = locationErrors[key]
+                const dirty = isLocationDirty(loc)
                 return (
                   <div key={loc} className="overflow-hidden rounded-2xl border border-[var(--brand-border)] bg-black/20">
                     <button
@@ -1616,12 +1791,81 @@ function CRMTab({ profile, acronym, funnelByLocation = [], locations = [], funne
                       <span className={`text-lg text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`}>›</span>
                     </button>
                     {isOpen && (
-                      <div className="border-t border-[var(--brand-border)] px-4 pb-4 pt-3">
+                      <div className="border-t border-[var(--brand-border)] px-4 pb-4 pt-3 space-y-4">
+                        <div className="rounded-2xl border border-[var(--brand-border)] bg-black/30 p-4">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <div className="text-sm font-semibold text-white">Location Enrollment Inputs</div>
+                              <div className="mt-1 text-xs text-gray-400">Registrations means current live enrollment at this center.</div>
+                            </div>
+                            <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-right">
+                              <div className="text-[11px] uppercase tracking-wide text-amber-200/70">MLoT</div>
+                              <div className="text-sm font-semibold text-amber-300">
+                                {locationMetrics.hasAllSourceNumbers ? fmtMoney(locationMetrics.monthlyOpportunity) : '—'}
+                              </div>
+                              <div className="text-[11px] text-amber-200/60">Monthly Left on the Table</div>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+                            <div>
+                              <label className="mb-1 block text-xs text-gray-400">Capacity</label>
+                              <input
+                                type="number"
+                                step="1"
+                                value={form.capacity}
+                                onChange={(event) => updateLocationForm(loc, 'capacity', event.target.value)}
+                                placeholder="e.g. 126"
+                                className={INPUT_CLS}
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1 block text-xs text-gray-400">Registrations</label>
+                              <input
+                                type="number"
+                                step="1"
+                                value={form.currentEnrollment}
+                                onChange={(event) => updateLocationForm(loc, 'currentEnrollment', event.target.value)}
+                                placeholder="e.g. 97"
+                                className={INPUT_CLS}
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1 block text-xs text-gray-400">Ave Tuition</label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={form.avgTuition}
+                                onChange={(event) => updateLocationForm(loc, 'avgTuition', event.target.value)}
+                                placeholder="e.g. 1450"
+                                className={INPUT_CLS}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+                            <StatBox label="Open Seats" value={!locationMetrics.hasAllSourceNumbers ? '—' : locationMetrics.isFull ? 'Full' : fmtNum(locationMetrics.enrollmentGap)} sub={!locationMetrics.hasAllSourceNumbers ? 'Add all 3 inputs to calculate' : locationMetrics.isFull ? 'At capacity' : 'Capacity - registrations'} />
+                            <StatBox label="MLoT" value={locationMetrics.hasAllSourceNumbers ? fmtMoney(locationMetrics.monthlyOpportunity) : '—'} sub="Open Seats × Ave Tuition" valueClassName={locationMetrics.hasAllSourceNumbers && locationMetrics.enrollmentGap > 0 ? 'text-amber-300' : ''} />
+                            <StatBox label="Annual Opportunity" value={locationMetrics.hasAllSourceNumbers ? fmtMoney(locationMetrics.annualOpportunity) : '—'} sub="MLoT × 12" valueClassName={locationMetrics.hasAllSourceNumbers && locationMetrics.enrollmentGap > 0 ? 'text-emerald-300' : ''} />
+                          </div>
+
+                          <div className="mt-4 flex flex-wrap items-center gap-3">
+                            <button
+                              onClick={() => saveLocationMetrics(loc)}
+                              disabled={isSaving || !dirty}
+                              className="rounded-xl border border-violet-500/40 bg-violet-500/15 px-4 py-2 text-sm font-medium text-violet-300 hover:bg-violet-500/25 disabled:opacity-50 transition"
+                            >
+                              {isSaving ? 'Saving…' : 'Save'}
+                            </button>
+                            {isSaved && <span className="text-sm text-emerald-400">✓ Saved</span>}
+                            {(error || validationError) && <span className="text-sm text-rose-400">{error || validationError}</span>}
+                          </div>
+                        </div>
+
                         {data12.length === 0 ? (
                           <Empty>No trend data for this location.</Empty>
                         ) : (
                           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                            {/* Volume bar chart */}
                             <div>
                               <div className="mb-2 text-xs font-medium text-gray-400">Volume — Leads / Tours / Enrolled</div>
                               <div style={{ height: 200 }}>
@@ -1635,14 +1879,13 @@ function CRMTab({ profile, acronym, funnelByLocation = [], locations = [], funne
                                       labelStyle={{ color: '#9ca3af' }}
                                       labelFormatter={fmtMonth}
                                     />
-                                    <Bar dataKey="leads"      fill="#6366f1" name="Leads"    radius={[2,2,0,0]} />
-                                    <Bar dataKey="tours"      fill="#C19C46" name="Tours"    radius={[2,2,0,0]} />
+                                    <Bar dataKey="leads" fill="#6366f1" name="Leads" radius={[2,2,0,0]} />
+                                    <Bar dataKey="tours" fill="#C19C46" name="Tours" radius={[2,2,0,0]} />
                                     <Bar dataKey="registered" fill="#10b981" name="Enrolled" radius={[2,2,0,0]} />
                                   </BarChart>
                                 </ResponsiveContainer>
                               </div>
                             </div>
-                            {/* Rate line chart */}
                             <div>
                               <div className="mb-2 text-xs font-medium text-gray-400">Rates — Tour / Close / Conversion</div>
                               <div style={{ height: 200 }}>
@@ -1657,9 +1900,9 @@ function CRMTab({ profile, acronym, funnelByLocation = [], locations = [], funne
                                       labelFormatter={fmtMonth}
                                       formatter={(val) => val != null ? `${val}%` : '—'}
                                     />
-                                    <Line type="monotone" dataKey="tourRate"  stroke="#06b6d4" strokeWidth={2} dot={false} name="Tour Rate"  connectNulls />
+                                    <Line type="monotone" dataKey="tourRate" stroke="#06b6d4" strokeWidth={2} dot={false} name="Tour Rate" connectNulls />
                                     <Line type="monotone" dataKey="closeRate" stroke="#731494" strokeWidth={2} dot={false} name="Close Rate" connectNulls />
-                                    <Line type="monotone" dataKey="convRate"  stroke="#C19C46" strokeWidth={2} dot={false} name="Conv Rate"  connectNulls />
+                                    <Line type="monotone" dataKey="convRate" stroke="#C19C46" strokeWidth={2} dot={false} name="Conv Rate" connectNulls />
                                   </LineChart>
                                 </ResponsiveContainer>
                               </div>
@@ -2540,6 +2783,7 @@ export default function ClientCard({ acronym, user }) {
             funnelByLocation={funnelByLocation}
             funnelAggregate={funnelAggregate}
             locations={locations}
+            gbpLocations={gbpLocations}
             onRefresh={load}
           />
         )}
