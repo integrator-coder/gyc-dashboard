@@ -17,6 +17,10 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { requireApiUser } from '@/lib/auth'
 import { pool } from '@/lib/pg'
+import {
+  syncClientProfileEnrollmentRollup,
+  upsertClientEnrollmentVerification,
+} from '@/lib/enrollment-verification'
 
 function hasOwn(obj, key) {
   return Object.prototype.hasOwnProperty.call(obj, key)
@@ -91,14 +95,19 @@ export async function POST(req, { params }) {
 }
 
 export async function PATCH(req, { params }) {
+  const client = await pool.connect()
+
   try {
     const auth = await requireApiUser(['ga', 'cx', 'admin', 'superadmin'])
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
+    const { user } = auth
     const { acronym } = await params
     const upper = String(acronym || '').toUpperCase()
     const body = await req.json()
     const trimmedLocationName = typeof body.locationName === 'string' ? body.locationName.trim() : ''
+
+    await client.query('BEGIN')
 
     const updates = []
     const values = []
@@ -118,6 +127,7 @@ export async function PATCH(req, { params }) {
     }
 
     if (updates.length === 0) {
+      await client.query('ROLLBACK')
       return NextResponse.json({ error: 'No location metrics provided.' }, { status: 400 })
     }
 
@@ -125,7 +135,7 @@ export async function PATCH(req, { params }) {
 
     if (body.locationId) {
       values.push(body.locationId, upper)
-      const result = await pool.query(
+      const result = await client.query(
         `UPDATE "GBPLocation"
          SET ${updates.join(', ')}, "updatedAt" = NOW()
          WHERE id = $${idx++} AND "tenantId" = 'gyc' AND "clientAcronym" = $${idx}
@@ -135,10 +145,11 @@ export async function PATCH(req, { params }) {
       rows = result.rows
     } else {
       if (!trimmedLocationName) {
+        await client.query('ROLLBACK')
         return NextResponse.json({ error: 'locationId or locationName is required.' }, { status: 400 })
       }
 
-      const existing = await pool.query(
+      const existing = await client.query(
         `SELECT id
          FROM "GBPLocation"
          WHERE "tenantId" = 'gyc' AND "clientAcronym" = $1 AND "locationName" = $2
@@ -148,7 +159,7 @@ export async function PATCH(req, { params }) {
 
       if (existing.rows[0]?.id) {
         const updateValues = [...values, existing.rows[0].id, upper]
-        const result = await pool.query(
+        const result = await client.query(
           `UPDATE "GBPLocation"
            SET ${updates.join(', ')}, "updatedAt" = NOW()
            WHERE id = $${idx++} AND "tenantId" = 'gyc' AND "clientAcronym" = $${idx}
@@ -181,7 +192,7 @@ export async function PATCH(req, { params }) {
         insertColumns.push('"updatedAt"')
         insertValues.push('NOW()')
 
-        const result = await pool.query(
+        const result = await client.query(
           `INSERT INTO "GBPLocation" (${insertColumns.join(', ')})
            VALUES (${insertValues.join(', ')})
            RETURNING *`,
@@ -192,12 +203,34 @@ export async function PATCH(req, { params }) {
     }
 
     if (!rows.length) {
+      await client.query('ROLLBACK')
       return NextResponse.json({ error: 'Location not found.' }, { status: 404 })
     }
 
-    return NextResponse.json({ location: serializeLocation(rows[0]) })
+    const rollup = await syncClientProfileEnrollmentRollup(client, {
+      tenantId: 'gyc',
+      clientAcronym: upper,
+    })
+
+    const verification = await upsertClientEnrollmentVerification(client, {
+      tenantId: 'gyc',
+      clientAcronym: upper,
+      status: 'updated',
+      checkedBy: user.email || user.name || null,
+    })
+
+    await client.query('COMMIT')
+
+    return NextResponse.json({
+      location: serializeLocation(rows[0]),
+      rollup,
+      verification,
+    })
   } catch (error) {
+    await client.query('ROLLBACK').catch(() => null)
     console.error('[PATCH /api/clients/[acronym]/gbp/locations]', error)
     return NextResponse.json({ error: error.message || 'Failed to save location metrics.' }, { status: error.status || 500 })
+  } finally {
+    client.release()
   }
 }

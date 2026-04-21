@@ -121,6 +121,22 @@ function fmtMonth(v) {
   } catch { return v }
 }
 
+function fmtPeriodLong(v) {
+  if (!v) return '—'
+  const [y, m] = String(v).split('-')
+  try {
+    return new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(
+      new Date(Number(y), Number(m) - 1, 1)
+    )
+  } catch { return v }
+}
+
+function fmtVerificationStatus(status) {
+  if (status === 'checked_no_change') return 'checked, no changes'
+  if (status === 'updated') return 'updated'
+  return 'not verified yet'
+}
+
 function fmtDuration(secs) {
   if (!secs) return null
   const totalSec = Number(secs)
@@ -428,7 +444,7 @@ function CallCard({ call, isPending }) {
 
 // ── Tab 1: Overview ───────────────────────────────────────────────────────────
 
-function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount, acronym, onJumpTab, onRefresh }) {
+function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount, acronym, enrollmentVerification, onJumpTab, onRefresh }) {
   // API returns DESC order (latest first) — index 0 is most recent month
   const latestMonth  = funnelHistory.length > 0 ? funnelHistory[0] : null
   // For charts, reverse to chronological order
@@ -499,6 +515,8 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount,
         note="Growth Advisors update these figures during monthly client meetings."
         profile={profile}
         acronym={acronym}
+        verification={enrollmentVerification}
+        showVerificationControls
         onRefresh={onRefresh}
       />
 
@@ -2179,7 +2197,7 @@ function EditableNotes({ label, value, field, acronym, placeholder }) {
   )
 }
 
-function EnrollmentSnapshotSection({ title, note, profile, acronym, onRefresh, editable = true }) {
+function EnrollmentSnapshotSection({ title, note, profile, acronym, onRefresh, editable = true, verification = null, showVerificationControls = false }) {
   const [form, setForm] = useState({
     currentEnrollment: profile.currentEnrollment ?? '',
     centerCapacity: profile.centerCapacity ?? '',
@@ -2188,7 +2206,16 @@ function EnrollmentSnapshotSection({ title, note, profile, acronym, onRefresh, e
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [err, setErr] = useState('')
-  const timer = useRef(null)
+  const [checking, setChecking] = useState(false)
+  const [checkedSaved, setCheckedSaved] = useState(false)
+  const [checkErr, setCheckErr] = useState('')
+  const saveTimer = useRef(null)
+  const checkTimer = useRef(null)
+
+  const rollupActive = !!profile.enrollmentRollupActive
+  const allowDirectEnrollmentEdit = editable && !rollupActive
+  const currentPeriodMonth = verification?.currentPeriodMonth || ''
+  const latestVerification = verification?.latest || null
 
   useEffect(() => {
     setForm({
@@ -2198,9 +2225,19 @@ function EnrollmentSnapshotSection({ title, note, profile, acronym, onRefresh, e
     })
   }, [profile.currentEnrollment, profile.centerCapacity, profile.avgTuition])
 
-  const metrics = getEnrollmentMetrics(form)
-  const currentEnrollmentInvalid = form.currentEnrollment !== '' && (!Number.isFinite(Number(form.currentEnrollment)) || !Number.isInteger(Number(form.currentEnrollment)))
-  const centerCapacityInvalid = form.centerCapacity !== '' && (!Number.isFinite(Number(form.centerCapacity)) || !Number.isInteger(Number(form.centerCapacity)))
+  useEffect(() => () => {
+    clearTimeout(saveTimer.current)
+    clearTimeout(checkTimer.current)
+  }, [])
+
+  const metrics = getEnrollmentMetrics({
+    currentEnrollment: allowDirectEnrollmentEdit ? form.currentEnrollment : profile.currentEnrollment,
+    centerCapacity: allowDirectEnrollmentEdit ? form.centerCapacity : profile.centerCapacity,
+    avgTuition: form.avgTuition,
+  })
+
+  const currentEnrollmentInvalid = allowDirectEnrollmentEdit && form.currentEnrollment !== '' && (!Number.isFinite(Number(form.currentEnrollment)) || !Number.isInteger(Number(form.currentEnrollment)))
+  const centerCapacityInvalid = allowDirectEnrollmentEdit && form.centerCapacity !== '' && (!Number.isFinite(Number(form.centerCapacity)) || !Number.isInteger(Number(form.centerCapacity)))
   const avgTuitionInvalid = form.avgTuition !== '' && !Number.isFinite(Number(form.avgTuition))
 
   const validationError = currentEnrollmentInvalid
@@ -2212,9 +2249,11 @@ function EnrollmentSnapshotSection({ title, note, profile, acronym, onRefresh, e
         : ''
 
   const dirty =
-    String(form.currentEnrollment) !== String(profile.currentEnrollment ?? '') ||
-    String(form.centerCapacity) !== String(profile.centerCapacity ?? '') ||
-    String(form.avgTuition) !== String(profile.avgTuition ?? '')
+    String(form.avgTuition) !== String(profile.avgTuition ?? '') ||
+    (allowDirectEnrollmentEdit && (
+      String(form.currentEnrollment) !== String(profile.currentEnrollment ?? '') ||
+      String(form.centerCapacity) !== String(profile.centerCapacity ?? '')
+    ))
 
   const hasOpportunity = metrics.hasAllSourceNumbers && metrics.enrollmentGap > 0
 
@@ -2228,20 +2267,25 @@ function EnrollmentSnapshotSection({ title, note, profile, acronym, onRefresh, e
     setSaving(true)
     setErr('')
     try {
+      const payload = {
+        avgTuition: form.avgTuition === '' ? null : Number(form.avgTuition),
+      }
+
+      if (allowDirectEnrollmentEdit) {
+        payload.currentEnrollment = form.currentEnrollment === '' ? null : Number(form.currentEnrollment)
+        payload.centerCapacity = form.centerCapacity === '' ? null : Number(form.centerCapacity)
+      }
+
       const res = await fetch(`/api/clients/${acronym}/profile`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          currentEnrollment: form.currentEnrollment === '' ? null : Number(form.currentEnrollment),
-          centerCapacity: form.centerCapacity === '' ? null : Number(form.centerCapacity),
-          avgTuition: form.avgTuition === '' ? null : Number(form.avgTuition),
-        }),
+        body: JSON.stringify(payload),
       })
       const json = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(json.error || 'Failed to save enrollment snapshot')
       setSaved(true)
-      clearTimeout(timer.current)
-      timer.current = setTimeout(() => setSaved(false), 2500)
+      clearTimeout(saveTimer.current)
+      saveTimer.current = setTimeout(() => setSaved(false), 2500)
       await onRefresh?.()
     } catch (e) {
       setErr(e.message)
@@ -2250,8 +2294,31 @@ function EnrollmentSnapshotSection({ title, note, profile, acronym, onRefresh, e
     }
   }
 
+  async function markCheckedNoChange() {
+    setChecking(true)
+    setCheckErr('')
+    try {
+      const res = await fetch(`/api/clients/${acronym}/enrollment-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(json.error || 'Failed to mark period checked')
+      setCheckedSaved(true)
+      clearTimeout(checkTimer.current)
+      checkTimer.current = setTimeout(() => setCheckedSaved(false), 2500)
+      await onRefresh?.()
+    } catch (e) {
+      setCheckErr(e.message)
+    } finally {
+      setChecking(false)
+    }
+  }
+
   function updateField(field, value) {
     setErr('')
+    setCheckErr('')
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
@@ -2279,18 +2346,27 @@ function EnrollmentSnapshotSection({ title, note, profile, acronym, onRefresh, e
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {editable ? (
             <>
-              <EditableMetricCard
-                label="Capacity"
-                field="centerCapacity"
-                sub="Licensed capacity"
-                placeholder="e.g. 126"
-              />
-              <EditableMetricCard
-                label="Current Enrollment"
-                field="currentEnrollment"
-                sub="Currently enrolled children"
-                placeholder="e.g. 97"
-              />
+              {allowDirectEnrollmentEdit ? (
+                <>
+                  <EditableMetricCard
+                    label="Capacity"
+                    field="centerCapacity"
+                    sub="Licensed capacity"
+                    placeholder="e.g. 126"
+                  />
+                  <EditableMetricCard
+                    label="Current Enrollment"
+                    field="currentEnrollment"
+                    sub="Currently enrolled children"
+                    placeholder="e.g. 97"
+                  />
+                </>
+              ) : (
+                <>
+                  <StatBox label="Capacity" value={fmtNum(profile.centerCapacity)} sub="Rolled up from active location values" />
+                  <StatBox label="Current Enrollment" value={fmtNum(profile.currentEnrollment)} sub="Rolled up from active location values" />
+                </>
+              )}
               <EditableMetricCard
                 label="Avg Tuition"
                 field="avgTuition"
@@ -2341,6 +2417,40 @@ function EnrollmentSnapshotSection({ title, note, profile, acronym, onRefresh, e
             </button>
             {saved && <span className="text-sm text-emerald-400">✓ Saved</span>}
             {(err || validationError) && <span className="text-sm text-rose-400">{err || validationError}</span>}
+          </div>
+        )}
+
+        {showVerificationControls && (
+          <Card className="bg-black/20">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <div className="text-[11px] uppercase tracking-wider text-gray-400">Monthly verification</div>
+                <div className="mt-1 text-sm font-medium text-gray-200">{currentPeriodMonth || '—'}</div>
+                <div className="mt-1 text-xs text-gray-500">
+                  {latestVerification
+                    ? `${fmtPeriodLong(latestVerification.periodMonth)}: ${fmtVerificationStatus(latestVerification.status)}`
+                    : 'No monthly verification logged yet.'}
+                </div>
+              </div>
+              <button
+                onClick={markCheckedNoChange}
+                disabled={checking}
+                className="rounded-xl border border-[var(--brand-border)] bg-black/30 px-4 py-2 text-sm font-medium text-gray-200 hover:border-violet-500/40 hover:text-violet-300 disabled:opacity-50 transition"
+              >
+                {checking ? 'Saving…' : 'Mark checked (no change)'}
+              </button>
+            </div>
+            {(checkedSaved || checkErr) && (
+              <div className={`mt-3 text-sm ${checkErr ? 'text-rose-400' : 'text-emerald-400'}`}>
+                {checkErr || '✓ Monthly verification saved'}
+              </div>
+            )}
+          </Card>
+        )}
+
+        {rollupActive && editable && (
+          <div className="text-xs text-gray-500">
+            Capacity and current enrollment now roll up automatically from the location rows in CRM.
           </div>
         )}
 
@@ -2702,6 +2812,7 @@ export default function ClientCard({ acronym, user }) {
     funnelAggregate = [],
     locations = [],
     gbpLocations = [],
+    enrollmentVerification = null,
     potentialUnlinkedCount = 0,
     recentPayments = [],
   } = data
@@ -2823,6 +2934,7 @@ export default function ClientCard({ acronym, user }) {
             allCalls={allCalls}
             potentialUnlinkedCount={potentialUnlinkedCount}
             acronym={acronym}
+            enrollmentVerification={enrollmentVerification}
             onJumpTab={setActiveTab}
             onRefresh={load}
           />

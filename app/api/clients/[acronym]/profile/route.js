@@ -12,6 +12,12 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { requireApiUser, userHasRole } from '@/lib/auth'
 import { pool } from '@/lib/pg'
+import {
+  getCurrentPeriodMonth,
+  getLatestClientEnrollmentVerification,
+  syncClientProfileEnrollmentRollup,
+  upsertClientEnrollmentVerification,
+} from '@/lib/enrollment-verification'
 import Stripe from 'stripe'
 
 function computeHealthScore(row) {
@@ -63,6 +69,12 @@ function parseNullableNumber(value, { label, integer = false } = {}) {
   }
 
   return integer ? parsed : parsed
+}
+
+function toNullableNumber(value) {
+  if (value === null || value === undefined || value === '') return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
 }
 
 // All ZoomCall columns we want to surface on the client card
@@ -323,6 +335,30 @@ export async function GET(_request, { params }) {
       avgTuition: row.avgTuition != null ? Number(row.avgTuition) : null,
     }))
 
+    const activeGbpLocations = gbpLocations.filter((row) => row.isActive !== false)
+    const enrollmentRollupActive = activeGbpLocations.length > 0
+
+    if (enrollmentRollupActive) {
+      const rollup = await syncClientProfileEnrollmentRollup(pool, {
+        tenantId: 'gyc',
+        clientAcronym: upper,
+        locations: activeGbpLocations,
+      })
+
+      profile.centerCapacity = rollup.centerCapacity
+      profile.currentEnrollment = rollup.currentEnrollment
+    }
+
+    const latestEnrollmentVerification = await getLatestClientEnrollmentVerification(pool, {
+      tenantId: 'gyc',
+      clientAcronym: upper,
+    })
+
+    profile.centerCapacity = toNullableNumber(profile.centerCapacity)
+    profile.currentEnrollment = toNullableNumber(profile.currentEnrollment)
+    profile.enrollmentRollupSource = enrollmentRollupActive ? 'locations' : 'profile'
+    profile.enrollmentRollupActive = enrollmentRollupActive
+
     return NextResponse.json({
       profile: { ...profile, mrr: liveMrr || profile.mrr, lifetimeValue: finalLtv },
       // All calls (classified + pending) for the tab
@@ -336,6 +372,10 @@ export async function GET(_request, { params }) {
       funnelAggregate:  funnelAggregateRes.rows,
       locations:        [...new Set([...funnelByLocationRes.rows.map((r) => r.locationName), ...gbpLocations.map((r) => r.locationName)].filter(Boolean))],
       gbpLocations,
+      enrollmentVerification: {
+        currentPeriodMonth: getCurrentPeriodMonth(),
+        latest: latestEnrollmentVerification,
+      },
       // Auto-classification banner
       potentialUnlinkedCount: Number(potentialCallsRes.rows[0]?.count || 0),
       // Recent Stripe payments
@@ -348,6 +388,8 @@ export async function GET(_request, { params }) {
 }
 
 export async function PATCH(request, { params }) {
+  const client = await pool.connect()
+
   try {
     // Notes can be saved by any authenticated user
     // GBP baseline fields require admin or superadmin
@@ -360,6 +402,26 @@ export async function PATCH(request, { params }) {
     const { acronym } = await params
     const upper       = String(acronym || '').toUpperCase()
     const body        = await request.json()
+
+    const wantsTopLevelEnrollmentEdit = hasOwn(body, 'currentEnrollment') || hasOwn(body, 'centerCapacity')
+
+    const { rows: rollupRows } = await client.query(
+      `SELECT COUNT(*)::int AS count
+       FROM "GBPLocation"
+       WHERE "tenantId" = 'gyc' AND "clientAcronym" = $1 AND "isActive" = TRUE`,
+      [upper]
+    )
+
+    const enrollmentRollupActive = Number(rollupRows[0]?.count || 0) > 0
+
+    if (enrollmentRollupActive && wantsTopLevelEnrollmentEdit) {
+      return NextResponse.json(
+        { error: 'Capacity and current enrollment are rolled up from locations. Update the location rows instead.' },
+        { status: 400 }
+      )
+    }
+
+    await client.query('BEGIN')
 
     const sets = []
     const vals = []
@@ -438,19 +500,20 @@ export async function PATCH(request, { params }) {
     }
 
     if (sets.length === 0) {
+      await client.query('ROLLBACK')
       return NextResponse.json({ error: 'No updatable fields provided.' }, { status: 400 })
     }
 
     sets.push(`"updatedAt" = NOW()`)
     vals.push(upper)
 
-    await pool.query(
+    await client.query(
       `UPDATE "ClientProfile" SET ${sets.join(', ')} WHERE "tenantId" = 'gyc' AND acronym = $${idx}`,
       vals
     )
 
     if (Object.keys(serviceUpdates).length > 0) {
-      const { rows } = await pool.query(
+      const { rows } = await client.query(
         `SELECT "hasWebsite", "hasSEO", "hasCRM", "hasBlueprint", "hasGoogleAds", "hasPaidMedia", "hasCommand"
          FROM "ClientProfile"
          WHERE "tenantId" = 'gyc' AND acronym = $1
@@ -469,7 +532,7 @@ export async function PATCH(request, { params }) {
           row.hasCommand ? 'Command' : null,
         ].filter(Boolean)
 
-        await pool.query(
+        await client.query(
           `UPDATE "ClientProfile"
            SET "serviceList" = $1, "updatedAt" = NOW()
            WHERE "tenantId" = 'gyc' AND acronym = $2`,
@@ -478,9 +541,33 @@ export async function PATCH(request, { params }) {
       }
     }
 
-    return NextResponse.json({ ok: true })
+    const touchedEnrollmentSnapshot = hasOwn(body, 'avgTuition') || wantsTopLevelEnrollmentEdit
+
+    if (enrollmentRollupActive && touchedEnrollmentSnapshot) {
+      await syncClientProfileEnrollmentRollup(client, {
+        tenantId: 'gyc',
+        clientAcronym: upper,
+      })
+    }
+
+    let verification = null
+    if (touchedEnrollmentSnapshot) {
+      verification = await upsertClientEnrollmentVerification(client, {
+        tenantId: 'gyc',
+        clientAcronym: upper,
+        status: 'updated',
+        checkedBy: user.email || user.name || null,
+      })
+    }
+
+    await client.query('COMMIT')
+
+    return NextResponse.json({ ok: true, verification })
   } catch (error) {
+    await client.query('ROLLBACK').catch(() => null)
     console.error('[PATCH /api/clients/[acronym]/profile]', error)
-    return NextResponse.json({ error: error.message || 'Failed to save.' }, { status: 500 })
+    return NextResponse.json({ error: error.message || 'Failed to save.' }, { status: error.status || 500 })
+  } finally {
+    client.release()
   }
 }
