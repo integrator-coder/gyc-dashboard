@@ -10,6 +10,7 @@ import {
   getDataForSeoConfig,
   getLiveWebsiteAudit,
   normalizeWebsiteUrl,
+  upsertWebsiteAuditSnapshot,
 } from '@/lib/website-audit'
 
 export async function GET(_request, { params }) {
@@ -54,6 +55,17 @@ export async function GET(_request, { params }) {
 
     try {
       const audit = await getLiveWebsiteAudit(websiteUrl)
+
+      try {
+        await upsertWebsiteAuditSnapshot({
+          tenantId: 'gyc',
+          clientAcronym: upper,
+          audit,
+        })
+      } catch (snapshotError) {
+        console.error('[GET /api/clients/[acronym]/website-audit] snapshot upsert failed', snapshotError)
+      }
+
       return NextResponse.json(audit)
     } catch (error) {
       console.error('[GET /api/clients/[acronym]/website-audit] live audit failed', error)

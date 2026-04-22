@@ -419,3 +419,26 @@ model ZendeskSnapshot {
   ZendeskOrgTicket        ZendeskOrgTicket[]
   ZendeskResolutionBucket ZendeskResolutionBucket[]
 }
+
+model ClientWebsiteAuditSnapshot {
+  id                BigInt   @id @default(autoincrement())
+  tenantId          String   @default("gyc")
+  clientAcronym     String
+  periodMonth       String
+  websiteUrl        String?
+  pageSpeedScore    Int?
+  pageSpeedLcp      Decimal?
+  pageSpeedTbt      Decimal?
+  pageSpeedCls      Decimal?
+  mobileScore       Int?
+  mobileMaxScore    Int?
+  technicalSeoScore Int?
+  topIssues         Json     @default("[]")
+  source            String?
+  checkedAt         DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now())
+
+  @@unique([tenantId, clientAcronym, periodMonth], map: "ClientWebsiteAuditSnapshot_client_period_unique")
+  @@index([tenantId, clientAcronym, periodMonth(sort: Desc)], map: "ClientWebsiteAuditSnapshot_client_period_idx")
+}
