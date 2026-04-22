@@ -968,16 +968,57 @@ function FinancialTab({ profile, recentPayments = [] }) {
 // ── Tab 3: Website (always visible) ──────────────────────────────────────────
 
 const WEBSITE_AUDIT_STATUS_STYLES = {
-  healthy: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
-  warning: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
-  critical: 'border-rose-500/30 bg-rose-500/10 text-rose-300',
-  unknown: 'border-gray-500/30 bg-gray-500/10 text-gray-300',
+  healthy: 'border-emerald-400/40 bg-emerald-400/15 text-emerald-100 shadow-[0_0_20px_rgba(52,211,153,0.16)]',
+  warning: 'border-amber-400/45 bg-amber-400/15 text-amber-100 shadow-[0_0_20px_rgba(251,191,36,0.16)]',
+  critical: 'border-rose-400/45 bg-rose-400/15 text-rose-100 shadow-[0_0_20px_rgba(251,113,133,0.16)]',
+  unknown: 'border-slate-400/30 bg-slate-400/10 text-slate-100/90',
 }
 
 const WEBSITE_AUDIT_ISSUE_STYLES = {
-  high: 'border-rose-500/30 bg-rose-500/10 text-rose-200',
-  medium: 'border-amber-500/30 bg-amber-500/10 text-amber-200',
-  low: 'border-gray-500/30 bg-gray-500/10 text-gray-300',
+  high: 'border-rose-400/40 bg-gradient-to-br from-rose-400/18 via-rose-400/10 to-black/35 text-rose-50 shadow-[0_0_24px_rgba(251,113,133,0.16)]',
+  medium: 'border-amber-400/40 bg-gradient-to-br from-amber-400/16 via-amber-400/10 to-black/35 text-amber-50 shadow-[0_0_24px_rgba(251,191,36,0.14)]',
+  low: 'border-slate-300/20 bg-gradient-to-br from-slate-300/12 via-slate-300/6 to-black/35 text-slate-100',
+}
+
+const WEBSITE_AUDIT_CARD_TONES = {
+  healthy: {
+    ring: '#34D399',
+    shell: 'border-emerald-400/25 bg-gradient-to-br from-emerald-400/14 via-[#140E20] to-black/45',
+    panel: 'border-emerald-400/15 bg-black/35',
+    label: 'text-emerald-100',
+    accent: 'bg-emerald-300',
+  },
+  warning: {
+    ring: '#FBBF24',
+    shell: 'border-amber-400/25 bg-gradient-to-br from-amber-400/14 via-[#140E20] to-black/45',
+    panel: 'border-amber-400/15 bg-black/35',
+    label: 'text-amber-100',
+    accent: 'bg-amber-300',
+  },
+  critical: {
+    ring: '#FB7185',
+    shell: 'border-rose-400/25 bg-gradient-to-br from-rose-400/14 via-[#140E20] to-black/45',
+    panel: 'border-rose-400/15 bg-black/35',
+    label: 'text-rose-100',
+    accent: 'bg-rose-300',
+  },
+  unknown: {
+    ring: '#94A3B8',
+    shell: 'border-slate-300/15 bg-gradient-to-br from-slate-300/12 via-[#140E20] to-black/45',
+    panel: 'border-slate-300/10 bg-black/35',
+    label: 'text-slate-100',
+    accent: 'bg-slate-300',
+  },
+}
+
+function getWebsiteAuditCardTone(status) {
+  return WEBSITE_AUDIT_CARD_TONES[status] || WEBSITE_AUDIT_CARD_TONES.unknown
+}
+
+function getWebsiteIssueSeverityLabel(severity) {
+  if (severity === 'high') return 'Priority fix'
+  if (severity === 'medium') return 'Needs attention'
+  return 'Optimization'
 }
 
 function fmtAuditSeconds(v) {
@@ -1005,23 +1046,26 @@ function WebsiteAuditBadge({ status, label }) {
 
 function WebsiteAuditMetric({ label, value }) {
   return (
-    <div className="rounded-xl border border-[var(--brand-border)] bg-black/20 px-3 py-2">
-      <div className="text-[10px] uppercase tracking-wider text-gray-500">{label}</div>
-      <div className="mt-1 text-sm font-semibold text-white">{value ?? '—'}</div>
+    <div className="rounded-2xl border border-white/10 bg-black/30 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+      <div className="text-[10px] uppercase tracking-[0.22em] text-slate-400">{label}</div>
+      <div className="mt-1.5 text-sm font-semibold text-white">{value ?? '—'}</div>
     </div>
   )
 }
 
 function WebsiteAuditCheckList({ items = [] }) {
-  if (!items.length) return <div className="text-xs text-gray-500">No checks available yet.</div>
+  if (!items.length) return <div className="text-xs text-slate-400">No checks available yet.</div>
 
   return (
     <div className="space-y-2">
       {items.map((item) => (
-        <div key={item.label} className="flex items-center justify-between gap-3 rounded-xl border border-[var(--brand-border)] bg-black/20 px-3 py-2">
-          <span className="text-xs text-gray-300">{item.label}</span>
-          <span className={`text-xs font-semibold ${item.passed ? 'text-emerald-300' : 'text-rose-300'}`}>
-            {item.passed ? 'Pass' : 'Fail'}
+        <div key={item.label} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/30 px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+          <span className="flex items-center gap-2 text-sm text-slate-100">
+            <span className={`h-2 w-2 rounded-full ${item.passed ? 'bg-emerald-300 shadow-[0_0_12px_rgba(52,211,153,0.6)]' : 'bg-rose-300 shadow-[0_0_12px_rgba(251,113,133,0.55)]'}`} />
+            <span>{item.label}</span>
+          </span>
+          <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${item.passed ? 'border-emerald-400/35 bg-emerald-400/14 text-emerald-50' : 'border-rose-400/35 bg-rose-400/14 text-rose-50'}`}>
+            {item.passed ? 'Pass' : 'Needs work'}
           </span>
         </div>
       ))}
@@ -1029,28 +1073,66 @@ function WebsiteAuditCheckList({ items = [] }) {
   )
 }
 
-function WebsiteAuditCard({ icon, title, status, label, score, scoreSuffix = '', children, footer }) {
+function WebsiteAuditScoreDial({ score, max = 100, status, scoreSuffix = '' }) {
+  const tone = getWebsiteAuditCardTone(status)
+  const numericScore = toFiniteNumber(score)
+  const progress = numericScore == null || !max ? 0 : Math.max(0, Math.min((numericScore / Number(max)) * 100, 100))
+
   return (
-    <Card className="h-full">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-[11px] uppercase tracking-wider text-gray-500">{icon} {title}</div>
-          <div className="mt-2 text-3xl font-black text-white">
-            {score ?? '—'}
-            {score != null && scoreSuffix ? <span className="text-lg font-semibold text-gray-400">{scoreSuffix}</span> : null}
+    <div className="relative flex h-24 w-24 shrink-0 items-center justify-center rounded-full border border-white/10 bg-black/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+      <div
+        className="absolute inset-1 rounded-full"
+        style={{
+          background: `conic-gradient(${tone.ring} ${progress}%, rgba(255,255,255,0.08) ${progress}% 100%)`,
+          boxShadow: `0 0 28px ${tone.ring}22`,
+        }}
+      />
+      <div className="absolute inset-[10px] rounded-full bg-[#120D1D]" />
+      <div className="relative text-center">
+        <div className="text-2xl font-black text-white">{numericScore ?? '—'}</div>
+        {numericScore != null && scoreSuffix ? <div className="-mt-0.5 text-[11px] font-semibold text-slate-300">{scoreSuffix}</div> : null}
+      </div>
+    </div>
+  )
+}
+
+function WebsiteAuditCard({ icon, title, status, label, score, scoreMax = 100, scoreSuffix = '', children, footer }) {
+  const tone = getWebsiteAuditCardTone(status)
+
+  return (
+    <Card className={`relative h-full overflow-hidden ${tone.shell}`}>
+      <div className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="text-[10px] uppercase tracking-[0.28em] text-slate-400">Performance module</div>
+          <div className="mt-2 flex items-center gap-2">
+            <span className="text-lg">{icon}</span>
+            <div className="text-base font-semibold text-white">{title}</div>
+          </div>
+          <div className="mt-3">
+            <WebsiteAuditBadge status={status} label={label} />
           </div>
         </div>
-        <WebsiteAuditBadge status={status} label={label} />
+        <WebsiteAuditScoreDial score={score} max={scoreMax} status={status} scoreSuffix={scoreSuffix} />
       </div>
-      <div className="mt-4">{children}</div>
-      {footer ? <div className="mt-4 text-xs text-gray-500">{footer}</div> : null}
+
+      <div className={`mt-4 rounded-[22px] border p-3 ${tone.panel}`}>
+        {children}
+      </div>
+
+      {footer ? (
+        <div className="mt-4 flex items-start gap-2 text-xs text-slate-300">
+          <span className={`mt-1 h-2 w-2 rounded-full ${tone.accent}`} />
+          <span>{footer}</span>
+        </div>
+      ) : null}
     </Card>
   )
 }
 
 function WebsiteAuditSkeletonCard({ title }) {
   return (
-    <Card className="h-full animate-pulse">
+    <Card className="h-full animate-pulse border-white/10 bg-gradient-to-br from-[#171127] via-[#0F0B19] to-black/40">
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-2">
           <div className="h-3 w-28 rounded bg-white/10" />
@@ -1087,10 +1169,10 @@ function getWebsiteScoreTone(value, max = 100) {
 }
 
 function WebsiteHistoryScore({ value, max = 100, text = null }) {
-  if (value == null) return <span className="text-xs text-gray-500">—</span>
+  if (value == null) return <span className="text-xs text-slate-400">—</span>
 
   return (
-    <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${getWebsiteScoreTone(value, max)}`}>
+    <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold shadow-[0_0_18px_rgba(255,255,255,0.04)] ${getWebsiteScoreTone(value, max)}`}>
       {text || (max !== 100 ? `${value}/${max}` : value)}
     </span>
   )
@@ -1122,20 +1204,20 @@ function fmtSharePct(v) {
 function WebsiteTrafficComparisonPill({ label, value }) {
   if (value == null) {
     return (
-      <span className="inline-flex items-center rounded-full border border-[var(--brand-border)] bg-black/25 px-2.5 py-1 text-xs text-gray-500">
+      <span className="inline-flex items-center rounded-full border border-white/10 bg-black/35 px-3 py-1.5 text-xs text-slate-300">
         {label}: —
       </span>
     )
   }
 
   const tone = value > 0
-    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+    ? 'border-emerald-400/35 bg-emerald-400/14 text-emerald-50 shadow-[0_0_18px_rgba(52,211,153,0.14)]'
     : value < 0
-      ? 'border-rose-500/30 bg-rose-500/10 text-rose-300'
-      : 'border-[var(--brand-border)] bg-black/25 text-gray-300'
+      ? 'border-rose-400/35 bg-rose-400/14 text-rose-50 shadow-[0_0_18px_rgba(251,113,133,0.14)]'
+      : 'border-white/10 bg-black/35 text-slate-100'
 
   return (
-    <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium ${tone}`}>
+    <span className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold ${tone}`}>
       {label}: {fmtSignedPct(value)}
     </span>
   )
@@ -1154,13 +1236,13 @@ function WebsiteTrafficDelta({ label, comparison, isRate = false }) {
   if (label === 'vs 3-mo avg') {
     if (isRate) {
       if (comparison?.vsThreeMonthAvgDelta == null) {
-        return <div className="flex items-center justify-between gap-3 text-xs text-gray-500"><span>{label}</span><span>Building history</span></div>
+        return <div className="flex items-center justify-between gap-3 text-xs text-slate-300"><span className="text-slate-400">{label}</span><span>Building history</span></div>
       }
     } else if (comparison?.vsThreeMonthAvgPct == null) {
-      return <div className="flex items-center justify-between gap-3 text-xs text-gray-500"><span>{label}</span><span>Building history</span></div>
+      return <div className="flex items-center justify-between gap-3 text-xs text-slate-300"><span className="text-slate-400">{label}</span><span>Building history</span></div>
     }
   } else if (rawValue == null) {
-    return <div className="flex items-center justify-between gap-3 text-xs text-gray-500"><span>{label}</span><span>Building history</span></div>
+    return <div className="flex items-center justify-between gap-3 text-xs text-slate-300"><span className="text-slate-400">{label}</span><span>Building history</span></div>
   }
 
   const value = label === 'vs 3-mo avg'
@@ -1168,10 +1250,10 @@ function WebsiteTrafficDelta({ label, comparison, isRate = false }) {
     : rawValue
 
   const tone = value > 0
-    ? 'text-emerald-300'
+    ? 'text-emerald-200'
     : value < 0
-      ? 'text-rose-300'
-      : 'text-gray-300'
+      ? 'text-rose-200'
+      : 'text-slate-100'
 
   const displayValue = isRate
     ? `${value > 0 ? '+' : ''}${Number(value).toFixed(1)} pts`
@@ -1179,7 +1261,7 @@ function WebsiteTrafficDelta({ label, comparison, isRate = false }) {
 
   return (
     <div className="flex items-center justify-between gap-3 text-xs">
-      <span className="text-gray-500">{label}</span>
+      <span className="text-slate-400">{label}</span>
       <span className={`font-semibold ${tone}`}>{displayValue}</span>
     </div>
   )
@@ -1187,15 +1269,17 @@ function WebsiteTrafficDelta({ label, comparison, isRate = false }) {
 
 function WebsiteTrafficKpiCard({ label, value, comparison, isRate = false, dotClassName = 'bg-violet-400' }) {
   return (
-    <Card className="h-full overflow-hidden border-white/10 bg-gradient-to-br from-[#171127] via-[#0F0B19] to-black/40">
+    <Card className="relative h-full overflow-hidden border-white/10 bg-gradient-to-br from-[#1A132B] via-[#100B19] to-black/45 shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
+      <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
       <div className="flex items-start justify-between gap-3">
-        <div className="text-[11px] uppercase tracking-[0.24em] text-gray-500">{label}</div>
+        <div className="text-[11px] uppercase tracking-[0.24em] text-slate-300">{label}</div>
         <span className={`mt-1 h-2.5 w-2.5 rounded-full shadow-[0_0_18px_currentColor] ${dotClassName}`} />
       </div>
-      <div className="mt-4 text-3xl font-black text-white">{value ?? '—'}</div>
-      <div className="mt-1 text-xs text-gray-500">Latest 30d snapshot</div>
+      <div className="mt-2 text-[10px] uppercase tracking-[0.26em] text-slate-400">Performance signal</div>
+      <div className="mt-3 text-3xl font-black text-white">{value ?? '—'}</div>
+      <div className="mt-1 text-xs text-slate-300">Latest 30d snapshot</div>
 
-      <div className="mt-5 space-y-2 rounded-2xl border border-white/5 bg-black/25 p-3">
+      <div className="mt-5 space-y-2 rounded-2xl border border-white/10 bg-black/35 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
         <WebsiteTrafficDelta label="vs last month" comparison={comparison} isRate={isRate} />
         <WebsiteTrafficDelta label="vs 3-mo avg" comparison={comparison} isRate={isRate} />
       </div>
@@ -1212,7 +1296,7 @@ function WebsiteTrafficSourceTooltip({ active, payload }) {
   return (
     <div className="rounded-2xl border border-[var(--brand-border)] bg-[#120E1F]/95 px-3 py-2 text-xs shadow-2xl">
       <div className="font-semibold text-white">{source.label}</div>
-      <div className="mt-1 space-y-1 text-gray-300">
+      <div className="mt-1 space-y-1 text-slate-200">
         <div>{fmtNum(source.value)} tracked sessions</div>
         <div>{fmtSharePct(source.share)} of channel mix</div>
       </div>
@@ -1225,11 +1309,11 @@ function WebsiteTrafficSourceDonut({ sourceDistribution }) {
   if (!items.length) return null
 
   return (
-    <Card className="overflow-hidden border-white/10 bg-gradient-to-br from-[#161023] via-[#110B1C] to-black/30">
+    <Card className="overflow-hidden border-white/10 bg-gradient-to-br from-[#171125] via-[#100B19] to-black/35 shadow-[0_18px_40px_rgba(0,0,0,0.2)]">
       <div className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr] xl:items-center">
         <div>
-          <div className="text-[11px] uppercase tracking-[0.24em] text-gray-500">Hero source mix</div>
-          <div className="mt-1 text-sm text-gray-300">{sourceDistribution?.honestLabel || 'Latest traffic source mix'}</div>
+          <div className="text-[11px] uppercase tracking-[0.24em] text-slate-300">Hero source mix</div>
+          <div className="mt-1 text-sm text-slate-100">{sourceDistribution?.honestLabel || 'Latest traffic source mix'}</div>
 
           <div className="relative mt-4 h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -1254,19 +1338,19 @@ function WebsiteTrafficSourceDonut({ sourceDistribution }) {
 
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
               <div className="text-3xl font-black text-white">{fmtCompactNum(sourceDistribution?.total)}</div>
-              <div className="mt-1 text-[11px] uppercase tracking-[0.2em] text-gray-500">Tracked sessions</div>
+              <div className="mt-1 text-[11px] uppercase tracking-[0.2em] text-slate-300">Tracked sessions</div>
             </div>
           </div>
         </div>
 
         <div>
-          <div className="text-[11px] uppercase tracking-[0.24em] text-gray-500">Ranked channels</div>
+          <div className="text-[11px] uppercase tracking-[0.24em] text-slate-300">Ranked channels</div>
           <div className="mt-3 space-y-3">
             {items.map((item, index) => (
-              <div key={item.key} className="rounded-2xl border border-white/8 bg-black/25 p-3">
+              <div key={item.key} className="rounded-2xl border border-white/10 bg-black/35 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <span className="text-xs font-semibold text-gray-500">#{index + 1}</span>
+                    <span className="text-xs font-semibold text-slate-400">#{index + 1}</span>
                     <span
                       className="h-2.5 w-2.5 rounded-full"
                       style={{ backgroundColor: WEBSITE_TRAFFIC_SOURCE_COLORS[item.key] || '#A855F7' }}
@@ -1276,7 +1360,7 @@ function WebsiteTrafficSourceDonut({ sourceDistribution }) {
 
                   <div className="text-right">
                     <div className="text-sm font-semibold text-white">{fmtCompactNum(item.value)}</div>
-                    <div className="text-[11px] text-gray-500">{fmtSharePct(item.share)}</div>
+                    <div className="text-[11px] text-slate-300">{fmtSharePct(item.share)}</div>
                   </div>
                 </div>
 
@@ -1302,19 +1386,19 @@ function WebsiteTrafficInsightBox({ insights = [], note = '' }) {
   if (!insights.length && !note) return null
 
   return (
-    <Card className="border-violet-500/20 bg-violet-500/5">
-      <div className="text-[11px] uppercase tracking-[0.24em] text-violet-200/80">Traffic insight summary</div>
+    <Card className="border-violet-400/25 bg-gradient-to-br from-violet-400/12 via-[#151022] to-black/35 shadow-[0_16px_36px_rgba(76,29,149,0.2)]">
+      <div className="text-[11px] uppercase tracking-[0.24em] text-violet-100">Traffic insight summary</div>
       {insights.length > 0 && (
         <div className="mt-3 space-y-2">
           {insights.map((insight) => (
-            <div key={insight} className="flex gap-2 text-sm text-violet-100/90">
-              <span className="text-violet-300">•</span>
+            <div key={insight} className="flex gap-2 text-sm text-violet-50">
+              <span className="text-violet-200">•</span>
               <span>{insight}</span>
             </div>
           ))}
         </div>
       )}
-      {note ? <div className="mt-3 text-xs text-violet-200/60">{note}</div> : null}
+      {note ? <div className="mt-3 text-xs text-violet-100/80">{note}</div> : null}
     </Card>
   )
 }
@@ -1327,37 +1411,53 @@ function WebsiteTrafficHistoryTooltip({ active, payload, label }) {
   return (
     <div className="rounded-xl border border-[var(--brand-border)] bg-[#120E1F]/95 px-3 py-2 text-xs shadow-2xl">
       <div className="font-semibold text-white">{fmtPeriodLong(label || point.periodMonth)}</div>
-      <div className="mt-2 space-y-1 text-gray-300">
+      <div className="mt-2 space-y-1 text-slate-200">
         <div>Sessions: {fmtNum(point.sessions)}</div>
         <div>Active users: {fmtNum(point.activeUsers)}</div>
-        {point.checkedAt && <div className="text-gray-500">Captured {fmtDate(point.checkedAt)}</div>}
+        {point.source && <div className="text-slate-300">Source: {point.source === 'GAMetricsDaily' ? 'Backfilled from GA daily history' : 'Monthly GA snapshot'}</div>}
+        {point.checkedAt && <div className="text-slate-400">Captured {fmtDate(point.checkedAt)}</div>}
       </div>
     </div>
   )
 }
 
-function WebsiteTrafficHistoryChart({ points = [] }) {
+function WebsiteTrafficHistoryChart({ history }) {
+  const points = Array.isArray(history?.points) ? history.points : []
   if (!points.length) return null
 
   const latest = points[points.length - 1] || null
+  const backfilledMonths = Number(history?.backfilledMonths || 0)
+  const coverageLabel = `${points.length} month${points.length === 1 ? '' : 's'} available`
 
   return (
-    <Card className="overflow-hidden border-white/10 bg-gradient-to-br from-[#130F20] via-[#100B19] to-black/30">
+    <Card className="overflow-hidden border-white/10 bg-gradient-to-br from-[#140F22] via-[#0E0917] to-black/35 shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="text-[11px] uppercase tracking-[0.24em] text-gray-500">12-month traffic trend</div>
-          <div className="mt-1 text-sm text-gray-300">Users and sessions from monthly GA snapshots</div>
+          <div className="text-[11px] uppercase tracking-[0.24em] text-slate-300">12-month traffic trend</div>
+          <div className="mt-1 text-sm text-slate-100">
+            {backfilledMonths > 0
+              ? 'Real GA history backfilled from daily records where monthly snapshots were missing'
+              : 'Showing real stored GA history currently available for this client'}
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2 text-xs">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-black/25 px-3 py-1 text-gray-300">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1.5 text-slate-100">
             <span className="h-2 w-2 rounded-full bg-violet-400" /> Sessions
           </span>
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-black/25 px-3 py-1 text-gray-300">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1.5 text-slate-100">
             <span className="h-2 w-2 rounded-full bg-cyan-400" /> Active users
           </span>
+          <span className="inline-flex items-center rounded-full border border-white/10 bg-black/35 px-3 py-1.5 text-slate-100">
+            {coverageLabel}
+          </span>
+          {backfilledMonths > 0 ? (
+            <span className="inline-flex items-center rounded-full border border-violet-400/30 bg-violet-400/12 px-3 py-1.5 text-violet-100">
+              {backfilledMonths} backfilled
+            </span>
+          ) : null}
           {latest?.periodMonth ? (
-            <span className="inline-flex items-center rounded-full border border-white/8 bg-black/25 px-3 py-1 text-gray-500">
+            <span className="inline-flex items-center rounded-full border border-white/10 bg-black/35 px-3 py-1.5 text-slate-300">
               Latest {fmtMonth(latest.periodMonth)}
             </span>
           ) : null}
@@ -1380,13 +1480,13 @@ function WebsiteTrafficHistoryChart({ points = [] }) {
             <CartesianGrid stroke="rgba(255,255,255,0.08)" strokeDasharray="3 3" vertical={false} />
             <XAxis
               dataKey="periodMonth"
-              tick={{ fill: '#9CA3AF', fontSize: 11 }}
+              tick={{ fill: '#CBD5E1', fontSize: 11 }}
               tickFormatter={fmtMonth}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
-              tick={{ fill: '#9CA3AF', fontSize: 11 }}
+              tick={{ fill: '#CBD5E1', fontSize: 11 }}
               tickFormatter={fmtCompactNum}
               axisLine={false}
               tickLine={false}
@@ -1441,11 +1541,11 @@ function WebsiteAuditHistoryTable({ items = [], loading = false, error = '' }) {
   }
 
   return (
-    <Card>
+    <Card className="border-white/10 bg-gradient-to-br from-[#151021] via-[#0E0A16] to-black/35">
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead>
-            <tr className="border-b border-[var(--brand-border)] text-left text-[11px] uppercase tracking-wider text-gray-500">
+            <tr className="border-b border-white/10 text-left text-[11px] uppercase tracking-[0.24em] text-slate-300">
               <th className="px-1 py-2 font-medium">Month</th>
               <th className="px-1 py-2 font-medium">Page Speed</th>
               <th className="px-1 py-2 font-medium">Mobile</th>
@@ -1454,8 +1554,8 @@ function WebsiteAuditHistoryTable({ items = [], loading = false, error = '' }) {
           </thead>
           <tbody>
             {items.map((item) => (
-              <tr key={item.periodMonth} className="border-b border-[var(--brand-border)] last:border-0">
-                <td className="px-1 py-3 text-gray-200">{fmtMonth(item.periodMonth)}</td>
+              <tr key={item.periodMonth} className="border-b border-white/10 last:border-0">
+                <td className="px-1 py-3 text-slate-100">{fmtMonth(item.periodMonth)}</td>
                 <td className="px-1 py-3">
                   <WebsiteHistoryScore value={item.pageSpeed?.score} />
                 </td>
@@ -1677,10 +1777,13 @@ function WebsiteTab({ profile, acronym }) {
         <div className="flex flex-wrap items-center gap-2">
           <SectionTitle>Website Traffic</SectionTitle>
           {traffic?.checkedAt && (
-            <Badge label={`GA synced ${fmtDateTime(traffic.checkedAt)}`} className="border-[var(--brand-border)] bg-black/30 text-gray-300" />
+            <Badge label={`GA synced ${fmtDateTime(traffic.checkedAt)}`} className="border-white/10 bg-black/35 text-slate-100" />
           )}
-          {trafficHistory.length > 0 && (
-            <Badge label={`${trafficHistory.length} monthly snapshot${trafficHistory.length === 1 ? '' : 's'}`} className="border-[var(--brand-border)] bg-black/30 text-gray-300" />
+          {traffic?.history?.coverageMonths > 0 && (
+            <Badge label={`${traffic.history.coverageMonths} month${traffic.history.coverageMonths === 1 ? '' : 's'} available`} className="border-white/10 bg-black/35 text-slate-100" />
+          )}
+          {traffic?.history?.backfilledMonths > 0 && (
+            <Badge label={`${traffic.history.backfilledMonths} backfilled from daily GA`} className="border-violet-400/30 bg-violet-400/12 text-violet-100" />
           )}
           {traffic?.propertyId && (
             <Badge label={`Property ${traffic.propertyId}`} className="border-violet-500/30 bg-violet-500/10 text-violet-200" />
@@ -1717,7 +1820,7 @@ function WebsiteTab({ profile, acronym }) {
 
             <WebsiteTrafficSourceDonut sourceDistribution={trafficSourceDistribution} />
 
-            <WebsiteTrafficHistoryChart points={trafficHistory} />
+            <WebsiteTrafficHistoryChart history={traffic?.history} />
 
             <WebsiteTrafficInsightBox
               insights={trafficInsights}
@@ -1735,19 +1838,19 @@ function WebsiteTab({ profile, acronym }) {
         <div className="flex flex-wrap items-center gap-2">
           <SectionTitle>Quality Audit</SectionTitle>
           {audit?.checkedAt && (
-            <Badge label={`Last checked ${fmtDateTime(audit.checkedAt)}`} className="border-[var(--brand-border)] bg-black/30 text-gray-300" />
+            <Badge label={`Last checked ${fmtDateTime(audit.checkedAt)}`} className="border-white/10 bg-black/35 text-slate-100" />
           )}
           {audit?.cached && (
-            <Badge label="DB-cached snapshot" className="border-violet-500/30 bg-violet-500/10 text-violet-200" />
+            <Badge label="DB-cached snapshot" className="border-violet-400/30 bg-violet-400/12 text-violet-100" />
           )}
           {audit?.stale && (
-            <Badge label="Stale" className="border-amber-500/30 bg-amber-500/10 text-amber-300" />
+            <Badge label="Stale" className="border-amber-400/35 bg-amber-400/14 text-amber-100" />
           )}
           <button
             type="button"
             onClick={refreshAudit}
             disabled={refreshingAudit || auditLoading || !websiteUrl}
-            className="inline-flex items-center rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-200 transition hover:bg-violet-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center rounded-full border border-violet-400/35 bg-violet-400/14 px-3 py-1.5 text-xs font-semibold text-violet-100 shadow-[0_0_20px_rgba(167,139,250,0.12)] transition hover:bg-violet-400/22 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {refreshingAudit ? 'Refreshing…' : 'Refresh audit'}
           </button>
@@ -1790,6 +1893,7 @@ function WebsiteTab({ profile, acronym }) {
                 status={mobile?.status}
                 label={mobile?.label || (audit?.configured ? 'Awaiting snapshot' : 'Not configured')}
                 score={mobile?.score}
+                scoreMax={mobile?.maxScore || 4}
                 scoreSuffix={mobile?.maxScore ? `/${mobile.maxScore}` : ''}
                 footer={mobile?.topIssues?.[0] ? `Watch: ${mobile.topIssues[0]}` : 'Viewport, fit, taps, and readability'}
               >
@@ -1820,9 +1924,9 @@ function WebsiteTab({ profile, acronym }) {
 
         <div className="mt-3">
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <div className="text-[11px] uppercase tracking-wider text-gray-500">Audit History</div>
+            <div className="text-[11px] uppercase tracking-[0.24em] text-slate-300">Audit History</div>
             {!historyLoading && auditHistory.length > 0 && (
-              <Badge label={`Last ${auditHistory.length} months`} className="border-[var(--brand-border)] bg-black/30 text-gray-300" />
+              <Badge label={`Last ${auditHistory.length} months`} className="border-white/10 bg-black/35 text-slate-100" />
             )}
           </div>
           <WebsiteAuditHistoryTable items={auditHistory} loading={historyLoading} error={historyError} />
@@ -1836,23 +1940,33 @@ function WebsiteTab({ profile, acronym }) {
 
         {!auditLoading && topIssues.length > 0 && (
           <div className="mt-3">
-            <Card>
+            <Card className="overflow-hidden border-white/10 bg-gradient-to-br from-[#171126] via-[#0F0B18] to-black/40 shadow-[0_18px_40px_rgba(0,0,0,0.2)]">
               <div className="flex items-center justify-between gap-3">
-                <div className="text-[11px] uppercase tracking-wider text-gray-500">Top Issues</div>
+                <div className="text-[11px] uppercase tracking-[0.24em] text-slate-300">Top Issues</div>
                 {audit?.websiteUrl && (
-                  <a href={audit.websiteUrl} target="_blank" rel="noreferrer" className="text-xs text-violet-400 hover:underline">
+                  <a href={audit.websiteUrl} target="_blank" rel="noreferrer" className="text-xs text-violet-200 hover:underline">
                     Open site ↗
                   </a>
                 )}
               </div>
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {topIssues.slice(0, 5).map((issue, index) => (
-                  <span
+                  <div
                     key={`${issue.label}-${index}`}
-                    className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs ${WEBSITE_AUDIT_ISSUE_STYLES[issue.severity] || WEBSITE_AUDIT_ISSUE_STYLES.low}`}
+                    className={`rounded-2xl border px-3 py-3 ${WEBSITE_AUDIT_ISSUE_STYLES[issue.severity] || WEBSITE_AUDIT_ISSUE_STYLES.low}`}
                   >
-                    {issue.label}
-                  </span>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold leading-5">{issue.label}</div>
+                        <div className="mt-1 text-[11px] uppercase tracking-[0.22em] opacity-80">
+                          {getWebsiteIssueSeverityLabel(issue.severity)}
+                        </div>
+                      </div>
+                      <span className="rounded-full border border-white/15 bg-black/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/90">
+                        {issue.severity || 'low'}
+                      </span>
+                    </div>
+                  </div>
                 ))}
               </div>
             </Card>
