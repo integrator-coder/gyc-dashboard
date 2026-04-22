@@ -456,7 +456,15 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount,
   const avgConvRate = avgLeads && avgRegistered != null ? (avgRegistered / avgLeads) * 100 : null
 
   const alerts = []
-  if (profile.isOverdue)           alerts.push({ icon: '⚠️', msg: 'Overdue balance outstanding', color: 'border-rose-500/30 bg-rose-500/10 text-rose-300' })
+  if (profile.isOverdue) {
+    alerts.push({
+      icon: '⚠️',
+      msg: profile.overdueAmount ? `Overdue balance outstanding (${fmt$(profile.overdueAmount)})` : 'Overdue balance outstanding',
+      sub: 'Open Financial tab',
+      color: 'border-rose-500/30 bg-rose-500/10 text-rose-300',
+      onClick: () => onJumpTab?.('financial'),
+    })
+  }
   if (profile.funnelTrend === 'down') alerts.push({ icon: '📉', msg: 'Funnel trending down (leads or tours decreasing)', color: 'border-amber-500/30 bg-amber-500/10 text-amber-300' })
   if (potentialUnlinkedCount > 0)  alerts.push({ icon: '🔎', msg: `${potentialUnlinkedCount} potential unlinked call${potentialUnlinkedCount !== 1 ? 's' : ''} — review in Call Intelligence`, color: 'border-amber-500/30 bg-amber-500/10 text-amber-300' })
 
@@ -484,9 +492,18 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount,
       {alerts.length > 0 && (
         <div className="space-y-2">
           {alerts.map((a, i) => (
-            <div key={i} className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm ${a.color}`}>
-              <span>{a.icon}</span> {a.msg}
-            </div>
+            <button
+              key={i}
+              type="button"
+              onClick={a.onClick}
+              className={`flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-2.5 text-left text-sm ${a.color} ${a.onClick ? 'cursor-pointer transition hover:bg-white/5' : ''}`}
+            >
+              <div className="flex items-center gap-2">
+                <span>{a.icon}</span>
+                <span>{a.msg}</span>
+              </div>
+              {a.sub && <span className="text-xs opacity-80">{a.sub} ›</span>}
+            </button>
           ))}
         </div>
       )}
@@ -2750,12 +2767,15 @@ function TabNav({ tabs, activeTab, onChange }) {
           <button
             key={tab.key}
             onClick={() => onChange(tab.key)}
-            className={`whitespace-nowrap rounded-xl px-3 py-2 text-xs font-semibold transition ${
+            className={`relative whitespace-nowrap rounded-xl px-3 py-2 text-xs font-semibold transition ${
               activeTab === tab.key
                 ? 'bg-violet-600 text-white shadow'
-                : 'text-gray-400 hover:text-white'
+                : tab.alert
+                  ? 'border border-rose-500/50 text-rose-300 hover:text-white'
+                  : 'text-gray-400 hover:text-white'
             }`}
           >
+            {tab.alert && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-400" />}
             {tab.label}
           </button>
         ))}
@@ -2829,7 +2849,7 @@ export default function ClientCard({ acronym, user }) {
   // ── Build visible tabs ───────────────────────────────────────────────────
   const ALL_TABS = [
     { key: 'overview',   label: 'Overview',              show: true },
-    { key: 'financial',  label: 'Financial',             show: true },
+    { key: 'financial',  label: 'Financial',             show: true, alert: !!profile.isOverdue },
     { key: 'gbp',        label: 'GBP',                   show: !!profile.hasSEO },
     { key: 'website',    label: 'Website',               show: true },                             // always visible
     { key: 'seo',        label: 'SEO',                   show: !!profile.hasSEO },
