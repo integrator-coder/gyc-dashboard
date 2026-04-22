@@ -131,6 +131,103 @@ const AGENT_RESPONSIBILITIES = {
   'Arbiter': ['Manages inter-agent routing and task escalation at scale (planned)', 'Dispatches incoming tasks to the correct agent based on routing rules', 'Handles escalation chains when agents flag unresolved or blocked issues', 'Maintains and updates the routing rules table under Wall·E\'s direction', 'As the fleet grows to serve external M3 clients, Arbiter becomes the load balancer'],
 }
 
+const COMMAND_MODES = [
+  {
+    name: 'Parking Lot',
+    accent: 'amber',
+    definition: 'Capture ideas, don’t build.',
+    note: 'Use when something matters, but it is not approved for execution yet.',
+  },
+  {
+    name: 'Active Queue',
+    accent: 'violet',
+    definition: 'Approved items keep moving in the background while we talk.',
+    note: 'Best default when Todd wants progress without derailing the current conversation.',
+  },
+  {
+    name: 'Hold / Pause',
+    accent: 'slate',
+    definition: 'Stop execution, discuss only.',
+    note: 'Use when the goal is clarification, review, or risk reduction before more work happens.',
+  },
+  {
+    name: 'Build Now',
+    accent: 'emerald',
+    definition: 'Execute immediately.',
+    note: 'Use when the task is approved and speed matters more than queueing it.',
+  },
+]
+
+const COMMAND_LIBRARY = [
+  {
+    phrase: 'build this now',
+    description: 'Start the work immediately instead of parking it or queuing it.',
+  },
+  {
+    phrase: 'send R2',
+    description: 'Route the build to R2 so implementation work starts with the builder agent.',
+  },
+  {
+    phrase: 'hold',
+    description: 'Pause execution and switch into discussion or review mode.',
+  },
+  {
+    phrase: 'parking lot',
+    description: 'Capture the idea so it is remembered, but do not build it yet.',
+  },
+  {
+    phrase: 'queue this',
+    description: 'Add the item to approved work that can continue in the background.',
+  },
+  {
+    phrase: 'approve for background',
+    description: 'Explicitly allow the work to keep moving while Todd and Wall·E keep talking.',
+  },
+  {
+    phrase: 'stop current work',
+    description: 'Interrupt the active task and halt execution until further direction.',
+  },
+  {
+    phrase: 'what is R2 working on?',
+    description: 'Ask for the builder’s current task, so Todd can quickly re-orient.',
+  },
+  {
+    phrase: 'show queue',
+    description: 'Show what is currently approved, active, or waiting in the system.',
+  },
+  {
+    phrase: 'what’s blocked?',
+    description: 'Surface anything stalled, waiting, or needing a decision.',
+  },
+]
+
+const COMMAND_ACCENT_STYLES = {
+  amber: {
+    border: 'border-amber-500/30',
+    bg: 'bg-amber-500/10',
+    text: 'text-amber-200',
+    chip: 'border-amber-500/30 bg-amber-500/10 text-amber-200',
+  },
+  violet: {
+    border: 'border-violet-500/30',
+    bg: 'bg-violet-500/10',
+    text: 'text-violet-200',
+    chip: 'border-violet-500/30 bg-violet-500/10 text-violet-200',
+  },
+  slate: {
+    border: 'border-slate-500/30',
+    bg: 'bg-slate-500/10',
+    text: 'text-slate-200',
+    chip: 'border-slate-500/30 bg-slate-500/10 text-slate-200',
+  },
+  emerald: {
+    border: 'border-emerald-500/30',
+    bg: 'bg-emerald-500/10',
+    text: 'text-emerald-200',
+    chip: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200',
+  },
+}
+
 function AgentCard({ agent, size = 'md' }) {
   const m = AGENT_META[agent.name] || { img: '', glow: '#7c3aed', border: '#7c3aed', bg: '#1e0b40' }
   const isPlanned = agent.status === 'planned'
@@ -447,6 +544,182 @@ function Panel({ title, children, action }) {
   )
 }
 
+function CopyCommandButton({ text }) {
+  const [copied, setCopied] = useState(false)
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1600)
+    } catch {
+      setCopied(false)
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="rounded-lg border border-[var(--brand-border)] px-2.5 py-1 text-[11px] font-semibold text-gray-300 transition hover:border-violet-500/40 hover:text-violet-100"
+    >
+      {copied ? 'Copied' : 'Copy'}
+    </button>
+  )
+}
+
+function CommandPanelSection({ status, onJump }) {
+  const currentModeStyle = COMMAND_MODES.find((mode) => mode.name === status.currentMode)
+  const currentModeAccent = COMMAND_ACCENT_STYLES[currentModeStyle?.accent || 'violet']
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-violet-500/30 bg-[radial-gradient(circle_at_top_left,rgba(115,20,148,0.22),transparent_40%),linear-gradient(180deg,rgba(18,9,29,0.98),rgba(7,7,10,1))] p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="max-w-3xl">
+            <div className="text-xs font-semibold uppercase tracking-[0.22em] text-violet-300">Todd Command Panel</div>
+            <h2 className="mt-2 text-2xl font-bold text-white">Reference, status, and quick language for driving Mission Control</h2>
+            <p className="mt-2 text-sm text-gray-300">This is a practical v1 command surface, strong as a memory aid now, without pretending it already controls runtime state directly.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => onJump('tasks')}
+              className="rounded-xl border border-violet-500/40 bg-violet-500/15 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-violet-100 transition hover:bg-violet-500/25"
+            >
+              Open Task Board
+            </button>
+            <button
+              onClick={() => onJump('agents')}
+              className="rounded-xl border border-[var(--brand-border)] bg-black/20 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-300 transition hover:text-white"
+            >
+              Check Agents
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="rounded-2xl border border-[var(--brand-border)] bg-black/20 p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-lg font-semibold text-white">Live Status / Memory Aids</div>
+              <div className="mt-1 text-xs text-gray-400">Pulled from existing Mission Control signals where available.</div>
+            </div>
+            <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wider ${currentModeAccent.chip}`}>
+              {status.currentMode}
+            </span>
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <div className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-4">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">Current Mode</div>
+              <div className="mt-2 text-lg font-bold text-white">{status.currentMode}</div>
+              <div className="mt-2 text-xs text-amber-200">Manual placeholder, derived from current board activity. Runtime mode is not persisted yet.</div>
+            </div>
+
+            <div className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-4">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">Active Queue Summary</div>
+              <div className="mt-2 text-lg font-bold text-white">{status.activeQueueCount} active item{status.activeQueueCount === 1 ? '' : 's'}</div>
+              <div className="mt-2 text-xs text-gray-300">{status.inProgressCount} in progress, {status.reviewCount} in review, {status.backlogCount} in backlog.</div>
+            </div>
+
+            <div className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-4 md:col-span-2">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">What R2 Is Working On</div>
+              <div className="mt-2 text-base font-semibold text-white">{status.r2Task}</div>
+              <div className="mt-2 text-xs text-gray-400">Source: current Mission Control agent/task data.</div>
+            </div>
+
+            <div className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-4">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">Waiting / Blocked</div>
+              <div className="mt-2 text-lg font-bold text-white">{status.blockedItems.length}</div>
+              <div className="mt-2 text-xs text-gray-300">Combines blocked board items and attention items from the scheduler.</div>
+            </div>
+
+            <div className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-4">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">Parking Lot / Backlog</div>
+              <div className="mt-2 text-lg font-bold text-white">{status.backlogCount}</div>
+              <div className="mt-2 text-xs text-gray-300">Use this as the memory shelf for ideas that are captured, not building yet.</div>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">Queue Snapshot</div>
+              <div className="mt-2 space-y-2">
+                {status.queueItems.length ? status.queueItems.map((item) => (
+                  <div key={item.id} className="rounded-xl border border-[var(--brand-border)] bg-black/30 px-3 py-2">
+                    <div className="text-sm text-white">{item.title}</div>
+                    <div className="mt-1 text-[11px] text-gray-400">{item.owner || 'Unassigned'} • {item.columnLabel}</div>
+                  </div>
+                )) : (
+                  <div className="rounded-xl border border-[var(--brand-border)] bg-black/20 px-3 py-4 text-sm text-gray-400">No active queue items visible right now.</div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-300">Blocked Snapshot</div>
+              <div className="mt-2 space-y-2">
+                {status.blockedItems.length ? status.blockedItems.map((item, idx) => (
+                  <div key={`${item.type}-${idx}`} className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2">
+                    <div className="text-sm text-white">{item.title}</div>
+                    <div className="mt-1 text-[11px] text-amber-100/80">{item.detail}</div>
+                  </div>
+                )) : (
+                  <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-4 text-sm text-emerald-200">Nothing obviously blocked from the current task board or scheduler.</div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-[var(--brand-border)] bg-black/20 p-5">
+            <div className="text-lg font-semibold text-white">Operating Modes</div>
+            <div className="mt-1 text-xs text-gray-400">Use these as the plain-language control states Todd can reference out loud.</div>
+            <div className="mt-4 grid gap-3">
+              {COMMAND_MODES.map((mode) => {
+                const accent = COMMAND_ACCENT_STYLES[mode.accent]
+                const active = status.currentMode === mode.name
+                return (
+                  <div key={mode.name} className={`rounded-xl border p-4 ${accent.border} ${accent.bg}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className={`text-sm font-bold ${accent.text}`}>{mode.name}</div>
+                        <div className="mt-1 text-sm text-white">{mode.definition}</div>
+                      </div>
+                      {active ? <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${accent.chip}`}>Current view</span> : null}
+                    </div>
+                    <div className="mt-2 text-xs text-gray-300">{mode.note}</div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-[var(--brand-border)] bg-black/20 p-5">
+            <div className="text-lg font-semibold text-white">Useful Commands / Phrases</div>
+            <div className="mt-1 text-xs text-gray-400">Shortcuts Todd can say naturally, without remembering rigid syntax.</div>
+            <div className="mt-4 grid gap-3">
+              {COMMAND_LIBRARY.map((command) => (
+                <div key={command.phrase} className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold text-violet-100">“{command.phrase}”</div>
+                      <div className="mt-1 text-xs leading-5 text-gray-300">{command.description}</div>
+                    </div>
+                    <CopyCommandButton text={command.phrase} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Add Task Modal ────────────────────────────────────────────────────────
 function AddTaskModal({ onClose, onSaved }) {
   const [title, setTitle] = useState('')
@@ -572,6 +845,47 @@ export default function MissionControlPage() {
     return Object.entries(cols).flatMap(([status, items]) => (items || []).map((item) => ({ ...item, column: status })))
   }, [data])
 
+  const commandPanelStatus = useMemo(() => {
+    const columns = data?.taskBoard?.columns || {}
+    const inProgress = columns.inProgress || []
+    const review = columns.review || []
+    const backlog = columns.backlog || []
+    const blocked = columns.blocked || []
+    const schedulerAttention = (data?.scheduler || []).filter((item) => item.status !== 'ok')
+    const r2Agent = (data?.agents || []).find((agent) => agent.name === 'R2')
+
+    const currentMode = inProgress.length || review.length
+      ? 'Active Queue'
+      : backlog.length
+        ? 'Parking Lot'
+        : 'Hold / Pause'
+
+    return {
+      currentMode,
+      activeQueueCount: inProgress.length + review.length,
+      inProgressCount: inProgress.length,
+      reviewCount: review.length,
+      backlogCount: backlog.length,
+      r2Task: r2Agent?.currentTask || 'No active R2 task is visible right now.',
+      queueItems: [
+        ...inProgress.map((item) => ({ ...item, columnLabel: 'In Progress' })),
+        ...review.map((item) => ({ ...item, columnLabel: 'Review' })),
+      ].slice(0, 6),
+      blockedItems: [
+        ...blocked.map((item) => ({
+          type: 'task',
+          title: item.title,
+          detail: `${item.owner || 'Unassigned'} • Blocked task board item`,
+        })),
+        ...schedulerAttention.map((item) => ({
+          type: 'scheduler',
+          title: item.finding,
+          detail: `${item.cadence} • ${item.followUp}`,
+        })),
+      ].slice(0, 6),
+    }
+  }, [data])
+
   const jobs = useMemo(() => (data?.jobs || []).slice(0, 200), [data])
   const diary = useMemo(() => (data?.diary || []).slice(0, 400), [data])
 
@@ -584,6 +898,7 @@ export default function MissionControlPage() {
         <div className="mt-4 flex flex-wrap gap-2">
           {[
             ['overview', 'Overview'],
+            ['command', 'Command Panel'],
             ['agents', 'Agents'],
             ['tasks', 'Task Board'],
             ['jobs', 'Jobs History'],
@@ -633,6 +948,10 @@ export default function MissionControlPage() {
             </ul>
           </Panel>
         </div>
+      )}
+
+      {tab === 'command' && (
+        <CommandPanelSection status={commandPanelStatus} onJump={setTab} />
       )}
 
       {tab === 'agents' && (
