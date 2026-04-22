@@ -454,6 +454,7 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount,
   const avgLeads = toFiniteNumber(profile.avgMonthlyLeads)
   const avgRegistered = toFiniteNumber(profile.avgMonthlyRegistered)
   const avgConvRate = avgLeads && avgRegistered != null ? (avgRegistered / avgLeads) * 100 : null
+  const displayServiceList = (profile.serviceList || []).map((service) => service === 'CRM' && profile.crmType ? profile.crmType : service)
 
   const alerts = []
   if (profile.isOverdue) {
@@ -695,13 +696,13 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount,
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
           <ServiceTile icon="🌐" label="Website"    active={!!profile.hasWebsite} saving={savingService === 'hasWebsite'} onToggle={() => toggleService('hasWebsite', !profile.hasWebsite)} onJump={() => onJumpTab?.('website')} />
           <ServiceTile icon="📈" label="SEO"        active={!!profile.hasSEO} saving={savingService === 'hasSEO'} onToggle={() => toggleService('hasSEO', !profile.hasSEO)} onJump={() => onJumpTab?.('seo')} />
-          <ServiceTile icon="🤝" label="CRM"        active={!!profile.hasCRM} saving={savingService === 'hasCRM'} onToggle={() => toggleService('hasCRM', !profile.hasCRM)} onJump={() => onJumpTab?.('crm')} />
+          <ServiceTile icon="🤝" label={profile.crmType || 'CRM'} active={!!profile.hasCRM} saving={savingService === 'hasCRM'} onToggle={() => toggleService('hasCRM', !profile.hasCRM)} onJump={() => onJumpTab?.('crm')} />
           <ServiceTile icon="📊" label="Blueprint"  active={!!profile.hasBlueprint} saving={savingService === 'hasBlueprint'} onToggle={() => toggleService('hasBlueprint', !profile.hasBlueprint)} onJump={() => onJumpTab?.('blueprint')} />
           <ServiceTile icon="📢" label="Google Ads" active={!!profile.hasGoogleAds} saving={savingService === 'hasGoogleAds'} onToggle={() => toggleService('hasGoogleAds', !profile.hasGoogleAds)} onJump={() => onJumpTab?.('paidmedia')} />
           <ServiceTile icon="💰" label="Paid Media" active={!!profile.hasPaidMedia} saving={savingService === 'hasPaidMedia'} onToggle={() => toggleService('hasPaidMedia', !profile.hasPaidMedia)} onJump={() => onJumpTab?.('paidmedia')} />
         </div>
-        {profile.serviceList?.length > 0 && (
-          <div className="mt-2 text-xs text-gray-500">Services: {profile.serviceList.join(' · ')}</div>
+        {displayServiceList.length > 0 && (
+          <div className="mt-2 text-xs text-gray-500">Services: {displayServiceList.join(' · ')}</div>
         )}
       </div>
 
