@@ -451,6 +451,9 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount,
   const funnelHistoryAsc = [...funnelHistory].reverse()
   const hasFunnel    = funnelHistory.length > 0 || profile.funnelDataMonths > 0
   const [savingService, setSavingService] = useState('')
+  const avgLeads = toFiniteNumber(profile.avgMonthlyLeads)
+  const avgRegistered = toFiniteNumber(profile.avgMonthlyRegistered)
+  const avgConvRate = avgLeads && avgRegistered != null ? (avgRegistered / avgLeads) * 100 : null
 
   const alerts = []
   if (profile.isOverdue)           alerts.push({ icon: '⚠️', msg: 'Overdue balance outstanding', color: 'border-rose-500/30 bg-rose-500/10 text-rose-300' })
@@ -576,11 +579,17 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount,
       {hasFunnel && (
         <div>
           <SectionTitle>Conversion Rates (12-mo avg)</SectionTitle>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <StatBox label="Avg Leads/mo"    value={fmtNum(profile.avgMonthlyLeads)} />
-            <StatBox label="Avg Tours/mo"    value={fmtNum(profile.avgMonthlyTours)} />
-            <StatBox label="Avg Enrollments" value={fmtNum(profile.avgMonthlyRegistered)} />
-            <StatBox label="Lead→Tour"        value={profile.leadToTourRate != null ? fmtPct(Number(profile.leadToTourRate)) : '—'} />
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <StatBox label="Avg Leads/mo" value={fmtNum(profile.avgMonthlyLeads)} />
+              <StatBox label="Avg Tours/mo" value={fmtNum(profile.avgMonthlyTours)} />
+              <StatBox label="Avg Enrollments" value={fmtNum(profile.avgMonthlyRegistered)} />
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <StatBox label="Lead to Tour Ratio" value={profile.leadToTourRate != null ? fmtPct(Number(profile.leadToTourRate)) : '—'} />
+              <StatBox label="Tour to Enrollment" value={profile.tourToRegRate != null ? fmtPct(Number(profile.tourToRegRate)) : '—'} />
+              <StatBox label="Conversion Rate" value={avgConvRate != null ? fmtPct(avgConvRate) : '—'} />
+            </div>
           </div>
         </div>
       )}
