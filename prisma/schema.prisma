@@ -433,6 +433,9 @@ model ClientWebsiteAuditSnapshot {
   mobileScore       Int?
   mobileMaxScore    Int?
   technicalSeoScore Int?
+  pageSpeedData     Json?
+  mobileData        Json?
+  technicalSeoData  Json?
   topIssues         Json     @default("[]")
   source            String?
   checkedAt         DateTime?
@@ -441,4 +444,25 @@ model ClientWebsiteAuditSnapshot {
 
   @@unique([tenantId, clientAcronym, periodMonth], map: "ClientWebsiteAuditSnapshot_client_period_unique")
   @@index([tenantId, clientAcronym, periodMonth(sort: Desc)], map: "ClientWebsiteAuditSnapshot_client_period_idx")
+}
+
+model ClientWebsiteTrafficMonthly {
+  id                 BigInt   @id @default(autoincrement())
+  tenantId           String   @default("gyc")
+  clientAcronym      String
+  propertyId         String?
+  periodMonth        String
+  sessions           Int?
+  activeUsers        Int?
+  newUsers           Int?
+  engagementRate     Int?
+  bounceRate         Int?
+  avgSessionDuration Decimal?
+  source             String?
+  checkedAt          DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @default(now())
+
+  @@unique([tenantId, clientAcronym, periodMonth], map: "ClientWebsiteTrafficMonthly_client_period_unique")
+  @@index([tenantId, clientAcronym, periodMonth(sort: Desc)], map: "ClientWebsiteTrafficMonthly_client_period_idx")
 }

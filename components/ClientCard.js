@@ -1093,30 +1093,106 @@ function WebsiteHistoryScore({ value, max = 100, text = null }) {
   )
 }
 
-function WebsiteTrafficTrend({ points = [] }) {
-  if (!points.length) return null
+function fmtCompactNum(v) {
+  if (v == null) return '—'
+  return new Intl.NumberFormat('en-US', {
+    notation: Math.abs(Number(v)) >= 1000 ? 'compact' : 'standard',
+    maximumFractionDigits: 1,
+  }).format(Number(v))
+}
 
-  const maxSessions = Math.max(...points.map((point) => Number(point.sessions) || 0), 1)
+function fmtSignedPct(v) {
+  if (v == null) return '—'
+  const n = Number(v)
+  if (!Number.isFinite(n)) return '—'
+  return `${n > 0 ? '+' : ''}${n.toFixed(1)}%`
+}
+
+function WebsiteTrafficComparisonPill({ label, value }) {
+  if (value == null) {
+    return (
+      <span className="inline-flex items-center rounded-full border border-[var(--brand-border)] bg-black/25 px-2.5 py-1 text-xs text-gray-500">
+        {label}: —
+      </span>
+    )
+  }
+
+  const tone = value > 0
+    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+    : value < 0
+      ? 'border-rose-500/30 bg-rose-500/10 text-rose-300'
+      : 'border-[var(--brand-border)] bg-black/25 text-gray-300'
+
+  return (
+    <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium ${tone}`}>
+      {label}: {fmtSignedPct(value)}
+    </span>
+  )
+}
+
+function WebsiteTrafficHistoryTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+
+  const point = payload[0]?.payload || {}
+
+  return (
+    <div className="rounded-xl border border-[var(--brand-border)] bg-[#120E1F]/95 px-3 py-2 text-xs shadow-2xl">
+      <div className="font-semibold text-white">{fmtPeriodLong(label || point.periodMonth)}</div>
+      <div className="mt-2 space-y-1 text-gray-300">
+        <div>Sessions: {fmtNum(point.sessions)}</div>
+        <div>Active users: {fmtNum(point.activeUsers)}</div>
+        {point.checkedAt && <div className="text-gray-500">Captured {fmtDate(point.checkedAt)}</div>}
+      </div>
+    </div>
+  )
+}
+
+function WebsiteTrafficHistoryChart({ points = [] }) {
+  if (!points.length) return null
 
   return (
     <div className="mt-4">
-      <div className="text-[11px] uppercase tracking-wider text-gray-500">30-day sessions trend</div>
-      <div className="mt-3 flex h-20 items-end gap-1">
-        {points.map((point) => {
-          const sessions = Number(point.sessions) || 0
-          const height = Math.max(8, Math.round((sessions / maxSessions) * 100))
-          const label = point.date ? fmtDate(point.date) : 'Daily session total'
-
-          return (
-            <div key={String(point.date)} className="group relative flex-1">
-              <div
-                className="w-full rounded-t-md bg-violet-400/70 transition group-hover:bg-violet-300"
-                style={{ height: `${height}%` }}
-                title={`${label}: ${fmtNum(sessions)} sessions`}
-              />
-            </div>
-          )
-        })}
+      <div className="text-[11px] uppercase tracking-wider text-gray-500">Last 12 monthly GA snapshots</div>
+      <div className="mt-3 h-64 rounded-2xl border border-[var(--brand-border)] bg-black/20 p-3">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={points} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+            <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
+            <XAxis
+              dataKey="periodMonth"
+              tick={{ fill: '#9CA3AF', fontSize: 11 }}
+              tickFormatter={fmtMonth}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              tick={{ fill: '#9CA3AF', fontSize: 11 }}
+              tickFormatter={fmtCompactNum}
+              axisLine={false}
+              tickLine={false}
+              width={44}
+            />
+            <Tooltip content={<WebsiteTrafficHistoryTooltip />} />
+            <Legend wrapperStyle={{ fontSize: '12px' }} />
+            <Line
+              type="monotone"
+              dataKey="sessions"
+              name="Sessions"
+              stroke="#A855F7"
+              strokeWidth={2.5}
+              dot={{ r: 3 }}
+              activeDot={{ r: 5 }}
+            />
+            <Line
+              type="monotone"
+              dataKey="activeUsers"
+              name="Active users"
+              stroke="#22D3EE"
+              strokeWidth={2.5}
+              dot={{ r: 3 }}
+              activeDot={{ r: 5 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     </div>
   )
@@ -1141,7 +1217,7 @@ function WebsiteAuditHistoryTable({ items = [], loading = false, error = '' }) {
   }
 
   if (!items.length) {
-    return <Empty>No monthly audit history yet. The first successful live audit will create this month’s snapshot.</Empty>
+    return <Empty>No monthly audit history yet. Refresh Audit to create the first cached snapshot.</Empty>
   }
 
   return (
@@ -1188,6 +1264,7 @@ function WebsiteTab({ profile, acronym }) {
   const [audit, setAudit] = useState(null)
   const [auditLoading, setAuditLoading] = useState(true)
   const [auditError, setAuditError] = useState('')
+  const [refreshingAudit, setRefreshingAudit] = useState(false)
   const [auditHistory, setAuditHistory] = useState([])
   const [historyLoading, setHistoryLoading] = useState(true)
   const [historyError, setHistoryError] = useState('')
@@ -1203,45 +1280,71 @@ function WebsiteTab({ profile, acronym }) {
     setTrafficLoading(true)
     setTrafficError('')
 
-    const trafficPromise = fetch(`/api/clients/${acronym}/website-traffic`, { cache: 'no-store' })
-      .then(async (res) => {
-        const json = await res.json().catch(() => ({}))
-        if (!res.ok) throw new Error(json.error || 'Failed to load website traffic.')
-        return json
-      })
-
-    try {
-      const res = await fetch(`/api/clients/${acronym}/website-audit`, { cache: 'no-store' })
+    const fetchJson = async (url, fallbackMessage) => {
+      const res = await fetch(url, { cache: 'no-store' })
       const json = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(json.error || 'Failed to load website audit.')
-      setAudit(json)
-    } catch (error) {
+      if (!res.ok) throw new Error(json.error || fallbackMessage)
+      return json
+    }
+
+    const [auditResult, trafficResult, historyResult] = await Promise.allSettled([
+      fetchJson(`/api/clients/${acronym}/website-audit`, 'Failed to load website audit.'),
+      fetchJson(`/api/clients/${acronym}/website-traffic`, 'Failed to load website traffic.'),
+      fetchJson(`/api/clients/${acronym}/website-audit/history?limit=12`, 'Failed to load website audit history.'),
+    ])
+
+    if (auditResult.status === 'fulfilled') {
+      setAudit(auditResult.value)
+      setAuditError('')
+    } else {
       setAudit(null)
-      setAuditError(error.message || 'Failed to load website audit.')
-    } finally {
-      setAuditLoading(false)
+      setAuditError(auditResult.reason?.message || 'Failed to load website audit.')
     }
+    setAuditLoading(false)
 
-    try {
-      const json = await trafficPromise
-      setTraffic(json)
-    } catch (error) {
+    if (trafficResult.status === 'fulfilled') {
+      setTraffic(trafficResult.value)
+      setTrafficError('')
+    } else {
       setTraffic(null)
-      setTrafficError(error.message || 'Failed to load website traffic.')
-    } finally {
-      setTrafficLoading(false)
+      setTrafficError(trafficResult.reason?.message || 'Failed to load website traffic.')
     }
+    setTrafficLoading(false)
+
+    if (historyResult.status === 'fulfilled') {
+      setAuditHistory(Array.isArray(historyResult.value.items) ? historyResult.value.items : [])
+      setHistoryError('')
+    } else {
+      setAuditHistory([])
+      setHistoryError(historyResult.reason?.message || 'Failed to load website audit history.')
+    }
+    setHistoryLoading(false)
+  }, [acronym])
+
+  const refreshAudit = useCallback(async () => {
+    setRefreshingAudit(true)
 
     try {
-      const res = await fetch(`/api/clients/${acronym}/website-audit/history?limit=6`, { cache: 'no-store' })
+      const res = await fetch(`/api/clients/${acronym}/website-audit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
       const json = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(json.error || 'Failed to load website audit history.')
-      setAuditHistory(Array.isArray(json.items) ? json.items : [])
+      if (!res.ok) throw new Error(json.error || 'Failed to refresh website audit.')
+
+      setAudit(json)
+      setAuditError('')
+
+      const historyRes = await fetch(`/api/clients/${acronym}/website-audit/history?limit=12`, { cache: 'no-store' })
+      const historyJson = await historyRes.json().catch(() => ({}))
+      if (!historyRes.ok) throw new Error(historyJson.error || 'Failed to load website audit history.')
+
+      setAuditHistory(Array.isArray(historyJson.items) ? historyJson.items : [])
+      setHistoryError('')
     } catch (error) {
-      setAuditHistory([])
-      setHistoryError(error.message || 'Failed to load website audit history.')
+      setAuditError(error.message || 'Failed to refresh website audit.')
     } finally {
-      setHistoryLoading(false)
+      setRefreshingAudit(false)
     }
   }, [acronym])
 
@@ -1255,8 +1358,9 @@ function WebsiteTab({ profile, acronym }) {
   const topIssues = Array.isArray(audit?.topIssues) ? audit.topIssues : []
   const auditMessage = auditError || audit?.message || ''
   const trafficMetrics = traffic?.metrics || null
-  const trafficTrendPoints = Array.isArray(traffic?.trend?.points) ? traffic.trend.points : []
-  const trafficMessage = trafficError || ((!traffic?.connected || trafficTrendPoints.length === 0) ? (traffic?.message || '') : '')
+  const trafficHistory = Array.isArray(traffic?.history?.points) ? traffic.history.points : []
+  const trafficComparisons = traffic?.history?.comparisons || null
+  const trafficMessage = trafficError || traffic?.history?.message || ((!traffic?.connected || trafficHistory.length === 0) ? (traffic?.message || '') : '')
   const topTrafficSources = [
     ['Organic', trafficMetrics?.channels?.organicSearch],
     ['Direct', trafficMetrics?.channels?.directSessions],
@@ -1331,6 +1435,9 @@ function WebsiteTab({ profile, acronym }) {
           {traffic?.checkedAt && (
             <Badge label={`GA synced ${fmtDateTime(traffic.checkedAt)}`} className="border-[var(--brand-border)] bg-black/30 text-gray-300" />
           )}
+          {trafficHistory.length > 0 && (
+            <Badge label={`${trafficHistory.length} monthly snapshot${trafficHistory.length === 1 ? '' : 's'}`} className="border-[var(--brand-border)] bg-black/30 text-gray-300" />
+          )}
           {traffic?.propertyId && (
             <Badge label={`Property ${traffic.propertyId}`} className="border-violet-500/30 bg-violet-500/10 text-violet-200" />
           )}
@@ -1343,11 +1450,23 @@ function WebsiteTab({ profile, acronym }) {
         ) : trafficMetrics ? (
           <Card>
             <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-              <WebsiteAuditMetric label="Active users (30d)" value={fmtNum(trafficMetrics.activeUsers)} />
-              <WebsiteAuditMetric label="Sessions (30d)" value={fmtNum(trafficMetrics.sessions)} />
+              <WebsiteAuditMetric label="Active users (latest 30d)" value={fmtNum(trafficMetrics.activeUsers)} />
+              <WebsiteAuditMetric label="Sessions (latest 30d)" value={fmtNum(trafficMetrics.sessions)} />
               <WebsiteAuditMetric label="Engagement rate" value={trafficMetrics.engagementRate == null ? '—' : `${trafficMetrics.engagementRate}%`} />
-              <WebsiteAuditMetric label="New users (30d)" value={fmtNum(trafficMetrics.newUsers)} />
+              <WebsiteAuditMetric label="New users (latest 30d)" value={fmtNum(trafficMetrics.newUsers)} />
             </div>
+
+            {(trafficComparisons?.sessions || trafficComparisons?.activeUsers) && (
+              <div className="mt-4 space-y-2">
+                <div className="text-[11px] uppercase tracking-wider text-gray-500">Snapshot context</div>
+                <div className="flex flex-wrap gap-2">
+                  <WebsiteTrafficComparisonPill label="Sessions vs last month" value={trafficComparisons?.sessions?.vsLastMonthPct} />
+                  <WebsiteTrafficComparisonPill label="Sessions vs 3-mo avg" value={trafficComparisons?.sessions?.vsThreeMonthAvgPct} />
+                  <WebsiteTrafficComparisonPill label="Users vs last month" value={trafficComparisons?.activeUsers?.vsLastMonthPct} />
+                  <WebsiteTrafficComparisonPill label="Users vs 3-mo avg" value={trafficComparisons?.activeUsers?.vsThreeMonthAvgPct} />
+                </div>
+              </div>
+            )}
 
             {topTrafficSources.length > 0 && (
               <div className="mt-4 flex flex-wrap gap-2">
@@ -1359,10 +1478,10 @@ function WebsiteTab({ profile, acronym }) {
               </div>
             )}
 
-            <WebsiteTrafficTrend points={trafficTrendPoints} />
+            <WebsiteTrafficHistoryChart points={trafficHistory} />
 
             <div className="mt-4 text-xs text-gray-500">
-              {trafficMessage || 'Using the current GA 30-day snapshot for this client.'}
+              {trafficMessage || 'Top-line metrics use the latest GA 30-day snapshot, and the chart shows monthly snapshots captured in the database.'}
             </div>
           </Card>
         ) : trafficMessage ? (
@@ -1378,6 +1497,20 @@ function WebsiteTab({ profile, acronym }) {
           {audit?.checkedAt && (
             <Badge label={`Last checked ${fmtDateTime(audit.checkedAt)}`} className="border-[var(--brand-border)] bg-black/30 text-gray-300" />
           )}
+          {audit?.cached && (
+            <Badge label="DB-cached snapshot" className="border-violet-500/30 bg-violet-500/10 text-violet-200" />
+          )}
+          {audit?.stale && (
+            <Badge label="Stale" className="border-amber-500/30 bg-amber-500/10 text-amber-300" />
+          )}
+          <button
+            type="button"
+            onClick={refreshAudit}
+            disabled={refreshingAudit || auditLoading || !websiteUrl}
+            className="inline-flex items-center rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-200 transition hover:bg-violet-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {refreshingAudit ? 'Refreshing…' : 'Refresh audit'}
+          </button>
         </div>
 
         {auditMessage && !auditLoading && (
