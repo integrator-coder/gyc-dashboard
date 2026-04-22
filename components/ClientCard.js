@@ -741,6 +741,7 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount,
 function FinancialTab({ profile, recentPayments = [] }) {
   const [paymentSearch, setPaymentSearch] = useState('')
   const isPIF = profile.lifetimeValue && profile.mrr && Number(profile.lifetimeValue) > Number(profile.mrr) * 10
+  const hasRecentPayments = recentPayments.length > 0
 
   // Build year-by-year summary from full payment history
   const annualSummary = useMemo(() => {
@@ -774,7 +775,7 @@ function FinancialTab({ profile, recentPayments = [] }) {
       <div>
         <SectionTitle>Revenue</SectionTitle>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <StatBox label="MRR" value={profile.mrr ? fmt$(profile.mrr) : '—'} sub={profile.stripeCustomerId ? 'Live Stripe subscriptions' : null} big />
+          <StatBox label="MRR" value={profile.mrr ? fmt$(profile.mrr) : '—'} sub={profile.stripeCustomerId ? 'Synced/cached Stripe data' : null} big />
           <StatBox label="Lifetime Value" value={profile.lifetimeValue ? fmt$(profile.lifetimeValue) : '—'} />
           <StatBox
             label="Overdue Amount"
@@ -882,66 +883,72 @@ function FinancialTab({ profile, recentPayments = [] }) {
       )}
 
       {/* Full Payment History */}
-      {recentPayments.length > 0 && (
-        <div>
-          <SectionTitle>
-            Payment History
+      <div>
+        <SectionTitle>
+          Payment History
+          {hasRecentPayments && (
             <span style={{ marginLeft: 8, fontSize: 12, fontWeight: 400, color: '#9ca3af' }}>
-              {recentPayments.length} payments — ${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} total
+              {recentPayments.length} payments, ${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} total
             </span>
-          </SectionTitle>
-          {/* Search input */}
-          <div style={{ marginBottom: 8 }}>
-            <input
-              type="text"
-              placeholder="Search by date or description…"
-              value={paymentSearch}
-              onChange={e => setPaymentSearch(e.target.value)}
-              style={{
-                width: '100%',
-                background: '#1a0a2e',
-                border: '1px solid #2a1a3e',
-                borderRadius: 8,
-                padding: '7px 12px',
-                color: '#e2e8f0',
-                fontSize: 13,
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
-            />
-          </div>
-          <Card style={{ padding: 0 }}>
-            <div style={{ maxHeight: 300, overflowY: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead style={{ position: 'sticky', top: 0, background: '#120827', zIndex: 1 }}>
-                  <tr style={{ borderBottom: '1px solid #2a1a3e' }}>
-                    <th style={{ textAlign: 'left', padding: '8px 12px', color: '#9ca3af' }}>Date</th>
-                    <th style={{ textAlign: 'left', padding: '8px 12px', color: '#9ca3af' }}>Description</th>
-                    <th style={{ textAlign: 'right', padding: '8px 12px', color: '#9ca3af' }}>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredPayments.length === 0 ? (
-                    <tr>
-                      <td colSpan={3} style={{ padding: '12px', textAlign: 'center', color: '#6b7280' }}>No payments match your search.</td>
-                    </tr>
-                  ) : (
-                    filteredPayments.map((pmt, i) => (
-                      <tr key={pmt.id || i} style={{ borderBottom: '1px solid #1a0a2e' }}>
-                        <td style={{ padding: '7px 12px', color: '#9ca3af', whiteSpace: 'nowrap' }}>{pmt.date}</td>
-                        <td style={{ padding: '7px 12px', color: '#fff' }}>{pmt.description}</td>
-                        <td style={{ padding: '7px 12px', textAlign: 'right', color: '#4ade80', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                          ${pmt.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+          )}
+        </SectionTitle>
+
+        {!hasRecentPayments ? (
+          <Empty>No synced payment history is loaded for this client card yet.</Empty>
+        ) : (
+          <>
+            <div style={{ marginBottom: 8 }}>
+              <input
+                type="text"
+                placeholder="Search by date or description…"
+                value={paymentSearch}
+                onChange={e => setPaymentSearch(e.target.value)}
+                style={{
+                  width: '100%',
+                  background: '#1a0a2e',
+                  border: '1px solid #2a1a3e',
+                  borderRadius: 8,
+                  padding: '7px 12px',
+                  color: '#e2e8f0',
+                  fontSize: 13,
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
             </div>
-          </Card>
-        </div>
-      )}
+            <Card style={{ padding: 0 }}>
+              <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead style={{ position: 'sticky', top: 0, background: '#120827', zIndex: 1 }}>
+                    <tr style={{ borderBottom: '1px solid #2a1a3e' }}>
+                      <th style={{ textAlign: 'left', padding: '8px 12px', color: '#9ca3af' }}>Date</th>
+                      <th style={{ textAlign: 'left', padding: '8px 12px', color: '#9ca3af' }}>Description</th>
+                      <th style={{ textAlign: 'right', padding: '8px 12px', color: '#9ca3af' }}>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredPayments.length === 0 ? (
+                      <tr>
+                        <td colSpan={3} style={{ padding: '12px', textAlign: 'center', color: '#6b7280' }}>No payments match your search.</td>
+                      </tr>
+                    ) : (
+                      filteredPayments.map((pmt, i) => (
+                        <tr key={pmt.id || i} style={{ borderBottom: '1px solid #1a0a2e' }}>
+                          <td style={{ padding: '7px 12px', color: '#9ca3af', whiteSpace: 'nowrap' }}>{pmt.date}</td>
+                          <td style={{ padding: '7px 12px', color: '#fff' }}>{pmt.description}</td>
+                          <td style={{ padding: '7px 12px', textAlign: 'right', color: '#4ade80', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                            ${pmt.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </>
+        )}
+      </div>
 
       {/* GHL pipeline */}
       {(profile.ghlContactId || profile.ghlPipelineStage) && (

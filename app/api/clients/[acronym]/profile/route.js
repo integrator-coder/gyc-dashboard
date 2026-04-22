@@ -13,12 +13,11 @@ import { NextResponse } from 'next/server'
 import { requireApiUser, userHasRole } from '@/lib/auth'
 import { pool } from '@/lib/pg'
 import {
+  computeEnrollmentRollup,
   getCurrentPeriodMonth,
-  getLatestClientEnrollmentVerification,
   syncClientProfileEnrollmentRollup,
   upsertClientEnrollmentVerification,
 } from '@/lib/enrollment-verification'
-import Stripe from 'stripe'
 
 function computeHealthScore(row) {
   let score = 10
@@ -27,25 +26,6 @@ function computeHealthScore(row) {
   if (Number(row.overdueCount || 0) > 1)      score -= 1
   if (row.stripeStatus === 'past_due')        score -= 2
   return Math.max(1, Math.min(10, score))
-}
-
-function calcSubscriptionMrr(sub) {
-  const items = sub?.items?.data || []
-  return items.reduce((sum, item) => {
-    const price = item?.price || {}
-    const qty = item?.quantity || 1
-    const unit = (price.unit_amount || 0) / 100
-    const interval = price?.recurring?.interval || 'month'
-    const count = price?.recurring?.interval_count || 1
-
-    let monthly = unit * qty
-    if (interval === 'year') monthly = (unit * qty) / (12 * count)
-    else if (interval === 'month') monthly = (unit * qty) / count
-    else if (interval === 'week') monthly = (unit * qty * 52) / (12 * count)
-    else if (interval === 'day') monthly = (unit * qty * 365) / (12 * count)
-
-    return sum + monthly
-  }, 0)
 }
 
 function hasOwn(obj, key) {
@@ -265,68 +245,7 @@ export async function GET(_request, { params }) {
       healthScore:          computeHealthScore(profileRow),
     }
 
-    // ── Stripe: recent payments + LTV recalculation ──────────────────────
-    let recentPayments = []
-    let finalLtv = profile.lifetimeValue || 0
-    let liveMrr = profile.mrr || 0
-
-    if (profile.stripeCustomerId && process.env.STRIPE_SECRET_KEY) {
-      try {
-        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' })
-
-        // Fetch live subscriptions to compute true customer-level MRR
-        const subs = await stripe.subscriptions.list({
-          customer: profile.stripeCustomerId,
-          status: 'all',
-          limit: 100,
-          expand: ['data.items.data.price'],
-        })
-        const liveSubs = subs.data.filter(s => ['active', 'past_due', 'trialing'].includes(s.status))
-        liveMrr = liveSubs.reduce((sum, sub) => sum + calcSubscriptionMrr(sub), 0)
-
-        // Fetch ALL charges via pagination
-        let allCharges = []
-        let hasMore = true
-        let startingAfter = undefined
-
-        while (hasMore) {
-          const params = { customer: profile.stripeCustomerId, limit: 100 }
-          if (startingAfter) params.starting_after = startingAfter
-          const batch = await stripe.charges.list(params)
-          const succeeded = batch.data.filter(c => c.status === 'succeeded')
-          allCharges = allCharges.concat(succeeded.map(c => ({
-            date: new Date(c.created * 1000).toISOString().slice(0, 10),
-            amount: c.amount / 100,
-            description: c.description || 'Payment',
-            id: c.id,
-          })))
-          hasMore = batch.has_more
-          if (batch.data.length > 0) startingAfter = batch.data[batch.data.length - 1].id
-        }
-
-        recentPayments = allCharges // all of them, already DESC from Stripe
-
-        // Calculate real LTV from all succeeded charges
-        const ltv = allCharges.reduce((s, c) => s + c.amount, 0)
-        finalLtv = ltv
-
-        // Update DB with correct LTV / MRR if different
-        if (Math.abs(ltv - (profile.lifetimeValue || 0)) > 1 || Math.abs(liveMrr - (profile.mrr || 0)) > 1) {
-          await pool.query(
-            `UPDATE "ClientProfile" SET "lifetimeValue" = $1, "mrr" = $2 WHERE "tenantId" = 'gyc' AND acronym = $3`,
-            [ltv, liveMrr, upper]
-          )
-          await pool.query(
-            `UPDATE "StripeCustomer" SET "mrr" = $1 WHERE id = $2`,
-            [liveMrr, profile.stripeCustomerId]
-          ).catch(() => null)
-          profile.lifetimeValue = ltv
-          profile.mrr = liveMrr
-        }
-      } catch (e) {
-        console.error('Stripe error for', upper, e.message)
-      }
-    }
+    const recentPayments = []
 
     const gbpLocations = gbpLocationsRes.rows.map((row) => ({
       ...row,
@@ -339,20 +258,31 @@ export async function GET(_request, { params }) {
     const enrollmentRollupActive = activeGbpLocations.length > 0
 
     if (enrollmentRollupActive) {
-      const rollup = await syncClientProfileEnrollmentRollup(pool, {
-        tenantId: 'gyc',
-        clientAcronym: upper,
-        locations: activeGbpLocations,
-      })
-
+      const rollup = computeEnrollmentRollup(activeGbpLocations)
       profile.centerCapacity = rollup.centerCapacity
       profile.currentEnrollment = rollup.currentEnrollment
     }
 
-    const latestEnrollmentVerification = await getLatestClientEnrollmentVerification(pool, {
-      tenantId: 'gyc',
-      clientAcronym: upper,
-    })
+    const latestEnrollmentVerificationRes = await pool.query(
+      `SELECT *
+       FROM "ClientEnrollmentVerification"
+       WHERE "tenantId" = $1
+         AND "clientAcronym" = $2
+         AND "locationName" IS NULL
+       ORDER BY "periodMonth" DESC, "checkedAt" DESC, id DESC
+       LIMIT 1`,
+      ['gyc', upper]
+    ).catch(() => ({ rows: [] }))
+
+    const latestEnrollmentVerificationRow = latestEnrollmentVerificationRes.rows[0] || null
+    const latestEnrollmentVerification = latestEnrollmentVerificationRow
+      ? {
+          ...latestEnrollmentVerificationRow,
+          capacity: latestEnrollmentVerificationRow.capacity != null ? Number(latestEnrollmentVerificationRow.capacity) : null,
+          currentEnrollment: latestEnrollmentVerificationRow.currentEnrollment != null ? Number(latestEnrollmentVerificationRow.currentEnrollment) : null,
+          avgTuition: latestEnrollmentVerificationRow.avgTuition != null ? Number(latestEnrollmentVerificationRow.avgTuition) : null,
+        }
+      : null
 
     profile.centerCapacity = toNullableNumber(profile.centerCapacity)
     profile.currentEnrollment = toNullableNumber(profile.currentEnrollment)
@@ -360,7 +290,7 @@ export async function GET(_request, { params }) {
     profile.enrollmentRollupActive = enrollmentRollupActive
 
     return NextResponse.json({
-      profile: { ...profile, mrr: liveMrr || profile.mrr, lifetimeValue: finalLtv },
+      profile,
       // All calls (classified + pending) for the tab
       allCalls,
       classifiedCalls,
