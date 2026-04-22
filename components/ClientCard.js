@@ -47,6 +47,15 @@ function fmtDate(v) {
   } catch { return '—' }
 }
 
+function fmtDateTime(v) {
+  if (!v) return '—'
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
+    }).format(new Date(v))
+  } catch { return '—' }
+}
+
 function fmtPct(v) {
   if (v == null) return '—'
   const n = Number(v)
@@ -955,9 +964,140 @@ function FinancialTab({ profile, recentPayments = [] }) {
 
 // ── Tab 3: Website (always visible) ──────────────────────────────────────────
 
-function WebsiteTab({ profile, acronym, user }) {
+const WEBSITE_AUDIT_STATUS_STYLES = {
+  healthy: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
+  warning: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
+  critical: 'border-rose-500/30 bg-rose-500/10 text-rose-300',
+  unknown: 'border-gray-500/30 bg-gray-500/10 text-gray-300',
+}
+
+const WEBSITE_AUDIT_ISSUE_STYLES = {
+  high: 'border-rose-500/30 bg-rose-500/10 text-rose-200',
+  medium: 'border-amber-500/30 bg-amber-500/10 text-amber-200',
+  low: 'border-gray-500/30 bg-gray-500/10 text-gray-300',
+}
+
+function fmtAuditSeconds(v) {
+  const n = toFiniteNumber(v)
+  return n == null ? '—' : `${n.toFixed(1)}s`
+}
+
+function fmtAuditMs(v) {
+  const n = toFiniteNumber(v)
+  return n == null ? '—' : `${Math.round(n)} ms`
+}
+
+function fmtAuditCls(v) {
+  const n = toFiniteNumber(v)
+  return n == null ? '—' : n.toFixed(2)
+}
+
+function getWebsiteAuditStatusClass(status) {
+  return WEBSITE_AUDIT_STATUS_STYLES[status] || WEBSITE_AUDIT_STATUS_STYLES.unknown
+}
+
+function WebsiteAuditBadge({ status, label }) {
+  return <Badge label={label || 'Unavailable'} className={getWebsiteAuditStatusClass(status)} />
+}
+
+function WebsiteAuditMetric({ label, value }) {
+  return (
+    <div className="rounded-xl border border-[var(--brand-border)] bg-black/20 px-3 py-2">
+      <div className="text-[10px] uppercase tracking-wider text-gray-500">{label}</div>
+      <div className="mt-1 text-sm font-semibold text-white">{value ?? '—'}</div>
+    </div>
+  )
+}
+
+function WebsiteAuditCheckList({ items = [] }) {
+  if (!items.length) return <div className="text-xs text-gray-500">No checks available yet.</div>
+
+  return (
+    <div className="space-y-2">
+      {items.map((item) => (
+        <div key={item.label} className="flex items-center justify-between gap-3 rounded-xl border border-[var(--brand-border)] bg-black/20 px-3 py-2">
+          <span className="text-xs text-gray-300">{item.label}</span>
+          <span className={`text-xs font-semibold ${item.passed ? 'text-emerald-300' : 'text-rose-300'}`}>
+            {item.passed ? 'Pass' : 'Fail'}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function WebsiteAuditCard({ icon, title, status, label, score, scoreSuffix = '', children, footer }) {
+  return (
+    <Card className="h-full">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-[11px] uppercase tracking-wider text-gray-500">{icon} {title}</div>
+          <div className="mt-2 text-3xl font-black text-white">
+            {score ?? '—'}
+            {score != null && scoreSuffix ? <span className="text-lg font-semibold text-gray-400">{scoreSuffix}</span> : null}
+          </div>
+        </div>
+        <WebsiteAuditBadge status={status} label={label} />
+      </div>
+      <div className="mt-4">{children}</div>
+      {footer ? <div className="mt-4 text-xs text-gray-500">{footer}</div> : null}
+    </Card>
+  )
+}
+
+function WebsiteAuditSkeletonCard({ title }) {
+  return (
+    <Card className="h-full animate-pulse">
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-2">
+          <div className="h-3 w-28 rounded bg-white/10" />
+          <div className="h-8 w-16 rounded bg-white/10" />
+        </div>
+        <div className="h-6 w-24 rounded-full bg-white/10" />
+      </div>
+      <div className="mt-4 space-y-2">
+        <div className="h-10 rounded-xl bg-white/10" />
+        <div className="h-10 rounded-xl bg-white/10" />
+        <div className="h-10 rounded-xl bg-white/10" />
+      </div>
+      <div className="sr-only">Loading {title}</div>
+    </Card>
+  )
+}
+
+function WebsiteTab({ profile, acronym }) {
   const isGYCWebsite = !!profile.hasWebsite
   const websiteUrl   = profile.website || null
+  const [audit, setAudit] = useState(null)
+  const [auditLoading, setAuditLoading] = useState(true)
+  const [auditError, setAuditError] = useState('')
+
+  const loadAudit = useCallback(async () => {
+    setAuditLoading(true)
+    setAuditError('')
+
+    try {
+      const res = await fetch(`/api/clients/${acronym}/website-audit`, { cache: 'no-store' })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(json.error || 'Failed to load website audit.')
+      setAudit(json)
+    } catch (error) {
+      setAudit(null)
+      setAuditError(error.message || 'Failed to load website audit.')
+    } finally {
+      setAuditLoading(false)
+    }
+  }, [acronym])
+
+  useEffect(() => {
+    loadAudit()
+  }, [loadAudit])
+
+  const pageSpeed = audit?.pageSpeed || null
+  const mobile = audit?.mobile || null
+  const technicalSeo = audit?.technicalSeo || null
+  const topIssues = Array.isArray(audit?.topIssues) ? audit.topIssues : []
+  const auditMessage = auditError || audit?.message || ''
 
   return (
     <div className="space-y-6">
@@ -1023,14 +1163,115 @@ function WebsiteTab({ profile, acronym, user }) {
         </div>
       )}
 
-      {/* Audit placeholders — always shown */}
       <div>
-        <SectionTitle>Quality Audit</SectionTitle>
-        <div className="space-y-2">
-          <PlaceholderBanner icon="⚡" message="Page speed score — DataForSEO integration pending" />
-          <PlaceholderBanner icon="📱" message="Mobile-friendliness check — coming soon" />
-          <PlaceholderBanner icon="🔍" message="Technical SEO audit — coming soon" />
+        <div className="flex flex-wrap items-center gap-2">
+          <SectionTitle>Quality Audit</SectionTitle>
+          {audit?.checkedAt && (
+            <Badge label={`Last checked ${fmtDateTime(audit.checkedAt)}`} className="border-[var(--brand-border)] bg-black/30 text-gray-300" />
+          )}
         </div>
+
+        {auditMessage && !auditLoading && (
+          <div className="mb-3">
+            <PlaceholderBanner icon={audit?.reason === 'fetch_failed' || auditError ? '⚠️' : 'ℹ️'} message={auditMessage} />
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
+          {auditLoading ? (
+            <>
+              <WebsiteAuditSkeletonCard title="Page Speed" />
+              <WebsiteAuditSkeletonCard title="Mobile Friendliness" />
+              <WebsiteAuditSkeletonCard title="Technical SEO" />
+            </>
+          ) : (
+            <>
+              <WebsiteAuditCard
+                icon="⚡"
+                title="Page Speed"
+                status={pageSpeed?.status}
+                label={pageSpeed?.label || (audit?.configured ? 'Awaiting snapshot' : 'Not configured')}
+                score={pageSpeed?.score}
+                scoreSuffix={pageSpeed?.score != null ? '/100' : ''}
+                footer={pageSpeed?.topIssues?.[0] ? `Watch: ${pageSpeed.topIssues[0]}` : 'Mobile Lighthouse snapshot'}
+              >
+                <div className="grid grid-cols-3 gap-2">
+                  <WebsiteAuditMetric label="LCP" value={fmtAuditSeconds(pageSpeed?.lcp)} />
+                  <WebsiteAuditMetric label="TBT" value={fmtAuditMs(pageSpeed?.tbt)} />
+                  <WebsiteAuditMetric label="CLS" value={fmtAuditCls(pageSpeed?.cls)} />
+                </div>
+              </WebsiteAuditCard>
+
+              <WebsiteAuditCard
+                icon="📱"
+                title="Mobile Friendliness"
+                status={mobile?.status}
+                label={mobile?.label || (audit?.configured ? 'Awaiting snapshot' : 'Not configured')}
+                score={mobile?.score}
+                scoreSuffix={mobile?.maxScore ? `/${mobile.maxScore}` : ''}
+                footer={mobile?.topIssues?.[0] ? `Watch: ${mobile.topIssues[0]}` : 'Viewport, fit, taps, and readability'}
+              >
+                <WebsiteAuditCheckList items={mobile?.checks || []} />
+              </WebsiteAuditCard>
+
+              <WebsiteAuditCard
+                icon="🔍"
+                title="Technical SEO"
+                status={technicalSeo?.status}
+                label={technicalSeo?.label || (audit?.configured ? 'Awaiting snapshot' : 'Not configured')}
+                score={technicalSeo?.score}
+                scoreSuffix={technicalSeo?.score != null ? '/100' : ''}
+                footer={technicalSeo?.topIssues?.[0] ? `Watch: ${technicalSeo.topIssues[0]}` : 'Homepage crawl and technical health snapshot'}
+              >
+                <div className="grid grid-cols-3 gap-2">
+                  <WebsiteAuditMetric label="Non-indexable" value={fmtNum(technicalSeo?.nonIndexable)} />
+                  <WebsiteAuditMetric label="Broken" value={fmtNum(technicalSeo?.brokenIssues)} />
+                  <WebsiteAuditMetric label="Dup meta" value={fmtNum(technicalSeo?.duplicateMeta)} />
+                </div>
+                <div className="mt-3">
+                  <WebsiteAuditCheckList items={technicalSeo?.healthChecks || []} />
+                </div>
+              </WebsiteAuditCard>
+            </>
+          )}
+        </div>
+
+        {!auditLoading && !auditError && audit?.reason === 'no_website' && (
+          <div className="mt-3">
+            <Empty>Add a website URL to this client profile to run the quality audit.</Empty>
+          </div>
+        )}
+
+        {!auditLoading && topIssues.length > 0 && (
+          <div className="mt-3">
+            <Card>
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-[11px] uppercase tracking-wider text-gray-500">Top Issues</div>
+                {audit?.websiteUrl && (
+                  <a href={audit.websiteUrl} target="_blank" rel="noreferrer" className="text-xs text-violet-400 hover:underline">
+                    Open site ↗
+                  </a>
+                )}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {topIssues.slice(0, 5).map((issue, index) => (
+                  <span
+                    key={`${issue.label}-${index}`}
+                    className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs ${WEBSITE_AUDIT_ISSUE_STYLES[issue.severity] || WEBSITE_AUDIT_ISSUE_STYLES.low}`}
+                  >
+                    {issue.label}
+                  </span>
+                ))}
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {!auditLoading && !auditError && audit?.configured && topIssues.length === 0 && audit?.reason == null && (
+          <div className="mt-3">
+            <Empty>No major issues surfaced in this snapshot.</Empty>
+          </div>
+        )}
       </div>
     </div>
   )
