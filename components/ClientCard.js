@@ -8,6 +8,9 @@ import {
   BarChart,
   Bar,
   Line,
+  PieChart,
+  Pie,
+  Cell,
   XAxis,
   YAxis,
   Tooltip,
@@ -1108,6 +1111,14 @@ function fmtSignedPct(v) {
   return `${n > 0 ? '+' : ''}${n.toFixed(1)}%`
 }
 
+function fmtSharePct(v) {
+  if (v == null) return '—'
+  const n = Number(v)
+  if (!Number.isFinite(n)) return '—'
+  const pct = n * 100
+  return `${pct >= 10 ? pct.toFixed(0) : pct.toFixed(1)}%`
+}
+
 function WebsiteTrafficComparisonPill({ label, value }) {
   if (value == null) {
     return (
@@ -1127,6 +1138,184 @@ function WebsiteTrafficComparisonPill({ label, value }) {
     <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium ${tone}`}>
       {label}: {fmtSignedPct(value)}
     </span>
+  )
+}
+
+const WEBSITE_TRAFFIC_SOURCE_COLORS = {
+  organic: '#34D399',
+  direct: '#60A5FA',
+  paid: '#A78BFA',
+  social: '#F472B6',
+  'referral-other': '#F59E0B',
+}
+
+function WebsiteTrafficDelta({ label, comparison, isRate = false }) {
+  const rawValue = isRate ? comparison?.vsLastMonthDelta : comparison?.vsLastMonthPct
+  if (label === 'vs 3-mo avg') {
+    if (isRate) {
+      if (comparison?.vsThreeMonthAvgDelta == null) {
+        return <div className="flex items-center justify-between gap-3 text-xs text-gray-500"><span>{label}</span><span>Building history</span></div>
+      }
+    } else if (comparison?.vsThreeMonthAvgPct == null) {
+      return <div className="flex items-center justify-between gap-3 text-xs text-gray-500"><span>{label}</span><span>Building history</span></div>
+    }
+  } else if (rawValue == null) {
+    return <div className="flex items-center justify-between gap-3 text-xs text-gray-500"><span>{label}</span><span>Building history</span></div>
+  }
+
+  const value = label === 'vs 3-mo avg'
+    ? (isRate ? comparison?.vsThreeMonthAvgDelta : comparison?.vsThreeMonthAvgPct)
+    : rawValue
+
+  const tone = value > 0
+    ? 'text-emerald-300'
+    : value < 0
+      ? 'text-rose-300'
+      : 'text-gray-300'
+
+  const displayValue = isRate
+    ? `${value > 0 ? '+' : ''}${Number(value).toFixed(1)} pts`
+    : fmtSignedPct(value)
+
+  return (
+    <div className="flex items-center justify-between gap-3 text-xs">
+      <span className="text-gray-500">{label}</span>
+      <span className={`font-semibold ${tone}`}>{displayValue}</span>
+    </div>
+  )
+}
+
+function WebsiteTrafficKpiCard({ label, value, comparison, isRate = false, dotClassName = 'bg-violet-400' }) {
+  return (
+    <Card className="h-full overflow-hidden border-white/10 bg-gradient-to-br from-[#171127] via-[#0F0B19] to-black/40">
+      <div className="flex items-start justify-between gap-3">
+        <div className="text-[11px] uppercase tracking-[0.24em] text-gray-500">{label}</div>
+        <span className={`mt-1 h-2.5 w-2.5 rounded-full shadow-[0_0_18px_currentColor] ${dotClassName}`} />
+      </div>
+      <div className="mt-4 text-3xl font-black text-white">{value ?? '—'}</div>
+      <div className="mt-1 text-xs text-gray-500">Latest 30d snapshot</div>
+
+      <div className="mt-5 space-y-2 rounded-2xl border border-white/5 bg-black/25 p-3">
+        <WebsiteTrafficDelta label="vs last month" comparison={comparison} isRate={isRate} />
+        <WebsiteTrafficDelta label="vs 3-mo avg" comparison={comparison} isRate={isRate} />
+      </div>
+    </Card>
+  )
+}
+
+function WebsiteTrafficSourceTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null
+
+  const source = payload[0]?.payload
+  if (!source) return null
+
+  return (
+    <div className="rounded-2xl border border-[var(--brand-border)] bg-[#120E1F]/95 px-3 py-2 text-xs shadow-2xl">
+      <div className="font-semibold text-white">{source.label}</div>
+      <div className="mt-1 space-y-1 text-gray-300">
+        <div>{fmtNum(source.value)} tracked sessions</div>
+        <div>{fmtSharePct(source.share)} of channel mix</div>
+      </div>
+    </div>
+  )
+}
+
+function WebsiteTrafficSourceDonut({ sourceDistribution }) {
+  const items = Array.isArray(sourceDistribution?.items) ? sourceDistribution.items : []
+  if (!items.length) return null
+
+  return (
+    <Card className="overflow-hidden border-white/10 bg-gradient-to-br from-[#161023] via-[#110B1C] to-black/30">
+      <div className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr] xl:items-center">
+        <div>
+          <div className="text-[11px] uppercase tracking-[0.24em] text-gray-500">Hero source mix</div>
+          <div className="mt-1 text-sm text-gray-300">{sourceDistribution?.honestLabel || 'Latest traffic source mix'}</div>
+
+          <div className="relative mt-4 h-[250px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Tooltip content={<WebsiteTrafficSourceTooltip />} />
+                <Pie
+                  data={items}
+                  dataKey="value"
+                  nameKey="label"
+                  innerRadius={72}
+                  outerRadius={102}
+                  paddingAngle={3}
+                  stroke="rgba(9, 7, 16, 0.95)"
+                  strokeWidth={4}
+                >
+                  {items.map((item) => (
+                    <Cell key={item.key} fill={WEBSITE_TRAFFIC_SOURCE_COLORS[item.key] || '#A855F7'} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+              <div className="text-3xl font-black text-white">{fmtCompactNum(sourceDistribution?.total)}</div>
+              <div className="mt-1 text-[11px] uppercase tracking-[0.2em] text-gray-500">Tracked sessions</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div className="text-[11px] uppercase tracking-[0.24em] text-gray-500">Ranked channels</div>
+          <div className="mt-3 space-y-3">
+            {items.map((item, index) => (
+              <div key={item.key} className="rounded-2xl border border-white/8 bg-black/25 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-semibold text-gray-500">#{index + 1}</span>
+                    <span
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={{ backgroundColor: WEBSITE_TRAFFIC_SOURCE_COLORS[item.key] || '#A855F7' }}
+                    />
+                    <span className="text-sm font-semibold text-white">{item.label}</span>
+                  </div>
+
+                  <div className="text-right">
+                    <div className="text-sm font-semibold text-white">{fmtCompactNum(item.value)}</div>
+                    <div className="text-[11px] text-gray-500">{fmtSharePct(item.share)}</div>
+                  </div>
+                </div>
+
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/5">
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${Math.max(item.share * 100, 6)}%`,
+                      backgroundColor: WEBSITE_TRAFFIC_SOURCE_COLORS[item.key] || '#A855F7',
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+function WebsiteTrafficInsightBox({ insights = [], note = '' }) {
+  if (!insights.length && !note) return null
+
+  return (
+    <Card className="border-violet-500/20 bg-violet-500/5">
+      <div className="text-[11px] uppercase tracking-[0.24em] text-violet-200/80">Traffic insight summary</div>
+      {insights.length > 0 && (
+        <div className="mt-3 space-y-2">
+          {insights.map((insight) => (
+            <div key={insight} className="flex gap-2 text-sm text-violet-100/90">
+              <span className="text-violet-300">•</span>
+              <span>{insight}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {note ? <div className="mt-3 text-xs text-violet-200/60">{note}</div> : null}
+    </Card>
   )
 }
 
@@ -1150,13 +1339,45 @@ function WebsiteTrafficHistoryTooltip({ active, payload, label }) {
 function WebsiteTrafficHistoryChart({ points = [] }) {
   if (!points.length) return null
 
+  const latest = points[points.length - 1] || null
+
   return (
-    <div className="mt-4">
-      <div className="text-[11px] uppercase tracking-wider text-gray-500">Last 12 monthly GA snapshots</div>
-      <div className="mt-3 h-64 rounded-2xl border border-[var(--brand-border)] bg-black/20 p-3">
+    <Card className="overflow-hidden border-white/10 bg-gradient-to-br from-[#130F20] via-[#100B19] to-black/30">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-[11px] uppercase tracking-[0.24em] text-gray-500">12-month traffic trend</div>
+          <div className="mt-1 text-sm text-gray-300">Users and sessions from monthly GA snapshots</div>
+        </div>
+
+        <div className="flex flex-wrap gap-2 text-xs">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-black/25 px-3 py-1 text-gray-300">
+            <span className="h-2 w-2 rounded-full bg-violet-400" /> Sessions
+          </span>
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-black/25 px-3 py-1 text-gray-300">
+            <span className="h-2 w-2 rounded-full bg-cyan-400" /> Active users
+          </span>
+          {latest?.periodMonth ? (
+            <span className="inline-flex items-center rounded-full border border-white/8 bg-black/25 px-3 py-1 text-gray-500">
+              Latest {fmtMonth(latest.periodMonth)}
+            </span>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="mt-5 h-72 rounded-2xl border border-white/8 bg-black/20 p-3">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={points} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
-            <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
+          <LineChart data={points} margin={{ top: 12, right: 12, left: -12, bottom: 0 }}>
+            <defs>
+              <linearGradient id="trafficSessionsStroke" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#C084FC" />
+                <stop offset="100%" stopColor="#8B5CF6" />
+              </linearGradient>
+              <linearGradient id="trafficUsersStroke" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#67E8F9" />
+                <stop offset="100%" stopColor="#22D3EE" />
+              </linearGradient>
+            </defs>
+            <CartesianGrid stroke="rgba(255,255,255,0.08)" strokeDasharray="3 3" vertical={false} />
             <XAxis
               dataKey="periodMonth"
               tick={{ fill: '#9CA3AF', fontSize: 11 }}
@@ -1172,29 +1393,28 @@ function WebsiteTrafficHistoryChart({ points = [] }) {
               width={44}
             />
             <Tooltip content={<WebsiteTrafficHistoryTooltip />} />
-            <Legend wrapperStyle={{ fontSize: '12px' }} />
             <Line
               type="monotone"
               dataKey="sessions"
               name="Sessions"
-              stroke="#A855F7"
-              strokeWidth={2.5}
-              dot={{ r: 3 }}
-              activeDot={{ r: 5 }}
+              stroke="url(#trafficSessionsStroke)"
+              strokeWidth={3}
+              dot={false}
+              activeDot={{ r: 5, strokeWidth: 2, fill: '#8B5CF6', stroke: '#1F1631' }}
             />
             <Line
               type="monotone"
               dataKey="activeUsers"
               name="Active users"
-              stroke="#22D3EE"
-              strokeWidth={2.5}
-              dot={{ r: 3 }}
-              activeDot={{ r: 5 }}
+              stroke="url(#trafficUsersStroke)"
+              strokeWidth={3}
+              dot={false}
+              activeDot={{ r: 5, strokeWidth: 2, fill: '#22D3EE', stroke: '#0F172A' }}
             />
           </LineChart>
         </ResponsiveContainer>
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -1360,13 +1580,37 @@ function WebsiteTab({ profile, acronym }) {
   const trafficMetrics = traffic?.metrics || null
   const trafficHistory = Array.isArray(traffic?.history?.points) ? traffic.history.points : []
   const trafficComparisons = traffic?.history?.comparisons || null
+  const trafficSourceDistribution = traffic?.sourceDistribution || null
+  const trafficInsights = Array.isArray(traffic?.insights) ? traffic.insights : []
   const trafficMessage = trafficError || traffic?.history?.message || ((!traffic?.connected || trafficHistory.length === 0) ? (traffic?.message || '') : '')
-  const topTrafficSources = [
-    ['Organic', trafficMetrics?.channels?.organicSearch],
-    ['Direct', trafficMetrics?.channels?.directSessions],
-    ['Paid', (trafficMetrics?.channels?.paidSearch || 0) + (trafficMetrics?.channels?.paidSocial || 0)],
-    ['Referral', trafficMetrics?.channels?.referral],
-  ].filter(([, value]) => value != null && Number(value) > 0)
+  const trafficInsightNote = [trafficSourceDistribution?.note, trafficMessage].filter(Boolean).join(' ')
+  const trafficKpis = [
+    {
+      label: 'Users / Active Users',
+      value: fmtNum(trafficMetrics?.activeUsers),
+      comparison: trafficComparisons?.activeUsers,
+      dotClassName: 'bg-cyan-400 text-cyan-400',
+    },
+    {
+      label: 'Sessions',
+      value: fmtNum(trafficMetrics?.sessions),
+      comparison: trafficComparisons?.sessions,
+      dotClassName: 'bg-violet-400 text-violet-400',
+    },
+    {
+      label: 'New users',
+      value: fmtNum(trafficMetrics?.newUsers),
+      comparison: trafficComparisons?.newUsers,
+      dotClassName: 'bg-emerald-400 text-emerald-400',
+    },
+    {
+      label: 'Engagement rate',
+      value: trafficMetrics?.engagementRate == null ? '—' : `${trafficMetrics.engagementRate}%`,
+      comparison: trafficComparisons?.engagementRate,
+      isRate: true,
+      dotClassName: 'bg-amber-400 text-amber-400',
+    },
+  ]
 
   return (
     <div className="space-y-6">
@@ -1448,42 +1692,38 @@ function WebsiteTab({ profile, acronym }) {
             {Array.from({ length: 4 }).map((_, idx) => <WebsiteMiniStatSkeleton key={idx} />)}
           </div>
         ) : trafficMetrics ? (
-          <Card>
-            <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-              <WebsiteAuditMetric label="Active users (latest 30d)" value={fmtNum(trafficMetrics.activeUsers)} />
-              <WebsiteAuditMetric label="Sessions (latest 30d)" value={fmtNum(trafficMetrics.sessions)} />
-              <WebsiteAuditMetric label="Engagement rate" value={trafficMetrics.engagementRate == null ? '—' : `${trafficMetrics.engagementRate}%`} />
-              <WebsiteAuditMetric label="New users (latest 30d)" value={fmtNum(trafficMetrics.newUsers)} />
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+              {trafficKpis.map((metric) => (
+                <WebsiteTrafficKpiCard
+                  key={metric.label}
+                  label={metric.label}
+                  value={metric.value}
+                  comparison={metric.comparison}
+                  isRate={metric.isRate}
+                  dotClassName={metric.dotClassName}
+                />
+              ))}
             </div>
 
             {(trafficComparisons?.sessions || trafficComparisons?.activeUsers) && (
-              <div className="mt-4 space-y-2">
-                <div className="text-[11px] uppercase tracking-wider text-gray-500">Snapshot context</div>
-                <div className="flex flex-wrap gap-2">
-                  <WebsiteTrafficComparisonPill label="Sessions vs last month" value={trafficComparisons?.sessions?.vsLastMonthPct} />
-                  <WebsiteTrafficComparisonPill label="Sessions vs 3-mo avg" value={trafficComparisons?.sessions?.vsThreeMonthAvgPct} />
-                  <WebsiteTrafficComparisonPill label="Users vs last month" value={trafficComparisons?.activeUsers?.vsLastMonthPct} />
-                  <WebsiteTrafficComparisonPill label="Users vs 3-mo avg" value={trafficComparisons?.activeUsers?.vsThreeMonthAvgPct} />
-                </div>
+              <div className="flex flex-wrap gap-2">
+                <WebsiteTrafficComparisonPill label="Sessions vs last month" value={trafficComparisons?.sessions?.vsLastMonthPct} />
+                <WebsiteTrafficComparisonPill label="Users vs last month" value={trafficComparisons?.activeUsers?.vsLastMonthPct} />
+                <WebsiteTrafficComparisonPill label="New users vs 3-mo avg" value={trafficComparisons?.newUsers?.vsThreeMonthAvgPct} />
+                <WebsiteTrafficComparisonPill label="Engagement vs 3-mo avg" value={trafficComparisons?.engagementRate?.vsThreeMonthAvgPct} />
               </div>
             )}
 
-            {topTrafficSources.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {topTrafficSources.map(([label, value]) => (
-                  <span key={label} className="inline-flex items-center rounded-full border border-[var(--brand-border)] bg-black/30 px-2.5 py-1 text-xs text-gray-300">
-                    {label}: {fmtNum(value)}
-                  </span>
-                ))}
-              </div>
-            )}
+            <WebsiteTrafficSourceDonut sourceDistribution={trafficSourceDistribution} />
 
             <WebsiteTrafficHistoryChart points={trafficHistory} />
 
-            <div className="mt-4 text-xs text-gray-500">
-              {trafficMessage || 'Top-line metrics use the latest GA 30-day snapshot, and the chart shows monthly snapshots captured in the database.'}
-            </div>
-          </Card>
+            <WebsiteTrafficInsightBox
+              insights={trafficInsights}
+              note={trafficInsightNote || 'Top-line metrics use the latest GA 30-day snapshot, and the trend chart shows monthly snapshots captured in the database.'}
+            />
+          </div>
         ) : trafficMessage ? (
           <PlaceholderBanner icon={trafficError ? '⚠️' : '📊'} message={trafficMessage} />
         ) : (
