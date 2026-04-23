@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 
 function fmt$(v) {
   if (v == null) return '—'
@@ -20,6 +19,16 @@ function fmtDate(v) {
     day: 'numeric',
     year: 'numeric',
   }).format(new Date(v))
+}
+
+function fmtNum(v) {
+  if (v == null || Number.isNaN(Number(v))) return '—'
+  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Number(v))
+}
+
+function fmtPct(v) {
+  if (v == null || Number.isNaN(Number(v))) return '—'
+  return `${Math.round(Number(v) * 100)}%`
 }
 
 const STATUS_COLORS = {
@@ -168,8 +177,115 @@ function FilterChip({ children }) {
   )
 }
 
+function SignalPill({ label, value, tone = 'default' }) {
+  const toneClass = tone === 'good'
+    ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-200'
+    : tone === 'warn'
+      ? 'border-amber-500/25 bg-amber-500/10 text-amber-200'
+      : tone === 'bad'
+        ? 'border-rose-500/25 bg-rose-500/10 text-rose-200'
+        : 'border-[var(--brand-border)] bg-black/30 text-gray-200'
+
+  return (
+    <div className={`rounded-xl border px-2.5 py-2 ${toneClass}`}>
+      <div className="text-[9px] uppercase tracking-[0.22em] text-gray-400">{label}</div>
+      <div className="mt-1 text-sm font-semibold">{value}</div>
+    </div>
+  )
+}
+
+function ClientGridCard({ client }) {
+  const companyName = client.companyName || client.name || client.acronym || 'Unnamed client'
+  const ownerName = client.ownerName || client.owner || client.contactName || 'Unknown owner'
+  const gaName = client.assignedGA || 'Unassigned'
+  const lastActivity = fmtDate(client.lastCallDate)
+  const location = [client.city, client.state].filter(Boolean).join(', ')
+  const isPIF = client.serviceList?.some?.((item) => String(item).toLowerCase().includes('pif')) || client.stripeStatus === 'pif'
+  const funnelSummary = [
+    client.avgMonthlyLeads != null ? `L ${fmtNum(client.avgMonthlyLeads)}` : null,
+    client.avgMonthlyTours != null ? `T ${fmtNum(client.avgMonthlyTours)}` : null,
+    client.avgMonthlyRegistered != null ? `E ${fmtNum(client.avgMonthlyRegistered)}` : null,
+  ].filter(Boolean).join(' · ')
+  const funnelRates = [
+    client.leadToTourRate != null ? `L→T ${fmtPct(client.leadToTourRate)}` : null,
+    client.tourToRegRate != null ? `T→E ${fmtPct(client.tourToRegRate)}` : null,
+  ].filter(Boolean).join(' · ')
+
+  return (
+    <Link
+      href={`/clients/${client.acronym}`}
+      className="group flex h-full flex-col rounded-2xl border border-[var(--brand-border)] bg-black/25 p-3.5 transition hover:border-violet-500/35 hover:bg-violet-500/5 hover:shadow-[0_0_0_1px_rgba(174,43,207,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-200">
+              {client.acronym || '—'}
+            </span>
+            <StatusBadge status={client.status} />
+          </div>
+          <div className="mt-2 truncate text-sm font-semibold text-white group-hover:text-violet-100">{companyName}</div>
+        </div>
+        <HealthPill score={client.healthScore} />
+      </div>
+
+      <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-gray-400">
+        <div className="truncate">
+          GA <span className="font-medium text-gray-200">{gaName}</span>
+        </div>
+        <div className="truncate text-right sm:text-left xl:text-right">
+          {location || 'No location'}
+        </div>
+        <div className="truncate col-span-2">
+          Owner <span className="font-medium text-gray-200">{ownerName}</span>
+        </div>
+      </div>
+
+      <div className="mt-3">
+        <ServiceStack client={client} />
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px]">
+        <TrendBadge trend={client.funnelTrend} />
+        <span className={`inline-flex items-center rounded-full border px-2.5 py-1 font-semibold uppercase tracking-[0.18em] ${client.stripeStatus === 'past_due' ? 'border-rose-500/30 bg-rose-500/10 text-rose-300' : 'border-[var(--brand-border)] bg-black/30 text-gray-300'}`}>
+          Stripe {client.stripeStatus || '—'}
+        </span>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <SignalPill
+          label="Revenue"
+          value={isPIF ? 'PIF' : client.mrr ? fmt$(client.mrr) : '—'}
+          tone={isPIF ? 'default' : 'good'}
+        />
+        <SignalPill
+          label="Billing"
+          value={client.isOverdue ? `Overdue ${fmt$(client.overdueAmount || 0)}` : 'Current'}
+          tone={client.isOverdue ? 'bad' : 'good'}
+        />
+        <SignalPill
+          label="Funnel"
+          value={funnelSummary || 'No funnel data'}
+          tone={client.funnelTrend === 'down' ? 'bad' : client.funnelTrend === 'up' ? 'good' : 'default'}
+        />
+        <SignalPill
+          label="Trend"
+          value={client.funnelTrend ? client.funnelTrend.toUpperCase() : '—'}
+          tone={client.funnelTrend === 'down' ? 'bad' : client.funnelTrend === 'up' ? 'good' : client.funnelTrend === 'stable' ? 'warn' : 'default'}
+        />
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--brand-border)] pt-2.5 text-[11px] text-gray-400">
+        <div className="min-w-0 truncate">
+          {funnelRates || 'No conversion rates yet'}
+        </div>
+        <div className="shrink-0 text-gray-500">Last activity {lastActivity}</div>
+      </div>
+    </Link>
+  )
+}
+
 export default function ActiveClientList({ user }) {
-  const router = useRouter()
   const [clients, setClients] = useState([])
   const [total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
@@ -273,10 +389,6 @@ export default function ActiveClientList({ user }) {
     setPage(1)
   }
 
-  function openClient(acronym) {
-    router.push(`/clients/${acronym}`)
-  }
-
   const roleDescription = user?.role === 'ga'
     ? 'Your assigned clients, arranged for faster triage and scanability.'
     : 'A denser view of the book with faster scanning across status, services, and revenue.'
@@ -364,144 +476,22 @@ export default function ActiveClientList({ user }) {
       ) : null}
 
       <div className="overflow-hidden rounded-3xl border border-[var(--brand-border)] bg-[var(--brand-bg-card)] shadow-[0_0_0_1px_rgba(115,20,148,0.08)]">
-        <div className="overflow-x-auto">
-          <table className="min-w-full border-collapse text-sm">
-            <thead className="sticky top-0 z-10 bg-[#120827]/95 backdrop-blur">
-              <tr className="border-b border-[var(--brand-border)]">
-                {['Client', 'Team + activity', 'Services', 'Revenue', 'Signals', 'Open'].map((heading) => (
-                  <th
-                    key={heading}
-                    className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.24em] text-gray-400"
-                  >
-                    {heading}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="py-16 text-center text-gray-500">
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="animate-spin text-violet-400">⟳</span>
-                      Loading clients…
-                    </div>
-                  </td>
-                </tr>
-              ) : clients.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-16 text-center text-gray-500">
-                    No clients match these filters.
-                  </td>
-                </tr>
-              ) : (
-                clients.map((client, index) => {
-                  const companyName = client.companyName || client.name || client.acronym || 'Unnamed client'
-                  const ownerName = client.ownerName || client.owner || client.contactName || 'Unknown owner'
-                  const gaName = client.assignedGA || 'Unassigned'
-                  const lastActivity = fmtDate(client.lastCallDate)
-                  const location = [client.city, client.state].filter(Boolean).join(', ')
-                  const isPIF = client.serviceList?.some?.((item) => String(item).toLowerCase().includes('pif')) || client.stripeStatus === 'pif'
-
-                  return (
-                    <tr
-                      key={client.id}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => openClient(client.acronym)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault()
-                          openClient(client.acronym)
-                        }
-                      }}
-                      className={`cursor-pointer border-b border-[var(--brand-border)] align-top transition hover:bg-violet-500/5 focus-within:bg-violet-500/5 ${index % 2 === 0 ? 'bg-white/[0.015]' : 'bg-transparent'}`}
-                    >
-                      <td className="px-4 py-3.5">
-                        <div className="flex min-w-[260px] items-start gap-3">
-                          <HealthPill score={client.healthScore} />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-200">
-                                {client.acronym || '—'}
-                              </span>
-                              <StatusBadge status={client.status} />
-                            </div>
-                            <div className="mt-2 truncate text-sm font-semibold text-white">{companyName}</div>
-                            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-400">
-                              <span>Owner: <span className="text-gray-200">{ownerName}</span></span>
-                              {location ? <span>{location}</span> : null}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-3.5">
-                        <div className="min-w-[210px] space-y-1.5 text-xs">
-                          <div className="text-gray-400">GA</div>
-                          <div className="font-semibold text-white">{gaName}</div>
-                          <div className="pt-1 text-gray-400">Last activity</div>
-                          <div className="font-medium text-gray-200">{lastActivity}</div>
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-3.5">
-                        <div className="min-w-[180px] space-y-2">
-                          <ServiceStack client={client} />
-                          {Array.isArray(client.serviceList) && client.serviceList.length > 0 ? (
-                            <div className="truncate text-[11px] text-gray-500">{client.serviceList.slice(0, 3).join(' · ')}</div>
-                          ) : null}
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-3.5">
-                        <div className="min-w-[150px] space-y-1.5 text-xs">
-                          <div className="text-lg font-bold text-white">
-                            {isPIF ? (
-                              <span className="rounded-full border border-violet-500/40 bg-violet-500/15 px-2.5 py-1 text-xs font-semibold text-violet-300">PIF</span>
-                            ) : client.mrr ? (
-                              fmt$(client.mrr)
-                            ) : '—'}
-                          </div>
-                          <div className="text-gray-400">{isPIF ? 'Paid in full' : 'Monthly recurring revenue'}</div>
-                          {client.isOverdue ? (
-                            <div className="font-medium text-rose-300">Overdue {fmt$(client.overdueAmount || 0)}</div>
-                          ) : (
-                            <div className="text-emerald-300">Current</div>
-                          )}
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-3.5">
-                        <div className="min-w-[170px] space-y-2">
-                          <TrendBadge trend={client.funnelTrend} />
-                          <div className="text-xs text-gray-400">
-                            Stripe: <span className={`font-medium ${client.stripeStatus === 'past_due' ? 'text-rose-300' : 'text-gray-200'}`}>{client.stripeStatus || '—'}</span>
-                          </div>
-                          {client.isOverdue ? (
-                            <div className="text-xs font-medium text-rose-300">Needs follow-up</div>
-                          ) : (
-                            <div className="text-xs text-gray-500">No urgent payment flag</div>
-                          )}
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-3.5">
-                        <Link
-                          href={`/clients/${client.acronym}`}
-                          onClick={(event) => event.stopPropagation()}
-                          className="inline-flex items-center rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-xs font-semibold text-violet-200 transition hover:border-violet-400/50 hover:bg-violet-500/20 hover:text-white"
-                        >
-                          Open →
-                        </Link>
-                      </td>
-                    </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+        {loading ? (
+          <div className="py-16 text-center text-gray-500">
+            <div className="flex items-center justify-center gap-2">
+              <span className="animate-spin text-violet-400">⟳</span>
+              Loading clients…
+            </div>
+          </div>
+        ) : clients.length === 0 ? (
+          <div className="py-16 text-center text-gray-500">No clients match these filters.</div>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {clients.map((client) => (
+              <ClientGridCard key={client.id} client={client} />
+            ))}
+          </div>
+        )}
 
         {totalPages > 1 ? (
           <div className="flex flex-col gap-3 border-t border-[var(--brand-border)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
