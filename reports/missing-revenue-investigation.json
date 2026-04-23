@@ -1,0 +1,2122 @@
+{
+  "generatedAt": "2026-04-23T18:53:31.532Z",
+  "tenantId": "gyc",
+  "summary": {
+    "clientProfilesScanned": 396,
+    "zeroRevenueProfiles": 185,
+    "missingLegacyStripeCustomerId": 87,
+    "withLegacyStripeCustomerId": 98,
+    "safeAutofixCandidates": 0,
+    "manualReviewCandidates": 25,
+    "likelyTrueZeroOrNoBilling": 160
+  },
+  "rollups": {
+    "zeroRevenueProfiles": 185,
+    "missingLegacyStripeCustomerId": 87,
+    "withLegacyStripeCustomerId": 98,
+    "legacyLivePositiveShared": {
+      "count": 2,
+      "totalCandidateMrr": 3582.5
+    },
+    "safeAutofixCandidates": {
+      "count": 0,
+      "totalCandidateMrr": 0
+    },
+    "emailOnlyCandidates": {
+      "count": 22,
+      "totalCandidateMrr": 17158.489999999998
+    },
+    "ambiguousCandidates": {
+      "count": 1,
+      "totalCandidateMrr": 790
+    },
+    "legacyLiveZero": {
+      "count": 96,
+      "totalCandidateMrr": 0
+    },
+    "noLiveStripeEvidence": {
+      "count": 64,
+      "totalCandidateMrr": 0
+    }
+  },
+  "notableClients": {
+    "afya": {
+      "id": 16,
+      "acronym": "AFYA",
+      "companyName": "Academy for Young Achievers",
+      "profileEmail": "academyforyoungachievers@gmail.com",
+      "stripeCustomerId": "cus_LxIvsCtyY09YHy",
+      "stripeStatus": "active",
+      "stripeMrr": 197,
+      "stripeLabel": "Tori Wallace",
+      "stripeEmail": "academyforyoungachievers@gmail.com",
+      "stripeCompanyName": null,
+      "stripeAcronym": null,
+      "stripeGhlContactId": "K4VhLaPFJzgHVgzEDqNn",
+      "signals": [
+        "email"
+      ],
+      "recommendedAction": "Needs manual review — email-only owner match is not safe to auto-link."
+    }
+  },
+  "categories": {
+    "legacyLivePositiveShared": [
+      {
+        "id": 163,
+        "acronym": "KLC",
+        "companyName": "Kidstown Learning Center",
+        "profileEmail": "marketing@growingkids.com",
+        "stripeCustomerId": "cus_T6SGYZlDqyNQaC",
+        "stripeStatus": "active",
+        "stripeMrr": 2629,
+        "stripeLabel": "Growing Kids Learning Centers (GKLC)",
+        "signals": [
+          "legacy",
+          "ghl",
+          "acronym",
+          "email"
+        ],
+        "sharedProfiles": [
+          {
+            "acronym": "GKLC",
+            "companyName": "Growing Kids Learning Centers"
+          }
+        ],
+        "recommendedAction": "Lex review — shared/parent Stripe customer; do not auto-assign full MRR."
+      },
+      {
+        "id": 248,
+        "acronym": "RCDC",
+        "companyName": "Rosebrook Child Development Center",
+        "profileEmail": "s.delcastillo@growingroomchilddevelopment.com",
+        "stripeCustomerId": "cus_JWTZsZr9lB8qcJ",
+        "stripeStatus": "active",
+        "stripeMrr": 953.5,
+        "stripeLabel": "Growing Room Child Development Centers (GRCDC)",
+        "signals": [
+          "legacy",
+          "ghl",
+          "acronym",
+          "email"
+        ],
+        "sharedProfiles": [
+          {
+            "acronym": "GRCDC",
+            "companyName": "Growing Room Child Development Centers"
+          }
+        ],
+        "recommendedAction": "Lex review — shared/parent Stripe customer; do not auto-assign full MRR."
+      }
+    ],
+    "emailOnlyCandidates": [
+      {
+        "id": 9,
+        "acronym": "ACC",
+        "companyName": "Anderdon Child Care Inc",
+        "profileEmail": "bridgetreid6@gmail.com",
+        "stripeCustomerId": "cus_KWF36nQBU2CDzK",
+        "stripeStatus": "active",
+        "stripeMrr": 227,
+        "stripeLabel": "Bridget Reid",
+        "stripeEmail": "bridgetreid6@gmail.com",
+        "stripeCompanyName": null,
+        "stripeAcronym": null,
+        "stripeGhlContactId": null,
+        "signals": [
+          "email"
+        ],
+        "recommendedAction": "Needs manual review — email-only owner match is not safe to auto-link."
+      },
+      {
+        "id": 16,
+        "acronym": "AFYA",
+        "companyName": "Academy for Young Achievers",
+        "profileEmail": "academyforyoungachievers@gmail.com",
+        "stripeCustomerId": "cus_LxIvsCtyY09YHy",
+        "stripeStatus": "active",
+        "stripeMrr": 197,
+        "stripeLabel": "Tori Wallace",
+        "stripeEmail": "academyforyoungachievers@gmail.com",
+        "stripeCompanyName": null,
+        "stripeAcronym": null,
+        "stripeGhlContactId": "K4VhLaPFJzgHVgzEDqNn",
+        "signals": [
+          "email"
+        ],
+        "recommendedAction": "Needs manual review — email-only owner match is not safe to auto-link."
+      },
+      {
+        "id": 21,
+        "acronym": "AKW",
+        "companyName": "A Kid's World",
+        "profileEmail": "shannonSmith@akwchildcare.com",
+        "stripeCustomerId": "cus_JXbLoE4RMr0v0F",
+        "stripeStatus": "active",
+        "stripeMrr": 1201.33,
+        "stripeLabel": "akwchildcare.com",
+        "stripeEmail": "ShannonSmith@akwchildcare.com",
+        "stripeCompanyName": "akwchildcare.com",
+        "stripeAcronym": null,
+        "stripeGhlContactId": "rJS5ZKSNSqnGKAJqbtpq",
+        "signals": [
+          "email"
+        ],
+        "recommendedAction": "Needs manual review — email-only owner match is not safe to auto-link."
+      },
+      {
+        "id": 24,
+        "acronym": "APC",
+        "companyName": "Apple Tree Prep Covington",
+        "profileEmail": "ShannonSmith@akwchildcare.com",
+        "stripeCustomerId": "cus_JXbLoE4RMr0v0F",
+        "stripeStatus": "active",
+        "stripeMrr": 1201.33,
+        "stripeLabel": "akwchildcare.com",
+        "stripeEmail": "ShannonSmith@akwchildcare.com",
+        "stripeCompanyName": "akwchildcare.com",
+        "stripeAcronym": null,
+        "stripeGhlContactId": "rJS5ZKSNSqnGKAJqbtpq",
+        "signals": [
+          "email"
+        ],
+        "recommendedAction": "Needs manual review — email-only owner match is not safe to auto-link."
+      },
+      {
+        "id": 36,
+        "acronym": "BCDC",
+        "companyName": "Bedford Child Development Center",
+        "profileEmail": "bedfordchildcare@hotmail.com",
+        "stripeCustomerId": "cus_K8YRXe8vzvhGpe",
+        "stripeStatus": "active",
+        "stripeMrr": 197,
+        "stripeLabel": "Cynthia Maher",
+        "stripeEmail": "bedfordchildcare@hotmail.com",
+        "stripeCompanyName": null,
+        "stripeAcronym": null,
+        "stripeGhlContactId": "QhzunySkFhCoDkW67DDj",
+        "signals": [
+          "email"
+        ],
+        "recommendedAction": "Needs manual review — email-only owner match is not safe to auto-link."
+      },
+      {
+        "id": 53,
+        "acronym": "CBG",
+        "companyName": "Crossing Borders Language Center, LLC",
+        "profileEmail": "elviataylor@crossingbordersgroup.com",
+        "stripeCustomerId": "cus_TOqwelOnvSvBvk",
+        "stripeStatus": "active",
+        "stripeMrr": 1395,
+        "stripeLabel": "Chad Taylor",
+        "stripeEmail": "elviataylor@crossingbordersgroup.com",
+        "stripeCompanyName": null,
+        "stripeAcronym": null,
+        "stripeGhlContactId": null,
+        "signals": [
+          "email"
+        ],
+        "recommendedAction": "Needs manual review — email-only owner match is not safe to auto-link."
+      },
+      {
+        "id": 57,
+        "acronym": "CCDC",
+        "companyName": "Chico Child Development Center",
+        "profileEmail": "shellycaperello@icloud.com",
+        "stripeCustomerId": "cus_KxdU9HR5vk4azF",
+        "stripeStatus": "active",
+        "stripeMrr": 902,
+        "stripeLabel": "Shelly Caperello",
+        "stripeEmail": "shellycaperello@icloud.com",
+        "stripeCompanyName": null,
+        "stripeAcronym": null,
+        "stripeGhlContactId": null,
+        "signals": [
+          "email"
+        ],
+        "recommendedAction": "Needs manual review — email-only owner match is not safe to auto-link."
+      },
+      {
+        "id": 58,
+        "acronym": "CCLC",
+        "companyName": "Children's Classic Learning Centers",
+        "profileEmail": "rachel@discoverykidzone.com",
+        "stripeCustomerId": "cus_NjjZOs7MKfSpfl",
+        "stripeStatus": "active",
+        "stripeMrr": 317,
+        "stripeLabel": "Discovery Kidzone (DKZ)",
+        "stripeEmail": "rachel@discoverykidzone.com",
+        "stripeCompanyName": "Discovery Kidzone (DKZ)",
+        "stripeAcronym": "DKZ",
+        "stripeGhlContactId": "BV7GCllkCXmJNrFTk9R5",
+        "signals": [
+          "email"
+        ],
+        "recommendedAction": "Needs manual review — email-only owner match is not safe to auto-link."
+      },
+      {
+        "id": 110,
+        "acronym": "GFC",
+        "companyName": "Gallop's Family Center",
+        "profileEmail": "skatemom2811@gmail.com",
+        "stripeCustomerId": "cus_OpbAzzJfJeeHZb",
+        "stripeStatus": "active",
+        "stripeMrr": 197,
+        "stripeLabel": "Kristal Franklin",
+        "stripeEmail": "skatemom2811@gmail.com",
+        "stripeCompanyName": null,
+        "stripeAcronym": null,
+        "stripeGhlContactId": null,
+        "signals": [
+          "email"
+        ],
+        "recommendedAction": "Needs manual review — email-only owner match is not safe to auto-link."
+      },
+      {
+        "id": 167,
+        "acronym": "KPCC",
+        "companyName": "Kindergrove",
+        "profileEmail": "skeith@kindergrove.org",
+        "stripeCustomerId": "cus_Rig8Exm0qgIvG0",
+        "stripeStatus": "active",
+        "stripeMrr": 995,
+        "stripeLabel": "Olive Grove Nature School",
+        "stripeEmail": "skeith@kindergrove.org",
+        "stripeCompanyName": "Olive Grove Nature School",
+        "stripeAcronym": "OGNS",
+        "stripeGhlContactId": "wcI8VZbCMlvb7vu2kIZA",
+        "signals": [
+          "email"
+        ],
+        "recommendedAction": "Needs manual review — email-only owner match is not safe to auto-link."
+      },
+      {
+        "id": 183,
+        "acronym": "LBLC",
+        "companyName": "Love Bug Learning Care",
+        "profileEmail": "lovebuglearningbugs@gmail.com",
+        "stripeCustomerId": "cus_SjdN4Pt8z4yMyC",
+        "stripeStatus": "active",
+        "stripeMrr": 395,
+        "stripeLabel": "Shunnarah Hayes",
+        "stripeEmail": "lovebuglearningbugs@gmail.com",
+        "stripeCompanyName": null,
+        "stripeAcronym": null,
+        "stripeGhlContactId": null,
+        "signals": [
+          "email"
+        ],
+        "recommendedAction": "Needs manual review — email-only owner match is not safe to auto-link."
+      },
+      {
+        "id": 187,
+        "acronym": "LECDC",
+        "companyName": "La Esperanza Child Development Center, LLC",
+        "profileEmail": "ruthporta@laesperanzapreschool.com",
+        "stripeCustomerId": "cus_OqcKq4FgANhyYe",
+        "stripeStatus": "active",
+        "stripeMrr": 394,
+        "stripeLabel": "Ruth Porta",
+        "stripeEmail": "ruthporta@laesperanzapreschool.com",
+        "stripeCompanyName": null,
+        "stripeAcronym": "TA",
+        "stripeGhlContactId": "oV1RLZrg3KWXUEQSC79z",
+        "signals": [
+          "email"
+        ],
+        "recommendedAction": "Needs manual review — email-only owner match is not safe to auto-link."
+      },
+      {
+        "id": 192,
+        "acronym": "LLCS",
+        "companyName": "The Little Lamb Christian School",
+        "profileEmail": "debduke63@gmail.com",
+        "stripeCustomerId": "cus_JZ5yHbbo4gux94",
+        "stripeStatus": "active",
+        "stripeMrr": 1712,
+        "stripeLabel": "Deborah Duke",
+        "stripeEmail": "debduke63@gmail.com",
+        "stripeCompanyName": null,
+        "stripeAcronym": null,
+        "stripeGhlContactId": "XUxrsDzZbWhW26Ft4MmX",
+        "signals": [
+          "email"
+        ],
+        "recommendedAction": "Needs manual review — email-only owner match is not safe to auto-link."
+      },
+      {
+        "id": 194,
+        "acronym": "LOLA",
+        "companyName": "Lotts of Learning Academy at Sierra Vista",
+        "profileEmail": "lottsoflearningacademysv@gmail.com",
+        "stripeCustomerId": "cus_SODXF2zBF54qec",
+        "stripeStatus": "active",
+        "stripeMrr": 997,
+        "stripeLabel": "Alphabet Zone Childcare Company (AZCC)",
+        "stripeEmail": "lottsoflearningacademysv@gmail.com",
+        "stripeCompanyName": "Alphabet Zone Childcare Company (AZCC)",
+        "stripeAcronym": "AZCC",
+        "stripeGhlContactId": "bjtFclNB8DBuyq8qA43V",
+        "signals": [
+          "email"
+        ],
+        "recommendedAction": "Needs manual review — email-only owner match is not safe to auto-link."
+      },
+      {
+        "id": 233,
+        "acronym": "PACC",
+        "companyName": "Pasadena Childcare and Center",
+        "profileEmail": "amuddesser@gmail.com",
+        "stripeCustomerId": "cus_SHVPSBQs86lB8m",
+        "stripeStatus": "active",
+        "stripeMrr": 997,
+        "stripeLabel": "Excellent Start Learning Center (ESLC)",
+        "stripeEmail": "amuddesser@gmail.com",
+        "stripeCompanyName": "Excellent Start Learning Center (ESLC)",
+        "stripeAcronym": "ESLC",
+        "stripeGhlContactId": "kaE9ozodcBHgwQyjuMx2",
+        "signals": [
+          "email"
+        ],
+        "recommendedAction": "Needs manual review — email-only owner match is not safe to auto-link."
+      },
+      {
+        "id": 276,
+        "acronym": "TGL",
+        "companyName": "Top Grade Learing",
+        "profileEmail": "jigneshu2004@yahoo.com",
+        "stripeCustomerId": "cus_U2TLqCpgG1nxGE",
+        "stripeStatus": "active",
+        "stripeMrr": 2240,
+        "stripeLabel": "Top Grade Learning",
+        "stripeEmail": "jigneshu2004@yahoo.com",
+        "stripeCompanyName": "Top Grade Learning",
+        "stripeAcronym": null,
+        "stripeGhlContactId": "hxl4jD4bTQmYIc5UsKOx",
+        "signals": [
+          "email"
+        ],
+        "recommendedAction": "Needs manual review — email-only owner match is not safe to auto-link."
+      },
+      {
+        "id": 296,
+        "acronym": "UKC",
+        "companyName": "Unique Kids Childcare",
+        "profileEmail": "kayanddee18@gmail.com",
+        "stripeCustomerId": "cus_OAJ5z1rwBTd4Mz",
+        "stripeStatus": "active",
+        "stripeMrr": 197,
+        "stripeLabel": "Dominique Gill",
+        "stripeEmail": "kayanddee18@gmail.com",
+        "stripeCompanyName": null,
+        "stripeAcronym": null,
+        "stripeGhlContactId": null,
+        "signals": [
+          "email"
+        ],
+        "recommendedAction": "Needs manual review — email-only owner match is not safe to auto-link."
+      },
+      {
+        "id": 299,
+        "acronym": "WAC",
+        "companyName": "Winnford Academy",
+        "profileEmail": "jpotters@winnfordacademy.com",
+        "stripeCustomerId": "cus_S4RWKndPSD7zMa",
+        "stripeStatus": "past_due",
+        "stripeMrr": 207,
+        "stripeLabel": "Joshua Potters",
+        "stripeEmail": "jpotters@winnfordacademy.com",
+        "stripeCompanyName": null,
+        "stripeAcronym": null,
+        "stripeGhlContactId": null,
+        "signals": [
+          "email"
+        ],
+        "recommendedAction": "Needs manual review — email-only owner match is not safe to auto-link."
+      },
+      {
+        "id": 323,
+        "acronym": "NCUMP",
+        "companyName": "Newport Center United Methodist Preschool",
+        "profileEmail": "sandra@ncump.org",
+        "stripeCustomerId": "cus_UE5Pyw1mIH9e3E",
+        "stripeStatus": "active",
+        "stripeMrr": 145.83,
+        "stripeLabel": "Sandra Tolmasoff",
+        "stripeEmail": "sandra@ncump.org",
+        "stripeCompanyName": null,
+        "stripeAcronym": null,
+        "stripeGhlContactId": null,
+        "signals": [
+          "email"
+        ],
+        "recommendedAction": "Needs manual review — email-only owner match is not safe to auto-link."
+      },
+      {
+        "id": 324,
+        "acronym": "TLCCDC",
+        "companyName": "Tender Love & Care Child Development Center",
+        "profileEmail": "tlccdc123@gmail.com",
+        "stripeCustomerId": "cus_UFy29HNa556leM",
+        "stripeStatus": "active",
+        "stripeMrr": 599,
+        "stripeLabel": "Atoya Wilson",
+        "stripeEmail": "tlccdc123@gmail.com",
+        "stripeCompanyName": null,
+        "stripeAcronym": null,
+        "stripeGhlContactId": null,
+        "signals": [
+          "email"
+        ],
+        "recommendedAction": "Needs manual review — email-only owner match is not safe to auto-link."
+      },
+      {
+        "id": 3116,
+        "acronym": "KZCP",
+        "companyName": "Kids Zone Childcare & Preschool",
+        "profileEmail": "kidszonechildcare@hotmail.com",
+        "stripeCustomerId": "cus_UIaLAl1xQhM5M6",
+        "stripeStatus": "active",
+        "stripeMrr": 996,
+        "stripeLabel": "Melea Rogers",
+        "stripeEmail": "kidszonechildcare@hotmail.com",
+        "stripeCompanyName": null,
+        "stripeAcronym": null,
+        "stripeGhlContactId": null,
+        "signals": [
+          "email"
+        ],
+        "recommendedAction": "Needs manual review — email-only owner match is not safe to auto-link."
+      },
+      {
+        "id": 3117,
+        "acronym": "KKPS",
+        "companyName": "Kid Krazy Preschool",
+        "profileEmail": "info@kidkrazypreschool.com",
+        "stripeCustomerId": "cus_ULcTKxaawpQqzt",
+        "stripeStatus": "active",
+        "stripeMrr": 1449,
+        "stripeLabel": "Melissa Chin",
+        "stripeEmail": "info@kidkrazypreschool.com",
+        "stripeCompanyName": null,
+        "stripeAcronym": null,
+        "stripeGhlContactId": null,
+        "signals": [
+          "email"
+        ],
+        "recommendedAction": "Needs manual review — email-only owner match is not safe to auto-link."
+      }
+    ],
+    "ambiguousCandidates": [
+      {
+        "id": 86,
+        "acronym": "EA",
+        "companyName": "EduCare Learning Center",
+        "profileEmail": "educarebonita@yahoo.com",
+        "candidates": [
+          {
+            "stripeCustomerId": "cus_SEqWLGOpgMtVQz",
+            "stripeStatus": "active",
+            "stripeMrr": 395,
+            "stripeLabel": "Bright Beginnings Preschool (BBP)",
+            "stripeEmail": "educarebonita@yahoo.com",
+            "stripeCompanyName": "Bright Beginnings Preschool (BBP)",
+            "stripeAcronym": "BBP",
+            "stripeGhlContactId": "bOJpNQmtgOCBKMcGDrnd",
+            "signals": [
+              "email"
+            ],
+            "profileEmail": "educarebonita@yahoo.com"
+          },
+          {
+            "stripeCustomerId": "cus_SEqX9tIvMMJ8p8",
+            "stripeStatus": "active",
+            "stripeMrr": 395,
+            "stripeLabel": "Bright Beginnings Preschool (BBP)",
+            "stripeEmail": "educarebonita@yahoo.com",
+            "stripeCompanyName": "Bright Beginnings Preschool (BBP)",
+            "stripeAcronym": null,
+            "stripeGhlContactId": "bOJpNQmtgOCBKMcGDrnd",
+            "signals": [
+              "email"
+            ],
+            "profileEmail": "educarebonita@yahoo.com"
+          }
+        ],
+        "recommendedAction": "Manual review — multiple or mixed signals."
+      }
+    ],
+    "legacyLiveZero": [
+      {
+        "id": 2,
+        "acronym": "AA",
+        "companyName": "Adventure Academy",
+        "profileEmail": "skmayo430@gmail.com",
+        "stripeCustomerId": "cus_JXyaqcD57Hpiz4",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Adventure Academy (AA)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 7,
+        "acronym": "ACA",
+        "companyName": "American Care Academy",
+        "profileEmail": "acctspayable@americancareacademy.org",
+        "stripeCustomerId": "cus_JbEMzoXeYue0Lo",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "American Care Academy (ACA)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 8,
+        "acronym": "ACAC",
+        "companyName": "Academic Academy",
+        "profileEmail": "michaelcartwright9997@gmail.com",
+        "stripeCustomerId": "cus_RtY1ZPpvHTKr57",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Academic Academy",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 11,
+        "acronym": "ACGP",
+        "companyName": "A Child's Galaxy Preschool, Inc.",
+        "profileEmail": "achildsgalaxy@aol.com",
+        "stripeCustomerId": "cus_JdaiwcQsLnZrJ8",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "A Child's Galaxy Preschool, Inc. (ACGP)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 12,
+        "acronym": "ACH",
+        "companyName": "A Child’s Heart",
+        "profileEmail": "admin@achildsheart.net",
+        "stripeCustomerId": "cus_Mbm0j0R6YSBnjH",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "A Child’s Heart (ACH)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 14,
+        "acronym": "ACP",
+        "companyName": "Apple Creek Preschool",
+        "profileEmail": "twilliamsabc@yahoo.com",
+        "stripeCustomerId": "cus_JXyaiESiplCveS",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Apple Creek Preschool (ACP)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 18,
+        "acronym": "AITF",
+        "companyName": "All in the Family Early Learning Center, LLC",
+        "profileEmail": "keasiaed@allinthefamilyelc.com",
+        "stripeCustomerId": "cus_QZrpUYMjIk0d3B",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "All in the Family Early Learning Center, LLC (AITF)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 19,
+        "acronym": "AJT",
+        "companyName": "Anna & Jack's Treehouse Learning Centers",
+        "profileEmail": "rob@thetreehouses.org",
+        "stripeCustomerId": "cus_MhFRUiHlo8tenH",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Anna & Jack's Treehouse Learning Centers (AJT)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 29,
+        "acronym": "AZBB",
+        "companyName": "A to Z Building Blocks Early Care and Education",
+        "profileEmail": "jody@atozbuildingblocks.com",
+        "stripeCustomerId": "cus_JVjQARWlRayfnJ",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "A to Z Building Blocks Early Care and Education (AZBB)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 32,
+        "acronym": "BBC",
+        "companyName": "Bright Beginnings Family Childcare",
+        "profileEmail": "ramal@wearebbc.com",
+        "stripeCustomerId": "cus_MdE6FdESr5IcMM",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Bright Beginnings Family Childcare",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 35,
+        "acronym": "BCD",
+        "companyName": "Buford Child Development Center",
+        "profileEmail": "rwhitaker2lrw@gmail.com",
+        "stripeCustomerId": "cus_RqrZk6iqXC5TyD",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Buford Child Development Center",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 37,
+        "acronym": "BED",
+        "companyName": "Bright & Early Discoveries Childcare Center",
+        "profileEmail": "jenniferl.bedchildcare@gmail.com",
+        "stripeCustomerId": "cus_OwdcfQw4J2umYG",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Bright & Early Discoveries Childcare Center",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 40,
+        "acronym": "BLC",
+        "companyName": "Beginnings Learning Center",
+        "profileEmail": "michelle@beginningslc.com",
+        "stripeCustomerId": "cus_JZ5ymERqAxYAZh",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Beginnings Learning Center (BLC)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 48,
+        "acronym": "BSLA",
+        "companyName": "Brilliant Starts Learning Academy",
+        "profileEmail": "Kallienorman@gmail.com",
+        "stripeCustomerId": "cus_JZ5yh5vRfSz6Dc",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Brilliant Starts Learning Academy (BSLA)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 54,
+        "acronym": "CCA",
+        "companyName": "Children's Choice Academy",
+        "profileEmail": "hello@choochoochicago.com",
+        "stripeCustomerId": "cus_PJVBwp8enjX9XF",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "ChooChoo Chicago Academy (CCCA)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 55,
+        "acronym": "CCC",
+        "companyName": "Caterpillar Corner Childcare",
+        "profileEmail": "hello@caterpillarcornercc.com",
+        "stripeCustomerId": "cus_PTE07GZHQoPU0y",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Caterpillar Corner Childcare (CCC)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 56,
+        "acronym": "CCCA",
+        "companyName": "ChooChoo Chicago Academy",
+        "profileEmail": "hello@choochoochicago.com",
+        "stripeCustomerId": "cus_PJVBwp8enjX9XF",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "ChooChoo Chicago Academy (CCCA)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 63,
+        "acronym": "CG",
+        "companyName": "THE CHILDREN'S GARDEN",
+        "profileEmail": "lupe@thechildrensgardenlc.com",
+        "stripeCustomerId": "cus_PrKjTnd6ZtIvvU",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "THE CHILDREN'S GARDEN",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 65,
+        "acronym": "CK",
+        "companyName": "Cedar Kids (Owatonna, MN)",
+        "profileEmail": "cedarkids2429@gmail.com",
+        "stripeCustomerId": "cus_JacbovVXfzQnZU",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Cedar Kids (Owatonna, MN)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 70,
+        "acronym": "COW",
+        "companyName": "Care-O-World Early Learning Center",
+        "profileEmail": "KUERSP@CAREOWORLD.ORG",
+        "stripeCustomerId": "cus_LHgZlvpaa0gd9S",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Care-O-World Early Learning Center (COW)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 71,
+        "acronym": "CP",
+        "companyName": "Creative Play Preschool",
+        "profileEmail": "shanita.beard@hotmail.com",
+        "stripeCustomerId": "cus_KmluP4g9CzTeZW",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Creative Play Preschool",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 74,
+        "acronym": "CPDS",
+        "companyName": "Citrus Park Day School",
+        "profileEmail": "surely@citrusparkdayschool.com",
+        "stripeCustomerId": "cus_N8fE3E89ViLFfB",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Citrus Park Day School",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 79,
+        "acronym": "CTCC",
+        "companyName": "Cradles to Crayons Childcare & Early Learning Center",
+        "profileEmail": "finance@ctcchildcare.com",
+        "stripeCustomerId": "cus_LBV06QLEj8RfZq",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Cradles to Crayons Childcare & Early Learning Center",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 81,
+        "acronym": "CWCP",
+        "companyName": "Creative Wonders Childcare & Preschool",
+        "profileEmail": "director@creativewondersmn.com",
+        "stripeCustomerId": "cus_KJvK6kOwO8Urpz",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Creative Wonders Childcare & Preschool",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 85,
+        "acronym": "DTA",
+        "companyName": "Discovery Tree Academy",
+        "profileEmail": "timcarter284@gmail.com",
+        "stripeCustomerId": "cus_L5uTXs8bL2u65h",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Discovery Tree Academy",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 89,
+        "acronym": "EBCCC",
+        "companyName": "Enlightened Beginnings Child Care Centre",
+        "profileEmail": "Ebeginnings@hotmail.com",
+        "stripeCustomerId": "cus_JUyxIXqCY96Fgr",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Enlightened Beginnings Child Care Centre",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 92,
+        "acronym": "ELA",
+        "companyName": "Enriched Learning Academy",
+        "profileEmail": "info@enrichedacademies.com",
+        "stripeCustomerId": "cus_QEZmAF1JuFaCem",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Enriched Learning Academy",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 98,
+        "acronym": "FDCA",
+        "companyName": "First Discovery Children's Academy",
+        "profileEmail": "vlynch@fdacademy.com",
+        "stripeCustomerId": "cus_JWTZM66NZ3U1fw",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "First Discovery Children's Academy",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 104,
+        "acronym": "FSCP",
+        "companyName": "Future Scholars Childcare & Preschool",
+        "profileEmail": "futurescholars330@gmail.com",
+        "stripeCustomerId": "cus_Jc5ZZ7QUIUd9r8",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Future Scholars Childcare & Preschool",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 115,
+        "acronym": "GMS",
+        "companyName": "Greater Montessori School",
+        "profileEmail": "info@greatermontessori.com",
+        "stripeCustomerId": "cus_MwesQIrM2BZ3xD",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Greater Montessori School (GMS)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 121,
+        "acronym": "HALC",
+        "companyName": "Heavenly Arms Learning Center",
+        "profileEmail": "Heavenlyarmsomaha@gmail.com",
+        "stripeCustomerId": "cus_JUDjNelnh97lEy",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Heavenly Arms Learning Center",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 124,
+        "acronym": "HHA",
+        "companyName": "Humble Hearts Academy",
+        "profileEmail": "phylishajw@gmail.com",
+        "stripeCustomerId": "cus_JWTZBDeKTWdXPs",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Humble Hearts Academy",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 125,
+        "acronym": "HKA",
+        "companyName": "Healthy Kids Academy",
+        "profileEmail": "healthykidsal@gmail.com",
+        "stripeCustomerId": "cus_NH5hlUMmk5pMcB",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Healthy Kids Academy",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 126,
+        "acronym": "HP",
+        "companyName": "Heritage Preschools",
+        "profileEmail": "larry@heritagepreschool.com",
+        "stripeCustomerId": "cus_OSkTrR4KS8Nmpp",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Heritage Preschools",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 128,
+        "acronym": "HWG",
+        "companyName": "Here We Grow Early Learning Center",
+        "profileEmail": "joanne@herewegrowdraper.com",
+        "stripeCustomerId": "cus_KuGFkTb1Q5wfuo",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Here We Grow Early Learning Center (HWG)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 130,
+        "acronym": "IBI",
+        "companyName": "Inch by Inch ChildCare",
+        "profileEmail": "kimlannin73@gmail.com",
+        "stripeCustomerId": "cus_MZ6qp9w0SyhvYG",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Inch by Inch ChildCare (IBI)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 133,
+        "acronym": "IPA",
+        "companyName": "International Preparatory Academy",
+        "profileEmail": "nicole@internationalpreparatory.com",
+        "stripeCustomerId": "cus_PdmSmL3lXY47mP",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "International Preparatory Academy (IPA)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 135,
+        "acronym": "IYCCC",
+        "companyName": "Impressionable Years Child Care Center",
+        "profileEmail": "michelleg@impressionableyears.com",
+        "stripeCustomerId": "cus_JcT1JFBqL0Zl0F",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Impressionable Years Child Care Center (IYCCC)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 138,
+        "acronym": "JHCC",
+        "companyName": "Joyful Hearts Childcare",
+        "profileEmail": "Joyfulheartschildcare@yahoo.com",
+        "stripeCustomerId": "cus_K3RckpGXuuZ8tW",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Joyful Hearts Childcare",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 141,
+        "acronym": "JSELC",
+        "companyName": "Jump Start Early Learning Center & Quality Child Care",
+        "profileEmail": "jumpstartelc15@gmail.com",
+        "stripeCustomerId": "cus_NZhAnYvF8jMqcN",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Jump Start Early Learning Center & Quality Child Care",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 150,
+        "acronym": "KC",
+        "companyName": "Kangaroo Clubhouse",
+        "profileEmail": "jkoppes@kangarooclubhouse.com",
+        "stripeCustomerId": "cus_LxG0JiS9qSdTVn",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Kangaroo Clubhouse",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 155,
+        "acronym": "KGLA",
+        "companyName": "A Kids Gym Learning Academy",
+        "profileEmail": "Akidsgymoviedo@aol.com",
+        "stripeCustomerId": "cus_JcT18n4fM8F4r9",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "A Kids Gym Learning Academy (KGLA)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 159,
+        "acronym": "KIDS",
+        "companyName": "KIDS Early Learning Centers",
+        "profileEmail": "ims618@aol.com",
+        "stripeCustomerId": "cus_JUbjKgulUXKcL8",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "KIDS Early Learning Centers (KIDS)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 170,
+        "acronym": "KQA",
+        "companyName": "Kings & Queens Academy Daycare Center",
+        "profileEmail": "kingsqueens91@yahoo.com",
+        "stripeCustomerId": "cus_OtIGK3ZB40NQBE",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Kings & Queens Academy Daycare Center",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 174,
+        "acronym": "KWLCS",
+        "companyName": "Kid's World Learning Center",
+        "profileEmail": "teamkoe@yahoo.com",
+        "stripeCustomerId": "cus_JZ5yS6mslG4IXP",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Kid's World Learning Center (KWLC)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 177,
+        "acronym": "LABC",
+        "companyName": "Lylabugs and Buttons Childcare",
+        "profileEmail": "lylabuttons@yahoo.com",
+        "stripeCustomerId": "cus_S2uA2968HaUUSO",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Lylabugs and Buttons Childcare",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 180,
+        "acronym": "LATX",
+        "companyName": "Little Angels Learning Center",
+        "profileEmail": "tamika@lalc-texas.com",
+        "stripeCustomerId": "cus_JbiaO4ZQ8xdcfb",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Little Angels Learning Center (LATX)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 193,
+        "acronym": "LLECC",
+        "companyName": "Little Learner's Early Childhood Center",
+        "profileEmail": "kim@kslittlelearners.com",
+        "stripeCustomerId": "cus_MXzW7adiq00Toa",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Little Learner's Early Childhood Center (LLECC)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 197,
+        "acronym": "LPPH",
+        "companyName": "Little People's Playhouse",
+        "profileEmail": "Jhamlin@lppkids.com",
+        "stripeCustomerId": "cus_JWqoUscNyL7rgt",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Little People's Playhouse",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 202,
+        "acronym": "LSP",
+        "companyName": "Little Scholars Preparatory School",
+        "profileEmail": "miranda@littlescholarsprep.com",
+        "stripeCustomerId": "cus_OwMhgrZM7v3KcZ",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Little Scholars Preparatory School (LSP)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 203,
+        "acronym": "LT",
+        "companyName": "Logan's Treehouse",
+        "profileEmail": "michelle@loganstreehouse.com",
+        "stripeCustomerId": "cus_NBfIuSCpOykJ5O",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Logan's Treehouse (LT)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 207,
+        "acronym": "LVA",
+        "companyName": "Lil’ Voyagers Academy",
+        "profileEmail": "gary@lilvoyagers.org",
+        "stripeCustomerId": "cus_MiUSSIBbJWDBjR",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Lil’ Voyagers Academy",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 210,
+        "acronym": "MCCC",
+        "companyName": "Mi Casa Child Centers",
+        "profileEmail": "marci@micasachildcenters.com",
+        "stripeCustomerId": "cus_MmFVv86PbbJj2B",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Mi Casa Child Centers (MCCC)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 215,
+        "acronym": "MHC",
+        "companyName": "Georgia’s Best 24 HR Childcare / Madalyn's House Childcare/Leap Learning Academy",
+        "profileEmail": "mhouseceo@mhousechildcare.com",
+        "stripeCustomerId": "cus_JWTa4sKbFb1j2B",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Georgia’s Best 24 HR Childcare / Madalyn's House Childcare/Leap Learning Academy (MHC)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 219,
+        "acronym": "MLC",
+        "companyName": "Montessori Learning Center",
+        "profileEmail": "strzembosz@sbcglobal.net",
+        "stripeCustomerId": "cus_JVjQwHvjmm7I1d",
+        "stripeStatus": "past_due",
+        "stripeMrr": 0,
+        "stripeLabel": "Montessori Learning Center",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 220,
+        "acronym": "MLT",
+        "companyName": "My Learning Tree Preschool & Childcare",
+        "profileEmail": "Mariew824@yahoo.com",
+        "stripeCustomerId": "cus_JcT1ExweL5vsJU",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "My Learning Tree Preschool & Childcare",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 223,
+        "acronym": "MPM",
+        "companyName": "Magnolia Progressive Montessori",
+        "profileEmail": "infomagnoliaprogressive@gmail.com",
+        "stripeCustomerId": "cus_Pm2zNMjoj7EuGp",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Magnolia Progressive Montessori (MPM)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 224,
+        "acronym": "MVLC",
+        "companyName": "My Village Learning Center",
+        "profileEmail": "myvillagelearningcenter@hotmail.com",
+        "stripeCustomerId": "cus_JTqL0QprsTBfn8",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "My Village Learning Center",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 225,
+        "acronym": "MWS",
+        "companyName": "Montessori World School",
+        "profileEmail": "nj@montessoriworldschool.com",
+        "stripeCustomerId": "cus_KXRFiZCcTh3SmK",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Montessori World School (MWS)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 236,
+        "acronym": "PCLA",
+        "companyName": "Preschool Connection Learning Academy",
+        "profileEmail": "kbeatypcla@gmail.com",
+        "stripeCustomerId": "cus_OAKfn1XyR52c64",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Preschool Connection Learning Academy",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 237,
+        "acronym": "PD",
+        "companyName": "Pancheri Discovery Center",
+        "profileEmail": "Pancheridaycare@gmail.com",
+        "stripeCustomerId": "cus_KceeMBLO8OCLdJ",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Pancheri Discovery Center",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 242,
+        "acronym": "PM",
+        "companyName": "Parker Montessori",
+        "profileEmail": "anithak1@hotmail.com",
+        "stripeCustomerId": "cus_OB8936VE6Itkwa",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Parker Montessori",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 245,
+        "acronym": "PPELC",
+        "companyName": "Paper Planes Early Learning Center",
+        "profileEmail": "info@paperplaneselc.com",
+        "stripeCustomerId": "cus_MayuSwPf1aZGng",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Paper Planes Early Learning Center (PPELC)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 249,
+        "acronym": "RGELC",
+        "companyName": "Rising Generations Early Learning Center",
+        "profileEmail": "rgelc@risinggenerations.com",
+        "stripeCustomerId": "cus_JWqoA66B7xl3Yf",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Rising Generations Early Learning Center (RGELC)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 252,
+        "acronym": "SEEC",
+        "companyName": "Sprout Early Education Center",
+        "profileEmail": "jerzellpl@gmail.com",
+        "stripeCustomerId": "cus_JVMBfKyjZQjGBy",
+        "stripeStatus": "past_due",
+        "stripeMrr": 0,
+        "stripeLabel": "Sprout Early Education Center (SEEC)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 253,
+        "acronym": "SELC",
+        "companyName": "Shell's Early Learning Centers",
+        "profileEmail": "shells@shellschildcare.com",
+        "stripeCustomerId": "cus_JWTamoKJ5bUec5",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Shell's Early Learning Centers",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 260,
+        "acronym": "SSG",
+        "companyName": "Small Steps Childcare & Early Learning Center",
+        "profileEmail": "tara@tolarsmallsteps.com",
+        "stripeCustomerId": "cus_Or1LuuPCpgB8SZ",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Small Steps Childcare & Early Learning Center",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 263,
+        "acronym": "SUG",
+        "companyName": "See Us Grow Childcare and Learning Center",
+        "profileEmail": "seeusgrow@yahoo.com",
+        "stripeCustomerId": "cus_JUDjKBe7BrA0HY",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "See Us Grow Childcare and Learning Center",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 267,
+        "acronym": "TATLC",
+        "companyName": "The Apple Tree Learning Centers",
+        "profileEmail": "juan@theappletreelearningcenters.com",
+        "stripeCustomerId": "cus_Mc4OlIGKcM9RJx",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "The Apple Tree Learning Centers (TATLC)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 272,
+        "acronym": "TEN",
+        "companyName": "The Enrichment Nest",
+        "profileEmail": "enrichmentnest@gmail.com",
+        "stripeCustomerId": "cus_Pg0wH9HsAZ27SN",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "The Enrichment Nest (TEN)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 273,
+        "acronym": "TEYP",
+        "companyName": "The Early Years Preschool",
+        "profileEmail": "lizandrea@outlook.com",
+        "stripeCustomerId": "cus_R05HCmthylsB8m",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "The Early Years Preschool",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 274,
+        "acronym": "TFA",
+        "companyName": "Tiny Footprints Academy",
+        "profileEmail": "info@tinyfootprints.net",
+        "stripeCustomerId": "cus_Pp3POuGkehVgM3",
+        "stripeStatus": "past_due",
+        "stripeMrr": 0,
+        "stripeLabel": "Tiny Footprints Academy",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 280,
+        "acronym": "TKC",
+        "companyName": "The Kids Connection",
+        "profileEmail": "tito@mykidsconnection.net",
+        "stripeCustomerId": "cus_LxIvLxlyaXzYv9",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "The Kids Connection",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 289,
+        "acronym": "TSI",
+        "companyName": "The Sitter, Inc",
+        "profileEmail": "phyllis.coleman4@verizon.net",
+        "stripeCustomerId": "cus_RGZNaNw3frPG9z",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "The Sitter, Inc (TSI)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 290,
+        "acronym": "TTKLC",
+        "companyName": "Tiny Treasure Kids",
+        "profileEmail": "benitascott01@yahoo.com",
+        "stripeCustomerId": "cus_MhMokOUIeG5q8Z",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Tiny Treasure Kids",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 305,
+        "acronym": "WLC",
+        "companyName": "Wellborn Learning Center",
+        "profileEmail": "wellbornlearningcenter@gmail.com",
+        "stripeCustomerId": "cus_MjWx2DMiZqvAAr",
+        "stripeStatus": "past_due",
+        "stripeMrr": 0,
+        "stripeLabel": "Wellborn Learning Center",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 309,
+        "acronym": "WOK",
+        "companyName": "World of Knowledge Child Development Center",
+        "profileEmail": "Worldofknowledgene@gmail.com",
+        "stripeCustomerId": "cus_Jvir3rTljngpQR",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "World of Knowledge Child Development Center",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 315,
+        "acronym": "LF",
+        "companyName": "Little Farmers Learning Center",
+        "profileEmail": "info@littlefarmers.com",
+        "stripeCustomerId": "cus_U5vS5kaGn1WovW",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Little Farmers Learning Center",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 337,
+        "acronym": null,
+        "companyName": "Naomi Fox",
+        "profileEmail": "Mrsfox@thefoxsdenchildcare.com",
+        "stripeCustomerId": "cus_QP2UESDwZhzmMs",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Naomi Fox",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 340,
+        "acronym": null,
+        "companyName": "Morgan Palmer",
+        "profileEmail": "mpalmer@smartstepscc.org",
+        "stripeCustomerId": "cus_OqKZQ00IDiCwE2",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Morgan Palmer",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 354,
+        "acronym": null,
+        "companyName": "Luv em & Leave em",
+        "profileEmail": "labronmason@yahoo.com",
+        "stripeCustomerId": "cus_R2IP98EIj9CQOq",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Luv em & Leave em",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 366,
+        "acronym": null,
+        "companyName": "Dogwood Lane Children's Academy",
+        "profileEmail": "msalas@dogwoodlaneca.com",
+        "stripeCustomerId": "cus_O0dJfleBWJOQRB",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Dogwood Lane Children's Academy (DLCA)",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 367,
+        "acronym": null,
+        "companyName": "Daniel Essien",
+        "profileEmail": "daniel@capitalroyalschool.com",
+        "stripeCustomerId": "cus_MzkEcNwHhFgmUv",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Daniel Essien",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 373,
+        "acronym": null,
+        "companyName": "codkids1.com",
+        "profileEmail": "thobbs@codkids1.com",
+        "stripeCustomerId": "cus_KJYcNTN25uCMf1",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "codkids1.com",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 374,
+        "acronym": null,
+        "companyName": "Valerie Beck",
+        "profileEmail": "valerietbeck@me.com",
+        "stripeCustomerId": "cus_KxRsomujnYS3sC",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Valerie Beck",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 375,
+        "acronym": null,
+        "companyName": "Little Leaders of KCK",
+        "profileEmail": "opgeorges@gmail.com",
+        "stripeCustomerId": "cus_PLlUg1qCd3Xio6",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Little Leaders of KCK",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 382,
+        "acronym": null,
+        "companyName": "LaFontaine Preparatory School",
+        "profileEmail": "kristin@lafontaineprep.org",
+        "stripeCustomerId": "cus_PQjMEer5MPLaAJ",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "LaFontaine Preparatory School",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 383,
+        "acronym": null,
+        "companyName": "firststepscenters.com",
+        "profileEmail": "thandigray@hotmail.com",
+        "stripeCustomerId": "cus_JWqogvcQqGgq2K",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "firststepscenters.com",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 388,
+        "acronym": null,
+        "companyName": "Whitney Burkman",
+        "profileEmail": "magnoliaacademy2022@gmail.com",
+        "stripeCustomerId": "cus_OHWAJDHu16p9NF",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Whitney Burkman",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 391,
+        "acronym": null,
+        "companyName": "Constance Sholar Cherry",
+        "profileEmail": "creativehomeacademy@outlook.com",
+        "stripeCustomerId": "cus_MOxonYFqrnyFlR",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Constance Sholar Cherry",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 392,
+        "acronym": null,
+        "companyName": "Nathan Cole",
+        "profileEmail": "Ncole.pkc@gmail.com",
+        "stripeCustomerId": "cus_JcT10sejsKzfPH",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Nathan Cole",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 394,
+        "acronym": null,
+        "companyName": "Darla Riley",
+        "profileEmail": "sulphurspringspc@hotmail.com",
+        "stripeCustomerId": "cus_LSMLL9htQgsynO",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Darla Riley",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 398,
+        "acronym": null,
+        "companyName": "tameenah adams",
+        "profileEmail": "t.adams@bestservicesllc.net",
+        "stripeCustomerId": "cus_K0p2Xu8tjqhg3f",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "tameenah adams",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 402,
+        "acronym": null,
+        "companyName": "Toshina Thames",
+        "profileEmail": "toshina1236@bochildcare.com",
+        "stripeCustomerId": "cus_MgDx0DgoxWcl7I",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Toshina Thames",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 405,
+        "acronym": null,
+        "companyName": "Raul Pineyro",
+        "profileEmail": "raulpineyro@cacophonyrealestate.com",
+        "stripeCustomerId": "cus_JqKgKTAVsvDlzf",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Raul Pineyro",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      },
+      {
+        "id": 407,
+        "acronym": null,
+        "companyName": "Ronesha Dotson",
+        "profileEmail": "giftedandtalentedkids@gmail.com",
+        "stripeCustomerId": "cus_JVv2LvIQPPA4Qt",
+        "stripeStatus": "active",
+        "stripeMrr": 0,
+        "stripeLabel": "Ronesha Dotson",
+        "recommendedAction": "Likely true zero / no active billed subscription on current Stripe customer."
+      }
+    ],
+    "noLiveStripeEvidence": [
+      {
+        "id": 23,
+        "acronym": "AN",
+        "companyName": "Adventureland Nursery",
+        "profileEmail": "adventureland_cofer1@verizon.net",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 27,
+        "acronym": "AVAC",
+        "companyName": "Avimor Academy",
+        "profileEmail": "rachel@avimoracademy.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 28,
+        "acronym": "AZ",
+        "companyName": "Premier Learning Academy (Chandler, AZ)",
+        "profileEmail": null,
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 38,
+        "acronym": "BFW",
+        "companyName": "Bright Futures Westside",
+        "profileEmail": "thomas.e.hargis@gmail.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 43,
+        "acronym": "BOCC",
+        "companyName": "Beautiful Oasis Childcare",
+        "profileEmail": "toshina1236@bochildcare.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 45,
+        "acronym": "BSC",
+        "companyName": "Bright Start Early Care & Preschool (DC)",
+        "profileEmail": "brightstartcares@gmail.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 47,
+        "acronym": "BSELA",
+        "companyName": "Bright Scholars Early Learning Academy",
+        "profileEmail": "myoung@mybrightscholar.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 50,
+        "acronym": "C2C",
+        "companyName": "Cradles 2 Crayons Early Learning Academy",
+        "profileEmail": "deondavis@cradles2crayonsacademy.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 59,
+        "acronym": "CCP",
+        "companyName": "Children's Choice Preschool",
+        "profileEmail": "jennig@childrenschoicepreschool.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 60,
+        "acronym": "CCPS",
+        "companyName": "Child Care Partners",
+        "profileEmail": "ccponwall@gmail.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 62,
+        "acronym": "CEDAT",
+        "companyName": "CEDAT USA",
+        "profileEmail": "daf.almazan@cedat.com.mx",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 64,
+        "acronym": "CHA",
+        "companyName": "Creative Home Academy and Preschool",
+        "profileEmail": "creativehomeacademy@outlook.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 69,
+        "acronym": "COD",
+        "companyName": "Children Of Destiny Learning Center",
+        "profileEmail": "thobbs@codkids1.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 76,
+        "acronym": "CRCLC",
+        "companyName": "Capital Royal Childcare & Learning Center",
+        "profileEmail": "daniel@capitalroyalschool.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 77,
+        "acronym": "CTA",
+        "companyName": "Creative Times Academy",
+        "profileEmail": "ixiong@schoolholdings.us",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 90,
+        "acronym": "EBLC",
+        "companyName": "East Bank Learning Center",
+        "profileEmail": "rachellpetit@gmail.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 97,
+        "acronym": "FCDMA",
+        "companyName": "Frederick Country Day Montessori & Art School",
+        "profileEmail": "thelearningb@verizon.net",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 99,
+        "acronym": "FDCS",
+        "companyName": "The Fox's Den Childcare",
+        "profileEmail": "mrsfox@thefoxsdenchildcare.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 118,
+        "acronym": "GTK",
+        "companyName": "Gifted and Talented Kid’s Academy, INC",
+        "profileEmail": "giftedandtalentedkids@gmail.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 131,
+        "acronym": "ICCCC",
+        "companyName": "Infinite Care Child Care Center",
+        "profileEmail": null,
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 134,
+        "acronym": "ISELC",
+        "companyName": "Inspiration Station Early Learning Center",
+        "profileEmail": "inspirationstationelc@gmail.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 137,
+        "acronym": "JEL",
+        "companyName": "Jefferson Early Learning",
+        "profileEmail": "jeffersonearlylearningschool@gmail.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 142,
+        "acronym": "JTC",
+        "companyName": "Joyful Tots Childcare",
+        "profileEmail": "joyfultots@aol.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 145,
+        "acronym": "KA-BVD",
+        "companyName": "Kiddie Academy (LLC is: M Triple B, LLC) (KA-BVD)",
+        "profileEmail": null,
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 149,
+        "acronym": "KBLC",
+        "companyName": "Kidbridge Learning Center",
+        "profileEmail": "Mike@kcfconsulting.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 153,
+        "acronym": "KFKA",
+        "companyName": "Kids For Kids Academy",
+        "profileEmail": "Lety@springviewacademy.net",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 158,
+        "acronym": "KICH",
+        "companyName": "Kid Chemist",
+        "profileEmail": "thekidchemist@gmail.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 165,
+        "acronym": "KLS",
+        "companyName": "First Steps Learning Centers, Raising Stars Academy, Kid Scholars, State of Illinois Child Development Center, & Kandiland Schools",
+        "profileEmail": "thandigray@hotmail.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 169,
+        "acronym": "KPS",
+        "companyName": "Kiddie Prep School",
+        "profileEmail": "missmadi@kiddieprepschool.org",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 171,
+        "acronym": "KRKPMC",
+        "companyName": "Kids 'R' Kids Pelham Medical Center",
+        "profileEmail": "amber@krksc.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 178,
+        "acronym": "LAFC",
+        "companyName": "OakRidge Academy Suwannee & Alpharetta",
+        "profileEmail": "padma@oakridgeacademy.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 184,
+        "acronym": "LCM",
+        "companyName": "LakeCreek Montessori School",
+        "profileEmail": "jordanmontessori@gmail.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 186,
+        "acronym": "LDEL",
+        "companyName": "Little Duckling Early Learning Christian Academy",
+        "profileEmail": "jstrong@littleducklingindy.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 191,
+        "acronym": "LLCD",
+        "companyName": "Little Learners Child Development",
+        "profileEmail": "kelly@littlelearnersreno.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 198,
+        "acronym": "LSAEE",
+        "companyName": "The Lehigh School Academy of Early Education",
+        "profileEmail": null,
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 200,
+        "acronym": "LSD",
+        "companyName": "Little Scholars Daycare",
+        "profileEmail": "ddicecca@littlescholarsdaycare.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 201,
+        "acronym": "LSEP",
+        "companyName": "Little Stars ELC of Pa",
+        "profileEmail": "littlestarsofpa@gmail.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 205,
+        "acronym": "LTADP",
+        "companyName": "Little Tiger Academy (LTADP) (Daycare & Preschool)",
+        "profileEmail": null,
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 208,
+        "acronym": "MACC",
+        "companyName": "Magnolia Academy Childcare Center",
+        "profileEmail": "whitneylexa@gmail.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 229,
+        "acronym": "NS",
+        "companyName": "The Nature Schools",
+        "profileEmail": "kristin@lafontaineprep.org",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 230,
+        "acronym": "NSCC",
+        "companyName": "New Salem Children's Center",
+        "profileEmail": "newsalemcc@yahoo.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 238,
+        "acronym": "PFCC",
+        "companyName": "Pooh & Friends Child Care Development Center II",
+        "profileEmail": "poohandfriends02@gmail.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 239,
+        "acronym": "PICEC",
+        "companyName": "Playpourri International Care & Educational Center",
+        "profileEmail": "info@playpourri.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 240,
+        "acronym": "PKP",
+        "companyName": "Pre-K & Play Academy",
+        "profileEmail": "jamie.prekandplay@gmail.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 241,
+        "acronym": "PLKC",
+        "companyName": "Pearland Kids Club",
+        "profileEmail": "ncole.pkc@gmail.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 243,
+        "acronym": "PP",
+        "companyName": "Playmates Preschool",
+        "profileEmail": "playmatespreschool@yahoo.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 247,
+        "acronym": "RC",
+        "companyName": "Rainbow Connection",
+        "profileEmail": "leonard@atlashillpartners.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 255,
+        "acronym": "SKL",
+        "companyName": "Sunny Kids Land LLC",
+        "profileEmail": "sunnykidsland.daycare@gmail.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 259,
+        "acronym": "SSCP",
+        "companyName": "Sulphur Springs Preschool",
+        "profileEmail": "sulphurspringscpa3@gmail.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 262,
+        "acronym": "SST",
+        "companyName": "Smart Steps Inc",
+        "profileEmail": "mpalmer@smartstepscc.org",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 279,
+        "acronym": "TGTP",
+        "companyName": "The Giving Tree Preschool",
+        "profileEmail": "tfrazier@libertychurchmi.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 281,
+        "acronym": "TLA",
+        "companyName": "Tree of Life Academy",
+        "profileEmail": "csarochester@yahoo.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 282,
+        "acronym": "TLB",
+        "companyName": "The Learning Bee",
+        "profileEmail": "thelearningb@verizon.net",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 285,
+        "acronym": "TLE-JW",
+        "companyName": "The Learning Experience (TLE-JW) Sundance Kids, LLC",
+        "profileEmail": null,
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 288,
+        "acronym": "TRCC",
+        "companyName": "Triple R Child Care",
+        "profileEmail": "otten.mathew@gmail.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 297,
+        "acronym": "UKELC",
+        "companyName": "University Kids Early Learning Center",
+        "profileEmail": "valerietbeck@me.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 298,
+        "acronym": "VMA",
+        "companyName": "Virginia Montessori Academy",
+        "profileEmail": "hatsumimann@vamontessoriacademy.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 300,
+        "acronym": "WALP",
+        "companyName": "Wonder Academy",
+        "profileEmail": "taylordee@mywonderacademy.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 301,
+        "acronym": "WBLC",
+        "companyName": "Willowbrook Learning Center",
+        "profileEmail": "cindi@mymagnoliakids.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 302,
+        "acronym": "WCDC",
+        "companyName": "Waterbabies Child Development Center",
+        "profileEmail": "t.adams@bestservicesllc.net",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 317,
+        "acronym": "CCCS",
+        "companyName": "Coral Community Charter School",
+        "profileEmail": "hforcelang@coralcharter.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 319,
+        "acronym": "TRYCC",
+        "companyName": "The Riley Youth Community Center",
+        "profileEmail": "info@trycc.org",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 3115,
+        "acronym": "KA-SM",
+        "companyName": "Kiddie Academy of Twinsburg",
+        "profileEmail": null,
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      },
+      {
+        "id": 3118,
+        "acronym": "GCP",
+        "companyName": "The Garden Community Preschool",
+        "profileEmail": "thegardenchild@gmail.com",
+        "legacyStripeCustomerId": null,
+        "recommendedAction": "No live Stripe mapping evidence found."
+      }
+    ],
+    "safeAutofixCandidates": []
+  }
+}
