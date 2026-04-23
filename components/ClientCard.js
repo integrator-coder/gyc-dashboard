@@ -1101,6 +1101,49 @@ function WebsiteAuditIssueList({ items = [], emptyText = 'No major mobile-specif
   )
 }
 
+function normalizeWebsiteAuditIssue(item) {
+  if (!item) return null
+
+  if (typeof item === 'string') {
+    const label = item.trim()
+    if (!label) return null
+    return {
+      label,
+      area: 'Website',
+      severity: 'medium',
+      summary: label,
+      whyItMatters: 'This surfaced as one of the biggest issues in the current website snapshot and is worth review.',
+      likelyCause: 'Inspect the related page template, technical setup, or front-end assets.',
+      recommendedFix: 'Review the issue and ship the smallest web-team fix that removes the friction.',
+      talkingPoint: 'We found a meaningful website issue that is worth tightening up to improve the parent experience.',
+    }
+  }
+
+  const label = String(item.label || '').trim()
+  if (!label) return null
+
+  const severity = ['high', 'medium', 'low'].includes(item.severity) ? item.severity : 'medium'
+  return {
+    label,
+    area: String(item.area || 'Website').trim() || 'Website',
+    severity,
+    summary: String(item.summary || label).trim(),
+    whyItMatters: String(item.whyItMatters || 'This surfaced as one of the biggest issues in the current website snapshot and is worth review.').trim(),
+    likelyCause: String(item.likelyCause || 'Inspect the related page template, technical setup, or front-end assets.').trim(),
+    recommendedFix: String(item.recommendedFix || 'Review the issue and ship the smallest web-team fix that removes the friction.').trim(),
+    talkingPoint: String(item.talkingPoint || 'We found a meaningful website issue that is worth tightening up to improve the parent experience.').trim(),
+  }
+}
+
+function WebsiteIssueBriefField({ label, value, className = '' }) {
+  return (
+    <div className={`rounded-2xl border border-white/10 bg-black/20 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] ${className}`}>
+      <div className="text-[10px] uppercase tracking-[0.22em] text-white/60">{label}</div>
+      <div className="mt-1.5 text-sm leading-6 text-white/95">{value || '—'}</div>
+    </div>
+  )
+}
+
 function WebsiteAuditScoreDial({ score, max = 100, status, scoreSuffix = '' }) {
   const tone = getWebsiteAuditCardTone(status)
   const numericScore = toFiniteNumber(score)
@@ -1703,7 +1746,9 @@ function WebsiteTab({ profile, acronym }) {
   const pageSpeed = audit?.pageSpeed || null
   const mobile = audit?.mobile || null
   const technicalSeo = audit?.technicalSeo || null
-  const topIssues = Array.isArray(audit?.topIssues) ? audit.topIssues : []
+  const topIssues = Array.isArray(audit?.topIssues)
+    ? audit.topIssues.map(normalizeWebsiteAuditIssue).filter(Boolean)
+    : []
   const mobileSubscores = Array.isArray(mobile?.subscores) ? mobile.subscores : []
   const mobileBreakdown = Array.isArray(mobile?.breakdown) ? mobile.breakdown : []
   const readabilitySubscore = mobileSubscores.find((item) => item.label === 'Readability')?.score ?? null
@@ -2027,14 +2072,29 @@ function WebsiteTab({ profile, acronym }) {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="text-sm font-semibold leading-5">{issue.label}</div>
-                        <div className="mt-1 text-[11px] uppercase tracking-[0.22em] opacity-80">
-                          {getWebsiteIssueSeverityLabel(issue.severity)}
+                        <div className="text-sm font-semibold leading-5 text-white">{issue.label}</div>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <span className="rounded-full border border-white/15 bg-black/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/90">
+                            {issue.area}
+                          </span>
+                          <span className="rounded-full border border-white/15 bg-black/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/90">
+                            {getWebsiteIssueSeverityLabel(issue.severity)}
+                          </span>
+                        </div>
+                        <div className="mt-3">
+                          <WebsiteIssueBriefField label="Summary" value={issue.summary} />
                         </div>
                       </div>
                       <span className="rounded-full border border-white/15 bg-black/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/90">
                         {issue.severity || 'low'}
                       </span>
+                    </div>
+
+                    <div className="mt-3 grid gap-3 md:grid-cols-2">
+                      <WebsiteIssueBriefField label="Why it matters" value={issue.whyItMatters} />
+                      <WebsiteIssueBriefField label="Likely cause / inspection area" value={issue.likelyCause} />
+                      <WebsiteIssueBriefField label="Recommended fix" value={issue.recommendedFix} className="md:col-span-2" />
+                      <WebsiteIssueBriefField label="GA / client talking point" value={issue.talkingPoint} className="md:col-span-2" />
                     </div>
                   </div>
                 ))}
