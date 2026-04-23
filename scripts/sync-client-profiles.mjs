@@ -93,6 +93,100 @@ function stripAcronymSuffix(str) {
   return str.replace(/\s*\([A-Z0-9]{2,8}\)\s*$/, '').trim()
 }
 
+function normalizeAcronym(value) {
+  const normalized = String(value || '').trim().toUpperCase()
+  return normalized || null
+}
+
+function getStripeComparableCompany(stripeRow) {
+  return stripAcronymSuffix(stripeRow?.companyName || stripeRow?.name || stripeRow?.email || '')
+}
+
+function getStripeComparableAcronym(stripeRow) {
+  return normalizeAcronym(
+    stripeRow?.acronym
+    || extractAcronymFromName(stripeRow?.companyName)
+    || extractAcronymFromName(stripeRow?.name)
+  )
+}
+
+function dedupeStripeRows(rows) {
+  const seen = new Set()
+  const unique = []
+  for (const row of rows || []) {
+    if (!row?.id || seen.has(row.id)) continue
+    seen.add(row.id)
+    unique.push(row)
+  }
+  return unique
+}
+
+function scoreStripeRowForProfile(stripeRow, { companyName, acronym, ghlContactId }) {
+  let score = 0
+
+  const targetCompany = normalizeCompany(stripAcronymSuffix(companyName))
+  const targetAcronym = normalizeAcronym(acronym)
+  const stripeCompany = normalizeCompany(getStripeComparableCompany(stripeRow))
+  const stripeAcronym = getStripeComparableAcronym(stripeRow)
+
+  if (ghlContactId && stripeRow.ghlContactId && ghlContactId === stripeRow.ghlContactId) score += 100
+  if (targetCompany && stripeCompany && targetCompany === stripeCompany) score += 80
+  if (targetAcronym && stripeAcronym && targetAcronym === stripeAcronym) score += 70
+  if (targetCompany && stripeCompany && targetCompany.length >= 6 && (stripeCompany.includes(targetCompany) || targetCompany.includes(stripeCompany))) score += 25
+  if (targetAcronym && stripeRow.companyName && stripeRow.companyName.includes(`(${targetAcronym})`)) score += 20
+  if (Number(stripeRow.mrr || 0) > 0) score += 5
+
+  return score
+}
+
+function pickPrimaryStripeRow(rows, identity) {
+  const ranked = dedupeStripeRows(rows)
+    .map((row) => ({ row, score: scoreStripeRowForProfile(row, identity) }))
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score
+      const mrrDiff = Number(b.row.mrr || 0) - Number(a.row.mrr || 0)
+      if (mrrDiff !== 0) return mrrDiff
+      return String(a.row.id).localeCompare(String(b.row.id))
+    })
+
+  return ranked[0]?.row || null
+}
+
+function collectStripeBundle(stripeRows, { companyName, acronym }) {
+  const targetCompany = normalizeCompany(stripAcronymSuffix(companyName))
+  const targetAcronym = normalizeAcronym(acronym)
+
+  return dedupeStripeRows(stripeRows).filter((row) => {
+    const stripeCompany = normalizeCompany(getStripeComparableCompany(row))
+    const stripeAcronym = getStripeComparableAcronym(row)
+
+    return Boolean(
+      (targetCompany && stripeCompany && targetCompany === stripeCompany)
+      || (targetAcronym && stripeAcronym && targetAcronym === stripeAcronym)
+    )
+  })
+}
+
+function resolveStripeForProfile(stripeRows, { companyName, acronym, ghlContactId = null }) {
+  const bundle = collectStripeBundle(stripeRows, { companyName, acronym })
+  const primary = pickPrimaryStripeRow(bundle, { companyName, acronym, ghlContactId })
+
+  if (!primary) return null
+
+  const aggregateMrr = bundle.reduce((sum, row) => sum + Number(row.mrr || 0), 0)
+  const status = bundle.some((row) => row.status === 'past_due')
+    ? 'past_due'
+    : (primary.status || null)
+
+  return {
+    primary,
+    bundle,
+    aggregateMrr,
+    status,
+  }
+}
+
 // ─── Source 1: Google Sheet "Updated 2026" tab ────────────────────────────────
 // Cols: RecordID(A), Acronym(B), CompanyName(C), Website(D), SEO(E), CRM(F),
 //       GoogleAds(G), Blueprint(H), Command(I), VirtualTour(J), S3(K), Recruitment(L)
@@ -183,7 +277,7 @@ async function readLiveClients(auth) {
 async function readStripeCustomers() {
   console.log('  💳 Reading StripeCustomer table...')
   const { rows } = await pool.query(`
-    SELECT id, name, email, status, mrr, "canceledAt", "companyName", "ownerName", phone, "ghlContactId"
+    SELECT id, name, email, status, mrr, "canceledAt", "companyName", "ownerName", phone, "ghlContactId", acronym
     FROM "StripeCustomer"
     WHERE "tenantId" = 'gyc'
   `)
@@ -248,45 +342,56 @@ async function readDunningHistory() {
  * try to find the best Stripe customer match.
  */
 function buildStripeIndex(stripeRows) {
-  // Index by normalized companyName
   const byCompany = {}
-  // Index by normalized customer name (person name — fallback)
-  const byPersonName = {}
-  // Index by email domain prefix? Skip — too unreliable
+  const byAcronym = {}
 
   for (const sc of stripeRows) {
-    if (sc.companyName) {
-      const key = normalizeCompany(sc.companyName)
+    const comparableCompany = getStripeComparableCompany(sc)
+    const comparableAcronym = getStripeComparableAcronym(sc)
+
+    if (comparableCompany) {
+      const key = normalizeCompany(comparableCompany)
       if (key) byCompany[key] = sc
     }
-    if (sc.name) {
-      const key = normalizeCompany(sc.name)
-      if (key) byPersonName[key] = sc
+
+    if (comparableAcronym) {
+      byAcronym[comparableAcronym] ||= []
+      byAcronym[comparableAcronym].push(sc)
     }
   }
 
   return function findStripeCustomer(companyName, acronym) {
     const normComp = normalizeCompany(companyName)
+    const normAcr = normalizeAcronym(acronym)
+    const candidates = []
 
     // 1. Exact normalized company name
-    if (byCompany[normComp]) return byCompany[normComp]
+    if (byCompany[normComp]) candidates.push(byCompany[normComp])
 
-    // 2. Check if any stripe company name contains the acronym at the end in parens
-    if (acronym) {
-      const suffix = normalizeCompany(`(${acronym})`)
+    // 2. Exact acronym match from StripeCustomer / suffix
+    if (normAcr && byAcronym[normAcr]?.length) {
+      candidates.push(...byAcronym[normAcr])
+    }
+
+    // 3. Check if any stripe company name contains the acronym at the end in parens
+    if (normAcr) {
+      const suffix = normalizeCompany(`(${normAcr})`)
       for (const [k, sc] of Object.entries(byCompany)) {
-        if (k.endsWith(suffix)) return sc
+        if (k.endsWith(suffix)) candidates.push(sc)
       }
     }
 
-    // 3. Partial match: sheet company name is contained within stripe company name or vice versa
+    // 4. Partial match: sheet company name is contained within stripe company name or vice versa
     if (normComp.length >= 6) {
+      const partials = []
       for (const [k, sc] of Object.entries(byCompany)) {
-        if (k.includes(normComp) || normComp.includes(k)) return sc
+        if (k.includes(normComp) || normComp.includes(k)) partials.push(sc)
       }
+
+      if (partials.length === 1) candidates.push(partials[0])
     }
 
-    return null
+    return pickPrimaryStripeRow(candidates, { companyName, acronym, ghlContactId: null })
   }
 }
 
@@ -594,7 +699,7 @@ async function main() {
   // ── Upsert all companies from Google Sheet ────────────────────────────────
   console.log(`\n📦 Upserting ${sheetCompanies.length} companies from Google Sheet...\n`)
 
-  let created = 0, updated = 0, stripeMatched = 0, ghlMatched = 0
+  let created = 0, updated = 0, stripeMatched = 0, ghlMatched = 0, multiStripeBundles = 0
 
   for (const co of sheetCompanies) {
     const { acronym, companyName, hasWebsite, hasSEO, hasCRM, crmType,
@@ -611,16 +716,27 @@ async function main() {
     let email = null, phone = null, ownerName = null, isOverdue = false, ghlContactId = null
 
     if (sc) {
+      const stripeBundle = resolveStripeForProfile(stripeRows, {
+        companyName,
+        acronym,
+        ghlContactId: sc.ghlContactId || stripeToGhl[sc.id] || null,
+      })
+
+      const primaryStripe = stripeBundle?.primary || sc
+      const relatedStripe = stripeBundle?.bundle?.length ? stripeBundle.bundle : [sc]
+
       stripeMatched++
-      stripeCustomerId = sc.id
-      stripeStatus     = sc.status
-      mrr              = sc.mrr || 0
-      email            = sc.email
-      phone            = sc.phone
-      ownerName        = sc.ownerName
-      isOverdue        = sc.status === 'past_due'
+      if (relatedStripe.length > 1) multiStripeBundles++
+
+      stripeCustomerId = primaryStripe.id
+      stripeStatus     = stripeBundle?.status || primaryStripe.status
+      mrr              = stripeBundle?.aggregateMrr ?? primaryStripe.mrr ?? 0
+      email            = primaryStripe.email
+      phone            = primaryStripe.phone
+      ownerName        = primaryStripe.ownerName
+      isOverdue        = stripeStatus === 'past_due'
       // GHL from StripeCustomer direct field or via ClientIdentityMap
-      ghlContactId     = sc.ghlContactId || stripeToGhl[sc.id] || null
+      ghlContactId     = primaryStripe.ghlContactId || stripeToGhl[primaryStripe.id] || null
       if (ghlContactId) ghlMatched++
     }
 
@@ -678,6 +794,7 @@ async function main() {
   console.log(`  ✅ Created: ${created}  Updated: ${updated}`)
   console.log(`  💳 Stripe matches: ${stripeMatched}`)
   console.log(`  🔗 GHL matches: ${ghlMatched}`)
+  console.log(`  🧩 Multi-Stripe client bundles: ${multiStripeBundles}`)
 
   // ── Also upsert any Stripe customers not in the sheet (safety net) ────────
   console.log('\n🔄 Safety-net: ensuring all Stripe active/past_due customers exist in ClientProfile...')
@@ -694,6 +811,20 @@ async function main() {
       [sc.id]
     )
     if (existing.rows.length > 0) continue // already matched
+
+    const existingAlias = await pool.query(
+      `SELECT id
+       FROM "ClientProfile"
+       WHERE "tenantId"='gyc'
+         AND (
+           ($1::text IS NOT NULL AND "ghlContactId" = $1)
+           OR ($2::text IS NOT NULL AND upper(COALESCE(acronym,'')) = $2)
+           OR lower(COALESCE("companyName",'')) = lower($3)
+         )
+       LIMIT 1`,
+      [sc.ghlContactId || null, normalizeAcronym(sc.acronym), cleanName]
+    )
+    if (existingAlias.rows.length > 0) continue
 
     // Not matched yet — upsert as an unmatched stripe customer
     const ghlContactId = sc.ghlContactId || stripeToGhl[sc.id] || null
@@ -823,6 +954,33 @@ async function main() {
     SELECT COUNT(*) as n FROM "ClientProfile" WHERE "tenantId"='gyc' AND "stripeCustomerId" IS NOT NULL
   `)
   console.log(`  💳 With Stripe link: ${stripeMatchedRows[0].n}`)
+
+  const { rows: stripeAliasRows } = await pool.query(`
+    WITH unmatched AS (
+      SELECT sc.id, sc.acronym, sc."ghlContactId", strip_both
+      FROM (
+        SELECT id, acronym, "ghlContactId",
+               regexp_replace(COALESCE("companyName", name, email, ''), '\\s*\\([A-Z0-9]{2,8}\\)\\s*$', '') AS strip_both
+        FROM "StripeCustomer"
+        WHERE "tenantId" = 'gyc' AND status IN ('active','past_due')
+      ) sc
+      LEFT JOIN "ClientProfile" cp ON cp."tenantId"='gyc' AND cp."stripeCustomerId" = sc.id
+      WHERE cp.id IS NULL
+    )
+    SELECT COUNT(*)::int AS n
+    FROM unmatched u
+    WHERE EXISTS (
+      SELECT 1
+      FROM "ClientProfile" cp
+      WHERE cp."tenantId"='gyc'
+        AND (
+          (u."ghlContactId" IS NOT NULL AND cp."ghlContactId" = u."ghlContactId")
+          OR (u.acronym IS NOT NULL AND upper(COALESCE(cp.acronym,'')) = upper(u.acronym))
+          OR lower(COALESCE(cp."companyName",'')) = lower(u.strip_both)
+        )
+    )
+  `)
+  console.log(`  🔁 Additional Stripe aliases already covered by an existing client: ${stripeAliasRows[0].n}`)
 
   const { rows: ghlMatchedRows } = await pool.query(`
     SELECT COUNT(*) as n FROM "ClientProfile" WHERE "tenantId"='gyc' AND "ghlContactId" IS NOT NULL
