@@ -1,0 +1,125 @@
+{
+  "summary": {
+    "stripeCustomers": 310,
+    "clientProfiles": 396,
+    "linksUpserted": 309,
+    "primaryLinks": 299,
+    "secondaryLinks": 10,
+    "ambiguousStripeCustomers": 1,
+    "liveOrphans": 0,
+    "multiLiveProfiles": 5
+  },
+  "sharedLegacyConflicts": [
+    {
+      "title": "cus_JTqMgO24Tk2s6W shared by 2 profiles",
+      "details": [
+        "Acronyms: FA, MFA",
+        "Companies: Foundation Academy | My First Academy"
+      ]
+    },
+    {
+      "title": "cus_JWTZsZr9lB8qcJ shared by 2 profiles",
+      "details": [
+        "Acronyms: GRCDC, RCDC",
+        "Companies: Growing Room Child Development Centers | Rosebrook Child Development Center"
+      ]
+    },
+    {
+      "title": "cus_OqcKq4FgANhyYe shared by 2 profiles",
+      "details": [
+        "Acronyms: TA, (none)",
+        "Companies: Ruth Porta | Tomorrowland Academy"
+      ]
+    },
+    {
+      "title": "cus_PJVBwp8enjX9XF shared by 2 profiles",
+      "details": [
+        "Acronyms: CCA, CCCA",
+        "Companies: Children's Choice Academy | ChooChoo Chicago Academy"
+      ]
+    },
+    {
+      "title": "cus_RLQEPBSZU3k6w4 shared by 2 profiles",
+      "details": [
+        "Acronyms: CLAC, CLAC",
+        "Companies: Creative Learning Academy | Creative Learning Academy Amernia Ave"
+      ]
+    },
+    {
+      "title": "cus_RnukoSGaJY9GXB shared by 2 profiles",
+      "details": [
+        "Acronyms: KPCLC, (none)",
+        "Companies: Kids Paradise Childcare & Learning Center | Maria Esteban - KPCLC"
+      ]
+    },
+    {
+      "title": "cus_ShImtycdoWloNM shared by 2 profiles",
+      "details": [
+        "Acronyms: KH, (none)",
+        "Companies: Christopher Broome - Kids Hangout | Kids Hangout"
+      ]
+    },
+    {
+      "title": "cus_SzkLjCYYzyfHJR shared by 2 profiles",
+      "details": [
+        "Acronyms: BS, TB",
+        "Companies: Bright Stars | TweetyB's"
+      ]
+    },
+    {
+      "title": "cus_T6SGYZlDqyNQaC shared by 2 profiles",
+      "details": [
+        "Acronyms: GKLC, KLC",
+        "Companies: Growing Kids Learning Centers | Kidstown Learning Center"
+      ]
+    }
+  ],
+  "ambiguousStripeCustomers": [
+    {
+      "title": "cus_ShImtycdoWloNM · Christopher Broome - Kids Hangout",
+      "details": [
+        "Status: active",
+        "MRR: $395.00",
+        "Candidates: Christopher Broome - Kids Hangout [legacy_profile_pointer, company_exact, company_partial / 250] | Kids Hangout [legacy_profile_pointer, acronym_exact, company_partial / 240]"
+      ]
+    }
+  ],
+  "liveOrphans": [],
+  "multiLiveProfiles": [
+    {
+      "title": "Heritage Preschools (HP)",
+      "details": [
+        "Live Stripe customers linked: 6",
+        "Stripe IDs: cus_OSkTrR4KS8Nmpp, cus_OSjGi5APXKQQKB, cus_OSkM5520YgsIze, cus_OSkWOQbIqZBAQO, cus_OSldsEkLeSqdwy, cus_OSmGq80vOxYrWI"
+      ]
+    },
+    {
+      "title": "Bright Beginnings Preschool (BBP)",
+      "details": [
+        "Live Stripe customers linked: 3",
+        "Stripe IDs: cus_SEqWLGOpgMtVQz, cus_R7Bt4VVwM7ThTS, cus_SEqX9tIvMMJ8p8"
+      ]
+    },
+    {
+      "title": "Beginnings Learning Center (BLC)",
+      "details": [
+        "Live Stripe customers linked: 2",
+        "Stripe IDs: cus_JZ5ymERqAxYAZh, cus_L2sTbBcXcznMaA"
+      ]
+    },
+    {
+      "title": "Kid's World Learning Center (KWLCS)",
+      "details": [
+        "Live Stripe customers linked: 2",
+        "Stripe IDs: cus_JZ5yS6mslG4IXP, cus_LVLoJmsNsUX6K8"
+      ]
+    },
+    {
+      "title": "Olive Grove Nature School (OGNS)",
+      "details": [
+        "Live Stripe customers linked: 2",
+        "Stripe IDs: cus_Rig8Exm0qgIvG0, cus_JcT2l4916TSc9c"
+      ]
+    }
+  ]
+}

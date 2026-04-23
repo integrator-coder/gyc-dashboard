@@ -21,6 +21,7 @@ import { readFileSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import os from 'os'
+import { ensureStripeNormalizationTables, syncClientStripeLinks } from '../lib/stripe-normalization.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -678,6 +679,8 @@ async function syncFromNotion(pgPool) {
 async function main() {
   console.log('🚀 ClientProfile Sync — starting\n')
 
+  await ensureStripeNormalizationTables(pool)
+
   // ── Load all sources ──────────────────────────────────────────────────────
   const auth = createSheetsAuth()
   const [sheetCompanies, liveClientsData, stripeRows, { stripeToGhl }, dunningMap] = await Promise.all([
@@ -699,7 +702,7 @@ async function main() {
   // ── Upsert all companies from Google Sheet ────────────────────────────────
   console.log(`\n📦 Upserting ${sheetCompanies.length} companies from Google Sheet...\n`)
 
-  let created = 0, updated = 0, stripeMatched = 0, ghlMatched = 0, multiStripeBundles = 0
+  let created = 0, updated = 0, stripeMatched = 0, ghlMatched = 0, multiStripeBundles = 0, stripeLinkRows = 0
 
   for (const co of sheetCompanies) {
     const { acronym, companyName, hasWebsite, hasSEO, hasCRM, crmType,
@@ -754,7 +757,7 @@ async function main() {
     )
     const isNew = parseInt(prevCount.rows[0].c, 10) === 0
 
-    await upsertClientProfile({
+    const clientProfileId = await upsertClientProfile({
       tenantId: 'gyc',
       acronym,
       companyName,
@@ -787,6 +790,24 @@ async function main() {
       ghlPipelineStage: null,
     })
 
+    if (clientProfileId && sc) {
+      const stripeBundle = resolveStripeForProfile(stripeRows, {
+        companyName,
+        acronym,
+        ghlContactId,
+      })
+      const relatedStripe = stripeBundle?.bundle?.length ? stripeBundle.bundle : [sc]
+      const linkResult = await syncClientStripeLinks(pool, {
+        tenantId: 'gyc',
+        clientProfileId,
+        profile: { acronym, companyName, ghlContactId, stripeCustomerId },
+        stripeRows: relatedStripe,
+        primaryStripeCustomerId: stripeCustomerId,
+        linkSource: 'sync-client-profiles',
+      })
+      stripeLinkRows += linkResult.linkedCount
+    }
+
     if (isNew) created++
     else updated++
   }
@@ -795,6 +816,7 @@ async function main() {
   console.log(`  💳 Stripe matches: ${stripeMatched}`)
   console.log(`  🔗 GHL matches: ${ghlMatched}`)
   console.log(`  🧩 Multi-Stripe client bundles: ${multiStripeBundles}`)
+  console.log(`  🔗 ClientStripeLink rows refreshed: ${stripeLinkRows}`)
 
   // ── Also upsert any Stripe customers not in the sheet (safety net) ────────
   console.log('\n🔄 Safety-net: ensuring all Stripe active/past_due customers exist in ClientProfile...')
@@ -828,7 +850,7 @@ async function main() {
 
     // Not matched yet — upsert as an unmatched stripe customer
     const ghlContactId = sc.ghlContactId || stripeToGhl[sc.id] || null
-    await upsertClientProfile({
+    const clientProfileId = await upsertClientProfile({
       tenantId: 'gyc',
       acronym: null,
       companyName: cleanName,
@@ -852,6 +874,18 @@ async function main() {
       ghlContactId,
       ghlPipelineStage: null,
     })
+
+    if (clientProfileId) {
+      const linkResult = await syncClientStripeLinks(pool, {
+        tenantId: 'gyc',
+        clientProfileId,
+        profile: { acronym: null, companyName: cleanName, ghlContactId, stripeCustomerId: sc.id },
+        stripeRows: [sc],
+        primaryStripeCustomerId: sc.id,
+        linkSource: 'sync-client-profiles-safety-net',
+      })
+      stripeLinkRows += linkResult.linkedCount
+    }
     stripeOnly++
   }
   if (stripeOnly > 0) console.log(`  + ${stripeOnly} Stripe-only profiles added`)

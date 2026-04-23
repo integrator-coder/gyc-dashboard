@@ -1,10 +1,17 @@
 // scripts/sync-stripe.js
 // Standalone Stripe sync script — fetches ALL subscriptions via autopagination
+require('dotenv').config({ path: require('path').resolve(__dirname, '../.env.local') })
+
 const { PrismaClient } = require('@prisma/client')
 const Stripe = require('stripe')
+const pg = require('pg')
 
 const prisma = new PrismaClient()
 const stripe = new Stripe('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')
+const invoicePool = new pg.Pool({
+  connectionString: process.env.NEON_DATABASE_URL || process.env.DATABASE_URL,
+  ssl: process.env.NEON_DATABASE_URL || process.env.DATABASE_URL ? { rejectUnauthorized: false } : undefined,
+})
 
 /**
  * Calculate MRR for a single subscription.
@@ -186,6 +193,14 @@ async function sync() {
   }
   console.log(`Saved daily revenue for ${Object.keys(dailyMap).length} days`)
 
+  const { syncStripeInvoiceSnapshots } = await import('../lib/stripe-normalization.mjs')
+  const invoiceSync = await syncStripeInvoiceSnapshots({
+    stripe,
+    queryable: invoicePool,
+    tenantId: 'gyc',
+    lookbackDays: 365,
+  })
+
   // Save metrics snapshot
   await prisma.stripeMetrics.create({
     data: {
@@ -208,7 +223,7 @@ async function sync() {
     data: {
       source: 'stripe',
       status: 'success',
-      message: `Synced ${customers.length} customers (${statusBreakdown}). MRR: $${mrr.toFixed(2)}. New (30d): ${newCustomers}. Churned (30d): ${canceledSubs.length}.`
+      message: `Synced ${customers.length} customers (${statusBreakdown}). MRR: $${mrr.toFixed(2)}. New (30d): ${newCustomers}. Churned (30d): ${canceledSubs.length}. Invoices synced: ${invoiceSync.synced}.`
     }
   })
 
@@ -220,12 +235,15 @@ async function sync() {
   console.log(`   New (30d): ${newCustomers}`)
   console.log(`   Churned (30d): ${canceledSubs.length}`)
   console.log(`   Revenue (30d): $${totalRevenue.toFixed(2)}`)
+  console.log(`   Invoice snapshots synced (365d): ${invoiceSync.synced}`)
 
   await prisma.$disconnect()
+  await invoicePool.end()
 }
 
 sync().catch(async e => {
   console.error('Error:', e.message)
   await prisma.$disconnect()
+  await invoicePool.end().catch(() => null)
   process.exit(1)
 })
