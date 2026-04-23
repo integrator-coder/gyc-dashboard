@@ -100,14 +100,14 @@ function ServiceStack({ client }) {
         <span
           key={service.key}
           title={service.label}
-          className="inline-flex items-center gap-1 rounded-full border border-[var(--brand-border)] bg-black/35 px-2 py-1 text-[10px] font-medium text-gray-200"
+          className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-[#171320] px-2 py-1 text-[10px] font-medium text-gray-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
         >
           <span>{service.icon}</span>
           <span>{service.short}</span>
         </span>
       ))}
       {active.length > 4 ? (
-        <span className="inline-flex items-center rounded-full border border-[var(--brand-border)] bg-black/35 px-2 py-1 text-[10px] font-medium text-gray-300">
+        <span className="inline-flex items-center rounded-full border border-white/10 bg-[#171320] px-2 py-1 text-[10px] font-medium text-gray-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
           +{active.length - 4}
         </span>
       ) : null}
@@ -127,7 +127,7 @@ function StatsBar({ matched, visible, pageMrr, overdueCount, trendDownCount }) {
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
       {stats.map(({ label, value, warn }) => (
-        <div key={label} className="rounded-2xl border border-[var(--brand-border)] bg-black/25 px-4 py-3">
+        <div key={label} className="rounded-2xl border border-white/10 bg-gradient-to-b from-[#171221] via-[#120d1b] to-[#0d0a14] px-4 py-3 shadow-[0_16px_34px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.05)]">
           <div className="text-[10px] uppercase tracking-[0.24em] text-gray-400">{label}</div>
           <div className={`mt-1.5 text-lg font-bold ${warn ? 'text-rose-300' : 'text-white'}`}>{value}</div>
         </div>
@@ -184,7 +184,7 @@ function SignalPill({ label, value, tone = 'default' }) {
       ? 'border-amber-500/25 bg-amber-500/10 text-amber-200'
       : tone === 'bad'
         ? 'border-rose-500/25 bg-rose-500/10 text-rose-200'
-        : 'border-[var(--brand-border)] bg-black/30 text-gray-200'
+        : 'border-white/10 bg-[#15111d] text-gray-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
 
   return (
     <div className={`rounded-xl border px-2.5 py-2 ${toneClass}`}>
@@ -214,9 +214,12 @@ function ClientGridCard({ client }) {
   return (
     <Link
       href={`/clients/${client.acronym}`}
-      className="group flex h-full flex-col rounded-2xl border border-[var(--brand-border)] bg-black/25 p-3.5 transition hover:border-violet-500/35 hover:bg-violet-500/5 hover:shadow-[0_0_0_1px_rgba(174,43,207,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
+      className="group relative flex h-full flex-col overflow-hidden rounded-[24px] border border-white/10 bg-gradient-to-b from-[#181323] via-[#120d1b] to-[#0b0911] p-3.5 shadow-[0_18px_36px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)] transition duration-200 hover:-translate-y-0.5 hover:border-violet-400/35 hover:from-[#1d162c] hover:via-[#151022] hover:to-[#0d0a14] hover:shadow-[0_24px_48px_rgba(0,0,0,0.38),0_0_0_1px_rgba(167,139,250,0.08),0_0_30px_rgba(115,20,148,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+      <div className="pointer-events-none absolute -right-10 top-0 h-24 w-24 rounded-full bg-violet-400/10 blur-3xl transition group-hover:bg-violet-400/15" />
+
+      <div className="relative flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-200">
@@ -247,7 +250,7 @@ function ClientGridCard({ client }) {
 
       <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px]">
         <TrendBadge trend={client.funnelTrend} />
-        <span className={`inline-flex items-center rounded-full border px-2.5 py-1 font-semibold uppercase tracking-[0.18em] ${client.stripeStatus === 'past_due' ? 'border-rose-500/30 bg-rose-500/10 text-rose-300' : 'border-[var(--brand-border)] bg-black/30 text-gray-300'}`}>
+        <span className={`inline-flex items-center rounded-full border px-2.5 py-1 font-semibold uppercase tracking-[0.18em] ${client.stripeStatus === 'past_due' ? 'border-rose-500/30 bg-rose-500/10 text-rose-300' : 'border-white/10 bg-[#15111d] text-gray-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'}`}>
           Stripe {client.stripeStatus || '—'}
         </span>
       </div>
@@ -275,7 +278,7 @@ function ClientGridCard({ client }) {
         />
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--brand-border)] pt-2.5 text-[11px] text-gray-400">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-2.5 text-[11px] text-gray-400">
         <div className="min-w-0 truncate">
           {funnelRates || 'No conversion rates yet'}
         </div>
@@ -394,7 +397,7 @@ export default function ActiveClientList({ user }) {
     : 'A denser view of the book with faster scanning across status, services, and revenue.'
 
   return (
-    <div className="mx-auto max-w-[1680px] space-y-5">
+    <div className="mx-auto max-w-[1680px] space-y-5 rounded-[32px] border border-white/6 bg-[radial-gradient(circle_at_top,rgba(115,20,148,0.16),transparent_42%),linear-gradient(180deg,rgba(18,12,28,0.82),rgba(8,8,12,0.96))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] sm:p-5">
       <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <div className="text-sm font-semibold uppercase tracking-[0.24em] text-violet-300">Client Management</div>
@@ -402,7 +405,7 @@ export default function ActiveClientList({ user }) {
           <p className="mt-1 max-w-3xl text-sm text-gray-400">{roleDescription}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="rounded-2xl border border-[var(--brand-border)] bg-black/20 px-4 py-2 text-right">
+          <div className="rounded-2xl border border-white/10 bg-gradient-to-b from-[#181223] to-[#0f0b17] px-4 py-2 text-right shadow-[0_16px_30px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.05)]">
             <div className="text-[10px] uppercase tracking-[0.24em] text-gray-400">Matched clients</div>
             <div className="mt-1 text-lg font-bold text-white">{loading ? '…' : total.toLocaleString()}</div>
           </div>
@@ -415,7 +418,7 @@ export default function ActiveClientList({ user }) {
         </div>
       </div>
 
-      <div className="rounded-3xl border border-[var(--brand-border)] bg-[var(--brand-bg-card)] p-5 shadow-[0_0_0_1px_rgba(115,20,148,0.08)]">
+      <div className="rounded-3xl border border-white/10 bg-gradient-to-b from-[#171221] via-[#110d19] to-[#0b0911] p-5 shadow-[0_22px_44px_rgba(0,0,0,0.26),0_0_0_1px_rgba(115,20,148,0.08),inset_0_1px_0_rgba(255,255,255,0.04)]">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
           <input
             type="text"
@@ -475,7 +478,7 @@ export default function ActiveClientList({ user }) {
         <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-300">{error}</div>
       ) : null}
 
-      <div className="overflow-hidden rounded-3xl border border-[var(--brand-border)] bg-[var(--brand-bg-card)] shadow-[0_0_0_1px_rgba(115,20,148,0.08)]">
+      <div className="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-[#151020] via-[#0f0b18] to-[#09070e] shadow-[0_28px_56px_rgba(0,0,0,0.3),0_0_0_1px_rgba(115,20,148,0.08),inset_0_1px_0_rgba(255,255,255,0.04)]">
         {loading ? (
           <div className="py-16 text-center text-gray-500">
             <div className="flex items-center justify-center gap-2">
@@ -486,10 +489,12 @@ export default function ActiveClientList({ user }) {
         ) : clients.length === 0 ? (
           <div className="py-16 text-center text-gray-500">No clients match these filters.</div>
         ) : (
-          <div className="grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {clients.map((client) => (
-              <ClientGridCard key={client.id} client={client} />
-            ))}
+          <div className="bg-[radial-gradient(circle_at_top,rgba(174,43,207,0.08),transparent_32%)] p-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {clients.map((client) => (
+                <ClientGridCard key={client.id} client={client} />
+              ))}
+            </div>
           </div>
         )}
 
