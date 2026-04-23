@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 
-// ─── Role helpers ─────────────────────────────────────────────────────────────
 function canSeeFinance(user) {
   return ['superadmin', 'admin'].includes(user?.role)
 }
@@ -16,7 +15,6 @@ function isAdminPlus(user) {
 function buildDashboardGroup(user) {
   const children = []
 
-  // Leadership — admin+ only
   if (isAdminPlus(user)) {
     children.push({
       label: 'Leadership',
@@ -28,7 +26,6 @@ function buildDashboardGroup(user) {
     })
   }
 
-  // Finance — admin+ only
   if (canSeeFinance(user)) {
     children.push({
       label: 'Finance',
@@ -44,7 +41,6 @@ function buildDashboardGroup(user) {
     })
   }
 
-  // Sales — visible to all
   children.push({
     label: 'Sales',
     emoji: '📞',
@@ -57,7 +53,6 @@ function buildDashboardGroup(user) {
     ],
   })
 
-  // CX — visible to all
   children.push({
     label: 'CX',
     emoji: '👥',
@@ -69,10 +64,8 @@ function buildDashboardGroup(user) {
     ],
   })
 
-  // Marketing — visible to all
   children.push({ label: 'Marketing', emoji: '📣', href: '/marketing' })
 
-  // Production — ga and admin+ only
   if (['superadmin', 'admin', 'ga'].includes(user?.role)) {
     children.push({ label: 'Production', emoji: '🔧', href: '/production' })
   }
@@ -133,16 +126,11 @@ function groupHasActiveChild(group, pathname) {
 
 function GroupLink({ item, pathname }) {
   const isActive = itemIsActive(pathname, item.href)
+
   return (
     <Link
       href={item.href}
-      style={isActive ? {
-        backgroundColor: '#731494',
-        color: '#ffffff',
-        borderLeft: '3px solid #AE2BCF',
-        paddingLeft: '10px',
-      } : { color: '#9ca3af' }}
-      className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive ? '' : 'hover:bg-[#1a0a2e] hover:text-white'}`}
+      className={`nav-link flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium ${isActive ? 'nav-link-active' : ''}`}
     >
       <span className="text-sm">{item.emoji}</span>
       <span>{item.label}</span>
@@ -153,28 +141,24 @@ function GroupLink({ item, pathname }) {
 function CollapsibleGroup({ group, pathname }) {
   const isChildActive = groupHasActiveChild(group, pathname)
   const [manualOpen, setManualOpen] = useState(group.defaultOpen ?? true)
-  const open = isChildActive || manualOpen
-
-  useEffect(() => {
-    if (isChildActive) setManualOpen(true)
-  }, [isChildActive])
+  const open = isChildActive ? true : manualOpen
 
   return (
     <div>
       <button
         onClick={() => setManualOpen((current) => !current)}
-        style={isChildActive ? { color: '#f5f5f5', backgroundColor: '#1a0a2e' } : { color: '#d1d5db' }}
-        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${isChildActive ? '' : 'hover:bg-[#1a0a2e] hover:text-white'}`}
+        data-active={isChildActive}
+        className="nav-section-trigger flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold"
       >
         <div className="flex items-center gap-3">
           <span className="text-base">{group.emoji}</span>
           <span>{group.label}</span>
         </div>
-        <span style={{ color: '#6d4c89', fontSize: '12px' }} className={`transition-transform ${open ? 'rotate-90' : ''}`}>›</span>
+        <span className={`text-xs executive-faint transition-transform ${open ? 'rotate-90' : ''}`}>›</span>
       </button>
 
       {open && (
-        <div className="ml-3 mt-2 space-y-3 border-l border-[#2a1a3e] pl-4">
+        <div className="ml-3 mt-2 space-y-3 border-l border-[var(--brand-border)] pl-4">
           {group.children.map((child) => {
             if (child.href) {
               return <GroupLink key={child.href} item={child} pathname={pathname} />
@@ -182,7 +166,7 @@ function CollapsibleGroup({ group, pathname }) {
 
             return (
               <div key={child.label} className="space-y-1.5">
-                <div className="flex items-center gap-2 px-3 pt-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-violet-300/80">
+                <div className="flex items-center gap-2 px-3 pt-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--brand-text-muted)]">
                   <span className="text-sm normal-case tracking-normal">{child.emoji}</span>
                   <span>{child.label}</span>
                 </div>
@@ -233,18 +217,18 @@ export default function Sidebar() {
   }
 
   return (
-    <aside style={{ backgroundColor: '#0a0a0a', borderRight: '1px solid #2a1a3e' }} className="w-60 flex flex-col shrink-0">
-      <div className="px-5 py-6" style={{ borderBottom: '1px solid #2a1a3e' }}>
-        <div className="flex items-center gap-2">
-          <div style={{ background: 'linear-gradient(135deg, #731494, #AE2BCF)' }} className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold text-white">G</div>
+    <aside className="nav-shell flex w-64 shrink-0 flex-col">
+      <div className="border-b border-[var(--brand-border)] px-5 py-6">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--brand-border-accent)] bg-[linear-gradient(180deg,rgba(166,111,205,0.38),rgba(95,53,132,0.92))] text-sm font-bold text-white shadow-[0_12px_28px_rgba(95,53,132,0.26)]">G</div>
           <div>
-            <div style={{ color: '#AE2BCF' }} className="font-bold text-sm leading-none">GYC</div>
-            <div style={{ color: '#4a3060' }} className="text-xs mt-0.5">KPI Dashboard</div>
+            <div className="text-sm font-bold leading-none text-white">GYC</div>
+            <div className="mt-1 text-[11px] uppercase tracking-[0.22em] executive-faint">KPI Dashboard</div>
           </div>
         </div>
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
+      <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-4">
         <CollapsibleGroup group={dashboardGroup} pathname={pathname} />
         {clientManagementGroup.children.length > 0 && (
           <CollapsibleGroup group={clientManagementGroup} pathname={pathname} />
@@ -255,21 +239,21 @@ export default function Sidebar() {
         )}
       </nav>
 
-      <div className="px-5 py-4 space-y-3" style={{ borderTop: '1px solid #2a1a3e' }}>
+      <div className="space-y-3 border-t border-[var(--brand-border)] px-5 py-4">
         {session.loading ? (
-          <p style={{ color: '#4a3060' }} className="text-xs">Checking session…</p>
+          <p className="text-xs executive-faint">Checking session…</p>
         ) : session.user ? (
           <>
             <div>
               <div className="text-sm font-medium text-white">{session.user.name}</div>
-              <div className="text-xs text-gray-300">{session.user.email}</div>
+              <div className="text-xs executive-muted">{session.user.email}</div>
             </div>
-            <button onClick={logout} className="w-full rounded-lg border border-[var(--brand-border)] px-3 py-2 text-xs font-medium text-gray-300 transition hover:border-violet-500/40 hover:bg-violet-500/10 hover:text-white">Log out</button>
+            <button onClick={logout} className="executive-button-secondary w-full px-3 py-2 text-xs">Log out</button>
           </>
         ) : (
-          <Link href="/login" className="block rounded-lg border border-[var(--brand-border)] px-3 py-2 text-center text-xs font-medium text-gray-300 transition hover:border-violet-500/40 hover:bg-violet-500/10 hover:text-white">Log in</Link>
+          <Link href="/login" className="executive-button-secondary block w-full px-3 py-2 text-center text-xs">Log in</Link>
         )}
-        <p style={{ color: '#4a3060' }} className="text-xs">Grow Your Childcare</p>
+        <p className="text-xs executive-faint">Grow Your Childcare</p>
       </div>
     </aside>
   )

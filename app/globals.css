@@ -1,40 +1,226 @@
 @import "tailwindcss";
 
 :root {
-  --brand-bg: #0a0a0a;
-  --brand-bg-card: #111111;
-  --brand-bg-elevated: #1a1a1a;
-  --brand-primary-1: #340B67;
-  --brand-primary-2: #731494;
-  --brand-primary-3: #732FBA;
-  --brand-primary-4: #AE2BCF;
-  --brand-accent: #C19C46;
-  --brand-text: #f5f5f5;
-  --brand-text-muted: #9ca3af;
-  --brand-border: #2a1a3e;
-  /* legacy aliases */
+  --brand-bg: #07090d;
+  --brand-bg-shell: #0d1017;
+  --brand-bg-card: #121720;
+  --brand-bg-elevated: #18202b;
+  --brand-surface-2: #151c26;
+  --brand-surface-3: #1b2330;
+  --brand-primary-1: #241333;
+  --brand-primary-2: #5f3584;
+  --brand-primary-3: #7f4bab;
+  --brand-primary-4: #a66fcd;
+  --brand-accent: #c5a35f;
+  --brand-text: #f3f6fb;
+  --brand-text-soft: #d2d9e4;
+  --brand-text-muted: #96a0b3;
+  --brand-text-faint: #677185;
+  --brand-border: #27303e;
+  --brand-border-strong: #374254;
+  --brand-border-accent: rgba(127, 75, 171, 0.45);
+  --brand-shadow: 0 22px 60px rgba(0, 0, 0, 0.34);
   --background: var(--brand-bg);
   --foreground: var(--brand-text);
 }
 
-body {
+html {
   background: var(--brand-bg);
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top, rgba(127, 75, 171, 0.14), transparent 30%),
+    radial-gradient(circle at 18% 0%, rgba(197, 163, 95, 0.06), transparent 18%),
+    linear-gradient(180deg, #0a0d13 0%, #06080c 100%);
   color: var(--brand-text);
   font-family: 'Avenir', 'Avenir Next', 'Nunito Sans', system-ui, sans-serif;
 }
 
-/* Scrollbar styling — brand purple tones */
+a {
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+::selection {
+  background: rgba(127, 75, 171, 0.32);
+  color: #ffffff;
+}
+
+.executive-app-shell {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.018), transparent 12%);
+}
+
+.page-shell {
+  position: relative;
+  background:
+    radial-gradient(circle at top right, rgba(127, 75, 171, 0.1), transparent 26%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 14%);
+}
+
+.surface-card,
+.surface-panel,
+.surface-subtle,
+.surface-inset {
+  border: 1px solid var(--brand-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025), var(--brand-shadow);
+}
+
+.surface-card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0) 26%),
+    var(--brand-bg-card);
+}
+
+.surface-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0) 30%),
+    var(--brand-surface-2);
+}
+
+.surface-subtle {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.surface-inset {
+  background: var(--brand-surface-3);
+}
+
+.executive-kicker {
+  color: var(--brand-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.executive-muted {
+  color: var(--brand-text-muted);
+}
+
+.executive-faint {
+  color: var(--brand-text-faint);
+}
+
+.executive-button,
+.executive-button-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.9rem;
+  border: 1px solid var(--brand-border);
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.executive-button {
+  background: linear-gradient(180deg, rgba(166, 111, 205, 0.34), rgba(95, 53, 132, 0.9));
+  border-color: var(--brand-border-accent);
+  color: #ffffff;
+  box-shadow: 0 10px 30px rgba(95, 53, 132, 0.28);
+}
+
+.executive-button:hover,
+.executive-button:focus-visible {
+  background: linear-gradient(180deg, rgba(176, 126, 213, 0.4), rgba(110, 62, 151, 0.96));
+  transform: translateY(-1px);
+}
+
+.executive-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+.executive-button-secondary {
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--brand-text-soft);
+}
+
+.executive-button-secondary:hover,
+.executive-button-secondary:focus-visible {
+  border-color: var(--brand-border-strong);
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+.executive-input {
+  border: 1px solid var(--brand-border);
+  background: var(--brand-bg-shell);
+  color: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.executive-input::placeholder {
+  color: var(--brand-text-muted);
+}
+
+.executive-input:focus {
+  border-color: var(--brand-border-accent);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(127, 75, 171, 0.12);
+}
+
+.nav-shell {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0) 18%),
+    var(--brand-bg-shell);
+  border-right: 1px solid var(--brand-border);
+}
+
+.nav-section-trigger {
+  color: var(--brand-text-soft);
+}
+
+.nav-section-trigger:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: #ffffff;
+}
+
+.nav-section-trigger[data-active='true'] {
+  background: rgba(127, 75, 171, 0.12);
+  color: #ffffff;
+}
+
+.nav-link {
+  color: var(--brand-text-muted);
+  border: 1px solid transparent;
+}
+
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+.nav-link-active {
+  background: linear-gradient(90deg, rgba(127, 75, 171, 0.2), rgba(127, 75, 171, 0.07));
+  border-color: rgba(127, 75, 171, 0.3);
+  color: #ffffff;
+  box-shadow: inset 2px 0 0 var(--brand-accent);
+}
+
+.metric-card-value {
+  letter-spacing: -0.03em;
+}
+
+/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
-  background: #0d0d0d;
+  background: #0e1117;
 }
+
 ::-webkit-scrollbar-thumb {
-  background: #340B67;
-  border-radius: 3px;
+  background: #3a4658;
+  border-radius: 999px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background: #731494;
+  background: #556279;
 }

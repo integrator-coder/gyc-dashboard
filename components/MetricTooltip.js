@@ -1,10 +1,11 @@
 /**
  * MetricTooltip — small ⓘ icon that shows a definition tooltip on hover.
- * Pure CSS hover, no JS state. Dark background, white text.
+ * Pure CSS hover, no JS state.
  * Usage: <MetricTooltip text="What this metric means and how it's calculated." />
  */
 export default function MetricTooltip({ text }) {
   if (!text) return null
+
   return (
     <span className="metric-tooltip-wrapper" style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', marginLeft: '5px', verticalAlign: 'middle' }}>
       <span
@@ -13,11 +14,12 @@ export default function MetricTooltip({ text }) {
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
-          width: '14px',
-          height: '14px',
-          borderRadius: '50%',
-          backgroundColor: '#3a2a5a',
-          color: '#b084e8',
+          width: '15px',
+          height: '15px',
+          borderRadius: '999px',
+          backgroundColor: 'rgba(127, 75, 171, 0.14)',
+          border: '1px solid rgba(127, 75, 171, 0.28)',
+          color: 'var(--brand-primary-4)',
           fontSize: '9px',
           fontWeight: '700',
           cursor: 'default',
@@ -34,19 +36,19 @@ export default function MetricTooltip({ text }) {
           visibility: 'hidden',
           opacity: 0,
           position: 'absolute',
-          bottom: 'calc(100% + 6px)',
+          bottom: 'calc(100% + 8px)',
           left: '50%',
           transform: 'translateX(-50%)',
-          backgroundColor: '#0f0f0f',
-          border: '1px solid #2a1a3e',
-          color: '#e5e7eb',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0)), var(--brand-bg-card)',
+          border: '1px solid var(--brand-border-strong)',
+          color: 'var(--brand-text-soft)',
           fontSize: '11px',
-          lineHeight: '1.5',
-          padding: '8px 10px',
-          borderRadius: '8px',
-          width: '240px',
+          lineHeight: '1.55',
+          padding: '9px 11px',
+          borderRadius: '10px',
+          width: '248px',
           zIndex: 50,
-          boxShadow: '0 4px 16px rgba(0,0,0,0.6)',
+          boxShadow: '0 18px 40px rgba(0,0,0,0.4)',
           transition: 'opacity 0.15s ease, visibility 0.15s ease',
           pointerEvents: 'none',
           whiteSpace: 'normal',
@@ -61,8 +63,9 @@ export default function MetricTooltip({ text }) {
           opacity: 1 !important;
         }
         .metric-tooltip-wrapper:hover .metric-tooltip-icon {
-          background-color: #5a3a8a !important;
-          color: #d4a8ff !important;
+          background-color: rgba(127, 75, 171, 0.22) !important;
+          border-color: rgba(166, 111, 205, 0.32) !important;
+          color: #f3f6fb !important;
         }
       `}</style>
     </span>

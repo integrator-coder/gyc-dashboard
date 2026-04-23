@@ -9,13 +9,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className="dark">
-      <body
-        style={{
-          fontFamily: "'Avenir', 'Avenir Next', 'Nunito Sans', system-ui, sans-serif",
-          backgroundColor: '#0a0a0a',
-        }}
-        className="text-white min-h-screen"
-      >
+      <body className="min-h-screen text-white executive-app-shell">
         <AppFrame>{children}</AppFrame>
       </body>
     </html>

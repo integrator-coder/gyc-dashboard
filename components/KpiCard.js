@@ -4,7 +4,7 @@ export default function KpiCard({
   target,
   isRate = false,
   lowerIsBetter = false,
-  size = 'normal', // 'normal' | 'large'
+  size = 'normal',
 }) {
   const pct = target > 0 ? (actual / target) * 100 : 0
   const effectivePct = lowerIsBetter
@@ -12,14 +12,14 @@ export default function KpiCard({
     : pct
 
   const color =
-    effectivePct >= 100 ? 'text-green-400'
-    : effectivePct >= 75 ? 'text-yellow-400'
-    : 'text-red-400'
+    effectivePct >= 100 ? 'text-emerald-300'
+    : effectivePct >= 75 ? 'text-amber-300'
+    : 'text-rose-300'
 
   const barColor =
-    effectivePct >= 100 ? 'bg-green-500'
-    : effectivePct >= 75 ? 'bg-yellow-500'
-    : 'bg-red-500'
+    effectivePct >= 100 ? 'bg-emerald-400'
+    : effectivePct >= 75 ? 'bg-amber-400'
+    : 'bg-rose-400'
 
   const displayActual = isRate
     ? `${(actual * 100).toFixed(1)}%`
@@ -29,22 +29,22 @@ export default function KpiCard({
     ? `${(target * 100).toFixed(0)}%`
     : String(target)
 
-  const valueSize = size === 'large' ? 'text-4xl' : 'text-2xl'
+  const valueSize = size === 'large' ? 'text-4xl' : 'text-[1.75rem]'
 
   return (
-    <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
-      <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-2">{title}</p>
-      <div className="flex items-end justify-between mb-2">
-        <span className={`${valueSize} font-bold ${color}`}>{displayActual}</span>
-        <span className="text-gray-300 text-sm">/ {displayTarget}</span>
+    <div className="surface-card rounded-2xl p-4">
+      <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] executive-muted">{title}</p>
+      <div className="mb-3 flex items-end justify-between gap-3">
+        <span className={`metric-card-value ${valueSize} font-semibold ${color}`}>{displayActual}</span>
+        <span className="text-sm executive-muted">/ {displayTarget}</span>
       </div>
-      <div className="w-full bg-gray-800 rounded-full h-1.5">
+      <div className="surface-inset h-1.5 w-full overflow-hidden rounded-full border-0 shadow-none">
         <div
           className={`h-1.5 rounded-full ${barColor} transition-all`}
           style={{ width: `${Math.min(effectivePct, 100)}%` }}
         />
       </div>
-      <p className={`text-xs mt-1.5 ${color}`}>{pct.toFixed(0)}% to target</p>
+      <p className={`mt-2 text-xs ${color}`}>{pct.toFixed(0)}% to target</p>
     </div>
   )
 }

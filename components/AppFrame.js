@@ -14,15 +14,15 @@ function MissionControlNav() {
   ]
 
   return (
-    <aside style={{ backgroundColor: '#0a0a0a', borderRight: '1px solid #2a1a3e' }} className="w-64 shrink-0 p-4">
-      <div className="mb-4 rounded-xl border border-[var(--brand-border)] bg-black/30 px-3 py-3">
-        <div className="text-xs uppercase tracking-[0.2em] text-violet-300">Mission Control</div>
+    <aside className="nav-shell w-64 shrink-0 p-4">
+      <div className="surface-card mb-4 rounded-2xl px-4 py-4">
+        <div className="executive-kicker text-violet-200">Mission Control</div>
         <div className="mt-1 text-sm font-semibold text-white">Custom Nav</div>
       </div>
 
       <nav className="space-y-2">
         {links.map(([label, href]) => (
-          <a key={href} href={href} className="block rounded-lg border border-[var(--brand-border)] bg-black/20 px-3 py-2 text-sm text-gray-200 transition hover:border-violet-500/40 hover:bg-violet-500/10 hover:text-white">
+          <a key={href} href={href} className="nav-link block rounded-xl px-3 py-2 text-sm font-medium">
             {label}
           </a>
         ))}
@@ -35,24 +35,23 @@ export default function AppFrame({ children }) {
   const pathname = usePathname()
   const missionControlMode = pathname?.startsWith('/team/mission-control')
 
-  // No nav on the login page
   if (pathname === '/login') {
     return <>{children}</>
   }
 
   if (missionControlMode) {
     return (
-      <div className="flex h-screen">
+      <div className="flex min-h-screen executive-app-shell">
         <MissionControlNav />
-        <main className="flex-1 overflow-auto p-6">{children}</main>
+        <main className="page-shell flex-1 overflow-auto px-6 py-6 md:px-8 md:py-7">{children}</main>
       </div>
     )
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="flex min-h-screen executive-app-shell">
       <Sidebar />
-      <main className="flex-1 overflow-auto p-6">{children}</main>
+      <main className="page-shell flex-1 overflow-auto px-6 py-6 md:px-8 md:py-7">{children}</main>
     </div>
   )
 }
