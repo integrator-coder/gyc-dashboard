@@ -182,20 +182,25 @@ export default function FinancePage() {
             {lastSync ? `Last synced ${formatDate(lastSync.syncedAt)}` : 'No sync data yet'}
           </p>
         </div>
-        <button
-          onClick={handleSync}
-          disabled={syncing}
-          className="executive-button px-4 py-2.5"
-        >
-          {syncing ? (
-            <>
-              <span className="h-4 w-4 animate-spin rounded-full border border-white border-t-transparent" />
-              Syncing…
-            </>
-          ) : (
-            '↻ Sync Now'
-          )}
-        </button>
+        <div className="flex items-center gap-3">
+          <Link href="/finance/linkage-review" className="rounded-xl border border-[var(--brand-border)] bg-black/20 px-4 py-2.5 text-sm font-medium text-gray-200 transition hover:border-violet-500/40 hover:text-white">
+            Linkage Review
+          </Link>
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            className="executive-button px-4 py-2.5"
+          >
+            {syncing ? (
+              <>
+                <span className="h-4 w-4 animate-spin rounded-full border border-white border-t-transparent" />
+                Syncing…
+              </>
+            ) : (
+              '↻ Sync Now'
+            )}
+          </button>
+        </div>
       </div>
 
       {error && (

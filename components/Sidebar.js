@@ -37,6 +37,7 @@ function buildDashboardGroup(user) {
         { label: 'Agreements', emoji: '📝', href: '/agreements' },
         { label: 'Stripe Deep Dive', emoji: '💳', href: '/stripe-deep-dive' },
         { label: 'Projections', emoji: '📈', href: '/projections' },
+        { label: 'Linkage Review', emoji: '🧩', href: '/finance/linkage-review' },
       ],
     })
   }

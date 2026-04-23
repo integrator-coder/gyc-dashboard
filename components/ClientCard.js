@@ -17,6 +17,7 @@ import {
   CartesianGrid,
   Legend,
 } from 'recharts'
+import { ClientFinanceReviewPanel } from '@/components/StripeLinkageReviewPage'
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
@@ -738,7 +739,7 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount,
 
 // ── Tab 2: Financial ──────────────────────────────────────────────────────────
 
-function FinancialTab({ profile, recentPayments = [] }) {
+function FinancialTab({ profile, recentPayments = [], user = null }) {
   const [paymentSearch, setPaymentSearch] = useState('')
   const isPIF = profile.lifetimeValue && profile.mrr && Number(profile.lifetimeValue) > Number(profile.mrr) * 10
   const hasRecentPayments = recentPayments.length > 0
@@ -769,8 +770,17 @@ function FinancialTab({ profile, recentPayments = [] }) {
 
   const totalPaid = recentPayments.reduce((s, p) => s + p.amount, 0)
 
+  const canReviewLinkage = ['admin', 'superadmin'].includes(user?.role)
+
   return (
     <div className="space-y-6">
+      {canReviewLinkage && profile?.acronym ? (
+        <div>
+          <SectionTitle>Linkage Review</SectionTitle>
+          <ClientFinanceReviewPanel acronym={profile.acronym} />
+        </div>
+      ) : null}
+
       {/* Primary metrics */}
       <div>
         <SectionTitle>Revenue</SectionTitle>
@@ -3740,7 +3750,7 @@ function CallsTab({ profile, allCalls, pendingCalls, potentialUnlinkedCount }) {
               {potentialUnlinkedCount} potential call{potentialUnlinkedCount !== 1 ? 's' : ''} found via email match
             </div>
             <div className="mt-0.5 text-xs text-amber-200/70">
-              These calls have participant emails matching this client but aren't linked yet.{' '}
+              These calls have participant emails matching this client but aren&apos;t linked yet.{' '}
               <Link href="/team/classify" className="underline hover:text-amber-300">
                 Review in Call Intelligence →
               </Link>
@@ -3783,8 +3793,8 @@ function CallsTab({ profile, allCalls, pendingCalls, potentialUnlinkedCount }) {
 
       {view === 'pending' && pendingCalls.length > 0 && (
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-2.5 text-xs text-amber-300">
-          These calls are linked to this client but haven't been classified yet.
-          Click <strong>"Classify this call →"</strong> on any row to open Call Intelligence.
+          These calls are linked to this client but haven&apos;t been classified yet.
+          Click <strong>&quot;Classify this call →&quot;</strong> on any row to open Call Intelligence.
         </div>
       )}
 
@@ -4047,7 +4057,7 @@ export default function ClientCard({ acronym, user }) {
           />
         )}
         {currentTab === 'financial' && (
-          <FinancialTab profile={profile} recentPayments={recentPayments} />
+          <FinancialTab profile={profile} recentPayments={recentPayments} user={user} />
         )}
         {currentTab === 'website' && (
           <WebsiteTab profile={profile} acronym={acronym} user={user} />
