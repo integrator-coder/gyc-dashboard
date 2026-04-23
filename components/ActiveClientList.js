@@ -214,10 +214,10 @@ function ClientGridCard({ client }) {
   return (
     <Link
       href={`/clients/${client.acronym}`}
-      className="group relative flex h-full flex-col overflow-hidden rounded-[24px] border border-white/10 bg-gradient-to-b from-[#181323] via-[#120d1b] to-[#0b0911] p-3.5 shadow-[0_18px_36px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)] transition duration-200 hover:-translate-y-0.5 hover:border-violet-400/35 hover:from-[#1d162c] hover:via-[#151022] hover:to-[#0d0a14] hover:shadow-[0_24px_48px_rgba(0,0,0,0.38),0_0_0_1px_rgba(167,139,250,0.08),0_0_30px_rgba(115,20,148,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
+      className="group relative flex h-full flex-col overflow-hidden rounded-[24px] border border-white/18 bg-[linear-gradient(180deg,#2a203b_0%,#241b34_52%,#1e162c_100%)] p-3.5 shadow-[0_20px_40px_rgba(0,0,0,0.34),0_0_0_1px_rgba(255,255,255,0.04),inset_0_1px_0_rgba(255,255,255,0.08)] transition duration-200 hover:-translate-y-0.5 hover:border-violet-300/50 hover:bg-[linear-gradient(180deg,#312547_0%,#291f3c_52%,#211831_100%)] hover:shadow-[0_26px_52px_rgba(0,0,0,0.42),0_0_0_1px_rgba(196,181,253,0.12),0_0_36px_rgba(115,20,148,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/50"
     >
-      <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
-      <div className="pointer-events-none absolute -right-10 top-0 h-24 w-24 rounded-full bg-violet-400/10 blur-3xl transition group-hover:bg-violet-400/15" />
+      <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-full bg-[radial-gradient(circle_at_top_right,rgba(196,181,253,0.09),transparent_34%)] opacity-80 transition group-hover:opacity-100" />
 
       <div className="relative flex items-start justify-between gap-2">
         <div className="min-w-0">
@@ -278,7 +278,7 @@ function ClientGridCard({ client }) {
         />
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-2.5 text-[11px] text-gray-400">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/12 pt-2.5 text-[11px] text-gray-400">
         <div className="min-w-0 truncate">
           {funnelRates || 'No conversion rates yet'}
         </div>
@@ -478,7 +478,7 @@ export default function ActiveClientList({ user }) {
         <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-300">{error}</div>
       ) : null}
 
-      <div className="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-[#151020] via-[#0f0b18] to-[#09070e] shadow-[0_28px_56px_rgba(0,0,0,0.3),0_0_0_1px_rgba(115,20,148,0.08),inset_0_1px_0_rgba(255,255,255,0.04)]">
+      <div className="overflow-hidden rounded-3xl border border-white/10 bg-[linear-gradient(180deg,#110b18_0%,#0b0710_54%,#060409_100%)] shadow-[0_28px_56px_rgba(0,0,0,0.34),0_0_0_1px_rgba(115,20,148,0.06),inset_0_1px_0_rgba(255,255,255,0.03)]">
         {loading ? (
           <div className="py-16 text-center text-gray-500">
             <div className="flex items-center justify-center gap-2">
@@ -489,7 +489,7 @@ export default function ActiveClientList({ user }) {
         ) : clients.length === 0 ? (
           <div className="py-16 text-center text-gray-500">No clients match these filters.</div>
         ) : (
-          <div className="bg-[radial-gradient(circle_at_top,rgba(174,43,207,0.08),transparent_32%)] p-3">
+          <div className="bg-[radial-gradient(circle_at_top,rgba(174,43,207,0.06),transparent_28%),linear-gradient(180deg,#0d0814_0%,#09060d_100%)] p-4">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {clients.map((client) => (
                 <ClientGridCard key={client.id} client={client} />
