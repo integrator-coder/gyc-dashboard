@@ -2353,7 +2353,7 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
             <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
               <iframe
                 title={`${loc || 'Location'} map`}
-                src={`https://maps.google.com/maps?q=${activeHm.centerLat},${activeHm.centerLng}&z=${hmRadius >= 5 ? 12 : 13}&output=embed`}
+                src={`https://maps.google.com/maps?q=${activeHm.centerLat},${activeHm.centerLng}&z=${hmRadius >= 5 ? 10 : 11}&output=embed`}
                 style={{ flex: 1, minWidth: 220, height: 236, border: 'none', borderRadius: 10, opacity: 0.9 }}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
