@@ -2703,15 +2703,15 @@ function SEOHeatmapSection({ heatmaps }) {
                     {scanDate && <span>Scanned: <strong style={{ color: '#e5e7eb' }}>{scanDate}</strong></span>}
                     <span style={{ color: '#6b7280' }}>{activeRadius}mi radius · {((hm.spacingKm || 2.414) / 1.60934).toFixed(1)}mi steps</span>
                   </div>
-                  {/* Grid + Map side by side */}
+                  {/* Map (left) + Grid (right) — map bottom aligns with grid bottom, legend falls below */}
                   <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                    <HeatmapGrid points={pts} gridSize={hm.gridSize || 5} />
+                    {/* Map — fixed height to match grid only (5×44px cells + 4×4px gaps = 236px) */}
                     <div style={{ flex: 1, minWidth: 220 }}>
                       <div style={{ fontSize: 10, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Location Context</div>
                       <iframe
                         title={`${loc || 'Location'} map`}
                         src={`https://maps.google.com/maps?q=${hm.centerLat},${hm.centerLng}&z=${activeRadius >= 5 ? 12 : 13}&output=embed`}
-                        style={{ width: '100%', height: 240, border: 'none', borderRadius: 10, opacity: 0.9 }}
+                        style={{ width: '100%', height: 236, border: 'none', borderRadius: 10, opacity: 0.9 }}
                         loading="lazy"
                         referrerPolicy="no-referrer-when-downgrade"
                       />
@@ -2719,6 +2719,8 @@ function SEOHeatmapSection({ heatmaps }) {
                         Grid covers approx. {activeRadius * 2}mi × {activeRadius * 2}mi
                       </div>
                     </div>
+                    {/* Heatmap grid + legend */}
+                    <HeatmapGrid points={pts} gridSize={hm.gridSize || 5} />
                   </div>
                 </>
               )}
