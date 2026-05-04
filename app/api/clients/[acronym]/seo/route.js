@@ -37,7 +37,7 @@ export async function GET(req, { params }) {
         [acr]
       ),
       pool.query(
-        `SELECT "locationName", keyword, "centerLat", "centerLng", "gridSize", "spacingKm", "scanDate", points
+        `SELECT "locationName", keyword, "centerLat", "centerLng", "gridSize", "spacingKm", "radiusMiles", "scanDate", points
          FROM "ClientSEOHeatmap"
          WHERE "clientAcronym" = $1
          ORDER BY "scanDate" DESC, "locationName" ASC, keyword ASC`,
