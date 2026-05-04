@@ -2697,29 +2697,22 @@ function SEOHeatmapSection({ heatmaps }) {
                 </div>
               ) : (
                 <>
-                  <div style={{ display: 'flex', gap: 16, marginBottom: 12, fontSize: 11, color: '#9ca3af' }}>
+                  {/* Stats row — includes coverage info */}
+                  <div style={{ display: 'flex', gap: 16, marginBottom: 12, fontSize: 11, color: '#9ca3af', flexWrap: 'wrap', alignItems: 'center' }}>
                     {avgRank && <span>Avg rank: <strong style={{ color: '#e5e7eb' }}>{avgRank}</strong></span>}
                     <span>Ranked: <strong style={{ color: '#e5e7eb' }}>{ranked}/{pts.length}</strong></span>
                     {scanDate && <span>Scanned: <strong style={{ color: '#e5e7eb' }}>{scanDate}</strong></span>}
-                    <span style={{ color: '#6b7280' }}>{activeRadius}mi radius · {((hm.spacingKm || 2.414) / 1.60934).toFixed(1)}mi steps</span>
+                    <span style={{ color: '#6b7280' }}>{activeRadius}mi radius · covers {activeRadius * 2}mi × {activeRadius * 2}mi</span>
                   </div>
-                  {/* Map (left) + Grid (right) — map bottom aligns with grid bottom, legend falls below */}
+                  {/* Map (left, no text below it) + Grid/legend (right) — map bottom aligns with grid bottom */}
                   <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                    {/* Map — fixed height to match grid only (5×44px cells + 4×4px gaps = 236px) */}
-                    <div style={{ flex: 1, minWidth: 220 }}>
-                      <div style={{ fontSize: 10, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Location Context</div>
-                      <iframe
-                        title={`${loc || 'Location'} map`}
-                        src={`https://maps.google.com/maps?q=${hm.centerLat},${hm.centerLng}&z=${activeRadius >= 5 ? 12 : 13}&output=embed`}
-                        style={{ width: '100%', height: 236, border: 'none', borderRadius: 10, opacity: 0.9 }}
-                        loading="lazy"
-                        referrerPolicy="no-referrer-when-downgrade"
-                      />
-                      <div style={{ marginTop: 6, fontSize: 10, color: '#6b7280', textAlign: 'center' }}>
-                        Grid covers approx. {activeRadius * 2}mi × {activeRadius * 2}mi
-                      </div>
-                    </div>
-                    {/* Heatmap grid + legend */}
+                    <iframe
+                      title={`${loc || 'Location'} map`}
+                      src={`https://maps.google.com/maps?q=${hm.centerLat},${hm.centerLng}&z=${activeRadius >= 5 ? 12 : 13}&output=embed`}
+                      style={{ flex: 1, minWidth: 220, height: 236, border: 'none', borderRadius: 10, opacity: 0.9 }}
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
                     <HeatmapGrid points={pts} gridSize={hm.gridSize || 5} />
                   </div>
                 </>
