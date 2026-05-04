@@ -21,10 +21,10 @@ export async function GET() {
     const latest = metricsRows[0] || null
     const previous = metricsRows[1] || null
 
-    // Active customers sorted by MRR
+    // Active customers sorted by MRR (includes past_due/unpaid — still active clients)
     const { rows: customers } = await client.query(`
       SELECT * FROM "StripeCustomer"
-      WHERE status = 'active'
+      WHERE status IN ('active', 'past_due', 'unpaid')
       ORDER BY mrr DESC
     `)
 
@@ -56,7 +56,7 @@ export async function GET() {
         INTERVAL '1 day'
       ) AS day
       LEFT JOIN "StripeCustomer" sc
-        ON sc.status = 'active'
+        ON sc.status IN ('active', 'past_due', 'unpaid')
         AND sc."createdAt"::date <= day::date
         AND (sc."canceledAt" IS NULL OR sc."canceledAt"::date > day::date)
       GROUP BY day

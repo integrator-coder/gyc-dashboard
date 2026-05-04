@@ -415,25 +415,48 @@ export async function GET() {
       isClientApprovalStage(getNormalizedStage(project))
     )
 
-    const onTimeCount = clientApprovalProjects.filter(project => {
-      const dueDate = getProjectDueDate(project)
-      return dueDate && dueDate >= today
+    // ── Rolling 90-day On-Time % ─────────────────────────────────────────────
+    // Scope: completed web projects where effectiveCompletionDate is within 90 days
+    // On-time: completed on or before due_on; late: completed after due_on
+    // Projects without a due date are excluded from the denominator
+    const completedWebIn90d = webProjects.filter(project => {
+      const completedAt = getEffectiveCompletedDate(project)
+      return completedAt && completedAt >= ninetyDaysAgo
+    })
+
+    const onTimeProjects = completedWebIn90d.filter(project => {
+      const metrics = getCompletionMetrics(project)
+      return metrics?.onTime === true
+    })
+
+    const onTimeDenominator = completedWebIn90d.filter(project => {
+      const metrics = getCompletionMetrics(project)
+      return metrics?.onTime !== null
     }).length
 
-    const lateCount = clientApprovalProjects.filter(project => {
-      const dueDate = getProjectDueDate(project)
-      return dueDate && dueDate < today
-    }).length
+    const onTimeCount = onTimeProjects.length
+    const lateCount = onTimeDenominator - onTimeCount
 
-    const overdueCount = activeWebProjects.filter(project => {
-      const stage = getNormalizedStage(project)
-      const dueDate = getProjectDueDate(project)
-      return dueDate && dueDate < today && !isClientApprovalStage(stage)
-    }).length
+    const overdueProjects = activeWebProjects
+      .filter(project => {
+        const stage = getNormalizedStage(project)
+        const dueDate = getProjectDueDate(project)
+        return dueDate && dueDate < today && !isClientApprovalStage(stage)
+      })
+      .map(project => ({
+        name: project.name,
+        stage: getNormalizedStage(project),
+        dueDate: getProjectDueDate(project)?.toISOString().split('T')[0] || null,
+        daysPastDue: diffDays(getProjectDueDate(project), today),
+      }))
+      .sort((a, b) => b.daysPastDue - a.daysPastDue)
 
+    const overdueCount = overdueProjects.length
+
+    // Use effectiveCompletionDate for consistency with on-time calculation
     const completedBuilds = webProjects.filter(project => {
-      const completedAt = getDateValue(project.completed_at)
-      return project.completed && completedAt && completedAt >= ninetyDaysAgo
+      const completedAt = getEffectiveCompletedDate(project)
+      return completedAt && completedAt >= ninetyDaysAgo
     })
 
     const buildTimes = webProjects
@@ -448,8 +471,7 @@ export async function GET() {
       ? Number((buildTimes.reduce((sum, days) => sum + days, 0) / buildTimes.length).toFixed(1))
       : 0
 
-    const denominator = onTimeCount + lateCount
-    const onTimePct = denominator ? Number(((onTimeCount / denominator) * 100).toFixed(1)) : 0
+    const onTimePct = onTimeDenominator ? Number(((onTimeCount / onTimeDenominator) * 100).toFixed(1)) : 0
 
     const clientApprovalWaitTimes = clientApprovalProjects.map(project => {
       const startDate = getProjectStartDate(project)
@@ -528,10 +550,12 @@ export async function GET() {
       projectsInProduction,
       stageBreakdown,
       overdueCount,
+      overdueProjects,
       typeBreakdown,
       onTimeCount,
       lateCount,
       onTimePct,
+      onTimeDenominator,
       avgBuildTimeDays,
       avgClientApprovalDays,
       clientApprovalQueue: clientApprovalProjects_,

@@ -67,6 +67,8 @@ export default function HRPage() {
   const [editValue, setEditValue] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
+  const [scorecard, setScorecard] = useState([])
+  const [scorecardLoading, setScorecardLoading] = useState(true)
 
   const fetchData = useCallback(async () => {
     try {
@@ -82,9 +84,23 @@ export default function HRPage() {
     }
   }, [])
 
+  const fetchScorecard = useCallback(async () => {
+    try {
+      const res = await fetch('/api/metrics/hr/scorecard')
+      const json = await res.json()
+      if (json.error) throw new Error(json.error)
+      setScorecard(Array.isArray(json) ? json : [])
+    } catch (err) {
+      console.error('Scorecard fetch error:', err)
+    } finally {
+      setScorecardLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     fetchData()
-  }, [fetchData])
+    fetchScorecard()
+  }, [fetchData, fetchScorecard])
 
   const handleEditStart = () => {
     setEditValue(String(data?.config?.monthlyPayroll || ''))
@@ -126,6 +142,135 @@ export default function HRPage() {
     )
   }
 
+  // Scorecard helpers
+  const latest = scorecard.length > 0 ? scorecard[scorecard.length - 1] : null
+
+  function rpeColor(val) {
+    if (val === null || val === undefined) return null
+    if (val >= 100000) return '#4ade80'
+    if (val >= 70000)  return '#fbbf24'
+    return '#f87171'
+  }
+
+  function compRatioColor(pct) {
+    if (pct === null || pct === undefined) return null
+    if (pct <= 40) return '#4ade80'
+    if (pct <= 50) return '#fbbf24'
+    return '#f87171'
+  }
+
+  function fmtPct(val) {
+    if (val === null || val === undefined) return '—'
+    return val.toFixed(2) + '%'
+  }
+
+  function fmtRoi(val) {
+    if (val === null || val === undefined) return '—'
+    return '$' + val.toFixed(2)
+  }
+
+  function fmtHc(val) {
+    if (val === null || val === undefined) return '—'
+    return Number(val).toFixed(1)
+  }
+
+  // Build YoY table columns/rows dynamically from scorecard
+  const scorecardCols = scorecard.length > 0
+    ? ['Metric', ...scorecard.map(r => r.period)]
+    : ['Metric', '2023', '2024', '2025', '2026 YTD']
+
+  function buildRowValues(getVal, getFmt, getColor) {
+    if (scorecard.length === 0) return []
+    return scorecard.map(r => {
+      const raw = getVal(r)
+      return { display: getFmt(raw, r), color: getColor ? getColor(raw) : null }
+    })
+  }
+
+  const scorecardRows = [
+    {
+      label: 'Revenue',
+      tooltip: 'Total recognized revenue for the period. Source: Stripe.',
+      values: buildRowValues(
+        r => r.revenue !== null ? Number(r.revenue) : null,
+        v => formatCurrency(v),
+        () => null,
+      ),
+    },
+    {
+      label: 'Headcount',
+      tooltip: 'Average headcount over the period. Full-time = 1.0, Part-time = 0.5. Source: Payroll Tracker.',
+      values: buildRowValues(
+        r => r.headcount !== null ? Number(r.headcount) : null,
+        v => fmtHc(v),
+        () => null,
+      ),
+    },
+    {
+      label: 'Implied HC — Base Only ($85K)',
+      tooltip: 'Total base salaries ÷ $85,000. Normalizes headcount to $85K-equivalent FTEs using base pay only. Source: Gusto.',
+      values: buildRowValues(
+        r => r.impliedHcBase,
+        v => fmtHc(v),
+        () => null,
+      ),
+    },
+    {
+      label: 'Implied HC — Total Comp ($85K)',
+      tooltip: 'Total compensation ÷ $85,000. Normalizes headcount using fully-loaded cost (base + commissions + benefits + employer taxes). Source: Gusto / Deel.',
+      values: buildRowValues(
+        r => r.impliedHcTotal,
+        v => fmtHc(v),
+        () => null,
+      ),
+    },
+    {
+      label: 'Total Comp',
+      tooltip: 'Fully-loaded compensation including base salaries, commissions, benefits, and employer taxes. Source: Gusto / Deel.',
+      values: buildRowValues(
+        r => r.totalComp !== null ? Number(r.totalComp) : null,
+        v => formatCurrency(v),
+        () => null,
+      ),
+    },
+    {
+      label: 'Annual RPE',
+      tooltip: 'Revenue Per Employee. Revenue ÷ actual headcount, annualized. Measures how much revenue each real person generates. Benchmark: <$70K Low · $70K–$100K Healthy · >$100K Strong.',
+      values: buildRowValues(
+        r => r.rpe,
+        v => formatCurrency(v),
+        v => rpeColor(v),
+      ),
+    },
+    {
+      label: 'Standardized RPE ($85K)',
+      tooltip: 'Standardized Revenue Per Employee. Revenue ÷ (Total Comp ÷ $85K). Normalizes headcount to $85K-equivalent FTEs for apples-to-apples comparison across years regardless of salary mix. Benchmark: <$70K Low · $70K–$100K Healthy · >$100K Strong.',
+      values: buildRowValues(
+        r => r.standardizedRpe,
+        v => formatCurrency(v),
+        v => rpeColor(v),
+      ),
+    },
+    {
+      label: 'Comp Ratio %',
+      tooltip: 'Total Compensation ÷ Revenue, expressed as a percentage. Lower is better — measures how much of revenue is consumed by people costs. Benchmark: >50% Watch Zone · 40–50% Healthy · ≤40% Elite.',
+      values: buildRowValues(
+        r => r.compRatioPct,
+        v => fmtPct(v),
+        v => compRatioColor(v),
+      ),
+    },
+    {
+      label: 'ROI per $1 Comp',
+      tooltip: 'Revenue ÷ Total Compensation. How much revenue is generated for every $1 spent on total comp. Higher is better.',
+      values: buildRowValues(
+        r => r.roi,
+        v => fmtRoi(v),
+        () => null,
+      ),
+    },
+  ]
+
   const monthlyPayroll = data?.config?.monthlyPayroll ?? 132500
   const impliedHeadcount = data?.computed?.impliedHeadcount ?? 18.5
   const rpe = data?.computed?.rpe ?? null
@@ -152,6 +297,28 @@ export default function HRPage() {
           ⚠️ {error}
         </div>
       )}
+
+      {/* ── Data Gaps Banner ──────────────────────────────────── */}
+      <div
+        className="rounded-xl p-4"
+        style={{ backgroundColor: '#1a1206', border: '1px solid #78350f' }}
+      >
+        <div className="flex items-start gap-3">
+          <span className="text-lg">📋</span>
+          <div className="flex-1">
+            <p className="text-amber-400 font-semibold text-sm mb-2">Data still needed from Carmella</p>
+            <ul className="space-y-1 text-xs" style={{ color: '#d97706' }}>
+              <li>• <strong>Base Salaries row</strong> in the HR Scorecard sheet — 2023, 2024, 2025 annual totals from Gusto (enables Implied HC — Base Only for all years)</li>
+              <li>• <strong>2023 Headcount</strong> — currently blank; confirm avg headcount for the year</li>
+              <li>• <strong>Verify 2026 Q1 Total Comp</strong> ($544,244) — confirm it includes base + commissions + benefits + employer taxes</li>
+              <li>• <strong>Performance Review section</strong> — metrics TBD; work with Todd to define before building dashboard section</li>
+            </ul>
+            <p className="text-xs mt-2" style={{ color: '#92400e' }}>
+              Tasks in Asana · Sheet syncs to dashboard every Monday at 7am automatically
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* ── Section 1: Payroll Top-Line ─────────────────────────────────── */}
       <section>
@@ -246,7 +413,131 @@ export default function HRPage() {
         </div>
       </section>
 
-      {/* ── Section 2: Sentiment Analysis Placeholder ───────────────────── */}
+      {/* ── Section 2: HR Scorecard ─────────────────────────────────────── */}
+      <section>
+        <h2 className="text-base font-semibold mb-1" style={{ color: B.p4 }}>
+          📊 HR Scorecard
+        </h2>
+        <p style={{ color: B.muted }} className="text-xs mb-5">
+          Year-over-year efficiency metrics · Source: Gusto / Deel · Payroll Tracker · Stripe
+        </p>
+
+        {/* A. 2026 YTD Summary Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-3">
+          <MetricCard
+            title="Headcount"
+            value={latest ? fmtHc(latest.headcount) : '37'}
+            subtitle={latest ? `${latest.period} avg (FT=1, PT=0.5)` : 'Q1 2026 avg (FT=1, PT=0.5)'}
+            icon="👥"
+          />
+          <MetricCard
+            title="Annual RPE (est.)"
+            value={latest ? (formatCurrency(latest.rpe) || '—') : '$95,316'}
+            subtitle={latest ? `${latest.period} annualized · ${latest.rpe >= 100000 ? 'Strong zone' : latest.rpe >= 70000 ? 'Healthy zone' : 'Low zone'}` : 'Q1 annualized · Healthy zone'}
+            icon="📈"
+            tooltip="Actual RPE: Revenue ÷ actual headcount (FT=1, PT=0.5). Uses the real people count from payroll. Annualized for quarterly periods. Benchmark: <$70K Low · $70K–$100K Healthy · >$100K Strong."
+          />
+          <MetricCard
+            title="Standardized RPE (est.)"
+            value={latest ? (formatCurrency(latest.standardizedRpe) || '—') : '$137,698'}
+            subtitle={latest ? `${latest.period} annualized · ${latest.standardizedRpe >= 100000 ? 'Strong zone' : latest.standardizedRpe >= 70000 ? 'Healthy zone' : 'Low zone'}` : 'Q1 annualized · Strong zone'}
+            icon="📊"
+            tooltip="Standardized RPE: Revenue ÷ (Total Comp ÷ $85K). Normalizes headcount to $85K-equivalent FTEs regardless of actual salary or hours. Annualized for quarterly periods. Benchmark: <$70K Low · $70K–$100K Healthy · >$100K Strong."
+          />
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-2 gap-4 mb-6">
+          <MetricCard
+            title="Comp Ratio"
+            value={latest ? (fmtPct(latest.compRatioPct) || '—') : '61.73%'}
+            subtitle={latest ? `${latest.period} · ${latest.compRatioPct > 50 ? 'Watch Zone (>50%)' : latest.compRatioPct > 40 ? 'Healthy (40–50%)' : 'Elite (≤40%)'}` : 'Q1 2026 · Watch Zone (>50%)'}
+            icon="⚖️"
+          />
+          <MetricCard
+            title="ROI per $1 Comp"
+            value={latest ? (fmtRoi(latest.roi) || '—') : '$1.62'}
+            subtitle="Revenue per $1 of total comp"
+            icon="💰"
+          />
+        </div>
+
+        {/* B. Year-over-year trend table */}
+        <div
+          className="rounded-xl overflow-hidden mb-4"
+          style={{ backgroundColor: B.elevated, border: `1px solid ${B.border}` }}
+        >
+          <table className="w-full text-sm">
+            <thead>
+              <tr style={{ backgroundColor: B.p1 }}>
+                {scorecardCols.map((col) => (
+                  <th
+                    key={col}
+                    className="px-4 py-3 text-left font-semibold text-white"
+                    style={{ borderBottom: `1px solid ${B.border}` }}
+                  >
+                    {col}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {scorecardLoading ? (
+                <tr>
+                  <td colSpan={scorecardCols.length} className="px-4 py-6 text-center" style={{ color: B.muted }}>
+                    Loading scorecard…
+                  </td>
+                </tr>
+              ) : scorecardRows.map((row, rowIdx) => (
+                <tr
+                  key={row.label}
+                  style={{
+                    backgroundColor: rowIdx % 2 === 0 ? '#131313' : '#1a1a1a',
+                    borderBottom: `1px solid ${B.border}`,
+                  }}
+                >
+                  <td className="px-4 py-3 font-medium" style={{ color: B.muted }}>
+                    <span className="flex items-center gap-1.5">
+                      {row.label}
+                      {row.tooltip && (
+                        <span title={row.tooltip} className="cursor-help text-xs" style={{ color: B.p4 }}>ⓘ</span>
+                      )}
+                    </span>
+                  </td>
+                  {row.values.map((cell, i) => (
+                    <td
+                      key={i}
+                      className="px-4 py-3 font-mono"
+                      style={{ color: cell.color || '#e5e7eb' }}
+                    >
+                      {cell.display}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="px-4 py-2 text-xs" style={{ color: B.muted }}>
+            * 2026 YTD figures annualized from Q1 data. Standardized RPE = Revenue ÷ (Total Comp ÷ $85K)
+          </p>
+        </div>
+
+        {/* C. Benchmark legend */}
+        <div className="flex flex-wrap gap-6 text-xs" style={{ color: B.muted }}>
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-white">RPE:</span>
+            <span style={{ color: '#f87171' }}>🔴 &lt;$70K Low</span>
+            <span style={{ color: '#fbbf24' }}>🟡 $70K–$100K Healthy</span>
+            <span style={{ color: '#4ade80' }}>🟢 &gt;$100K Strong</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-white">Comp Ratio:</span>
+            <span style={{ color: '#4ade80' }}>🟢 ≤40% Elite</span>
+            <span style={{ color: '#fbbf24' }}>🟡 40–50% Healthy</span>
+            <span style={{ color: '#f87171' }}>🔴 &gt;50% Watch Zone</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Section 3: Sentiment Analysis Placeholder ───────────────────── */}
       <section>
         <h2 className="text-base font-semibold mb-4" style={{ color: B.p4 }}>
           Employee Sentiment Analysis

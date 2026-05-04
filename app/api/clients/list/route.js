@@ -48,8 +48,11 @@ const SERVICE_COLUMN = {
   paid_media: '"hasPaidMedia"',
 }
 
+// Use GREATEST so the profile MRR wins when Stripe only sees partial subscriptions
+const NORMALIZED_MRR_SQL = 'CASE WHEN COALESCE(linked_mrr."normalizedLinkedMrr", cp.mrr) IS NOT NULL THEN GREATEST(COALESCE(linked_mrr."normalizedLinkedMrr", 0), COALESCE(cp.mrr, 0)) END'
+
 const SORT_COLUMN = {
-  mrr: 'cp.mrr DESC NULLS LAST, cp."companyName" ASC',
+  mrr: `${NORMALIZED_MRR_SQL} DESC NULLS LAST, cp."companyName" ASC`,
   companyName: 'cp."companyName" ASC NULLS LAST',
   assignedGA: 'cp."assignedGA" ASC NULLS LAST, cp."companyName" ASC',
   funnelTrend: `CASE cp."funnelTrend" WHEN 'up' THEN 1 WHEN 'stable' THEN 2 WHEN 'down' THEN 3 ELSE 4 END ASC, cp."companyName" ASC`,
@@ -128,7 +131,24 @@ export async function GET(request) {
     // Fetch page
     params.push(limit, offset)
     const dataResult = await pool.query(
-      `SELECT cp.* FROM "ClientProfile" cp
+      `SELECT
+         cp.*,
+         ${NORMALIZED_MRR_SQL} AS "normalizedMrr"
+       FROM "ClientProfile" cp
+       LEFT JOIN (
+         SELECT
+           csl."clientProfileId",
+           ROUND(COALESCE(SUM(sc.mrr), 0)::numeric, 2) AS "normalizedLinkedMrr"
+         FROM "ClientStripeLink" csl
+         JOIN "StripeCustomer" sc
+           ON sc.id = csl."stripeCustomerId"
+          AND COALESCE(sc."tenantId", sc."organizationId", $1) = $1
+         WHERE csl."tenantId" = $1
+           AND COALESCE(sc.mrr, 0) > 0
+           AND lower(COALESCE(sc.status, '')) IN ('active', 'trialing', 'past_due', 'unpaid')
+         GROUP BY csl."clientProfileId"
+       ) linked_mrr
+         ON linked_mrr."clientProfileId" = cp.id
        ${whereClause}
        ${orderClause}
        LIMIT $${params.length - 1} OFFSET $${params.length}`,
@@ -137,7 +157,7 @@ export async function GET(request) {
 
     const clients = dataResult.rows.map((row) => ({
       ...row,
-      mrr: row.mrr != null ? Number(row.mrr) : null,
+      mrr: row.normalizedMrr != null ? Number(row.normalizedMrr) : (row.mrr != null ? Number(row.mrr) : null),
       overdueAmount: row.overdueAmount != null ? Number(row.overdueAmount) : null,
       lifetimeValue: row.lifetimeValue != null ? Number(row.lifetimeValue) : null,
       catchUpRate: row.catchUpRate != null ? Number(row.catchUpRate) : null,

@@ -923,13 +923,59 @@ export default function MissionControlPage() {
               {label}
             </button>
           ))}
-          <button onClick={load} className="ml-auto rounded-xl border border-[var(--brand-border)] px-4 py-2 text-sm font-medium text-gray-300 transition hover:border-violet-500/40 hover:bg-violet-500/10 hover:text-white">Refresh</button>
+          <a
+            href="/team/openclaw"
+            className="ml-auto rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/20"
+          >
+            OpenClaw Wiki
+          </a>
+          <a
+            href="/team/m3-integration"
+            className="rounded-xl border border-violet-500/40 bg-violet-500/15 px-4 py-2 text-sm font-medium text-violet-100 transition hover:bg-violet-500/25"
+          >
+            M3 Integration Project
+          </a>
+          <a
+            href="/team/m3-integration#toolkit-console"
+            className="rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/20"
+          >
+            Toolkit Console
+          </a>
+          <button onClick={load} className="rounded-xl border border-[var(--brand-border)] px-4 py-2 text-sm font-medium text-gray-300 transition hover:border-violet-500/40 hover:bg-violet-500/10 hover:text-white">Refresh</button>
         </div>
         {error ? <div className="mt-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">{error}</div> : null}
       </div>
 
       {tab === 'overview' && (
-        <div className="grid gap-6 xl:grid-cols-3">
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-5">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="max-w-4xl">
+                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300">OpenClaw Operating Layer</div>
+                <h2 className="mt-2 text-xl font-bold text-white">The system now has a wiki + rules layer, and it needs to stay tied to Mission Control.</h2>
+                <p className="mt-2 text-sm text-gray-300">Any meaningful OpenClaw workflow, rule, architecture decision, or feature-learning from videos/updates should be captured in the OpenClaw wiki and then reflected here so it changes how we operate, not just what we remember.</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <a href="/team/openclaw" className="rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/20">OpenClaw Wiki</a>
+                <a href="/team/openclaw#feature-watchlist" className="rounded-xl border border-[var(--brand-border)] bg-black/20 px-4 py-2 text-sm font-medium text-gray-300 transition hover:text-white">Feature Watchlist</a>
+              </div>
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              {[
+                { title: 'Browser QA Rule', detail: 'Browser verification is now part of meaningful UI work, not an optional extra.' },
+                { title: 'Wall·E / Eve Model', detail: 'Wall·E orchestrates; Eve owns sync/data execution and remote infrastructure lanes.' },
+                { title: 'Voice Adoption Rule', detail: 'No production voice workflow until provider/config is verified end-to-end.' },
+                { title: 'Feature-Learning Rule', detail: 'Important OpenClaw videos/updates must hit the watchlist, then trigger workflow decisions.' },
+              ].map((item) => (
+                <div key={item.title} className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-4">
+                  <div className="text-sm font-semibold text-cyan-100">{item.title}</div>
+                  <div className="mt-2 text-xs leading-5 text-gray-300">{item.detail}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-6 xl:grid-cols-3">
           <Panel title="Now">
             <div className="space-y-2 text-sm">
               <div className="text-gray-300">In Progress Tasks: <span className="text-white font-semibold">{(data?.taskBoard?.columns?.inProgress || []).length}</span></div>
@@ -948,14 +994,26 @@ export default function MissionControlPage() {
             </ul>
           </Panel>
         </div>
+        </div>
       )}
 
       {tab === 'command' && (
-        <CommandPanelSection status={commandPanelStatus} onJump={setTab} />
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-5 text-sm text-gray-300">
+            <div className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300">Command Panel Rule</div>
+            <div className="mt-2 text-white font-semibold">Commands should map to operating modes, but new OpenClaw workflows must also update the wiki + Mission Control rules so they become part of the system.</div>
+            <div className="mt-2">Reference route: <a href="/team/openclaw" className="text-cyan-200 hover:text-cyan-100">OpenClaw Operating Wiki</a></div>
+          </div>
+          <CommandPanelSection status={commandPanelStatus} onJump={setTab} />
+        </div>
       )}
 
       {tab === 'agents' && (
         <Panel title="Agent Fleet">
+          <div className="mb-6 rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-5">
+            <div className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300">Operating Reminder</div>
+            <div className="mt-2 text-sm text-gray-300">The fleet structure, node map, and Wall·E ↔ Eve operating model are now captured in the <a href="/team/openclaw" className="text-cyan-200 hover:text-cyan-100">OpenClaw Operating Wiki</a>. Any change to agent roles, node wiring, or delegation rules should update both the wiki and this Mission Control surface.</div>
+          </div>
 
           {/* Fleet description */}
           <div className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-5 mb-6">
@@ -1228,13 +1286,31 @@ export default function MissionControlPage() {
       {tab === 'links' && (
         <Panel title="Production Links (Projects)">
           <div className="grid gap-3 md:grid-cols-2">
-            {(data?.projectLinks || []).map((link) => (
-              <a key={link.url} href={link.url} className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-3 text-sm hover:border-violet-500/40 hover:bg-violet-500/10">
-                <div className="text-white">{link.name}</div>
-                <div className="mt-1 text-xs text-gray-400">{link.domain} • {link.status}</div>
-                <div className="mt-2 text-xs text-violet-300">{link.url}</div>
-              </a>
-            ))}
+            {(data?.projectLinks || []).map((link) => {
+              const progress = Number.isFinite(Number(link.progress)) ? Math.max(0, Math.min(100, Number(link.progress))) : null
+              return (
+                <a key={link.url} href={link.url} className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-3 text-sm hover:border-violet-500/40 hover:bg-violet-500/10">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-white">{link.name}</div>
+                      <div className="mt-1 text-xs text-gray-400">{link.domain} • {link.status}</div>
+                    </div>
+                    {progress !== null ? (
+                      <div className="shrink-0 text-right">
+                        <div className="text-xs font-semibold text-violet-200">{progress}%</div>
+                        <div className="mt-1 h-2 w-24 overflow-hidden rounded-full bg-white/10">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-violet-500 via-fuchsia-400 to-cyan-400"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className="mt-2 text-xs text-violet-300">{link.url}</div>
+                </a>
+              )
+            })}
           </div>
         </Panel>
       )}

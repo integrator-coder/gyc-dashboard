@@ -12,6 +12,9 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
+  ComposedChart,
+  Line,
+  Legend,
 } from 'recharts'
 
 const NORMALIZED_EMPLOYEES = 18.5
@@ -70,6 +73,7 @@ export default function FinancePage() {
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [error, setError] = useState(null)
+  const [mrrTrendData, setMrrTrendData] = useState(null)
 
   const fetchData = useCallback(async () => {
     try {
@@ -84,6 +88,21 @@ export default function FinancePage() {
       setLoading(false)
     }
   }, [])
+
+  const fetchMrrTrend = useCallback(async () => {
+    try {
+      const res = await fetch('/api/metrics/finance/mrr-trend')
+      const json = await res.json()
+      if (!Array.isArray(json)) throw new Error('Invalid response')
+      setMrrTrendData(json.filter((p) => p.month >= '2023-01'))
+    } catch (err) {
+      console.error('MRR trend fetch error:', err.message)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchMrrTrend()
+  }, [fetchMrrTrend])
 
   useEffect(() => {
     const init = async () => {
@@ -347,6 +366,95 @@ export default function FinancePage() {
             <span>{formatCurrency(RPE_TARGET)}</span>
           </div>
         </div>
+      </div>
+
+      {/* MRR Trend — 3 Year History */}
+      <div className="rounded-2xl p-6 executive-surface">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-sm font-semibold executive-label">
+            MRR Trend — 3 Year History
+          </h3>
+          <span className="text-xs executive-muted">Jan 2023 – Present</span>
+        </div>
+        <p className="text-xs executive-muted mb-4">
+          Jan 2023–Feb 2026: source Google Sheets · Mar 2026+: source Stripe · New MRR shown from Mar 2026 onwards
+        </p>
+        {!mrrTrendData ? (
+          <div className="flex items-center justify-center h-48">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-t-transparent" style={{ borderColor: B.p4, borderTopColor: 'transparent' }} />
+          </div>
+        ) : mrrTrendData.length === 0 ? (
+          <p className="text-center text-sm executive-muted py-12">No MRR history available</p>
+        ) : (
+          <ResponsiveContainer width="100%" height={280}>
+            <ComposedChart data={mrrTrendData} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+              <XAxis
+                dataKey="month"
+                tick={{ fill: B.muted, fontSize: 10 }}
+                axisLine={{ stroke: B.border }}
+                tickLine={false}
+                tickFormatter={(month, index) => {
+                  if (index % 6 !== 0) return ''
+                  const [yr, mo] = month.split('-')
+                  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+                  return months[parseInt(mo, 10) - 1] + ' \'' + yr.slice(2)
+                }}
+              />
+              <YAxis
+                yAxisId="left"
+                tick={{ fill: B.muted, fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => '$' + (v / 1000).toFixed(0) + 'k'}
+                domain={['auto', 'auto']}
+              />
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                tick={{ fill: B.muted, fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => '$' + (v / 1000).toFixed(0) + 'k'}
+                domain={[0, 'auto']}
+              />
+              <Tooltip
+                formatter={(value, name) => [
+                  '$' + Number(value).toLocaleString(),
+                  name === 'mrr' ? 'Total MRR' : 'New MRR',
+                ]}
+                contentStyle={{ background: B.panel, border: `1px solid ${B.borderStrong}`, borderRadius: 12 }}
+                labelStyle={{ color: B.muted }}
+                itemStyle={{ color: B.p4 }}
+                labelFormatter={(label) => {
+                  const [yr, mo] = label.split('-')
+                  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+                  return months[parseInt(mo, 10) - 1] + ' ' + yr
+                }}
+              />
+              <Legend
+                wrapperStyle={{ fontSize: 12, color: B.muted }}
+                formatter={(value) => value === 'mrr' ? 'Total MRR' : 'New MRR'}
+              />
+              <Bar
+                yAxisId="right"
+                dataKey="newMrr"
+                fill={B.accent}
+                radius={[3, 3, 0, 0]}
+                opacity={0.75}
+                maxBarSize={12}
+              />
+              <Line
+                yAxisId="left"
+                type="monotone"
+                dataKey="mrr"
+                stroke={B.p4}
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4, fill: B.p4 }}
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       {mrrHistory.length > 0 && (

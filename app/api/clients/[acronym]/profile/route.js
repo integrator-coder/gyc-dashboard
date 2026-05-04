@@ -132,7 +132,7 @@ export async function GET(_request, { params }) {
     const ghlId = profileRow.ghlContactId || '__none__'
     const profileId = profileRow.id || -1
 
-    const [callsRes, activityRes, funnelRes, funnelByLocationRes, funnelAggregateRes, potentialCallsRes, gbpLocationsRes] = await Promise.all([
+    const [callsRes, activityRes, funnelRes, funnelByLocationRes, funnelAggregateRes, potentialCallsRes, gbpLocationsRes, stripeLinksRes, paymentsRes] = await Promise.all([
 
       // All ZoomCall rows linked by acronym, clientProfileId, or ghlContactId
       pool.query(`
@@ -220,6 +220,28 @@ export async function GET(_request, { params }) {
         WHERE "tenantId" = 'gyc' AND "clientAcronym" = $1
         ORDER BY "locationName" ASC
       `, [upper]).catch(() => ({ rows: [] })),
+
+      pool.query(`
+        SELECT csl."stripeCustomerId", csl."isPrimary", sc.mrr, sc.status, sc.email, sc.name, sc."companyName"
+        FROM "ClientStripeLink" csl
+        LEFT JOIN "StripeCustomer" sc ON sc.id = csl."stripeCustomerId"
+        WHERE csl."tenantId" = 'gyc'
+          AND csl."clientProfileId" = $1
+        ORDER BY csl."isPrimary" DESC, sc.mrr DESC NULLS LAST, csl."createdAt" ASC
+      `, [profileId]).catch(() => ({ rows: [] })),
+
+      // Recent payments from StripeInvoiceSnapshot
+      pool.query(`
+        SELECT sis.id, sis."amountPaid", sis."paidAt", sis.status,
+               sis."invoiceNumber", sis."hostedInvoiceUrl", sis.description
+        FROM "StripeInvoiceSnapshot" sis
+        JOIN "ClientStripeLink" csl ON csl."stripeCustomerId" = sis."stripeCustomerId"
+        WHERE csl."tenantId" = 'gyc'
+          AND csl."clientProfileId" = $1
+          AND sis.status = 'paid'
+        ORDER BY sis."paidAt" DESC
+        LIMIT 100
+      `, [profileId]).catch(() => ({ rows: [] })),
     ])
 
     const allCalls = callsRes.rows
@@ -228,9 +250,23 @@ export async function GET(_request, { params }) {
     const classifiedCalls = allCalls.filter((c) => c.classifiedAs || c.aiClassification || (c.purposes && c.purposes.length > 0))
     const pendingCalls    = allCalls.filter((c) => !c.classifiedAs && !c.aiClassification && (!c.purposes || c.purposes.length === 0))
 
+    const liveLinkedStripeRows = (stripeLinksRes.rows || []).filter((row) => {
+      const status = String(row.status || '').toLowerCase()
+      return Number(row.mrr || 0) > 0 && ['active', 'trialing', 'past_due', 'unpaid'].includes(status)
+    })
+    const normalizedLinkedMrr = liveLinkedStripeRows.length
+      ? liveLinkedStripeRows.reduce((sum, row) => sum + Number(row.mrr || 0), 0)
+      : null
+
     const profile = {
       ...profileRow,
-      mrr:                  profileRow.mrr                  != null ? Number(profileRow.mrr)                  : null,
+      mrr:                  (() => {
+        const stripeMrr = normalizedLinkedMrr != null ? Number(normalizedLinkedMrr) : null
+        const profileMrr = profileRow.mrr != null ? Number(profileRow.mrr) : null
+        // Use the higher of Stripe MRR vs profile MRR — Stripe may only see partial subscriptions
+        if (stripeMrr != null && profileMrr != null) return Math.max(stripeMrr, profileMrr)
+        return stripeMrr ?? profileMrr
+      })(),
       overdueAmount:        profileRow.overdueAmount        != null ? Number(profileRow.overdueAmount)        : null,
       lifetimeValue:        profileRow.lifetimeValue        != null ? Number(profileRow.lifetimeValue)        : null,
       currentEnrollment:    profileRow.currentEnrollment    != null ? Number(profileRow.currentEnrollment)    : null,
@@ -245,7 +281,15 @@ export async function GET(_request, { params }) {
       healthScore:          computeHealthScore(profileRow),
     }
 
-    const recentPayments = []
+    const recentPayments = (paymentsRes.rows || []).map((r) => ({
+      id:          r.id,
+      amount:      Number(r.amountPaid || 0),
+      paidAt:      r.paidAt,
+      status:      r.status,
+      invoiceNumber: r.invoiceNumber,
+      invoiceUrl:  r.hostedInvoiceUrl,
+      description: r.description,
+    }))
 
     const gbpLocations = gbpLocationsRes.rows.map((row) => ({
       ...row,

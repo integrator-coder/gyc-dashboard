@@ -126,9 +126,37 @@ export async function PATCH(req, { params }) {
       values.push(parseNullableNumber(body.avgTuition, { label: 'Ave Tuition' }))
     }
 
+    // Info fields — require locationId (cannot upsert by name)
+    const INFO_FIELDS = ['nickname', 'address', 'city', 'state', 'gbpUrl']
+    const hasInfoField = INFO_FIELDS.some(f => hasOwn(body, f))
+    if (hasInfoField && !body.locationId) {
+      await client.query('ROLLBACK')
+      return NextResponse.json({ error: 'locationId is required when updating location info fields.' }, { status: 400 })
+    }
+    if (hasOwn(body, 'nickname')) {
+      updates.push(`"locationName" = $${idx++}`)
+      values.push(typeof body.nickname === 'string' ? body.nickname.trim() : null)
+    }
+    if (hasOwn(body, 'address')) {
+      updates.push(`"address" = $${idx++}`)
+      values.push(body.address ?? null)
+    }
+    if (hasOwn(body, 'city')) {
+      updates.push(`"city" = $${idx++}`)
+      values.push(body.city ?? null)
+    }
+    if (hasOwn(body, 'state')) {
+      updates.push(`"state" = $${idx++}`)
+      values.push(body.state ?? null)
+    }
+    if (hasOwn(body, 'gbpUrl')) {
+      updates.push(`"gbpUrl" = $${idx++}`)
+      values.push(body.gbpUrl ?? null)
+    }
+
     if (updates.length === 0) {
       await client.query('ROLLBACK')
-      return NextResponse.json({ error: 'No location metrics provided.' }, { status: 400 })
+      return NextResponse.json({ error: 'No fields provided to update.' }, { status: 400 })
     }
 
     let rows = []

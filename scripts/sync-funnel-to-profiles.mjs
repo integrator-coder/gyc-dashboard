@@ -105,6 +105,17 @@ async function main() {
 
   // ── Step 1: Pull summary stats per client ──────────────────────────────────
   const summaryRes = await pool.query(`
+    WITH monthly AS (
+      SELECT
+        "clientId",
+        month,
+        SUM(leads) AS leads,
+        SUM(tours) AS tours,
+        SUM(registered) AS registered
+      FROM "ClientFunnelMonth"
+      WHERE "tenantId" = $1 AND leads > 0
+      GROUP BY "clientId", month
+    )
     SELECT
       "clientId" AS acronym,
       COUNT(*) AS months_of_data,
@@ -112,10 +123,9 @@ async function main() {
       AVG(leads) AS avg_leads,
       AVG(tours) AS avg_tours,
       AVG(registered) AS avg_registered,
-      AVG(CASE WHEN leads > 0 THEN tours::float/leads*100 ELSE NULL END) AS lead_to_tour,
-      AVG(CASE WHEN tours > 0 THEN registered::float/tours*100 ELSE NULL END) AS tour_to_reg
-    FROM "ClientFunnelMonth"
-    WHERE "tenantId" = $1 AND leads > 0
+      AVG(CASE WHEN leads > 0 THEN tours::float / leads * 100 ELSE NULL END) AS lead_to_tour,
+      AVG(CASE WHEN tours > 0 THEN registered::float / tours * 100 ELSE NULL END) AS tour_to_reg
+    FROM monthly
     GROUP BY "clientId"
   `, [TENANT])
 
@@ -124,9 +134,10 @@ async function main() {
 
   // ── Step 2: Pull monthly rows per client for trend computation ─────────────
   const monthlyRes = await pool.query(`
-    SELECT "clientId", month, leads
+    SELECT "clientId", month, SUM(leads) AS leads
     FROM "ClientFunnelMonth"
     WHERE "tenantId" = $1 AND leads > 0
+    GROUP BY "clientId", month
     ORDER BY "clientId", month ASC
   `, [TENANT])
 

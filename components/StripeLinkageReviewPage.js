@@ -272,7 +272,7 @@ function ReviewCaseCard({ item, onDecision }) {
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold text-white">{item.subjectClient.companyName || item.subjectClient.acronym || `Client ${item.subjectClient.id}`}</span>
             {item.subjectClient.acronym ? <StatusPill className="border-violet-500/25 bg-violet-500/10 text-violet-200">{item.subjectClient.acronym}</StatusPill> : null}
-            <StatusPill className="border-white/10 bg-white/5 text-gray-200">Profile MRR {fmtMoney(item.subjectClient.mrr || 0)}</StatusPill>
+            <StatusPill className="border-white/10 bg-white/5 text-gray-200">Effective MRR {fmtMoney((item.subjectClient.effectiveMrr ?? item.subjectClient.mrr) || 0)}</StatusPill>
             {item.subjectClient.stripeCustomerId ? <StatusPill className="border-white/10 bg-white/5 text-gray-200">Legacy {item.subjectClient.stripeCustomerId}</StatusPill> : null}
           </div>
           <div className="mt-2 flex flex-wrap gap-x-6 gap-y-2 text-xs text-gray-400">

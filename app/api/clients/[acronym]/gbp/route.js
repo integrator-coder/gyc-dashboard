@@ -32,7 +32,7 @@ export async function GET(_req, { params }) {
         `SELECT * FROM "GBPAudit"
          WHERE "locationId" = $1
          ORDER BY "auditDate" DESC
-         LIMIT 1`,
+         LIMIT 12`,
         [loc.id]
       )
       const { rows: snapshots } = await pool.query(
@@ -48,6 +48,8 @@ export async function GET(_req, { params }) {
         currentEnrollment: loc.currentEnrollment != null ? Number(loc.currentEnrollment) : null,
         avgTuition: loc.avgTuition != null ? Number(loc.avgTuition) : null,
         latestAudit: audits[0] ?? null,
+        lastAudit: audits[0] ?? null,
+        auditHistory: audits,
         latestSnapshot: snapshots[0] ?? null,
       }
     })

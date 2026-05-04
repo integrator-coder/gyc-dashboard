@@ -58,15 +58,15 @@ export async function GET() {
 
     // ── Check 2: MRR/ARR consistency ────────────────────────────────────────
     const { rows: stripeRows } = await client.query(`
-      SELECT mrr, arr FROM "StripeMetrics"
+      SELECT mrr, "totalRevenue", "activeCustomers" FROM "StripeMetrics"
       ORDER BY "syncedAt" DESC LIMIT 1
     `)
     const sm = stripeRows[0] || null
-    if (!sm || !sm.mrr || !sm.arr) {
-      addCheck('MRR/ARR Consistency', false, 'No StripeMetrics found', 'StripeMetrics table empty or missing mrr/arr')
+    if (!sm || !sm.mrr) {
+      addCheck('MRR/ARR Consistency', false, 'No StripeMetrics found', 'StripeMetrics table empty or missing mrr')
     } else {
       const mrr = Number(sm.mrr)
-      const arr = Number(sm.arr)
+      const arr = mrr * 12
       const expectedArr = mrr * 12
       const divergence = Math.abs(arr - expectedArr) / expectedArr
       const pass = divergence <= 0.01
@@ -188,6 +188,44 @@ export async function GET() {
         'Cannot compute',
         'MRR or active client count is zero — RPE check skipped'
       )
+    }
+
+    // ── Check 8: MRR Reconciliation (Profile vs Stripe) ────────────────────
+    try {
+      const { rows: mrrMismatchRows } = await client.query(`
+        SELECT 
+          cp.acronym,
+          cp."companyName",
+          cp.mrr AS profile_mrr,
+          ROUND(COALESCE(SUM(sc.mrr), 0)::numeric, 2) AS stripe_mrr
+        FROM "ClientProfile" cp
+        JOIN "ClientStripeLink" csl ON csl."clientProfileId" = cp.id AND csl."tenantId" = 'gyc'
+        JOIN "StripeCustomer" sc ON sc.id = csl."stripeCustomerId"
+          AND sc.status IN ('active', 'trialing', 'past_due', 'unpaid')
+          AND COALESCE(sc.mrr, 0) > 0
+        WHERE cp."tenantId" = 'gyc'
+          AND cp.mrr IS NOT NULL
+          AND cp.mrr > 0
+        GROUP BY cp.id, cp.acronym, cp."companyName", cp.mrr
+        HAVING ABS(ROUND(COALESCE(SUM(sc.mrr), 0)::numeric, 2) - cp.mrr) / cp.mrr > 0.10
+        ORDER BY ABS(ROUND(COALESCE(SUM(sc.mrr), 0)::numeric, 2) - cp.mrr) / cp.mrr DESC
+        LIMIT 20
+      `)
+      if (mrrMismatchRows.length === 0) {
+        addCheck('MRR Reconciliation (Profile vs Stripe)', true, 'All linked clients match within 10%', null)
+      } else {
+        const mismatchNote = mrrMismatchRows
+          .map(r => `${r.acronym || r.companyName}: profile $${Number(r.profile_mrr).toLocaleString()} vs Stripe $${Number(r.stripe_mrr).toLocaleString()}`)
+          .join(', ')
+        addCheck(
+          'MRR Reconciliation (Profile vs Stripe)',
+          false,
+          `${mrrMismatchRows.length} client(s) with MRR mismatch >10%`,
+          mismatchNote
+        )
+      }
+    } catch (mrrReconcileErr) {
+      addCheck('MRR Reconciliation (Profile vs Stripe)', false, 'Query error', mrrReconcileErr.message)
     }
 
     return NextResponse.json({

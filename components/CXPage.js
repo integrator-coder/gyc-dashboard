@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { funnelStatus } from '@/lib/funnel-benchmarks'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   ReferenceLine
@@ -124,6 +125,8 @@ export default function CXPage() {
   const [ghlData, setGhlData] = useState(null)
   const [zendeskData, setZendeskData] = useState(null)
   const [healthData, setHealthData] = useState(null)
+  const [funnelData, setFunnelData] = useState(null)
+  const [funnelLoading, setFunnelLoading] = useState(true)
   const [loading, setLoading] = useState(true)
   const [ghlLoading, setGhlLoading] = useState(true)
   const [zendeskLoading, setZendeskLoading] = useState(true)
@@ -175,6 +178,19 @@ export default function CXPage() {
     }
   }, [ghlPeriod])
 
+  const fetchFunnelData = useCallback(async () => {
+    setFunnelLoading(true)
+    try {
+      const res = await fetch('/api/metrics/client-funnels')
+      const json = await res.json()
+      setFunnelData(json.error ? null : json)
+    } catch {
+      setFunnelData(null)
+    } finally {
+      setFunnelLoading(false)
+    }
+  }, [])
+
   const fetchZendeskData = useCallback(async () => {
     setZendeskLoading(true)
     try {
@@ -203,6 +219,10 @@ export default function CXPage() {
   useEffect(() => {
     fetchGhlData()
   }, [fetchGhlData])
+
+  useEffect(() => {
+    fetchFunnelData()
+  }, [fetchFunnelData])
 
   useEffect(() => {
     fetchZendeskData()
@@ -287,12 +307,77 @@ export default function CXPage() {
           </p>
         </div>
         <button
-          onClick={() => { setLoading(true); fetchCxData(); fetchHealthData(); fetchGhlData(); fetchZendeskData() }}
+          onClick={() => { setLoading(true); fetchCxData(); fetchHealthData(); fetchGhlData(); fetchZendeskData(); fetchFunnelData() }}
           className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-medium rounded-lg transition-colors border border-gray-700"
         >
           ↻ Refresh
         </button>
       </div>
+
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className="text-gray-400 text-xs font-semibold uppercase tracking-widest">Funnel Health</h2>
+            <p className="text-gray-500 text-xs mt-0.5">Benchmarks: Lead→Tour 50% · Tour→Reg 50% · Overall 25%</p>
+          </div>
+        </div>
+        {funnelLoading && !funnelData ? (
+          <div className="rounded-xl border border-gray-800 px-5 py-6 flex items-center justify-center gap-3" style={{ backgroundColor: '#111111' }}>
+            <div className="w-5 h-5 border-2 border-brand border-t-transparent rounded-full animate-spin" />
+            <span className="text-gray-300 text-sm">Loading funnel data…</span>
+          </div>
+        ) : funnelData?.clients?.length > 0 ? (() => {
+          const clients = funnelData.clients
+          const withRates = clients.filter(c => c.leadToTour != null && c.tourToReg != null)
+          const statuses = withRates.map(c => funnelStatus(c.leadToTour, c.tourToReg))
+          const criticalClients = withRates.filter((c, i) => statuses[i].leadToTourStatus === 'critical')
+          const warningClients = withRates.filter((c, i) =>
+            statuses[i].leadToTourStatus === 'warning' || statuses[i].tourToRegStatus === 'warning'
+          )
+          const aboveClients = withRates.filter((c, i) =>
+            statuses[i].leadToTourStatus === 'above' && statuses[i].tourToRegStatus === 'above'
+          )
+          return (
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
+                  <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-2">🟢 Above Benchmark</p>
+                  <p className="text-3xl font-bold text-green-400">{aboveClients.length}</p>
+                  <p className="text-gray-300 text-xs mt-1">of {withRates.length} clients with data</p>
+                </div>
+                <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
+                  <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-2">🟡 Warning</p>
+                  <p className="text-3xl font-bold text-yellow-400">{warningClients.length}</p>
+                  <p className="text-gray-300 text-xs mt-1">below benchmark, not critical</p>
+                </div>
+                <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
+                  <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-2">🔴 Critical</p>
+                  <p className="text-3xl font-bold text-red-400">{criticalClients.length}</p>
+                  <p className="text-gray-300 text-xs mt-1">touring rate &lt;25%</p>
+                </div>
+              </div>
+              {criticalClients.length > 0 && (
+                <div className="rounded-xl p-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
+                  <p className="text-gray-300 text-xs font-medium uppercase tracking-wider mb-3">⚠ Critical Touring Rate — Needs Immediate Attention</p>
+                  <div className="flex flex-wrap gap-2">
+                    {criticalClients.map(c => (
+                      <div key={c.acronym} className="flex items-center gap-2 rounded-lg border border-red-800 bg-red-950/40 px-3 py-1.5">
+                        <span className="text-red-300 text-xs font-semibold">{c.acronym}</span>
+                        <span className="text-red-400 text-xs">L→T: {c.leadToTour != null ? `${c.leadToTour}%` : '—'}</span>
+                        <span className="text-red-300 text-[10px] font-medium border border-red-700 bg-red-900/50 rounded px-1.5 py-0.5">⚠ Touring Rate Critical</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })() : (
+          <div className="rounded-xl border border-gray-800 px-5 py-4 text-gray-300 text-sm" style={{ backgroundColor: '#111111' }}>
+            No funnel data available.
+          </div>
+        )}
+      </section>
 
       <section>
         <div className="flex items-center justify-between mb-3 gap-4">

@@ -18,6 +18,7 @@ import {
   Legend,
 } from 'recharts'
 import { ClientFinanceReviewPanel } from '@/components/StripeLinkageReviewPage'
+import { funnelStatus } from '@/lib/funnel-benchmarks'
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
@@ -313,6 +314,58 @@ function TrendBadge({ trend, changePct }) {
   return null
 }
 
+function FunnelIntelligencePanel({ status }) {
+  const [open, setOpen] = useState(false)
+
+  const worstStatus = status.leadToTourStatus === 'critical' || status.tourToRegStatus === 'critical'
+    ? 'critical'
+    : status.leadToTourStatus === 'warning' || status.tourToRegStatus === 'warning'
+    ? 'warning'
+    : 'above'
+
+  const borderColor = worstStatus === 'critical' ? '#ef4444' : worstStatus === 'warning' ? '#eab308' : '#22c55e'
+  const headerText  = worstStatus === 'critical' ? 'text-red-400'    : worstStatus === 'warning' ? 'text-yellow-400'  : 'text-green-400'
+
+  const constraintLabels = {
+    'lead-to-tour': 'Primary constraint: Lead→Tour rate',
+    'tour-to-reg':  'Primary constraint: Tour→Reg rate',
+    'both':         'Primary constraint: Both rates below benchmark',
+    'none':         'All metrics above benchmark',
+  }
+
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-2 text-xs font-medium text-gray-400 hover:text-gray-200 transition"
+      >
+        <span className={`transition-transform ${open ? 'rotate-90' : ''}`}>›</span>
+        <span className={headerText}>Funnel Intelligence</span>
+        {worstStatus === 'critical' && (
+          <span className="rounded border border-red-700 bg-red-900/50 px-1.5 py-0.5 text-[10px] text-red-300">⚠ Needs Attention</span>
+        )}
+      </button>
+      {open && (
+        <div
+          className="mt-2 rounded-xl px-4 py-3 text-sm"
+          style={{ backgroundColor: '#0a0a0f', border: `1px solid #2a1a3e`, borderLeft: `3px solid ${borderColor}` }}
+        >
+          <p className={`text-xs font-semibold mb-2 ${headerText}`}>{constraintLabels[status.primaryConstraint]}</p>
+          <ul className="space-y-1.5">
+            {status.nextSteps.map((step, i) => (
+              <li key={i} className="flex gap-2 text-xs text-gray-300">
+                <span className="text-gray-500 shrink-0">•</span>
+                <span>{step}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Transcript viewer ─────────────────────────────────────────────────────────
 
 function TranscriptViewer({ text }) {
@@ -576,29 +629,37 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount,
         const leads      = Number(latestMonth.leads)      || 0
         const tours      = Number(latestMonth.tours)      || 0
         const registered = Number(latestMonth.registered) || 0
-        const tourRate  = leads > 0 ? `${(tours      / leads * 100).toFixed(1)}%` : '—'
-        const closeRate = tours > 0 ? `${(registered / tours * 100).toFixed(1)}%` : '—'
-        const convRate  = leads > 0 ? `${(registered / leads * 100).toFixed(1)}%` : '—'
+        const tourRateNum  = leads > 0 ? (tours      / leads * 100) : null
+        const closeRateNum = tours > 0 ? (registered / tours * 100) : null
+        const convRateNum  = leads > 0 ? (registered / leads * 100) : null
+        const tourRate  = tourRateNum  != null ? `${tourRateNum.toFixed(1)}%`  : '—'
+        const closeRate = closeRateNum != null ? `${closeRateNum.toFixed(1)}%` : '—'
+        const convRate  = convRateNum  != null ? `${convRateNum.toFixed(1)}%`  : '—'
+        const monthStatus = funnelStatus(tourRateNum, closeRateNum)
+        const lttColorClass = monthStatus.leadToTourStatus === 'critical' ? 'text-red-400' : monthStatus.leadToTourStatus === 'warning' ? 'text-yellow-400' : 'text-green-400'
+        const ttrColorClass = monthStatus.tourToRegStatus === 'critical' ? 'text-red-400' : monthStatus.tourToRegStatus === 'warning' ? 'text-yellow-400' : 'text-green-400'
+        const ovColorClass  = monthStatus.overallStatus   === 'critical' ? 'text-red-400' : monthStatus.overallStatus   === 'warning' ? 'text-yellow-400' : 'text-green-400'
         return (
           <div>
             <SectionTitle>
               Conversion Rates
               <span className="ml-2 normal-case text-[10px] font-normal text-gray-500">({fmtMonth(latestMonth.month)})</span>
             </SectionTitle>
+            <p className="text-[10px] text-gray-500 mb-2">Benchmarks: Lead→Tour 50% · Tour→Reg 50% · Overall 25%</p>
             <div className="grid grid-cols-3 gap-3">
               <Card>
                 <div className="text-[11px] uppercase tracking-wider text-gray-400">Tour Rate</div>
-                <div className="mt-1 font-bold text-xl" style={{ color: '#06b6d4' }}>{tourRate}</div>
+                <div className={`mt-1 font-bold text-xl ${tourRateNum != null ? lttColorClass : ''}`} style={tourRateNum == null ? { color: '#06b6d4' } : undefined}>{tourRate}</div>
                 <div className="mt-0.5 text-xs text-gray-400">Leads that booked a tour</div>
               </Card>
               <Card>
                 <div className="text-[11px] uppercase tracking-wider text-gray-400">Closing Rate</div>
-                <div className="mt-1 font-bold text-xl" style={{ color: '#8b5cf6' }}>{closeRate}</div>
+                <div className={`mt-1 font-bold text-xl ${closeRateNum != null ? ttrColorClass : ''}`} style={closeRateNum == null ? { color: '#8b5cf6' } : undefined}>{closeRate}</div>
                 <div className="mt-0.5 text-xs text-gray-400">Tours that enrolled</div>
               </Card>
               <Card>
                 <div className="text-[11px] uppercase tracking-wider text-gray-400">Conversion Rate</div>
-                <div className="mt-1 font-bold text-xl" style={{ color: '#C19C46' }}>{convRate}</div>
+                <div className={`mt-1 font-bold text-xl ${convRateNum != null ? ovColorClass : ''}`} style={convRateNum == null ? { color: '#C19C46' } : undefined}>{convRate}</div>
                 <div className="mt-0.5 text-xs text-gray-400">Lead to enrollment</div>
               </Card>
             </div>
@@ -607,23 +668,49 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount,
       })()}
 
       {/* Avg conversion rates */}
-      {hasFunnel && (
-        <div>
-          <SectionTitle>Conversion Rates (12-mo avg)</SectionTitle>
-          <div className="space-y-3">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <StatBox label="Avg Leads/mo" value={fmtNum(profile.avgMonthlyLeads)} />
-              <StatBox label="Avg Tours/mo" value={fmtNum(profile.avgMonthlyTours)} />
-              <StatBox label="Avg Enrollments" value={fmtNum(profile.avgMonthlyRegistered)} />
+      {hasFunnel && (() => {
+        const lttRate = profile.leadToTourRate != null ? Number(profile.leadToTourRate) : null
+        const ttrRate = profile.tourToRegRate  != null ? Number(profile.tourToRegRate)  : null
+        const avgStatus = funnelStatus(lttRate, ttrRate)
+        const lttColorClass = avgStatus.leadToTourStatus === 'critical' ? 'text-red-400' : avgStatus.leadToTourStatus === 'warning' ? 'text-yellow-400' : 'text-green-400'
+        const ttrColorClass = avgStatus.tourToRegStatus === 'critical' ? 'text-red-400' : avgStatus.tourToRegStatus === 'warning' ? 'text-yellow-400' : 'text-green-400'
+        const ovColorClass  = avgStatus.overallStatus   === 'critical' ? 'text-red-400' : avgStatus.overallStatus   === 'warning' ? 'text-yellow-400' : 'text-green-400'
+        return (
+          <div>
+            <SectionTitle>Conversion Rates (12-mo avg)</SectionTitle>
+            <p className="text-[10px] text-gray-500 mb-2">Benchmarks: Lead→Tour 50% · Tour→Reg 50% · Overall 25%</p>
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <StatBox label="Avg Leads/mo" value={fmtNum(profile.avgMonthlyLeads)} />
+                <StatBox label="Avg Tours/mo" value={fmtNum(profile.avgMonthlyTours)} />
+                <StatBox label="Avg Enrollments" value={fmtNum(profile.avgMonthlyRegistered)} />
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <StatBox
+                  label="Lead to Tour Ratio"
+                  value={lttRate != null ? fmtPct(lttRate) : '—'}
+                  valueClassName={lttRate != null ? lttColorClass : ''}
+                />
+                <StatBox
+                  label="Tour to Enrollment"
+                  value={ttrRate != null ? fmtPct(ttrRate) : '—'}
+                  valueClassName={ttrRate != null ? ttrColorClass : ''}
+                />
+                <StatBox
+                  label="Conversion Rate"
+                  value={avgConvRate != null ? fmtPct(avgConvRate) : '—'}
+                  valueClassName={avgConvRate != null ? ovColorClass : ''}
+                />
+              </div>
             </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <StatBox label="Lead to Tour Ratio" value={profile.leadToTourRate != null ? fmtPct(Number(profile.leadToTourRate)) : '—'} />
-              <StatBox label="Tour to Enrollment" value={profile.tourToRegRate != null ? fmtPct(Number(profile.tourToRegRate)) : '—'} />
-              <StatBox label="Conversion Rate" value={avgConvRate != null ? fmtPct(avgConvRate) : '—'} />
-            </div>
+
+            {/* Funnel Intelligence panel */}
+            {(lttRate != null || ttrRate != null) && (
+              <FunnelIntelligencePanel status={avgStatus} />
+            )}
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* 12-Month Trend */}
       {funnelHistoryAsc.length > 1 && (
@@ -774,12 +861,7 @@ function FinancialTab({ profile, recentPayments = [], user = null }) {
 
   return (
     <div className="space-y-6">
-      {canReviewLinkage && profile?.acronym ? (
-        <div>
-          <SectionTitle>Linkage Review</SectionTitle>
-          <ClientFinanceReviewPanel acronym={profile.acronym} />
-        </div>
-      ) : null}
+      {/* Finance Linkage Review removed — admin-only tool, not relevant in client view */}
 
       {/* Primary metrics */}
       <div>
@@ -2125,9 +2207,271 @@ function WebsiteTab({ profile, acronym }) {
 
 // ── Tab 4: SEO ────────────────────────────────────────────────────────────────
 
-function SEOTab({ profile }) {
+// ── SEO helpers ──────────────────────────────────────────────────────────────
+
+function SolvGauge({ label, value }) {
+  const pct = value != null ? Math.min(Math.max(Number(value), 0), 100) : null
+  const color = pct == null ? '#6b7280'
+    : pct >= 25 ? '#22c55e'
+    : pct >= 10 ? '#f59e0b'
+    : '#ef4444'
+  return (
+    <div style={{ textAlign: 'center', minWidth: 90 }}>
+      <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
+      <div style={{ fontSize: 22, fontWeight: 800, color: pct != null ? color : '#4b5563' }}>
+        {pct != null ? `${pct.toFixed(1)}%` : '—'}
+      </div>
+      {pct != null && (
+        <div style={{ marginTop: 5, height: 4, borderRadius: 2, background: '#1f2937', overflow: 'hidden' }}>
+          <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 2, transition: 'width 0.4s ease' }} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ArpBadge({ label, value }) {
+  const isNum = value != null && value !== '—' && value !== 'N/A' && !isNaN(parseFloat(value))
+  const num = isNum ? parseFloat(value) : null
+  const color = num == null ? '#6b7280'
+    : num <= 5 ? '#22c55e'
+    : num <= 10 ? '#f59e0b'
+    : '#ef4444'
+  return (
+    <div style={{ textAlign: 'center', minWidth: 80 }}>
+      <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
+      <div style={{ fontSize: 22, fontWeight: 800, color: color }}>
+        {value || '—'}
+      </div>
+      <div style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>rank pos.</div>
+    </div>
+  )
+}
+
+function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc }) {
+  const primary = snapshots.find(s => s.locationName === loc && s.keywordGroup === 'primary') || null
+  const best    = snapshots.find(s => s.locationName === loc && s.keywordGroup === 'best') || null
+
+  // Chart data: SOLV over time for this location (primary group, chronological)
+  const chartData = useMemo(() => {
+    const rows = snapshots
+      .filter(s => s.locationName === loc && s.keywordGroup === 'primary' && (s.solvDaycare != null || s.solvPreschool != null))
+      .slice()  // copy
+      .sort((a, b) => new Date(a.scanDate) - new Date(b.scanDate))
+    return rows.map(s => ({
+      date: new Date(s.scanDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      daycare: s.solvDaycare,
+      preschool: s.solvPreschool,
+    }))
+  }, [snapshots, loc])
+
+  const fmtScanDate = (snap) => {
+    if (!snap?.scanDate) return null
+    return new Date(snap.scanDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+
+  const fmtMonthLabel = (dateStr) => {
+    if (!dateStr) return ''
+    try { return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) }
+    catch { return '' }
+  }
+
+  const gbpDelta = (curr, prev, field) => {
+    if (curr == null || prev == null) return null
+    const c = curr[field]
+    const p = prev[field]
+    if (c == null || p == null) return null
+    const d = c - p
+    if (d === 0) return null
+    return d
+  }
+
+  return (
+    <div style={{ marginBottom: 32 }}>
+      {isMultiLoc && loc && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+          <div style={{ width: 3, height: 20, borderRadius: 2, background: '#731494' }} />
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: '#c4b5fd', margin: 0 }}>{loc}</h3>
+        </div>
+      )}
+
+      {/* Primary Keywords */}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
+          Primary Keywords
+          {primary?.scanDate && <span style={{ fontWeight: 400, color: '#6b7280', marginLeft: 8, textTransform: 'none', letterSpacing: 0 }}>· as of {fmtScanDate(primary)}</span>}
+        </div>
+        {primary ? (
+          <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: '16px 20px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, justifyContent: 'space-around', marginBottom: 14 }}>
+              <SolvGauge label="SOLV Daycare" value={primary.solvDaycare} />
+              <SolvGauge label="SOLV Preschool" value={primary.solvPreschool} />
+              <ArpBadge label="ARP Daycare" value={primary.arpDaycare} />
+              <ArpBadge label="ARP Preschool" value={primary.arpPreschool} />
+            </div>
+            {(primary.reportUrlDaycare || primary.reportUrlPreschool) && (
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                {primary.reportUrlDaycare && (
+                  <a href={primary.reportUrlDaycare} target="_blank" rel="noreferrer"
+                    style={{ fontSize: 12, color: '#a78bfa', textDecoration: 'none', padding: '4px 10px', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 8, background: 'rgba(167,139,250,0.08)' }}>
+                    🔗 Daycare Report
+                  </a>
+                )}
+                {primary.reportUrlPreschool && (
+                  <a href={primary.reportUrlPreschool} target="_blank" rel="noreferrer"
+                    style={{ fontSize: 12, color: '#a78bfa', textDecoration: 'none', padding: '4px 10px', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 8, background: 'rgba(167,139,250,0.08)' }}>
+                    🔗 Preschool Report
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{ color: '#6b7280', fontSize: 13, padding: '12px 0' }}>No ranking data yet</div>
+        )}
+      </div>
+
+      {/* Trend Chart */}
+      {chartData.length >= 2 && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>SOLV Trend</div>
+          <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: '16px 20px' }}>
+            <ResponsiveContainer width="100%" height={180}>
+              <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <XAxis dataKey="date" tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+                <Tooltip
+                  contentStyle={{ background: '#1a0a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, fontSize: 12 }}
+                  labelStyle={{ color: '#c4b5fd' }}
+                  formatter={(v, name) => [v != null ? `${v.toFixed(1)}%` : '—', name]}
+                />
+                <Line type="monotone" dataKey="daycare" name="Daycare" stroke="#731494" strokeWidth={2} dot={{ fill: '#731494', r: 4 }} activeDot={{ r: 6 }} connectNulls />
+                <Line type="monotone" dataKey="preschool" name="Preschool" stroke="#AE2BCF" strokeWidth={2} dot={{ fill: '#AE2BCF', r: 4 }} activeDot={{ r: 6 }} connectNulls />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* Best Keywords */}
+      {best && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
+            Best Keywords
+            {best?.scanDate && <span style={{ fontWeight: 400, color: '#6b7280', marginLeft: 8, textTransform: 'none', letterSpacing: 0 }}>· as of {fmtScanDate(best)}</span>}
+          </div>
+          <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: '16px 20px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, justifyContent: 'space-around', marginBottom: best.reportUrlDaycare || best.reportUrlPreschool ? 14 : 0 }}>
+              <SolvGauge label="SOLV Best Daycare" value={best.solvDaycare} />
+              <SolvGauge label="SOLV Best Preschool" value={best.solvPreschool} />
+              <ArpBadge label="ARP Best Daycare" value={best.arpDaycare} />
+              <ArpBadge label="ARP Best Preschool" value={best.arpPreschool} />
+            </div>
+            {(best.reportUrlDaycare || best.reportUrlPreschool) && (
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                {best.reportUrlDaycare && (
+                  <a href={best.reportUrlDaycare} target="_blank" rel="noreferrer"
+                    style={{ fontSize: 12, color: '#a78bfa', textDecoration: 'none', padding: '4px 10px', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 8, background: 'rgba(167,139,250,0.08)' }}>
+                    🔗 Best Daycare Report
+                  </a>
+                )}
+                {best.reportUrlPreschool && (
+                  <a href={best.reportUrlPreschool} target="_blank" rel="noreferrer"
+                    style={{ fontSize: 12, color: '#a78bfa', textDecoration: 'none', padding: '4px 10px', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 8, background: 'rgba(167,139,250,0.08)' }}>
+                    🔗 Best Preschool Report
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* GBP Performance */}
+      {gbpRows.length > 0 && (
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>GBP Performance</div>
+          <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  {['Month','Interactions','Views','Searches','Calls','Directions','Web Clicks'].map(h => (
+                    <th key={h} style={{ padding: '10px 12px', textAlign: h === 'Month' ? 'left' : 'right', color: '#9ca3af', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {gbpRows.map((row, i) => {
+                  const prev = gbpRows[i + 1]
+                  const fields = ['profileInteractions','profileViews','searches','calls','directionRequests','websiteClicks']
+                  return (
+                    <tr key={i} style={{ borderBottom: i < gbpRows.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                      <td style={{ padding: '10px 12px', color: '#e5e7eb', fontWeight: 500 }}>{fmtMonthLabel(row.month)}</td>
+                      {fields.map(f => {
+                        const val = row[f]
+                        const delta = prev ? (val != null && prev[f] != null ? val - prev[f] : null) : null
+                        return (
+                          <td key={f} style={{ padding: '10px 12px', textAlign: 'right', color: '#d1d5db' }}>
+                            {val != null ? val.toLocaleString() : '—'}
+                            {delta != null && delta !== 0 && (
+                              <span style={{ marginLeft: 4, fontSize: 10, color: delta > 0 ? '#22c55e' : '#ef4444' }}>
+                                {delta > 0 ? `+${delta}` : delta}
+                              </span>
+                            )}
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SEOTab({ profile, acronym }) {
+  const [seoData, setSeoData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    if (!acronym) return
+    setLoading(true)
+    fetch(`/api/clients/${acronym}/seo`)
+      .then(r => r.json())
+      .then(data => { setSeoData(data); setLoading(false) })
+      .catch(e => { setError(e.message); setLoading(false) })
+  }, [acronym])
+
+  if (loading) {
+    return (
+      <div style={{ padding: '40px 0', textAlign: 'center', color: '#9ca3af', fontSize: 14 }}>
+        <div style={{ marginBottom: 8, fontSize: 20 }}>📈</div>
+        Loading SEO data…
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div style={{ padding: '20px 0', color: '#ef4444', fontSize: 13 }}>
+        Error loading SEO data: {error}
+      </div>
+    )
+  }
+
+  const hasData = seoData?.snapshots?.length > 0
+  const locations = seoData?.locations || []
+  const isMultiLoc = locations.length > 1 || (locations.length === 1 && locations[0] !== '')
+
   return (
     <div className="space-y-6">
+      {/* Service Details */}
       <div>
         <SectionTitle>SEO Service Details</SectionTitle>
         <Card>
@@ -2136,29 +2480,34 @@ function SEOTab({ profile }) {
               profile.serviceList?.find(s => s.toLowerCase().includes('seo')) ||
               (profile.hasSEO ? 'SEO Active' : null)
             } />
-            <InfoRow label="Start date"    value={profile.startDate ? fmtDate(profile.startDate) : null} />
-            <InfoRow label="Assigned GA"   value={profile.assignedGA} />
+            <InfoRow label="Start date"  value={profile.startDate ? fmtDate(profile.startDate) : null} />
+            <InfoRow label="Assigned GA" value={profile.assignedGA} />
           </div>
         </Card>
       </div>
 
+      {/* Rankings */}
       <div>
-        <SectionTitle>Baseline (Before GYC)</SectionTitle>
-        <Card>
-          <div className="mb-2 text-xs text-gray-500">Captured at onboarding — pre-GYC performance</div>
-          <div className="space-y-2.5">
-            <InfoRow label="Avg rank"       value="Not captured yet" />
-            <InfoRow label="Share of voice" value="Not captured yet" />
-            <InfoRow label="Baseline date"  value="Not captured yet" />
+        <SectionTitle>Rankings & Performance</SectionTitle>
+        {!hasData ? (
+          <PlaceholderBanner icon="📈" message="No ranking data synced yet. Data populates automatically from the SEO report sheets." />
+        ) : (
+          <div style={{ background: 'rgba(26,10,46,0.5)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 20, padding: '20px 24px' }}>
+            {locations.map(loc => (
+              <SEOLocationBlock
+                key={loc}
+                acronym={acronym}
+                loc={loc}
+                snapshots={seoData.snapshots.filter(s => s.locationName === loc)}
+                gbpRows={(seoData.gbpByLocation?.[loc]) || []}
+                isMultiLoc={isMultiLoc}
+              />
+            ))}
           </div>
-        </Card>
+        )}
       </div>
 
-      <div>
-        <SectionTitle>Current Performance</SectionTitle>
-        <PlaceholderBanner icon="📈" message="Rank tracking data via DataForSEO — integration pending" />
-      </div>
-
+      {/* Resources */}
       {profile.clientFolderUrl && (
         <div>
           <SectionTitle>Resources</SectionTitle>
@@ -2193,6 +2542,70 @@ const GBP_CHECKLIST = [
 
 const CHECKLIST_FIELDS = GBP_CHECKLIST.map(c => c.field)
 
+const AUTO_CHECK_FIELDS = ['isClaimed', 'websiteLinked', 'phoneListened', 'hoursComplete', 'secondaryCategoriesSet', 'has50Reviews', 'ratingAbove4']
+const HUMAN_CHECK_FIELDS = ['respondedToReviews', 'photoRecentMonth', 'postRecentWeek', 'qaActive', 'servicesListed', 'serviceAreaConfigured', 'specialHoursUpdated', 'primaryCategoryCorrect', 'descriptionComplete']
+
+const GBP_FIELD_LABELS = {
+  isClaimed:              'Profile Claimed',
+  websiteLinked:          'Website Linked',
+  phoneListened:          'Phone Listed',
+  hoursComplete:          'Hours Complete (M–F)',
+  secondaryCategoriesSet: 'Secondary Categories Set',
+  has50Reviews:           '50+ Reviews',
+  ratingAbove4:           'Rating 4.0+',
+  respondedToReviews:     'Responded to Reviews',
+  photoRecentMonth:       'Photo Added This Month',
+  postRecentWeek:         'Post This Week',
+  qaActive:               'Q&A Active',
+  servicesListed:         'Services Listed',
+  serviceAreaConfigured:  'Service Area Set',
+  specialHoursUpdated:    'Special Hours Updated',
+  primaryCategoryCorrect: 'Primary Category Correct',
+  descriptionComplete:    'Description Complete',
+}
+
+const GBP_FIELD_DESCRIPTIONS = {
+  isClaimed:              'The business owner has verified ownership of this GBP listing with Google.',
+  websiteLinked:          'A website URL is connected to this profile so visitors can click through.',
+  phoneListened:          'A phone number is published on the profile so customers can call directly.',
+  hoursComplete:          'Business hours are set for all weekdays (Mon–Fri). Missing hours hurt search visibility.',
+  secondaryCategoriesSet: 'Additional relevant categories are selected beyond the primary (e.g. Preschool + Day care center). More categories = more search surfaces.',
+  has50Reviews:           'Profiles with 50+ reviews rank significantly higher in local search. Below 50 is a growth opportunity.',
+  ratingAbove4:           'Average star rating is 4.0 or higher. Ratings below 4.0 reduce click-through rates substantially.',
+  respondedToReviews:     'The business has replied to recent customer reviews — signals engagement to Google and prospective parents.',
+  photoRecentMonth:       'At least one new photo was uploaded in the past 30 days. Regular photo activity improves ranking.',
+  postRecentWeek:         'A Google Post was published within the last 7 days. Posts keep the profile active and can surface in search.',
+  qaActive:               'The Q&A section has been populated with common questions and answers. Unanswered Q&As look neglected.',
+  servicesListed:         'Services offered (e.g. Infant care, After-school) are listed in the profile. Helps match search intent.',
+  serviceAreaConfigured:  'Service area radius is configured if the business serves customers at their location.',
+  specialHoursUpdated:    'Holiday or closure hours are set and kept current. Inaccurate hours damage trust.',
+  primaryCategoryCorrect: 'The primary business category (e.g. Preschool) accurately reflects the main service offered.',
+  descriptionComplete:    'The business description is written, published, and uses relevant keywords for the service area.',
+}
+
+function computeChecklistDelta(audit, prevAudit) {
+  const ALL_FIELDS = [...AUTO_CHECK_FIELDS, ...HUMAN_CHECK_FIELDS]
+  let improved = 0, regressed = 0, maintained = 0, pending = 0
+  for (const f of ALL_FIELDS) {
+    const cur = audit?.[f]
+    const prev = prevAudit?.[f]
+    if (cur === null || cur === undefined) { pending++; continue }
+    if (cur === true && (prev === null || prev === undefined || prev === false)) improved++
+    else if (cur === false && prev === true) regressed++
+    else maintained++
+  }
+  return { improved, regressed, maintained, pending }
+}
+
+function getFieldDelta(field, lastAudit, prevAudit) {
+  const cur = lastAudit?.[field]
+  const prev = prevAudit?.[field]
+  if (cur === null || cur === undefined) return null
+  if (cur === true && (prev === null || prev === undefined || prev === false)) return 'improved'
+  if (cur === false && prev === true) return 'regressed'
+  return 'unchanged'
+}
+
 function calcGbpScore(form) {
   const answered = CHECKLIST_FIELDS.filter(f => form[f] !== null && form[f] !== undefined)
   const passed   = CHECKLIST_FIELDS.filter(f => form[f] === true)
@@ -2211,9 +2624,286 @@ function GbpScoreBadge({ score }) {
   )
 }
 
+function fmtRelativeDate(date) {
+  if (!date) return null
+  try {
+    const diffMs   = Date.now() - new Date(date).getTime()
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+    if (diffDays === 0)  return 'today'
+    if (diffDays === 1)  return 'yesterday'
+    if (diffDays < 30)  return `${diffDays} days ago`
+    const diffMonths = Math.floor(diffDays / 30)
+    if (diffMonths === 1) return '1 month ago'
+    if (diffMonths < 12)  return `${diffMonths} months ago`
+    const diffYears = Math.floor(diffDays / 365)
+    return diffYears === 1 ? '1 year ago' : `${diffYears} years ago`
+  } catch { return null }
+}
+
 const INPUT_CLS = 'w-full rounded-lg border border-[var(--brand-border)] bg-black/40 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-violet-500/50 focus:outline-none'
 const BTN_CLS   = 'rounded-xl border border-violet-500/40 bg-violet-500/15 px-4 py-2 text-sm font-medium text-violet-300 hover:bg-violet-500/25 disabled:opacity-50 transition'
 const BTN_SM    = 'rounded-lg border border-[var(--brand-border)] bg-black/30 px-3 py-1.5 text-xs font-medium text-gray-300 hover:border-violet-500/40 hover:text-violet-300 transition'
+
+function calcPhotoScore(photoCount, photoRecentMonth) {
+  if (!photoCount || photoCount < 5) return { score: 1, text: 'Very few photos. Add at least 10 to make a strong first impression.' }
+  if (photoCount < 10) return { score: 2, text: `${photoCount} photos — getting started. Aim for 25+ and post monthly.` }
+  if (photoCount < 25 && !photoRecentMonth) return { score: 2, text: `${photoCount} photos but nothing recent. Fresh photos signal activity to Google.` }
+  if (photoCount < 25) return { score: 3, text: `Good start with ${photoCount} photos. Reach 25+ for a stronger score.` }
+  if (photoCount < 50 && !photoRecentMonth) return { score: 3, text: `${photoCount} photos is solid, but you haven\'t posted recently. Monthly photos boost ranking.` }
+  if (photoCount < 50) return { score: 4, text: `Strong — ${photoCount} photos with recent activity. Push to 50+ for a 5/5.` }
+  if (!photoRecentMonth) return { score: 4, text: `Excellent count (${photoCount} photos). Post one new photo this month to hit 5/5.` }
+  return { score: 5, text: `Outstanding! ${photoCount} photos with recent updates — listing looks actively maintained.` }
+}
+
+// ── GBP Checklist Panel ─────────────────────────────────────────────────────
+
+function GBPChecklistPanel({ loc, autoChecks, prevAudit, acronym, onSaved }) {
+  const lastAudit = loc.lastAudit
+  const [pending, setPending] = useState({})
+  const [saving, setSaving] = useState(false)
+  const [flash, setFlash] = useState('')
+  const [autoOpen, setAutoOpen] = useState(false)
+  const [humanOpen, setHumanOpen] = useState(false)
+  const hasPending = Object.keys(pending).length > 0
+
+  // Merge: pending overrides lastAudit
+  function getHumanVal(f) {
+    if (Object.prototype.hasOwnProperty.call(pending, f)) return pending[f]
+    return lastAudit?.[f] ?? null
+  }
+
+  function toggleField(f, val) {
+    // Cycle: null → true → false → null
+    const cur = getHumanVal(f)
+    const next = val !== undefined ? val : (cur === null ? true : cur === true ? false : null)
+    setPending(prev => ({ ...prev, [f]: next }))
+  }
+
+  async function saveHumanFields() {
+    setSaving(true)
+    try {
+      // Build full payload: auto-checks from live data + current human values + pending changes
+      const humanValues = {}
+      for (const f of HUMAN_CHECK_FIELDS) {
+        humanValues[f] = getHumanVal(f)
+      }
+      const payload = {
+        locationId: loc.id,
+        triggerType: 'manual',
+        reviewCount: lastAudit?.reviewCount ?? null,
+        avgRating:   lastAudit?.avgRating   ?? null,
+        photoCount:  lastAudit?.photoCount  ?? null,
+        // carry forward auto-checks from last audit
+        isClaimed:              lastAudit?.isClaimed              ?? autoChecks?.isClaimed              ?? null,
+        websiteLinked:          lastAudit?.websiteLinked          ?? autoChecks?.websiteLinked          ?? null,
+        phoneListened:          lastAudit?.phoneListened          ?? autoChecks?.phoneListened          ?? null,
+        hoursComplete:          lastAudit?.hoursComplete          ?? autoChecks?.hoursComplete          ?? null,
+        secondaryCategoriesSet: lastAudit?.secondaryCategoriesSet ?? autoChecks?.secondaryCategoriesSet ?? null,
+        has50Reviews:           lastAudit?.has50Reviews           ?? autoChecks?.has50Reviews           ?? null,
+        ratingAbove4:           lastAudit?.ratingAbove4           ?? autoChecks?.ratingAbove4           ?? null,
+        ...humanValues,
+      }
+      const res = await fetch(`/api/clients/${acronym}/gbp/audit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) { const j = await res.json(); throw new Error(j.error || 'Save failed') }
+      setPending({})
+      setFlash('Saved!')
+      setTimeout(() => setFlash(''), 3000)
+      onSaved?.()
+    } catch (e) {
+      alert(e.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Stagnation: 3+ audits with any human field always null
+  const stagnantFields = []
+  if (loc.auditHistory && loc.auditHistory.length >= 3) {
+    for (const f of HUMAN_CHECK_FIELDS) {
+      if (loc.auditHistory.every(a => a[f] === null || a[f] === undefined)) {
+        stagnantFields.push(f)
+      }
+    }
+  }
+  const lastAuditDate = lastAudit ? (lastAudit.auditDate || lastAudit.createdAt) : null
+
+  function AutoStatusBadge({ val }) {
+    if (val === true)  return <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 text-[11px] font-medium text-emerald-300">Yes</span>
+    if (val === false) return <span className="inline-flex items-center gap-1 rounded-full border border-rose-500/40 bg-rose-500/15 px-2 py-0.5 text-[11px] font-medium text-rose-300">No</span>
+    return <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-gray-500">—</span>
+  }
+
+  function FieldDelta({ f }) {
+    const delta = prevAudit ? getFieldDelta(f, lastAudit, prevAudit) : null
+    if (delta === 'improved')  return <span className="text-emerald-400 text-[10px] ml-1">▲</span>
+    if (delta === 'regressed') return <span className="text-rose-400 text-[10px] ml-1">▼</span>
+    if (delta === 'unchanged') return <span className="text-gray-600 text-[10px] ml-1">→</span>
+    return null
+  }
+
+  return (
+    <div className="px-4 py-3 border-b border-[var(--brand-border)] space-y-4">
+
+      {/* ── Auto-Verified ── */}
+      <div>
+        {/* Collapsible header */}
+        <button
+          type="button"
+          onClick={() => setAutoOpen(v => !v)}
+          className="flex items-center gap-2 w-full text-left mb-2 group"
+        >
+          <span className={`text-[10px] transition-transform ${autoOpen ? 'rotate-90' : ''} text-gray-500`}>›</span>
+          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide group-hover:text-gray-300 transition">Auto-Verified</span>
+          <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] text-emerald-400">live</span>
+          {/* Summary when collapsed */}
+          {!autoOpen && autoChecks && (
+            <span className="ml-auto text-[10px] text-gray-500">
+              {Object.values(autoChecks).filter(v => v === true).length}/{AUTO_CHECK_FIELDS.length} passing
+            </span>
+          )}
+        </button>
+        {autoOpen && (
+          <div className="grid grid-cols-1 gap-1.5">
+            {AUTO_CHECK_FIELDS.map(f => (
+              <div key={f} className="rounded-lg border border-white/[0.07] bg-black/20 px-3 py-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium text-gray-200">{GBP_FIELD_LABELS[f]}</span>
+                  <AutoStatusBadge val={autoChecks?.[f] ?? null} />
+                </div>
+                <p className="mt-0.5 text-[11px] text-gray-500 leading-snug">{GBP_FIELD_DESCRIPTIONS[f]}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── Needs Human Review ── */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <button
+            type="button"
+            onClick={() => setHumanOpen(v => !v)}
+            className="flex items-center gap-2 group"
+          >
+            <span className={`text-[10px] transition-transform ${humanOpen ? 'rotate-90' : ''} text-gray-500`}>›</span>
+            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide group-hover:text-gray-300 transition">Needs Human Review</span>
+            {/* Summary when collapsed */}
+            {!humanOpen && (
+              <span className="text-[10px] text-gray-500">
+                {HUMAN_CHECK_FIELDS.filter(f => getHumanVal(f) === true).length}/{HUMAN_CHECK_FIELDS.length} reviewed
+              </span>
+            )}
+          </button>
+          {hasPending && (
+            <button
+              onClick={saveHumanFields}
+              disabled={saving}
+              className="rounded-full border border-violet-500/40 bg-violet-500/15 px-2.5 py-0.5 text-[10px] font-semibold text-violet-300 hover:bg-violet-500/25 transition disabled:opacity-50"
+            >
+              {saving ? 'Saving…' : flash ? flash : 'Save changes'}
+            </button>
+          )}
+          {!hasPending && flash && <span className="text-[10px] text-emerald-400">{flash}</span>}
+        </div>
+        {humanOpen && (
+        <div className="grid grid-cols-1 gap-1.5">
+          {HUMAN_CHECK_FIELDS.map(f => {
+            const val = getHumanVal(f)
+            const isPending = Object.prototype.hasOwnProperty.call(pending, f)
+            return (
+              <div key={f} className={`rounded-lg border px-3 py-2 transition ${
+                isPending ? 'border-violet-500/40 bg-violet-500/5' : 'border-white/[0.07] bg-black/20'
+              }`}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1 min-w-0">
+                    <span className="text-xs font-medium text-gray-200 truncate">{GBP_FIELD_LABELS[f]}</span>
+                    <FieldDelta f={f} />
+                  </div>
+                  {/* Yes / No / — toggle */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => toggleField(f, true)}
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-medium border transition ${
+                        val === true
+                          ? 'border-emerald-500/60 bg-emerald-500/20 text-emerald-300'
+                          : 'border-white/10 bg-white/5 text-gray-500 hover:border-emerald-500/40 hover:text-emerald-400'
+                      }`}
+                    >Yes</button>
+                    <button
+                      onClick={() => toggleField(f, false)}
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-medium border transition ${
+                        val === false
+                          ? 'border-rose-500/60 bg-rose-500/20 text-rose-300'
+                          : 'border-white/10 bg-white/5 text-gray-500 hover:border-rose-500/40 hover:text-rose-400'
+                      }`}
+                    >No</button>
+                    <button
+                      onClick={() => toggleField(f, null)}
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-medium border transition ${
+                        val === null
+                          ? 'border-amber-500/50 bg-amber-500/15 text-amber-300'
+                          : 'border-white/10 bg-white/5 text-gray-500 hover:border-amber-500/30 hover:text-amber-400'
+                      }`}
+                    >?</button>
+                  </div>
+                </div>
+                <p className="mt-0.5 text-[11px] text-gray-500 leading-snug">{GBP_FIELD_DESCRIPTIONS[f]}</p>
+              </div>
+            )
+          })}
+        </div>
+        )}
+      </div>
+
+      {/* Stagnation warning */}
+      {stagnantFields.length > 0 && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5">
+          <div className="text-xs font-semibold text-amber-300 mb-1">
+            ⚠️ {stagnantFields.length} field{stagnantFields.length !== 1 ? 's' : ''} have never been filled in across {loc.auditHistory.length} audits.
+            {lastAuditDate && <span className="text-amber-400/70 ml-1.5 font-normal">Last audit: {fmtDate(lastAuditDate)}</span>}
+          </div>
+          <div className="text-xs text-amber-200/70">
+            {stagnantFields.map(f => GBP_FIELD_LABELS[f]).join(' · ')}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function HealthArcGauge({ score, passed, total }) {
+  const pct = Math.min(Math.max(score / 100, 0), 1)
+  const r = 36, cx = 50, cy = 52
+  const toAngle = a => ({ x: cx + r * Math.cos((a - 90) * Math.PI / 180), y: cy + r * Math.sin((a - 90) * Math.PI / 180) })
+  const startDeg = 210, totalDeg = 240
+  const start = toAngle(startDeg)
+  const end = toAngle(startDeg + totalDeg)
+  const activeDeg = startDeg + totalDeg * pct
+  const activeEnd = toAngle(activeDeg)
+  const largeArc = (activeDeg - startDeg) > 180 ? 1 : 0
+  const trackD = `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${r} ${r} 0 1 1 ${end.x.toFixed(2)} ${end.y.toFixed(2)}`
+  const activeD = pct > 0 ? `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${r} ${r} 0 ${largeArc} 1 ${activeEnd.x.toFixed(2)} ${activeEnd.y.toFixed(2)}` : ''
+  const color = score >= 80 ? '#10b981' : score >= 50 ? '#f59e0b' : '#f43f5e'
+  const glow = score >= 80 ? 'drop-shadow(0 0 5px rgba(16,185,129,0.55))' : score >= 50 ? 'drop-shadow(0 0 5px rgba(245,158,11,0.55))' : 'drop-shadow(0 0 5px rgba(244,63,94,0.55))'
+  return (
+    <div className="flex items-center gap-3">
+      <svg width={96} height={70} viewBox="0 0 100 70" style={{ overflow: 'visible', flexShrink: 0 }}>
+        <path d={trackD} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="5" strokeLinecap="round" />
+        {activeD && <path d={activeD} fill="none" stroke={color} strokeWidth="5" strokeLinecap="round" style={{ filter: glow, transition: 'all 0.4s ease' }} />}
+        <text x={cx} y={cy - 2} textAnchor="middle" fill="white" fontSize="19" fontWeight="700" fontFamily="system-ui,sans-serif">{score}</text>
+        <text x={cx} y={cy + 12} textAnchor="middle" fill="rgba(156,163,175,0.8)" fontSize="8" fontFamily="system-ui,sans-serif" letterSpacing="0.14em">HEALTH</text>
+      </svg>
+      <div className="text-xs">
+        <div className="text-white font-semibold text-sm">{passed}/{total}</div>
+        <div className="text-gray-500">checks passing</div>
+      </div>
+    </div>
+  )
+}
 
 function GBPTab({ profile, acronym, user }) {
   const isAdmin = ['admin', 'superadmin'].includes(user?.role)
@@ -2226,6 +2916,24 @@ function GBPTab({ profile, acronym, user }) {
   const [activeAuditLocationId,setActiveAuditLocationId]= useState(null)
   const [expandedHistory,      setExpandedHistory]      = useState(null)
   const [saving,               setSaving]               = useState(false)
+  const [autoAuditing,         setAutoAuditing]         = useState(new Set())
+  const [autoAuditFlash,       setAutoAuditFlash]       = useState(new Set())
+
+  // Inline editing state
+  const [editingNickname, setEditingNickname] = useState(null)  // locationId or null
+  const [editingAddress,  setEditingAddress]  = useState(null)  // locationId or null
+  const [nicknameDraft,   setNicknameDraft]   = useState('')
+  const [addressDraft,    setAddressDraft]    = useState({ address: '', city: '', state: '' })
+
+  // Location verification panel state
+  const [verifyingLocId,  setVerifyingLocId]  = useState(null)  // locationId being verified
+  const [verifyUrl,       setVerifyUrl]       = useState('')
+  const [verifyPreview,   setVerifyPreview]   = useState(null)  // { name, address } or null
+  const [verifyError,     setVerifyError]     = useState('')
+  const [verifyLoading,   setVerifyLoading]   = useState(false)
+
+  // Live data (rating/reviews from DataForSEO) keyed by locationId
+  const [liveData,        setLiveData]        = useState({})   // { [locId]: { rating, reviewCount, resolvedAt } | 'loading' | 'error' }
 
   // Audit form state
   const emptyAudit = () => ({
@@ -2260,6 +2968,32 @@ function GBPTab({ profile, acronym, user }) {
   }
 
   useEffect(() => { loadGbp() }, [acronym])
+
+  // Fetch live rating/reviews from DataForSEO for a single location
+  async function fetchLiveData(locId) {
+    setLiveData(prev => ({ ...prev, [locId]: 'loading' }))
+    try {
+      const res = await fetch(`/api/clients/${acronym}/gbp/${locId}/live-data`)
+      const j = await res.json()
+      // status:unverified means no Place ID set — don’t show wrong data
+      if (j.status === 'unverified') {
+        setLiveData(prev => ({ ...prev, [locId]: 'unverified' }))
+        return
+      }
+      if (!res.ok) throw new Error(j.error || 'Failed')
+      setLiveData(prev => ({ ...prev, [locId]: j }))
+    } catch (e) {
+      setLiveData(prev => ({ ...prev, [locId]: 'error' }))
+    }
+  }
+
+  // Auto-fetch live data for all locations once loaded
+  useEffect(() => {
+    if (!gbpData?.locations?.length) return
+    for (const loc of gbpData.locations) {
+      if (!liveData[loc.id]) fetchLiveData(loc.id)
+    }
+  }, [gbpData])
 
   function openAuditForm(loc) {
     setActiveAuditLocationId(loc.id)
@@ -2321,8 +3055,124 @@ function GBPTab({ profile, acronym, user }) {
     }
   }
 
+  async function saveNickname(locId) {
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/clients/${acronym}/gbp/locations`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ locationId: locId, nickname: nicknameDraft }),
+      })
+      if (!res.ok) { const j = await res.json(); throw new Error(j.error || 'Save failed') }
+      setEditingNickname(null)
+      await loadGbp()
+    } catch (e) { alert(e.message) } finally { setSaving(false) }
+  }
+
+  async function saveAddress(locId) {
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/clients/${acronym}/gbp/locations`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ locationId: locId, ...addressDraft }),
+      })
+      if (!res.ok) { const j = await res.json(); throw new Error(j.error || 'Save failed') }
+      setEditingAddress(null)
+      await loadGbp()
+    } catch (e) { alert(e.message) } finally { setSaving(false) }
+  }
+
+  async function runAutoAudit(locId) {
+    setAutoAuditing(prev => new Set([...prev, locId]))
+    try {
+      const res = await fetch(`/api/clients/${acronym}/gbp/${locId}/auto-audit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      if (!res.ok) { const j = await res.json().catch(() => ({})); throw new Error(j.error || 'Auto-audit failed') }
+      await loadGbp()
+      setAutoAuditFlash(prev => new Set([...prev, locId]))
+      setTimeout(() => setAutoAuditFlash(prev => { const n = new Set(prev); n.delete(locId); return n }), 3000)
+    } catch (e) {
+      alert(e.message || 'Auto-audit failed')
+    } finally {
+      setAutoAuditing(prev => { const n = new Set(prev); n.delete(locId); return n })
+    }
+  }
+
   function setAuditField(field, value) {
     setAuditForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  // Extract Place ID or CID from a Google Maps URL
+  function extractPlaceId(url) {
+    if (!url) return null
+    // Format: maps?cid=1234567890
+    const cidMatch = url.match(/[?&]cid=(\d+)/)
+    if (cidMatch) return { type: 'cid', value: cidMatch[1] }
+    // Format: /maps/place/...!1sChIJ...
+    const placeMatch = url.match(/!1s(ChIJ[A-Za-z0-9_-]+)/)
+    if (placeMatch) return { type: 'place_id', value: placeMatch[1] }
+    // Format: place_id=ChIJ...
+    const qMatch = url.match(/place_id=(ChIJ[A-Za-z0-9_-]+)/)
+    if (qMatch) return { type: 'place_id', value: qMatch[1] }
+    return null
+  }
+
+  async function handleVerifyUrl(locId) {
+    if (!verifyUrl.trim()) return
+    setVerifyLoading(true)
+    setVerifyError('')
+    setVerifyPreview(null)
+    try {
+      await saveMapsUrl(locId, verifyUrl.trim())
+      // Fetch live data to get the preview
+      const res = await fetch(`/api/clients/${acronym}/gbp/${locId}/live-data`)
+      const j = await res.json()
+      if (j.status === 'unverified') {
+        setVerifyError('Could not resolve this URL. Make sure it\'s a Google Maps URL (maps.google.com or google.com/maps)')
+      } else if (j.title) {
+        setVerifyPreview({ name: j.title, address: j.address })
+        setLiveData(prev => ({ ...prev, [locId]: j }))
+        setVerifyingLocId(null)
+        setVerifyUrl('')
+      } else {
+        setVerifyError('URL saved but could not confirm the business. Try a different Maps URL.')
+      }
+    } catch (e) {
+      setVerifyError(e.message || 'Failed to verify')
+    } finally {
+      setVerifyLoading(false)
+    }
+  }
+
+  async function saveMapsUrl(locId, mapsUrl) {
+    const extracted = extractPlaceId(mapsUrl)
+    const payload = { locationId: locId, gbpUrl: mapsUrl.trim() }
+    if (extracted?.type === 'place_id') payload.nickname = undefined  // don't overwrite nickname
+    if (extracted?.type === 'place_id') {
+      // Store place_id directly via DB update through the route
+      payload.gbpUrl = mapsUrl.trim()
+    }
+    setSaving(true)
+    try {
+      // Save the Maps URL as gbpUrl
+      const res = await fetch(`/api/clients/${acronym}/gbp/locations`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ locationId: locId, gbpUrl: mapsUrl.trim() }),
+      })
+      if (!res.ok) { const j = await res.json(); throw new Error(j.error || 'Save failed') }
+      // If we extracted a place ID, store it too
+      if (extracted?.type === 'place_id') {
+        await fetch(`/api/clients/${acronym}/gbp/${locId}/live-data`)
+      }
+      await loadGbp()
+      // Trigger live data refresh
+      setLiveData(prev => { const n = { ...prev }; delete n[locId]; return n })
+      setTimeout(() => fetchLiveData(locId), 500)
+    } catch (e) { alert(e.message) } finally { setSaving(false) }
   }
 
   const liveScore = calcGbpScore(auditForm)
@@ -2360,61 +3210,548 @@ function GBPTab({ profile, acronym, user }) {
         </Empty>
       )}
 
-      {/* Locations */}
-      {!gbpLoading && !gbpErr && gbpData?.locations?.map(loc => {
+      {/* Multi-location summary table (2+ locations only) */}
+      {!gbpLoading && !gbpErr && gbpData?.locations?.length >= 2 && (
+        <div className="rounded-2xl border border-[var(--brand-border)] bg-black/20 overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-[var(--brand-border)]">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Location Summary</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-[var(--brand-border)]">
+                  <th className="px-4 py-2 text-left text-gray-500 font-medium">Location</th>
+                  <th className="px-3 py-2 text-center text-gray-500 font-medium">⭐ Rating</th>
+                  <th className="px-3 py-2 text-center text-gray-500 font-medium">Reviews</th>
+                  <th className="px-3 py-2 text-center text-gray-500 font-medium">📸 Photos</th>
+                  <th className="px-3 py-2 text-center text-gray-500 font-medium">Health Score</th>
+                  <th className="px-3 py-2 text-center text-gray-500 font-medium">Last Audited</th>
+                </tr>
+              </thead>
+              <tbody>
+                {gbpData.locations.map(loc => {
+                  const la = loc.latestAudit || loc.lastAudit
+                  const rel = la ? fmtRelativeDate(la.auditDate || la.createdAt) : null
+                  return (
+                    <tr key={loc.id} className="border-b border-[var(--brand-border)] last:border-0 hover:bg-white/5 transition">
+                      <td className="px-4 py-2">
+                        <a href={`#gbp-loc-${loc.id}`}
+                           onClick={e => { e.preventDefault(); document.getElementById(`gbp-loc-${loc.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}
+                           className="font-semibold text-white hover:text-violet-300 transition cursor-pointer">
+                          {loc.locationName}
+                        </a>
+                        {loc.city && <div className="text-gray-600 text-xs">{[loc.city, loc.state].filter(Boolean).join(', ')}</div>}
+                      </td>
+                      <td className="px-3 py-2 text-center text-gray-300">
+                        {(() => { const ld = liveData[loc.id]; const r = (ld && ld !== 'loading' && ld !== 'error') ? ld.rating : null; const v = r ?? la?.avgRating; return v != null ? <span>{Number(v).toFixed(1)} ⭐{r != null && <span className="text-[9px] text-emerald-500 ml-1">live</span>}</span> : <span className="text-gray-600">—</span> })()}
+                      </td>
+                      <td className="px-3 py-2 text-center text-gray-300">
+                        {(() => { const ld = liveData[loc.id]; const r = (ld && ld !== 'loading' && ld !== 'error') ? ld.reviewCount : null; const v = r ?? la?.reviewCount; return v != null ? <span>{Number(v).toLocaleString()}{r != null && <span className="text-[9px] text-emerald-500 ml-1">live</span>}</span> : <span className="text-gray-600">—</span> })()}
+                      </td>
+                      <td className="px-3 py-2 text-center text-gray-300">
+                        {(() => {
+                          const ld = liveData[loc.id]
+                          const livePhotos = (ld && ld !== 'loading' && ld !== 'error' && ld !== 'unverified') ? ld.totalPhotos : null
+                          const count = la?.photoCount ?? livePhotos ?? loc.liveDataSnapshot?.totalPhotos ?? null
+                          const isLive = count != null && la?.photoCount == null
+                          return count != null
+                            ? <span>{count}{isLive && <span className="text-[9px] text-emerald-500 ml-1">live</span>}</span>
+                            : <span className="text-gray-600">—</span>
+                        })()}
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        {(() => {
+                          const auditScore = la?.compositeScore ?? la?.score ?? null
+                          if (auditScore != null) return <GbpScoreBadge score={auditScore} />
+                          // Derive partial score from live autoChecks when no audit exists
+                          const ld = liveData[loc.id]
+                          const ac = (ld && ld !== 'loading' && ld !== 'error' && ld !== 'unverified')
+                            ? ld.autoChecks
+                            : loc.liveDataSnapshot?.autoChecks
+                          if (!ac) return <GbpScoreBadge score={null} />
+                          const vals = Object.values(ac).filter(v => v !== null && v !== undefined)
+                          if (!vals.length) return <GbpScoreBadge score={null} />
+                          const derived = Math.round((vals.filter(v => v === true).length / vals.length) * 100)
+                          return <span className="inline-flex flex-col items-center gap-0.5"><GbpScoreBadge score={derived} /><span className="text-[9px] text-gray-600">partial</span></span>
+                        })()}
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        {rel
+                          ? <span className={parseInt(rel) > 30 ? 'text-amber-400' : 'text-gray-400'}>{rel}</span>
+                          : <span className="text-rose-400">Never</span>
+                        }
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Locations — tiled grid */}
+      {!gbpLoading && !gbpErr && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {gbpData?.locations?.map(loc => {
         const isAuditing = activeAuditLocationId === loc.id
         const histOpen   = expandedHistory === loc.id
         const lastAudit  = loc.lastAudit
 
         return (
-          <div key={loc.id} className="rounded-2xl border border-[var(--brand-border)] bg-black/20 overflow-hidden">
+          <div key={loc.id} id={`gbp-loc-${loc.id}`} className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.04] to-black/60 overflow-hidden shadow-lg">
 
-            {/* Location header row */}
-            <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-[var(--brand-border)]">
+            {/* ── Section A: Header (nickname + last audited) ── */}
+            <div className="px-4 pt-4 pb-2 flex items-start justify-between gap-2">
+              {/* Editable nickname */}
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-white truncate">{loc.name}</div>
-                {loc.address && (
-                  <div className="text-xs text-gray-500 mt-0.5">
-                    {[loc.address, loc.city, loc.state].filter(Boolean).join(', ')}
+                {isAdmin && editingNickname === loc.id ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      autoFocus
+                      value={nicknameDraft}
+                      onChange={e => setNicknameDraft(e.target.value)}
+                      onBlur={() => saveNickname(loc.id)}
+                      onKeyDown={e => { if (e.key === 'Enter') saveNickname(loc.id); if (e.key === 'Escape') setEditingNickname(null) }}
+                      placeholder="Add nickname…"
+                      className="rounded-lg border border-violet-500/50 bg-black/40 px-2.5 py-1 text-sm text-white placeholder-gray-600 focus:border-violet-400 focus:outline-none"
+                    />
+                    {saving && <span className="text-xs text-gray-500">Saving…</span>}
+                  </div>
+                ) : (
+                  <div
+                    className={`font-semibold text-white truncate ${isAdmin ? 'cursor-pointer hover:text-violet-300 transition' : ''}`}
+                    onClick={() => { if (isAdmin) { setNicknameDraft(loc.locationName || ''); setEditingNickname(loc.id) } }}
+                    title={isAdmin ? 'Click to edit nickname' : undefined}
+                  >
+                    {loc.locationName || <span className="text-gray-600 font-normal italic">Add nickname…</span>}
                   </div>
                 )}
-                {loc.gbpUrl && (
-                  <a href={loc.gbpUrl} target="_blank" rel="noreferrer"
-                     className="text-xs text-violet-400 hover:underline mt-0.5 block">
-                    View on Google ↗
-                  </a>
-                )}
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={() => isAuditing ? setActiveAuditLocationId(null) : openAuditForm(loc)}
-                  className={BTN_SM}
-                >
-                  {isAuditing ? 'Cancel Audit' : 'Run Audit'}
-                </button>
-                {isAdmin && (
-                  <button className={BTN_SM} disabled title="Edit — coming soon">Edit</button>
-                )}
+              {/* Last audited badge */}
+              <div className="shrink-0 text-right">
+                {(() => {
+                const auditTs = lastAudit ? (lastAudit.auditDate || lastAudit.createdAt) : null
+                const days    = auditTs ? Math.floor((Date.now() - new Date(auditTs).getTime()) / (1000 * 60 * 60 * 24)) : null
+                const rel     = fmtRelativeDate(auditTs)
+                if (!lastAudit) return (
+                  <span className="shrink-0 rounded-full bg-rose-500/15 border border-rose-500/30 px-2.5 py-0.5 text-xs text-rose-400">Never audited</span>
+                )
+                return (
+                  <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs border ${
+                    days != null && days > 30
+                      ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                      : 'bg-white/5 border-[var(--brand-border)] text-gray-500'
+                  }`}>
+                    Audited {rel}{days != null && days > 30 ? ' ⚠️' : ''}
+                  </span>
+                )
+                })()}
               </div>
             </div>
 
-            {/* Last audit summary */}
-            <div className="px-4 py-2.5 text-xs text-gray-400 flex flex-wrap gap-x-4 gap-y-1">
-              {lastAudit ? (
+            {/* ── Section B: Address + GBP link (compact) ── */}
+            <div className="px-4 pb-3 text-xs text-gray-500">
+              {isAdmin && editingAddress === loc.id ? (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    <input
+                      autoFocus
+                      value={addressDraft.address}
+                      onChange={e => setAddressDraft(p => ({ ...p, address: e.target.value }))}
+                      placeholder="Street address"
+                      className="flex-1 min-w-[180px] rounded-lg border border-violet-500/50 bg-black/40 px-2.5 py-1 text-sm text-white placeholder-gray-600 focus:border-violet-400 focus:outline-none"
+                    />
+                    <input
+                      value={addressDraft.city}
+                      onChange={e => setAddressDraft(p => ({ ...p, city: e.target.value }))}
+                      placeholder="City"
+                      className="w-32 rounded-lg border border-violet-500/50 bg-black/40 px-2.5 py-1 text-sm text-white placeholder-gray-600 focus:border-violet-400 focus:outline-none"
+                    />
+                    <input
+                      value={addressDraft.state}
+                      onChange={e => setAddressDraft(p => ({ ...p, state: e.target.value }))}
+                      placeholder="State"
+                      className="w-20 rounded-lg border border-violet-500/50 bg-black/40 px-2.5 py-1 text-sm text-white placeholder-gray-600 focus:border-violet-400 focus:outline-none"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => saveAddress(loc.id)} disabled={saving} className={BTN_SM}>{saving ? 'Saving…' : 'Save'}</button>
+                    <button onClick={() => setEditingAddress(null)} className={BTN_SM}>Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div
+                    className={`flex items-center gap-1.5 text-sm text-gray-400 ${isAdmin ? 'cursor-pointer hover:text-gray-200 transition' : ''}`}
+                    onClick={() => { if (isAdmin) { setAddressDraft({ address: loc.address || '', city: loc.city || '', state: loc.state || '' }); setEditingAddress(loc.id) } }}
+                    title={isAdmin ? 'Click to edit address' : undefined}
+                  >
+                    <span className="text-gray-600">📍</span>
+                    {[loc.address, loc.city, loc.state].filter(Boolean).join(', ') || (
+                      <span className="italic text-gray-600">Add address…</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    {loc.gbpUrl && (
+                      <a href={loc.gbpUrl} target="_blank" rel="noreferrer"
+                         className="text-xs text-violet-400 hover:underline">
+                        View on Google ↗
+                      </a>
+                    )}
+                    {isAdmin && (
+                      <button
+                        onClick={() => {
+                          setVerifyingLocId(verifyingLocId === loc.id ? null : loc.id)
+                          setVerifyUrl(loc.gbpUrl && !loc.gbpUrl.includes('share.google') ? loc.gbpUrl : '')
+                          setVerifyError('')
+                          setVerifyPreview(null)
+                        }}
+                        className="text-xs text-gray-600 hover:text-violet-400 transition underline"
+                      >
+                        {loc.gbpPlaceId ? '✓ Verified' : (loc.gbpUrl && !loc.gbpUrl.includes('share.google')) ? '⚠️ Verify URL' : '+ Verify Location'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ── Location Verification Panel ── */}
+            {isAdmin && verifyingLocId === loc.id && (
+              <div className="px-4 py-4 border-b border-amber-500/20 bg-amber-500/5 space-y-3">
+                <div className="flex items-start justify-between">
+                  <div className="text-xs font-semibold text-amber-300">🗺️ Verify Google Business Profile Location</div>
+                  <button onClick={() => setVerifyingLocId(null)} className="text-gray-600 hover:text-gray-400 text-xs">✕</button>
+                </div>
+
+                {/* Instructions */}
+                <div className="rounded-xl border border-white/10 bg-black/30 px-3 py-3 space-y-1.5 text-xs text-gray-400">
+                  <div className="text-gray-300 font-medium mb-2">How to get the Maps URL:</div>
+                  <div className="flex gap-2"><span className="text-amber-400 font-bold shrink-0">1.</span><span>Go to <span className="text-violet-400">maps.google.com</span> and search for <span className="text-white font-medium">{loc.locationName || 'this location'}</span></span></div>
+                  <div className="flex gap-2"><span className="text-amber-400 font-bold shrink-0">2.</span><span>Click the business in the results to open its listing</span></div>
+                  <div className="flex gap-2"><span className="text-amber-400 font-bold shrink-0">3.</span><span>Copy the URL from your browser&apos;s address bar — it should look like:<br/><span className="font-mono text-[10px] text-gray-500 block mt-1">https://www.google.com/maps/place/Business+Name/...</span><span className="font-mono text-[10px] text-gray-500 block">https://maps.google.com/maps?cid=...</span></span></div>
+                  <div className="flex gap-2"><span className="text-amber-400 font-bold shrink-0">4.</span><span>Paste it below — we&apos;ll verify the match and lock in live data</span></div>
+                </div>
+
+                {/* URL input */}
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={verifyUrl}
+                    onChange={e => { setVerifyUrl(e.target.value); setVerifyError('') }}
+                    placeholder="https://www.google.com/maps/place/..."
+                    className="flex-1 rounded-lg border border-[var(--brand-border)] bg-black/40 px-3 py-2 text-xs text-white placeholder-gray-600 focus:border-amber-500/50 focus:outline-none font-mono"
+                    onKeyDown={e => e.key === 'Enter' && handleVerifyUrl(loc.id)}
+                  />
+                  <button
+                    onClick={() => handleVerifyUrl(loc.id)}
+                    disabled={verifyLoading || !verifyUrl.trim()}
+                    className="rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-xs font-medium text-amber-300 hover:bg-amber-500/25 disabled:opacity-50 transition whitespace-nowrap"
+                  >
+                    {verifyLoading ? 'Verifying…' : 'Verify & Save'}
+                  </button>
+                </div>
+
+                {/* Error */}
+                {verifyError && (
+                  <div className="text-xs text-rose-400">{verifyError}</div>
+                )}
+
+                {/* Success preview */}
+                {verifyPreview && (
+                  <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs">
+                    <span className="text-emerald-400 font-medium">✓ Verified: </span>
+                    <span className="text-white">{verifyPreview.name}</span>
+                    {verifyPreview.address && <span className="text-gray-400"> — {verifyPreview.address}</span>}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Section 3: Instrument dials ── */}
+            {(() => {
+              const live = liveData[loc.id]
+              const isUnverified = live === 'unverified'
+              const hasLive = live && live !== 'loading' && live !== 'error' && live !== 'unverified'
+              const isLiveLoading = live === 'loading'
+              // Only use audit data for rating/reviews — never show fuzzy-matched live data as truth
+              const displayRating  = hasLive ? live.rating  : (lastAudit?.avgRating  != null ? Number(lastAudit.avgRating)  : null)
+              const displayReviews = hasLive ? live.reviewCount : (lastAudit?.reviewCount != null ? lastAudit.reviewCount : null)
+              const livePhotoCount = hasLive ? live.totalPhotos : null
+              const photoCount     = livePhotoCount ?? lastAudit?.photoCount ?? null
+              const photoInfo      = photoCount != null ? calcPhotoScore(photoCount, lastAudit?.photoRecentMonth) : null
+              const health         = lastAudit?.compositeScore ?? null
+              const passed         = CHECKLIST_FIELDS.filter(f => lastAudit?.[f] === true).length
+              const ttl            = CHECKLIST_FIELDS.length
+              return (
                 <>
-                  <span>
-                    Last audit: <GbpScoreBadge score={lastAudit.score} />{' '}
-                    <span className="text-gray-500">— {fmtDate(lastAudit.createdAt)}</span>
-                  </span>
-                  {lastAudit.avgRating != null && (
-                    <span>⭐ {Number(lastAudit.avgRating).toFixed(1)}{lastAudit.reviewCount != null ? ` (${lastAudit.reviewCount} reviews)` : ''}</span>
+                  {/* Three instrument dials */}
+                  <div className="grid grid-cols-3 gap-px border-y border-white/[0.06]">
+                    <div className="flex flex-col items-center justify-center py-4 bg-black/25">
+                      <div className="text-2xl font-bold tracking-tight text-white leading-none">
+                        {isLiveLoading ? <span className="text-gray-600 text-lg">···</span>
+                          : displayRating != null ? Number(displayRating).toFixed(1)
+                          : <span className="text-gray-600 text-lg">—</span>}
+                      </div>
+                      <div className="text-[10px] uppercase tracking-[0.15em] text-gray-500 mt-1">⭐ Rating</div>
+                      {hasLive && <div className="text-[9px] text-emerald-500 mt-0.5">live</div>}
+                      {isUnverified && <div className="text-[9px] text-amber-500 mt-0.5">verify ↗</div>}
+                    </div>
+                    <div className="flex flex-col items-center justify-center py-4 bg-black/25 border-x border-white/[0.06]">
+                      <div className="text-2xl font-bold tracking-tight text-white leading-none">
+                        {isLiveLoading ? <span className="text-gray-600 text-lg">···</span>
+                          : displayReviews != null ? Number(displayReviews).toLocaleString()
+                          : <span className="text-gray-600 text-lg">—</span>}
+                      </div>
+                      <div className="text-[10px] uppercase tracking-[0.15em] text-gray-500 mt-1">💬 Reviews</div>
+                      {hasLive && <div className="text-[9px] text-emerald-500 mt-0.5">live</div>}
+                      {isUnverified && <div className="text-[9px] text-amber-500 mt-0.5">verify ↗</div>}
+                    </div>
+                    <div className="flex flex-col items-center justify-center py-4 bg-black/25">
+                      {photoInfo ? (
+                        <>
+                          <div className={`text-2xl font-bold tracking-tight leading-none ${photoInfo.score <= 2 ? 'text-rose-400' : photoInfo.score === 3 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                            {photoInfo.score}<span className="text-sm text-gray-600">/5</span>
+                          </div>
+                          <div className="text-[10px] uppercase tracking-[0.15em] text-gray-500 mt-1">📷 Photos</div>
+                          {livePhotoCount != null && <div className="text-[9px] text-emerald-500 mt-0.5">{livePhotoCount} live</div>}
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-2xl font-bold tracking-tight text-gray-600 leading-none">—</div>
+                          <div className="text-[10px] uppercase tracking-[0.15em] text-gray-500 mt-1">📷 Photos</div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Unverified location banner */}
+                  {isUnverified && isAdmin && (
+                    <div className="px-4 py-2 border-b border-white/[0.06] flex items-center gap-2">
+                      <span className="text-[11px] text-amber-400">⚠️ Paste a Google Maps URL to enable live ratings & reviews</span>
+                    </div>
                   )}
-                  {lastAudit.photoCount != null && (
-                    <span>📸 {lastAudit.photoCount} photos</span>
+
+                  {/* Health arc gauge */}
+                  {health != null && (
+                    <div className="px-4 py-3 border-b border-white/[0.06]">
+                      <HealthArcGauge score={health} passed={passed} total={ttl} />
+                    </div>
+                  )}
+
+                  {/* Star distribution */}
+                  {hasLive && live.ratingDistribution && (
+                    <div className="px-4 py-3 border-b border-white/[0.06] space-y-1.5">
+                      {[5, 4, 3, 2, 1].map(star => {
+                        const cnt = live.ratingDistribution[star] ?? 0
+                        const tot2 = Object.values(live.ratingDistribution).reduce((a, b) => a + b, 0)
+                        const pct2 = tot2 > 0 ? Math.round((cnt / tot2) * 100) : 0
+                        const barColor = star >= 4 ? 'bg-emerald-500' : star === 3 ? 'bg-amber-500' : 'bg-rose-500'
+                        return (
+                          <div key={star} className="flex items-center gap-2 text-xs">
+                            <span className="w-5 text-right text-gray-600">{star}★</span>
+                            <div className="flex-1 h-1 rounded-full bg-white/10 overflow-hidden">
+                              <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct2}%` }} />
+                            </div>
+                            <span className="w-5 text-right text-gray-600">{cnt}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {/* Photo improvement text */}
+                  {photoInfo && (
+                    <div className="px-4 py-2 border-b border-white/[0.06]">
+                      <p className="text-[11px] italic text-gray-500">{photoInfo.text}</p>
+                    </div>
                   )}
                 </>
-              ) : (
-                <span className="text-gray-600">No audits yet</span>
+              )
+            })()}
+
+            {/* ── GBP Details Panel ── */}
+            {(() => {
+              const live = liveData[loc.id]
+              const hasLive = live && live !== 'loading' && live !== 'error'
+              if (!hasLive) return null
+              return (
+                <div className="px-4 py-3 border-b border-[var(--brand-border)] space-y-3">
+
+                  {/* Category row */}
+                  {live.primaryCategory && (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-xs text-gray-500">Categories:</span>
+                      <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2 py-0.5 text-xs text-violet-300">
+                        {live.primaryCategory}
+                      </span>
+                      {(live.additionalCategories || []).map(cat => (
+                        <span key={cat} className="rounded-full border border-[var(--brand-border)] bg-white/5 px-2 py-0.5 text-xs text-gray-400">
+                          {cat.replace(/_/g, ' ')}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Hours row */}
+                  {live.hours && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-xs text-gray-500">Hours:</span>
+                        {live.currentStatus === 'open'
+                          ? <span className="text-xs text-emerald-400 font-medium">● Open now</span>
+                          : live.currentStatus === 'closed'
+                          ? <span className="text-xs text-rose-400 font-medium">● Closed</span>
+                          : null
+                        }
+                      </div>
+                      <div className="grid grid-cols-4 gap-x-3 gap-y-0.5">
+                        {Object.entries(live.hours).map(([day, hrs]) => (
+                          <div key={day} className="flex items-center gap-1 text-xs">
+                            <span className="text-gray-600 w-7">{day}</span>
+                            <span className={hrs === 'Closed' ? 'text-gray-600' : 'text-gray-300'}>{hrs}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Review snippet */}
+                  {live.reviewSnippet && (
+                    <div className="rounded-xl border border-[var(--brand-border)] bg-black/20 px-3 py-2">
+                      <span className="text-xs italic text-gray-400">💬 {live.reviewSnippet}</span>
+                    </div>
+                  )}
+
+                  {/* Auto-resolved checklist items */}
+                  {live.autoChecks && (
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1.5">Auto-verified from Google:</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {Object.entries(live.autoChecks).map(([key, val]) => {
+                          if (val === null) return null
+                          const labels = {
+                            isClaimed: 'Claimed & verified',
+                            websiteLinked: 'Website linked',
+                            phoneListened: 'Phone listed',
+                            hoursComplete: 'Hours complete',
+                            secondaryCategoriesSet: 'Categories set',
+                            has50Reviews: '50+ reviews',
+                            ratingAbove4: '4.0+ rating',
+                          }
+                          const color = val
+                            ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+                            : 'border-rose-500/30 bg-rose-500/10 text-rose-300'
+                          const icon = val ? '✓' : '✗'
+                          return (
+                            <span key={key} className={`rounded-full border px-2.5 py-0.5 text-xs ${color}`}>
+                              {icon} {labels[key] || key}
+                            </span>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              )
+            })()}
+
+            {/* ── Section 4: Health score bar ── */}
+            {lastAudit && (() => {
+              const score   = lastAudit.compositeScore ?? 0
+              const total   = CHECKLIST_FIELDS.length
+              const passed  = CHECKLIST_FIELDS.filter(f => lastAudit[f] === true).length
+              const barColor  = score >= 80 ? 'bg-emerald-500' : score >= 50 ? 'bg-amber-500' : 'bg-rose-500'
+              const textColor = score >= 80 ? 'text-emerald-400' : score >= 50 ? 'text-amber-400' : 'text-rose-400'
+              return (
+                <div className="px-4 py-2.5 border-b border-[var(--brand-border)]">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-gray-500">Health Score</span>
+                    <span className={`text-xs font-medium ${textColor}`}>{score}/100 · {passed} of {total} checks passing</span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-white/10">
+                    <div className={`h-1.5 rounded-full transition-all ${barColor}`} style={{ width: `${score}%` }} />
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* ── Failing Checks Panel ── */}
+            {lastAudit && (() => {
+              const failingChecks = GBP_CHECKLIST.filter(({ field }) => lastAudit[field] === false)
+              const allPassing = CHECKLIST_FIELDS.every(f => lastAudit[f] !== false)
+              if (allPassing) {
+                return (
+                  <div className="px-4 py-2.5 border-b border-[var(--brand-border)]">
+                    <span className="text-xs text-emerald-400">✅ All checks passing</span>
+                  </div>
+                )
+              }
+              const visible = failingChecks.slice(0, 8)
+              const overflow = failingChecks.length - 8
+              return (
+                <div className="px-4 py-3 border-b border-[var(--brand-border)]">
+                  <div className="text-xs font-medium text-amber-400 mb-2">⚠️ Needs Attention</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {visible.map(({ field, label }) => (
+                      <span key={field} className="rounded-full border border-rose-500/30 bg-rose-500/10 px-2.5 py-0.5 text-xs text-rose-300">
+                        {label}
+                      </span>
+                    ))}
+                    {overflow > 0 && (
+                      <span className="rounded-full border border-gray-600 bg-white/5 px-2.5 py-0.5 text-xs text-gray-400">
+                        +{overflow} more
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* ── Always-Visible Checklist Panel ── */}
+            {(() => {
+              const live = liveData[loc.id]
+              const hasLive = live && live !== 'loading' && live !== 'error' && live !== 'unverified'
+              const autoChecks = hasLive ? live.autoChecks : (loc.liveDataSnapshot?.autoChecks ?? null)
+              const prevAudit = loc.auditHistory?.[1] ?? null
+              return (
+                <GBPChecklistPanel
+                  loc={loc}
+                  autoChecks={autoChecks}
+                  prevAudit={prevAudit}
+                  acronym={acronym}
+                  onSaved={loadGbp}
+                />
+              )
+            })()}
+
+            {/* ── Section 5: Action buttons ── */}
+            <div className="flex items-center gap-2 flex-wrap px-4 py-2.5 border-b border-[var(--brand-border)]">
+              <button
+                onClick={() => runAutoAudit(loc.id)}
+                disabled={autoAuditing.has(loc.id)}
+                className="rounded-lg border border-violet-500/40 bg-violet-500/15 px-3 py-1.5 text-xs font-medium text-violet-300 hover:bg-violet-500/25 disabled:opacity-50 transition"
+              >
+                {autoAuditing.has(loc.id) ? '🤖 Running…' : '🤖 Auto-Audit'}
+              </button>
+              <button
+                onClick={() => isAuditing ? setActiveAuditLocationId(null) : openAuditForm(loc)}
+                className={BTN_SM}
+              >
+                {isAuditing ? 'Cancel Audit' : 'Log Audit'}
+              </button>
+              {lastAudit && (
+                <button
+                  onClick={() => setExpandedHistory(histOpen ? null : loc.id)}
+                  className={BTN_SM}
+                >
+                  View History{loc.auditHistory?.length > 0 ? ` (${loc.auditHistory.length})` : ''}
+                </button>
+              )}
+              {autoAuditFlash.has(loc.id) && (
+                <span className="text-xs text-emerald-400 font-medium">✓ Auto-audit saved!</span>
               )}
             </div>
 
@@ -2544,32 +3881,95 @@ function GBPTab({ profile, acronym, user }) {
               </button>
 
               {histOpen && (
-                <div className="px-4 pb-4">
+                <div className="px-4 pb-4 space-y-4">
                   {!loc.auditHistory?.length ? (
                     <div className="text-xs text-gray-600">No audit history yet.</div>
                   ) : (
-                    <div className="overflow-x-auto rounded-xl border border-[var(--brand-border)]">
-                      <table className="w-full text-xs">
-                        <thead>
-                          <tr className="border-b border-[var(--brand-border)] text-gray-500">
-                            <th className="px-3 py-2 text-left font-medium">Date</th>
-                            <th className="px-3 py-2 text-left font-medium">Trigger</th>
-                            <th className="px-3 py-2 text-left font-medium">Score</th>
-                            <th className="px-3 py-2 text-left font-medium">Notes</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {loc.auditHistory.slice(0, 5).map(audit => (
-                            <tr key={audit.id} className="border-b border-[var(--brand-border)]/50 hover:bg-white/5">
-                              <td className="px-3 py-2 text-gray-300 whitespace-nowrap">{fmtDate(audit.createdAt)}</td>
-                              <td className="px-3 py-2 text-gray-400 capitalize">{(audit.triggerType || '').replace(/-/g, ' ')}</td>
-                              <td className="px-3 py-2"><GbpScoreBadge score={audit.score} /></td>
-                              <td className="px-3 py-2 text-gray-500 max-w-[200px] truncate">{audit.notes || '—'}</td>
+                    <>
+                      {/* Rating Trend Mini Chart */}
+                      {(() => {
+                        const trendData = [...(loc.auditHistory || [])].reverse().map(a => ({
+                          date: new Date(a.auditDate || a.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                          rating: a.avgRating != null ? Number(a.avgRating) : null,
+                          score: a.compositeScore ?? null,
+                        })).filter(d => d.rating != null || d.score != null)
+                        if (trendData.length < 2 || trendData.every(d => d.rating == null)) return null
+                        return (
+                          <div>
+                            <div className="text-xs font-medium text-gray-400 mb-1">Rating Trend</div>
+                            <div className="w-full">
+                              <LineChart width={320} height={120} data={trendData} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
+                                <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} axisLine={false} />
+                                <YAxis domain={[0, 5]} tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} axisLine={false} width={24} />
+                                <Tooltip
+                                  contentStyle={{ background: '#0f0f0f', border: '1px solid #333', borderRadius: 8, fontSize: 11 }}
+                                  labelStyle={{ color: '#9ca3af' }}
+                                  itemStyle={{ color: '#a78bfa' }}
+                                  formatter={(v) => v != null ? v.toFixed(1) : '—'}
+                                />
+                                <Line type="monotone" dataKey="rating" stroke="#a78bfa" strokeWidth={2} dot={{ r: 3, fill: '#a78bfa' }} activeDot={{ r: 4 }} connectNulls />
+                              </LineChart>
+                            </div>
+                          </div>
+                        )
+                      })()}
+
+                      {/* Enhanced History Table */}
+                      <div className="overflow-x-auto rounded-xl border border-[var(--brand-border)]">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b border-[var(--brand-border)] text-gray-500">
+                              <th className="px-3 py-2 text-left font-medium">Date</th>
+                              <th className="px-3 py-2 text-left font-medium">⭐ Rating</th>
+                              <th className="px-3 py-2 text-left font-medium">💬 Reviews</th>
+                              <th className="px-3 py-2 text-left font-medium">📸 Photos</th>
+                              <th className="px-3 py-2 text-left font-medium">Health</th>
+                              <th className="px-3 py-2 text-left font-medium">Δ Rating</th>
+                              <th className="px-3 py-2 text-left font-medium">Δ Checklist</th>
+                              <th className="px-3 py-2 text-left font-medium">Trigger</th>
+                              <th className="px-3 py-2 text-left font-medium">Notes</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+                          <tbody>
+                            {loc.auditHistory.map((audit, idx) => {
+                              const prev = loc.auditHistory[idx + 1]
+                              const ratingDelta = (audit.avgRating != null && prev?.avgRating != null)
+                                ? (Number(audit.avgRating) - Number(prev.avgRating)).toFixed(1)
+                                : null
+                              const checkDelta = computeChecklistDelta(audit, prev)
+                              return (
+                                <tr key={audit.id} className="border-b border-[var(--brand-border)]/50 hover:bg-white/5">
+                                  <td className="px-3 py-2 text-gray-300 whitespace-nowrap">{fmtDate(audit.auditDate || audit.createdAt)}</td>
+                                  <td className="px-3 py-2 text-gray-300">{audit.avgRating != null ? Number(audit.avgRating).toFixed(1) : '—'}</td>
+                                  <td className="px-3 py-2 text-gray-400">{audit.reviewCount ?? '—'}</td>
+                                  <td className="px-3 py-2 text-gray-400">{audit.photoCount ?? '—'}</td>
+                                  <td className="px-3 py-2"><GbpScoreBadge score={audit.compositeScore ?? audit.score} /></td>
+                                  <td className="px-3 py-2 whitespace-nowrap">
+                                    {ratingDelta === null ? <span className="text-gray-600">—</span> : (
+                                      <span className={Number(ratingDelta) > 0 ? 'text-emerald-400' : Number(ratingDelta) < 0 ? 'text-rose-400' : 'text-gray-500'}>
+                                        {Number(ratingDelta) > 0 ? '▲ +' : Number(ratingDelta) < 0 ? '▼ ' : ''}{ratingDelta}
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap">
+                                    {prev == null ? <span className="text-gray-600">—</span> : (
+                                      <span className="flex flex-col gap-0.5 text-[10px]">
+                                        {checkDelta.improved  > 0 && <span className="text-emerald-400">▲ {checkDelta.improved} improved</span>}
+                                        {checkDelta.regressed > 0 && <span className="text-rose-400">▼ {checkDelta.regressed} regressed</span>}
+                                        {checkDelta.pending   > 0 && <span className="text-gray-500">⬜ {checkDelta.pending} pending</span>}
+                                        {checkDelta.improved === 0 && checkDelta.regressed === 0 && checkDelta.pending === 0 && <span className="text-gray-500">→ no change</span>}
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="px-3 py-2 text-gray-400 capitalize">{(audit.triggerType || '').replace(/-/g, ' ') || '—'}</td>
+                                  <td className="px-3 py-2 text-gray-500 max-w-[180px] truncate">{audit.notes || '—'}</td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
                   )}
                 </div>
               )}
@@ -2577,6 +3977,8 @@ function GBPTab({ profile, acronym, user }) {
           </div>
         )
       })}
+        </div>
+      )}
 
       {/* Add Location Form */}
       {isAdmin && showAddLocation && (
@@ -4063,7 +5465,7 @@ export default function ClientCard({ acronym, user }) {
           <WebsiteTab profile={profile} acronym={acronym} user={user} />
         )}
         {currentTab === 'seo' && (
-          <SEOTab profile={profile} />
+          <SEOTab profile={profile} acronym={acronym} />
         )}
         {currentTab === 'gbp' && (
           <GBPTab profile={profile} acronym={acronym} user={user} />
