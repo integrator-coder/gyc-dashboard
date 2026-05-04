@@ -2359,13 +2359,32 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
             <div style={{color:'#6b7280',fontSize:12}}>No {hmRadius}-mile scan available yet</div>
           ) : (
             <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              <iframe
-                title={`${loc || 'Location'} map`}
-                src={`https://maps.google.com/maps?q=${activeHm.centerLat},${activeHm.centerLng}&z=${hmRadius >= 5 ? 10 : 11}&output=embed`}
-                style={{ flex: 1, minWidth: 220, height: 236, border: 'none', borderRadius: 10, opacity: 0.9 }}
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
+              {/* Map — fixed square matching grid dimensions, with radius badge overlay */}
+              <div style={{ position: 'relative', width: 236, height: 236, flexShrink: 0 }}>
+                <iframe
+                  title={`${loc || 'Location'} map`}
+                  src={`https://maps.google.com/maps?q=${activeHm.centerLat},${activeHm.centerLng}&z=${hmRadius >= 5 ? 10 : 11}&output=embed`}
+                  style={{ width: 236, height: 236, border: 'none', borderRadius: 10, opacity: 0.9, display: 'block' }}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+                {/* Radius badge overlay */}
+                <div style={{
+                  position: 'absolute', top: 8, left: 8,
+                  background: 'rgba(20,4,40,0.85)',
+                  backdropFilter: 'blur(4px)',
+                  border: '1px solid rgba(174,43,207,0.5)',
+                  borderRadius: 8,
+                  padding: '3px 9px',
+                  fontSize: 11, fontWeight: 700,
+                  color: '#c4b5fd',
+                  pointerEvents: 'none',
+                  userSelect: 'none',
+                  letterSpacing: '0.05em',
+                }}>
+                  {hmRadius} mi radius
+                </div>
+              </div>
               <HeatmapGrid points={activeHm.points || []} gridSize={activeHm.gridSize || 5} />
             </div>
           )}
