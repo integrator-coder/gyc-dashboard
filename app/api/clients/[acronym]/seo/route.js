@@ -10,7 +10,7 @@ export async function GET(req, { params }) {
     const { acronym } = await params
     const acr = acronym.toUpperCase()
 
-    const [snapshotsRes, gbpRes, dfseoHistRes, dfseoKwRes, heatmapRes] = await Promise.all([
+    const [snapshotsRes, gbpRes, dfseoHistRes, dfseoKwRes, heatmapRes, gbpLocRes] = await Promise.all([
       pool.query(
         `SELECT * FROM "ClientSEOSnapshot"
          WHERE "clientAcronym" = $1
@@ -43,13 +43,24 @@ export async function GET(req, { params }) {
          ORDER BY "scanDate" DESC, "locationName" ASC, keyword ASC`,
         [acr]
       ),
+      pool.query(
+        `SELECT "locationName", "gbpPlaceId",
+                ("liveDataSnapshot"->>'rating')::float   AS rating,
+                ("liveDataSnapshot"->>'reviewCount')::int AS "reviewCount",
+                "liveDataSnapshot"->>'address'            AS address
+         FROM "GBPLocation"
+         WHERE "clientAcronym" = $1 AND "liveDataSnapshot" IS NOT NULL
+         ORDER BY "locationName" ASC`,
+        [acr]
+      ),
     ])
 
     const snapshots = snapshotsRes.rows
     const gbpMonthly = gbpRes.rows
     const dfseoHistory = dfseoHistRes.rows
     const dfseoKeywords = dfseoKwRes.rows
-    const heatmaps = heatmapRes.rows
+    const heatmaps   = heatmapRes.rows
+    const gbpLocations = gbpLocRes.rows
 
     // Distinct locations (ordered: non-empty first, then "")
     const locationSet = new Set(snapshots.map((s) => s.locationName))
@@ -93,6 +104,7 @@ export async function GET(req, { params }) {
       dfseoLatest,
       dfseoPrev,
       heatmaps,
+      gbpLocations,
     })
   } catch (e) {
     console.error('[SEO API]', e)

@@ -2248,7 +2248,7 @@ function ArpBadge({ label, value }) {
   )
 }
 
-function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatmaps = [] }) {
+function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatmaps = [], gbpInfo = null }) {
   const [hmRadius, setHmRadius] = useState(3)
   const [hmKw,     setHmKw]     = useState('daycare')
 
@@ -2305,9 +2305,15 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
   return (
     <div style={{ marginBottom: 32 }}>
       {isMultiLoc && loc && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-          <div style={{ width: 3, height: 20, borderRadius: 2, background: '#731494' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+          <div style={{ width: 3, height: 20, borderRadius: 2, background: '#731494', flexShrink: 0 }} />
           <h3 style={{ fontSize: 15, fontWeight: 700, color: '#c4b5fd', margin: 0 }}>{loc}</h3>
+          {gbpInfo?.rating != null && (
+            <span style={{ fontSize: 12, color: '#fbbf24', fontWeight: 600 }}>⭐ {gbpInfo.rating.toFixed(1)}</span>
+          )}
+          {gbpInfo?.reviewCount != null && (
+            <span style={{ fontSize: 12, color: '#9ca3af' }}>({gbpInfo.reviewCount.toLocaleString()} reviews)</span>
+          )}
         </div>
       )}
 
@@ -2316,6 +2322,7 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
         <div style={{ marginBottom: 20 }}>
           {/* Controls */}
           <div style={{ display: 'flex', gap: 12, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Radius</span>
             {hmRadii.length > 1 && hmRadii.map(r => (
               <button key={r} onClick={() => setHmRadius(r)} style={{
                 padding: '3px 10px', borderRadius: 16, fontSize: 11, fontWeight: 600, cursor: 'pointer',
@@ -2324,6 +2331,7 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
                 color: hmRadius === r ? '#c4b5fd' : '#9ca3af',
               }}>{r} mi</button>
             ))}
+            {hmKeywords.length > 1 && <span style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.07em', marginLeft: 4 }}>Keyword</span>}
             {hmKeywords.length > 1 && hmKeywords.map(kw => (
               <button key={kw} onClick={() => setHmKw(kw)} style={{
                 padding: '3px 10px', borderRadius: 16, fontSize: 11, fontWeight: 600, cursor: 'pointer',
@@ -2571,6 +2579,10 @@ function SEOTab({ profile, acronym }) {
                 gbpRows={(seoData.gbpByLocation?.[loc]) || []}
                 isMultiLoc={isMultiLoc}
                 heatmaps={(seoData.heatmaps || []).filter(h => h.locationName === loc)}
+                gbpInfo={(seoData.gbpLocations || []).find(g =>
+                  g.locationName?.toLowerCase().includes(loc.toLowerCase()) ||
+                  loc.toLowerCase().split(' ').some(word => word.length > 3 && g.locationName?.toLowerCase().includes(word))
+                ) || null}
               />
             ))}
           </div>
