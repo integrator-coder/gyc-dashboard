@@ -2507,6 +2507,11 @@ function SEOTab({ profile, acronym }) {
         )}
       </div>
 
+      {/* Heatmaps */}
+      {seoData?.heatmaps?.length > 0 && (
+        <SEOHeatmapSection heatmaps={seoData.heatmaps} />
+      )}
+
       {/* DataForSEO — Organic Domain Health */}
       {seoData?.dfseoHistory?.length > 0 && (
         <DFSEOSection history={seoData.dfseoHistory} latest={seoData.dfseoLatest} prev={seoData.dfseoPrev} keywords={seoData.dfseoKeywords} />
@@ -2521,6 +2526,158 @@ function SEOTab({ profile, acronym }) {
           </Card>
         </div>
       )}
+    </div>
+  )
+}
+
+// ── SEO Heatmap Section ──────────────────────────────────────────────
+
+const HEATMAP_COLORS = [
+  { max: 1,  bg: '#14532d', text: '#86efac', label: '#1' },
+  { max: 3,  bg: '#166534', text: '#4ade80', label: 'Top 3' },
+  { max: 7,  bg: '#365314', text: '#a3e635', label: 'Top 7' },
+  { max: 10, bg: '#713f12', text: '#fde047', label: 'Top 10' },
+  { max: 15, bg: '#7c2d12', text: '#fb923c', label: 'Top 15' },
+  { max: 20, bg: '#7f1d1d', text: '#fca5a5', label: 'Top 20' },
+]
+
+function heatColor(rank) {
+  if (rank == null) return { bg: '#111827', text: '#374151' }
+  for (const tier of HEATMAP_COLORS) {
+    if (rank <= tier.max) return tier
+  }
+  return { bg: '#1f2937', text: '#6b7280' }
+}
+
+function HeatmapGrid({ points, gridSize = 5 }) {
+  const half = Math.floor(gridSize / 2)
+  const rows = []
+  for (let r = -half; r <= half; r++) {
+    const cells = []
+    for (let c = -half; c <= half; c++) {
+      const pt    = points.find(p => p.row === r && p.col === c)
+      const rank  = pt?.rank ?? null
+      const color = heatColor(rank)
+      const isCenter = r === 0 && c === 0
+      cells.push(
+        <div
+          key={c}
+          title={rank != null ? `Rank #${rank}` : 'Not in top 20'}
+          style={{
+            width: 44, height: 44,
+            background: color.bg,
+            border: isCenter ? '2px solid #c4b5fd' : '1px solid rgba(255,255,255,0.06)',
+            borderRadius: 8,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexDirection: 'column',
+            cursor: 'default',
+            transition: 'transform 0.1s',
+            position: 'relative',
+          }}
+        >
+          <span style={{ fontSize: 13, fontWeight: 800, color: color.text, lineHeight: 1 }}>
+            {rank != null ? rank : '—'}
+          </span>
+          {isCenter && (
+            <span style={{ fontSize: 8, color: '#c4b5fd', marginTop: 2, fontWeight: 600 }}>HERE</span>
+          )}
+        </div>
+      )
+    }
+    rows.push(
+      <div key={r} style={{ display: 'flex', gap: 4 }}>{cells}</div>
+    )
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+        {rows}
+      </div>
+      {/* Legend */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10, justifyContent: 'center' }}>
+        {HEATMAP_COLORS.map(t => (
+          <div key={t.label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <div style={{ width: 10, height: 10, borderRadius: 2, background: t.bg, border: '1px solid rgba(255,255,255,0.1)' }} />
+            <span style={{ fontSize: 10, color: '#9ca3af' }}>{t.label}</span>
+          </div>
+        ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div style={{ width: 10, height: 10, borderRadius: 2, background: '#111827', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <span style={{ fontSize: 10, color: '#9ca3af' }}>Not ranked</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SEOHeatmapSection({ heatmaps }) {
+  const [activeKw, setActiveKw] = useState('daycare')
+
+  // Group by locationName
+  const byLocation = useMemo(() => {
+    const map = {}
+    for (const hm of heatmaps) {
+      if (!map[hm.locationName]) map[hm.locationName] = {}
+      map[hm.locationName][hm.keyword] = hm
+    }
+    return map
+  }, [heatmaps])
+
+  const locations = Object.keys(byLocation).sort()
+  const keywords  = [...new Set(heatmaps.map(h => h.keyword))].sort()
+
+  if (locations.length === 0) return null
+
+  return (
+    <div>
+      <SectionTitle>Local Rank Heatmap</SectionTitle>
+
+      {/* Keyword toggle */}
+      {keywords.length > 1 && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          {keywords.map(kw => (
+            <button
+              key={kw}
+              onClick={() => setActiveKw(kw)}
+              style={{
+                padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                border: activeKw === kw ? '1px solid #a78bfa' : '1px solid rgba(255,255,255,0.1)',
+                background: activeKw === kw ? 'rgba(167,139,250,0.15)' : 'rgba(0,0,0,0.3)',
+                color: activeKw === kw ? '#c4b5fd' : '#9ca3af',
+                textTransform: 'capitalize',
+              }}
+            >{kw}</button>
+          ))}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+        {locations.map(loc => {
+          const hm = byLocation[loc]?.[activeKw]
+          if (!hm) return null
+          const pts = hm.points || []
+          const ranked  = pts.filter(p => p.rank != null).length
+          const avgRank = ranked > 0
+            ? (pts.filter(p => p.rank != null).reduce((s, p) => s + p.rank, 0) / ranked).toFixed(1)
+            : '—'
+          const scanDate = hm.scanDate ? new Date(hm.scanDate).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : ''
+
+          return (
+            <div key={loc} style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: '16px 20px' }}>
+              {loc && (
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#c4b5fd', marginBottom: 4 }}>{loc}</div>
+              )}
+              <div style={{ display: 'flex', gap: 16, marginBottom: 12, fontSize: 11, color: '#9ca3af' }}>
+                <span>Avg rank: <strong style={{ color: '#e5e7eb' }}>{avgRank}</strong></span>
+                <span>Ranked: <strong style={{ color: '#e5e7eb' }}>{ranked}/{pts.length}</strong></span>
+                {scanDate && <span>Scanned: <strong style={{ color: '#e5e7eb' }}>{scanDate}</strong></span>}
+              </div>
+              <HeatmapGrid points={pts} gridSize={hm.gridSize || 5} />
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }

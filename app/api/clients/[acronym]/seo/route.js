@@ -10,7 +10,7 @@ export async function GET(req, { params }) {
     const { acronym } = await params
     const acr = acronym.toUpperCase()
 
-    const [snapshotsRes, gbpRes, dfseoHistRes, dfseoKwRes] = await Promise.all([
+    const [snapshotsRes, gbpRes, dfseoHistRes, dfseoKwRes, heatmapRes] = await Promise.all([
       pool.query(
         `SELECT * FROM "ClientSEOSnapshot"
          WHERE "clientAcronym" = $1
@@ -36,12 +36,20 @@ export async function GET(req, { params }) {
          LIMIT 50`,
         [acr]
       ),
+      pool.query(
+        `SELECT "locationName", keyword, "centerLat", "centerLng", "gridSize", "spacingKm", "scanDate", points
+         FROM "ClientSEOHeatmap"
+         WHERE "clientAcronym" = $1
+         ORDER BY "scanDate" DESC, "locationName" ASC, keyword ASC`,
+        [acr]
+      ),
     ])
 
     const snapshots = snapshotsRes.rows
     const gbpMonthly = gbpRes.rows
     const dfseoHistory = dfseoHistRes.rows
     const dfseoKeywords = dfseoKwRes.rows
+    const heatmaps = heatmapRes.rows
 
     // Distinct locations (ordered: non-empty first, then "")
     const locationSet = new Set(snapshots.map((s) => s.locationName))
@@ -84,6 +92,7 @@ export async function GET(req, { params }) {
       dfseoKeywords,
       dfseoLatest,
       dfseoPrev,
+      heatmaps,
     })
   } catch (e) {
     console.error('[SEO API]', e)
