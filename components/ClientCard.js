@@ -2252,19 +2252,39 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
   const [hmRadius, setHmRadius] = useState(3)
   const [hmKw,     setHmKw]     = useState('daycare')
 
-  // Group heatmaps by radius → keyword
+  // Group heatmaps by radius → keyword → [sorted by scanDate DESC = latest first]
   const hmByRadius = useMemo(() => {
     const map = {}
     for (const hm of heatmaps) {
       const r = Number(hm.radiusMiles) || 3
       if (!map[r]) map[r] = {}
-      map[r][hm.keyword] = hm
+      if (!map[r][hm.keyword]) map[r][hm.keyword] = []
+      map[r][hm.keyword].push(hm)
     }
+    // Sort each group by scanDate DESC
+    for (const r of Object.keys(map))
+      for (const kw of Object.keys(map[r]))
+        map[r][kw].sort((a, b) => new Date(b.scanDate) - new Date(a.scanDate))
     return map
   }, [heatmaps])
   const hmRadii    = Object.keys(hmByRadius).map(Number).sort((a, b) => a - b)
   const hmKeywords = [...new Set(heatmaps.map(h => h.keyword))].sort()
-  const activeHm   = hmByRadius[hmRadius]?.[hmKw] || null
+  // Latest scan for current selection
+  const activeHmList = hmByRadius[hmRadius]?.[hmKw] || []
+  const activeHm     = activeHmList[0] || null
+
+  // Historical trend: avgRank per scan date for active radius+keyword
+  const hmTrendData = useMemo(() => {
+    return activeHmList.map(hm => {
+      const pts    = hm.points || []
+      const ranked = pts.filter(p => p.rank != null)
+      return {
+        date:    new Date(hm.scanDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        avgRank: ranked.length ? +(ranked.reduce((s, p) => s + p.rank, 0) / ranked.length).toFixed(1) : null,
+        ranked:  ranked.length,
+      }
+    }).reverse() // chronological for chart
+  }, [activeHmList])
   const primary = snapshots.find(s => s.locationName === loc && s.keywordGroup === 'primary') || null
   const best    = snapshots.find(s => s.locationName === loc && s.keywordGroup === 'best') || null
 
@@ -2342,14 +2362,24 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
               }}>{kw}</button>
             ))}
             {activeHm && (() => {
-              const pts = activeHm.points || []
-              const ranked = pts.filter(p => p.rank != null).length
-              const avg = ranked ? (pts.filter(p => p.rank!=null).reduce((s,p)=>s+p.rank,0)/ranked).toFixed(1) : null
+              const pts     = activeHm.points || []
+              const ranked  = pts.filter(p => p.rank != null).length
+              const avg     = ranked ? (pts.filter(p=>p.rank!=null).reduce((s,p)=>s+p.rank,0)/ranked).toFixed(1) : null
+              const prevHm  = activeHmList[1]
+              const prevRk  = prevHm?.points?.filter(p => p.rank != null) || []
+              const prevAvg = prevRk.length ? prevRk.reduce((s,p)=>s+p.rank,0)/prevRk.length : null
+              const delta   = (avg && prevAvg) ? (parseFloat(avg) - prevAvg).toFixed(1) : null
               return (
-                <span style={{ fontSize: 11, color: '#9ca3af' }}>
-                  {avg && <>Avg rank <strong style={{color:'#e5e7eb'}}>{avg}</strong> · </>}
-                  {ranked}/{pts.length} ranked
-                  {activeHm.scanDate && <> · {new Date(activeHm.scanDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</>}
+                <span style={{ fontSize: 11, color: '#9ca3af', display:'flex', alignItems:'center', gap: 8, flexWrap:'wrap' }}>
+                  {avg && <span>Avg rank <strong style={{color:'#e5e7eb'}}>{avg}</strong></span>}
+                  {delta !== null && (
+                    <span style={{ fontWeight: 700, color: parseFloat(delta) < 0 ? '#22c55e' : parseFloat(delta) > 0 ? '#ef4444' : '#9ca3af' }}>
+                      {parseFloat(delta) < 0 ? '↑' : parseFloat(delta) > 0 ? '↓' : '→'} {Math.abs(parseFloat(delta)).toFixed(1)} vs prev
+                    </span>
+                  )}
+                  <span>{ranked}/{pts.length} ranked</span>
+                  {activeHm.scanDate && <span>{new Date(activeHm.scanDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>}
+                  {activeHmList.length > 1 && <span style={{color:'#6b7280'}}>{activeHmList.length} scans stored</span>}
                 </span>
               )
             })()}
@@ -2358,6 +2388,7 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
           {!activeHm ? (
             <div style={{color:'#6b7280',fontSize:12}}>No {hmRadius}-mile scan available yet</div>
           ) : (
+            <>
             <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
               {/* Map — fixed square matching grid dimensions, with radius badge overlay */}
               <div style={{ position: 'relative', width: 236, height: 236, flexShrink: 0 }}>
@@ -2387,7 +2418,32 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
               </div>
               <HeatmapGrid points={activeHm.points || []} gridSize={activeHm.gridSize || 5} />
             </div>
-          )}
+
+            {/* Historical trend chart — only shows when 2+ scans exist */}
+            {hmTrendData.length >= 2 && (
+              <div style={{ marginTop: 14 }}>
+                <div style={{ fontSize: 10, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>
+                  Avg Rank Trend · {hmTrendData.length} scans
+                </div>
+                <ResponsiveContainer width="100%" height={100}>
+                  <LineChart data={hmTrendData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                    <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} />
+                    <YAxis reversed tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false}
+                           domain={['auto','auto']} label={{ value: 'rank', angle: -90, position: 'insideLeft', fill: '#4b5563', fontSize: 9, dx: 10 }} />
+                    <Tooltip
+                      contentStyle={{ background: '#1a0a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 11 }}
+                      labelStyle={{ color: '#c4b5fd' }}
+                      formatter={(v) => [v != null ? `#${v}` : '—', 'Avg Rank']}
+                    />
+                    <Line type="monotone" dataKey="avgRank" stroke="#AE2BCF" strokeWidth={2}
+                          dot={{ fill: '#AE2BCF', r: 3 }} activeDot={{ r: 5 }} connectNulls />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+            </>)
+          }
         </div>
       )}
 
