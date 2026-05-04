@@ -2542,7 +2542,7 @@ const HEATMAP_COLORS = [
 ]
 
 function heatColor(rank) {
-  if (rank == null) return { bg: '#111827', text: '#374151' }
+  if (rank == null) return { bg: '#7f1d1d', text: '#fca5a5' }  // 20+ = dark red, same as top-20 tier
   for (const tier of HEATMAP_COLORS) {
     if (rank <= tier.max) return tier
   }
@@ -2562,7 +2562,7 @@ function HeatmapGrid({ points, gridSize = 5 }) {
       cells.push(
         <div
           key={c}
-          title={rank != null ? `Rank #${rank}` : 'Not in top 20'}
+          title={rank != null ? `Rank #${rank}` : 'Not in top 20 — ranked 20+'}
           style={{
             width: 44, height: 44,
             background: color.bg,
@@ -2575,8 +2575,8 @@ function HeatmapGrid({ points, gridSize = 5 }) {
             position: 'relative',
           }}
         >
-          <span style={{ fontSize: 13, fontWeight: 800, color: color.text, lineHeight: 1 }}>
-            {rank != null ? rank : '—'}
+          <span style={{ fontSize: rank != null ? 13 : 11, fontWeight: 800, color: color.text, lineHeight: 1 }}>
+            {rank != null ? rank : '20+'}
           </span>
           {isCenter && (
             <span style={{ fontSize: 8, color: '#c4b5fd', marginTop: 2, fontWeight: 600 }}>HERE</span>
@@ -2603,8 +2603,8 @@ function HeatmapGrid({ points, gridSize = 5 }) {
           </div>
         ))}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <div style={{ width: 10, height: 10, borderRadius: 2, background: '#111827', border: '1px solid rgba(255,255,255,0.1)' }} />
-          <span style={{ fontSize: 10, color: '#9ca3af' }}>Not ranked</span>
+          <div style={{ width: 10, height: 10, borderRadius: 2, background: '#7f1d1d', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <span style={{ fontSize: 10, color: '#9ca3af' }}>20+</span>
         </div>
       </div>
     </div>
@@ -2703,7 +2703,23 @@ function SEOHeatmapSection({ heatmaps }) {
                     {scanDate && <span>Scanned: <strong style={{ color: '#e5e7eb' }}>{scanDate}</strong></span>}
                     <span style={{ color: '#6b7280' }}>{activeRadius}mi radius · {((hm.spacingKm || 2.414) / 1.60934).toFixed(1)}mi steps</span>
                   </div>
-                  <HeatmapGrid points={pts} gridSize={hm.gridSize || 5} />
+                  {/* Grid + Map side by side */}
+                  <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                    <HeatmapGrid points={pts} gridSize={hm.gridSize || 5} />
+                    <div style={{ flex: 1, minWidth: 220 }}>
+                      <div style={{ fontSize: 10, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Location Context</div>
+                      <iframe
+                        title={`${loc || 'Location'} map`}
+                        src={`https://maps.google.com/maps?q=${hm.centerLat},${hm.centerLng}&z=${activeRadius >= 5 ? 12 : 13}&output=embed`}
+                        style={{ width: '100%', height: 240, border: 'none', borderRadius: 10, opacity: 0.9 }}
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                      />
+                      <div style={{ marginTop: 6, fontSize: 10, color: '#6b7280', textAlign: 'center' }}>
+                        Grid covers approx. {activeRadius * 2}mi × {activeRadius * 2}mi
+                      </div>
+                    </div>
+                  </div>
                 </>
               )}
             </div>
