@@ -2207,7 +2207,21 @@ function WebsiteTab({ profile, acronym }) {
 
 // ── Tab 4: SEO ────────────────────────────────────────────────────────────────
 
+// ── InfoTip — hover tooltip for metric definitions ──────────────────────────
+function InfoTip({ text }) {
+  return (
+    <span
+      title={text}
+      style={{ cursor: 'help', color: '#4b5563', fontSize: 12, marginLeft: 4, userSelect: 'none', flexShrink: 0 }}
+      aria-label={text}
+    >ⓘ</span>
+  )
+}
+
 // ── SEO helpers ──────────────────────────────────────────────────────────────
+
+const SOLV_TIP = 'Share of Local Voice — the % of Local Falcon grid points where this business appears in the Google Maps top 20 results. Higher % = stronger local visibility. 0% = not visible from any scanned point. 100% = visible everywhere in the coverage area.'
+const ARP_TIP  = 'Average Rank Position — the average position this business holds across all Local Falcon grid points where it appeared. Lower number = better. #1 is the top result. 20+ means the business was not found in the top 20.'
 
 function SolvGauge({ label, value }) {
   const pct = value != null ? Math.min(Math.max(Number(value), 0), 100) : null
@@ -2217,7 +2231,9 @@ function SolvGauge({ label, value }) {
     : '#ef4444'
   return (
     <div style={{ textAlign: 'center', minWidth: 90 }}>
-      <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
+      <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+        {label}<InfoTip text={SOLV_TIP} />
+      </div>
       <div style={{ fontSize: 22, fontWeight: 800, color: pct != null ? color : '#4b5563' }}>
         {pct != null ? `${pct.toFixed(1)}%` : '—'}
       </div>
@@ -2239,7 +2255,9 @@ function ArpBadge({ label, value }) {
     : '#ef4444'
   return (
     <div style={{ textAlign: 'center', minWidth: 80 }}>
-      <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
+      <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+        {label}<InfoTip text={ARP_TIP} />
+      </div>
       <div style={{ fontSize: 22, fontWeight: 800, color: color }}>
         {value || '—'}
       </div>
@@ -2249,6 +2267,7 @@ function ArpBadge({ label, value }) {
 }
 
 function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatmaps = [], gbpInfo = null }) {
+  const [open,     setOpen]     = useState(true)
   const [hmRadius, setHmRadius] = useState(3)
   const [hmKw,     setHmKw]     = useState('daycare')
 
@@ -2324,25 +2343,45 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
 
   return (
     <div style={{ marginBottom: 32 }}>
-      {isMultiLoc && loc && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-          <div style={{ width: 3, height: 20, borderRadius: 2, background: '#731494', flexShrink: 0 }} />
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: '#c4b5fd', margin: 0 }}>{loc}</h3>
-          {gbpInfo?.rating != null && (
-            <span style={{ fontSize: 12, color: '#fbbf24', fontWeight: 600 }}>⭐ {gbpInfo.rating.toFixed(1)}</span>
-          )}
-          {gbpInfo?.reviewCount != null && (
-            <span style={{ fontSize: 12, color: '#9ca3af' }}>({gbpInfo.reviewCount.toLocaleString()} reviews)</span>
-          )}
-        </div>
-      )}
+      {/* Collapsible location header — always shown */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 10, marginBottom: open ? 16 : 0,
+          width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+          textAlign: 'left', flexWrap: 'wrap',
+        }}
+      >
+        <div style={{ width: 3, height: 20, borderRadius: 2, background: '#731494', flexShrink: 0 }} />
+        <h3 style={{ fontSize: 15, fontWeight: 700, color: '#c4b5fd', margin: 0 }}>
+          {loc || 'Location'}
+        </h3>
+        {gbpInfo?.rating != null && (
+          <span style={{ fontSize: 12, color: '#fbbf24', fontWeight: 600 }}>⭐ {gbpInfo.rating.toFixed(1)}</span>
+        )}
+        {gbpInfo?.reviewCount != null && (
+          <span style={{ fontSize: 12, color: '#9ca3af' }}>({gbpInfo.reviewCount.toLocaleString()} reviews)</span>
+        )}
+        <span style={{ marginLeft: 'auto', fontSize: 13, color: '#6b7280', paddingRight: 4 }}>
+          {open ? '▾' : '▸'}
+        </span>
+      </button>
+
+      {open && <>
 
       {/* Heatmap — map + grid above Primary Keywords */}
       {heatmaps.length > 0 && (
         <div style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Local Rank Heatmap</span>
+            <InfoTip text="A grid showing how this business ranks in Google Maps for the selected keyword, as if someone were standing at each geographic point and searching. Each cell = one search point in the coverage area. Green = ranked high (visible). Red / 20+ = not in top 20 results from that location." />
+          </div>
           {/* Controls */}
           <div style={{ display: 'flex', gap: 12, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Radius</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+              Radius
+              <InfoTip text="The geographic area covered by the heatmap grid. 3 mi = the grid extends 3 miles from the business in every direction. Use 3 mi for urban/dense markets, 5 mi for suburban." />
+            </span>
             {hmRadii.length > 1 && hmRadii.map(r => (
               <button key={r} onClick={() => setHmRadius(r)} style={{
                 padding: '3px 10px', borderRadius: 16, fontSize: 11, fontWeight: 600, cursor: 'pointer',
@@ -2351,7 +2390,7 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
                 color: hmRadius === r ? '#c4b5fd' : '#9ca3af',
               }}>{r} mi</button>
             ))}
-            {hmKeywords.length > 1 && <span style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.07em', marginLeft: 4 }}>Keyword</span>}
+            {hmKeywords.length > 1 && <span style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.07em', marginLeft: 4 }}>Keyword <InfoTip text="The search term used to test how this business ranks in Google Maps. Daycare and Preschool are the most common terms parents use when searching for childcare." /></span>}
             {hmKeywords.length > 1 && hmKeywords.map(kw => (
               <button key={kw} onClick={() => setHmKw(kw)} style={{
                 padding: '3px 10px', borderRadius: 16, fontSize: 11, fontWeight: 600, cursor: 'pointer',
@@ -2371,13 +2410,13 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
               const delta   = (avg && prevAvg) ? (parseFloat(avg) - prevAvg).toFixed(1) : null
               return (
                 <span style={{ fontSize: 11, color: '#9ca3af', display:'flex', alignItems:'center', gap: 8, flexWrap:'wrap' }}>
-                  {avg && <span>Avg rank <strong style={{color:'#e5e7eb'}}>{avg}</strong></span>}
+                  {avg && <span>Avg rank <strong style={{color:'#e5e7eb'}}>{avg}</strong><InfoTip text="Average position across all 25 grid points where this business appeared in Google Maps results. Lower number = better. #1 means top result." /></span>}
                   {delta !== null && (
                     <span style={{ fontWeight: 700, color: parseFloat(delta) < 0 ? '#22c55e' : parseFloat(delta) > 0 ? '#ef4444' : '#9ca3af' }}>
                       {parseFloat(delta) < 0 ? '↑' : parseFloat(delta) > 0 ? '↓' : '→'} {Math.abs(parseFloat(delta)).toFixed(1)} vs prev
                     </span>
                   )}
-                  <span>{ranked}/{pts.length} ranked</span>
+                  <span>{ranked}/{pts.length} ranked<InfoTip text="Number of grid points (out of 25) where this business appeared in the top 20 Google Maps results. 25/25 = visible across the full coverage area." /></span>
                   {activeHm.scanDate && <span>{new Date(activeHm.scanDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>}
                   {activeHmList.length > 1 && <span style={{color:'#6b7280'}}>{activeHmList.length} scans stored</span>}
                 </span>
@@ -2423,7 +2462,7 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
             {hmTrendData.length >= 2 && (
               <div style={{ marginTop: 14 }}>
                 <div style={{ fontSize: 10, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>
-                  Avg Rank Trend · {hmTrendData.length} scans
+                  Avg Rank Trend · {hmTrendData.length} scans <InfoTip text="Weekly average rank over time. Y-axis is inverted — a line moving UP means the rank number got LOWER (better). Consistent improvement here means the SEO program is expanding this location’s visibility." />
                 </div>
                 <ResponsiveContainer width="100%" height={100}>
                   <LineChart data={hmTrendData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
@@ -2449,9 +2488,10 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
 
       {/* Primary Keywords */}
       <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
-          Primary Keywords
-          {primary?.scanDate && <span style={{ fontWeight: 400, color: '#6b7280', marginLeft: 8, textTransform: 'none', letterSpacing: 0 }}>· as of {fmtScanDate(primary)}</span>}
+        <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
+          <span>Primary Keywords</span>
+          <InfoTip text={'Ranking data for “daycare” and “preschool” — the most common searches parents use when looking for childcare. Source: Local Falcon grid scans.'} />
+          {primary?.scanDate && <span style={{ fontWeight: 400, color: '#6b7280', marginLeft: 4, textTransform: 'none', letterSpacing: 0, fontSize: 11 }}>· as of {fmtScanDate(primary)}</span>}
         </div>
         {primary ? (
           <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: '16px 20px' }}>
@@ -2486,7 +2526,7 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
       {/* Trend Chart */}
       {chartData.length >= 2 && (
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>SOLV Trend</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 3 }}>SOLV Trend<InfoTip text="Share of Local Voice over time, from Local Falcon grid scans. Purple line = Daycare keyword. Violet line = Preschool. Higher % = more of the scanned area where this business is visible in Google Maps results." /></div>
           <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: '16px 20px' }}>
             <ResponsiveContainer width="100%" height={180}>
               <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
@@ -2510,7 +2550,7 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
       {best && (
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
-            Best Keywords
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>Best Keywords<InfoTip text={'Rankings for “best daycare” and “best preschool” — higher-intent searches where parents are actively comparing options. Harder to rank for than primary keywords but more valuable — these searches have stronger intent to enroll.'} /></span>
             {best?.scanDate && <span style={{ fontWeight: 400, color: '#6b7280', marginLeft: 8, textTransform: 'none', letterSpacing: 0 }}>· as of {fmtScanDate(best)}</span>}
           </div>
           <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: '16px 20px' }}>
@@ -2543,13 +2583,26 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
       {/* GBP Performance */}
       {gbpRows.length > 0 && (
         <div style={{ marginBottom: 8 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>GBP Performance</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
+            GBP Performance
+            <InfoTip text="Monthly activity on this location's Google Business Profile. Source: Google Business Profile (pulled manually until live API access is granted). MoM changes shown as +/- in each cell." />
+          </div>
           <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                  {['Month','Interactions','Views','Searches','Calls','Directions','Web Clicks'].map(h => (
-                    <th key={h} style={{ padding: '10px 12px', textAlign: h === 'Month' ? 'left' : 'right', color: '#9ca3af', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
+                  {[
+                    { h: 'Month',        tip: null },
+                    { h: 'Interactions', tip: 'Total actions taken on the profile — calls, direction requests, website clicks, and photo views combined.' },
+                    { h: 'Views',        tip: 'How many times this Google Business Profile appeared in Google Search or Maps results.' },
+                    { h: 'Searches',     tip: 'Searches that surfaced this profile — includes direct brand searches and discovery searches for related keywords.' },
+                    { h: 'Calls',        tip: 'Phone calls made directly from the Google Business Profile listing.' },
+                    { h: 'Directions',   tip: 'Direction requests made from the listing. A strong signal of intent to visit.' },
+                    { h: 'Web Clicks',   tip: 'Clicks to the business website from the Google Business Profile.' },
+                  ].map(({ h, tip }) => (
+                    <th key={h} style={{ padding: '10px 12px', textAlign: h === 'Month' ? 'left' : 'right', color: '#9ca3af', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>{h}{tip && <InfoTip text={tip} />}</span>
+                    </th>
                   ))}
                 </tr>
               </thead>
@@ -2582,6 +2635,8 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
           </div>
         </div>
       )}
+
+      </> /* end open */}
     </div>
   )
 }
@@ -2640,7 +2695,10 @@ function SEOTab({ profile, acronym }) {
 
       {/* Rankings */}
       <div>
-        <SectionTitle>Rankings & Performance</SectionTitle>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+          <SectionTitle>Rankings & Performance</SectionTitle>
+          <InfoTip text="How visible this location is in Google local search results. Each location can be expanded or collapsed. Data sources: Local Falcon (SOLV/ARP grid scans), GBP (Google Business Profile performance), and DataForSEO (organic domain metrics)." />
+        </div>
         {!hasData ? (
           <PlaceholderBanner icon="📈" message="No ranking data synced yet. Data populates automatically from the SEO report sheets." />
         ) : (
@@ -2880,12 +2938,12 @@ function SEOHeatmapSection({ heatmaps }) {
 
 // ── DataForSEO Organic Section ─────────────────────────────────────────────
 
-function DFSEOStatTile({ label, value, sub, delta, deltaLabel }) {
+function DFSEOStatTile({ label, value, sub, delta, deltaLabel, tip }) {
   const deltaColor = delta == null ? null : delta > 0 ? '#22c55e' : delta < 0 ? '#ef4444' : '#9ca3af'
   const deltaSign  = delta > 0 ? '+' : ''
   return (
     <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: '14px 18px', minWidth: 120, flex: 1 }}>
-      <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 3 }}>{label}{tip && <InfoTip text={tip} />}</div>
       <div style={{ fontSize: 24, fontWeight: 800, color: '#f3f4f6', lineHeight: 1.1 }}>{value ?? '—'}</div>
       {sub && <div style={{ fontSize: 11, color: '#6b7280', marginTop: 3 }}>{sub}</div>}
       {delta != null && (
@@ -2929,12 +2987,16 @@ function DFSEOSection({ history, latest, prev, keywords }) {
 
   return (
     <div>
-      <SectionTitle>Organic Domain Health</SectionTitle>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+        <SectionTitle>Organic Domain Health</SectionTitle>
+        <InfoTip text="Overall visibility of this website in Google's regular (non-Maps) search results. Data sourced from DataForSEO and refreshed monthly. This measures how the website itself ranks, separate from the Google Maps local pack rankings above." />
+      </div>
 
       {/* Summary tiles */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
         <DFSEOStatTile
           label="Organic Keywords"
+          tip="Total number of unique search terms this website currently ranks for anywhere in Google's top 100 results. Higher = broader visibility."
           value={latest?.organicCount?.toLocaleString()}
           sub={latest ? `as of ${fmtMonth(latest)}` : null}
           delta={kwDelta}
@@ -2942,6 +3004,7 @@ function DFSEOSection({ history, latest, prev, keywords }) {
         />
         <DFSEOStatTile
           label="Est. Monthly Traffic"
+          tip="Estimated monthly visitors from organic Google search, based on current keyword rankings and typical click-through rates for each position. Not exact — a directional measure of organic reach."
           value={latest ? Math.round(latest.organicEtv).toLocaleString() : null}
           sub="from organic search"
           delta={trafDelta}
@@ -2949,11 +3012,13 @@ function DFSEOSection({ history, latest, prev, keywords }) {
         />
         <DFSEOStatTile
           label="Est. Traffic Value"
+          tip="What it would cost to buy this volume of traffic through Google Ads pay-per-click, based on typical CPC rates for the ranked keywords. A measure of the SEO equity built up over time."
           value={latest ? `$${Math.round(latest.organicValue).toLocaleString()}` : null}
           sub="if paid per click"
         />
         <DFSEOStatTile
           label="Top 3 Positions"
+          tip="Keywords where this website ranks #1, #2, or #3 in Google. These positions capture roughly 60% of all clicks for a given search term — the most valuable real estate in organic search."
           value={latest ? ((latest.pos1 || 0) + (latest.pos2_3 || 0)).toString() : null}
           sub="keywords ranked #1–3"
         />
@@ -2964,7 +3029,7 @@ function DFSEOSection({ history, latest, prev, keywords }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
           {/* Keywords over time */}
           <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: '16px 18px' }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12 }}>Organic Keywords</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 3 }}>Organic Keywords<InfoTip text="Number of unique keywords this website ranks for in Google (any position 1-100), tracked monthly. An increasing trend means the website is growing its search presence." /></div>
             <ResponsiveContainer width="100%" height={160}>
               <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -2978,7 +3043,7 @@ function DFSEOSection({ history, latest, prev, keywords }) {
 
           {/* Est. traffic over time */}
           <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: '16px 18px' }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12 }}>Est. Organic Traffic</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 3 }}>Est. Organic Traffic<InfoTip text="Estimated monthly organic visitors from Google, calculated from keyword rankings × typical click rates for each position. An upward trend means more parents are finding the website through search." /></div>
             <ResponsiveContainer width="100%" height={160}>
               <LineChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -2997,7 +3062,7 @@ function DFSEOSection({ history, latest, prev, keywords }) {
         {/* Position breakdown */}
         {posData.length > 0 && (
           <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: '16px 18px' }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12 }}>Position Breakdown</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 3 }}>Position Breakdown<InfoTip text="Distribution of keyword rankings by position range. Pos 1 = #1 in Google (best). More keywords in green zones = stronger organic authority. 21+ = ranking but unlikely to get clicks." /></div>
             {posData.map(p => (
               <div key={p.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <div style={{ fontSize: 12, color: '#d1d5db' }}>{p.label}</div>
@@ -3013,7 +3078,7 @@ function DFSEOSection({ history, latest, prev, keywords }) {
         {/* Top keywords */}
         {topKw.length > 0 && (
           <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, overflow: 'hidden' }}>
-            <div style={{ padding: '14px 16px 10px', fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Top Ranking Keywords</div>
+            <div style={{ padding: '14px 16px 10px', fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'flex', alignItems: 'center', gap: 3 }}>Top Ranking Keywords<InfoTip text="The highest-ranking keywords this website is currently indexed for. Pos = current Google position (1 = top result). Vol/mo = average monthly searches for that keyword. Green = top 3, amber = 4-10, gray = 11+." /></div>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
