@@ -2248,7 +2248,23 @@ function ArpBadge({ label, value }) {
   )
 }
 
-function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc }) {
+function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatmaps = [] }) {
+  const [hmRadius, setHmRadius] = useState(3)
+  const [hmKw,     setHmKw]     = useState('daycare')
+
+  // Group heatmaps by radius → keyword
+  const hmByRadius = useMemo(() => {
+    const map = {}
+    for (const hm of heatmaps) {
+      const r = Number(hm.radiusMiles) || 3
+      if (!map[r]) map[r] = {}
+      map[r][hm.keyword] = hm
+    }
+    return map
+  }, [heatmaps])
+  const hmRadii    = Object.keys(hmByRadius).map(Number).sort((a, b) => a - b)
+  const hmKeywords = [...new Set(heatmaps.map(h => h.keyword))].sort()
+  const activeHm   = hmByRadius[hmRadius]?.[hmKw] || null
   const primary = snapshots.find(s => s.locationName === loc && s.keywordGroup === 'primary') || null
   const best    = snapshots.find(s => s.locationName === loc && s.keywordGroup === 'best') || null
 
@@ -2292,6 +2308,59 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
           <div style={{ width: 3, height: 20, borderRadius: 2, background: '#731494' }} />
           <h3 style={{ fontSize: 15, fontWeight: 700, color: '#c4b5fd', margin: 0 }}>{loc}</h3>
+        </div>
+      )}
+
+      {/* Heatmap — map + grid above Primary Keywords */}
+      {heatmaps.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          {/* Controls */}
+          <div style={{ display: 'flex', gap: 12, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+            {hmRadii.length > 1 && hmRadii.map(r => (
+              <button key={r} onClick={() => setHmRadius(r)} style={{
+                padding: '3px 10px', borderRadius: 16, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                border: hmRadius === r ? '1px solid #a78bfa' : '1px solid rgba(255,255,255,0.1)',
+                background: hmRadius === r ? 'rgba(167,139,250,0.15)' : 'rgba(0,0,0,0.3)',
+                color: hmRadius === r ? '#c4b5fd' : '#9ca3af',
+              }}>{r} mi</button>
+            ))}
+            {hmKeywords.length > 1 && hmKeywords.map(kw => (
+              <button key={kw} onClick={() => setHmKw(kw)} style={{
+                padding: '3px 10px', borderRadius: 16, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                textTransform: 'capitalize',
+                border: hmKw === kw ? '1px solid #a78bfa' : '1px solid rgba(255,255,255,0.1)',
+                background: hmKw === kw ? 'rgba(167,139,250,0.15)' : 'rgba(0,0,0,0.3)',
+                color: hmKw === kw ? '#c4b5fd' : '#9ca3af',
+              }}>{kw}</button>
+            ))}
+            {activeHm && (() => {
+              const pts = activeHm.points || []
+              const ranked = pts.filter(p => p.rank != null).length
+              const avg = ranked ? (pts.filter(p => p.rank!=null).reduce((s,p)=>s+p.rank,0)/ranked).toFixed(1) : null
+              return (
+                <span style={{ fontSize: 11, color: '#9ca3af' }}>
+                  {avg && <>Avg rank <strong style={{color:'#e5e7eb'}}>{avg}</strong> · </>}
+                  {ranked}/{pts.length} ranked
+                  {activeHm.scanDate && <> · {new Date(activeHm.scanDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</>}
+                </span>
+              )
+            })()}
+          </div>
+          {/* Map + grid row */}
+          {!activeHm ? (
+            <div style={{color:'#6b7280',fontSize:12}}>No {hmRadius}-mile scan available yet</div>
+          ) : (
+            <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              <iframe
+                title={`${loc || 'Location'} map`}
+                src={`https://maps.google.com/maps?q=${activeHm.centerLat},${activeHm.centerLng}&z=${hmRadius >= 5 ? 12 : 13}&output=embed`}
+                style={{ flex: 1, minWidth: 220, height: 236, border: 'none', borderRadius: 10, opacity: 0.9 }}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+              <HeatmapGrid points={activeHm.points || []} gridSize={activeHm.gridSize || 5} />
+            </div>
+          )}
         </div>
       )}
 
@@ -2501,16 +2570,13 @@ function SEOTab({ profile, acronym }) {
                 snapshots={seoData.snapshots.filter(s => s.locationName === loc)}
                 gbpRows={(seoData.gbpByLocation?.[loc]) || []}
                 isMultiLoc={isMultiLoc}
+                heatmaps={(seoData.heatmaps || []).filter(h => h.locationName === loc)}
               />
             ))}
           </div>
         )}
       </div>
 
-      {/* Heatmaps */}
-      {seoData?.heatmaps?.length > 0 && (
-        <SEOHeatmapSection heatmaps={seoData.heatmaps} />
-      )}
 
       {/* DataForSEO — Organic Domain Health */}
       {seoData?.dfseoHistory?.length > 0 && (
