@@ -2507,6 +2507,11 @@ function SEOTab({ profile, acronym }) {
         )}
       </div>
 
+      {/* DataForSEO — Organic Domain Health */}
+      {seoData?.dfseoHistory?.length > 0 && (
+        <DFSEOSection history={seoData.dfseoHistory} latest={seoData.dfseoLatest} prev={seoData.dfseoPrev} keywords={seoData.dfseoKeywords} />
+      )}
+
       {/* Resources */}
       {profile.clientFolderUrl && (
         <div>
@@ -2516,6 +2521,173 @@ function SEOTab({ profile, acronym }) {
           </Card>
         </div>
       )}
+    </div>
+  )
+}
+
+// ── DataForSEO Organic Section ─────────────────────────────────────────────
+
+function DFSEOStatTile({ label, value, sub, delta, deltaLabel }) {
+  const deltaColor = delta == null ? null : delta > 0 ? '#22c55e' : delta < 0 ? '#ef4444' : '#9ca3af'
+  const deltaSign  = delta > 0 ? '+' : ''
+  return (
+    <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: '14px 18px', minWidth: 120, flex: 1 }}>
+      <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 24, fontWeight: 800, color: '#f3f4f6', lineHeight: 1.1 }}>{value ?? '—'}</div>
+      {sub && <div style={{ fontSize: 11, color: '#6b7280', marginTop: 3 }}>{sub}</div>}
+      {delta != null && (
+        <div style={{ fontSize: 11, color: deltaColor, marginTop: 4 }}>
+          {deltaSign}{deltaLabel ?? delta}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function DFSEOSection({ history, latest, prev, keywords }) {
+  const fmtMonth = (row) => {
+    if (!row?.snapshotDate) return ''
+    const d = new Date(row.snapshotDate)
+    return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+  }
+
+  const kwDelta = latest && prev ? latest.organicCount - prev.organicCount : null
+  const trafDelta = latest && prev ? Math.round(latest.organicEtv - prev.organicEtv) : null
+
+  // Chart: keywords + traffic over time
+  const chartData = history.map(row => ({
+    month: fmtMonth(row),
+    keywords: row.organicCount,
+    traffic: Math.round(row.organicEtv || 0),
+    top3: (row.pos1 || 0) + (row.pos2_3 || 0),
+    top10: (row.pos4_10 || 0),
+  }))
+
+  // Position distribution for latest
+  const posData = latest ? [
+    { label: 'Pos 1',    count: latest.pos1    || 0, color: '#22c55e' },
+    { label: 'Pos 2–3',  count: latest.pos2_3  || 0, color: '#84cc16' },
+    { label: 'Pos 4–10', count: latest.pos4_10 || 0, color: '#eab308' },
+    { label: 'Pos 11–20',count: latest.pos11_20|| 0, color: '#f97316' },
+    { label: 'Pos 21+',  count: latest.pos21_100||0, color: '#6b7280' },
+  ] : []
+
+  const topKw = (keywords || []).slice(0, 15)
+
+  return (
+    <div>
+      <SectionTitle>Organic Domain Health</SectionTitle>
+
+      {/* Summary tiles */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
+        <DFSEOStatTile
+          label="Organic Keywords"
+          value={latest?.organicCount?.toLocaleString()}
+          sub={latest ? `as of ${fmtMonth(latest)}` : null}
+          delta={kwDelta}
+          deltaLabel={kwDelta != null ? `${kwDelta > 0 ? '+' : ''}${kwDelta} vs prev month` : null}
+        />
+        <DFSEOStatTile
+          label="Est. Monthly Traffic"
+          value={latest ? Math.round(latest.organicEtv).toLocaleString() : null}
+          sub="from organic search"
+          delta={trafDelta}
+          deltaLabel={trafDelta != null ? `${trafDelta > 0 ? '+' : ''}${trafDelta} visits` : null}
+        />
+        <DFSEOStatTile
+          label="Est. Traffic Value"
+          value={latest ? `$${Math.round(latest.organicValue).toLocaleString()}` : null}
+          sub="if paid per click"
+        />
+        <DFSEOStatTile
+          label="Top 3 Positions"
+          value={latest ? ((latest.pos1 || 0) + (latest.pos2_3 || 0)).toString() : null}
+          sub="keywords ranked #1–3"
+        />
+      </div>
+
+      {/* Charts side by side */}
+      {chartData.length >= 2 && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
+          {/* Keywords over time */}
+          <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: '16px 18px' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12 }}>Organic Keywords</div>
+            <ResponsiveContainer width="100%" height={160}>
+              <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <XAxis dataKey="month" tick={{ fill: '#9ca3af', fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={{ background: '#1a0a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, fontSize: 12 }} labelStyle={{ color: '#c4b5fd' }} />
+                <Bar dataKey="keywords" name="Keywords" fill="#731494" radius={[4,4,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Est. traffic over time */}
+          <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: '16px 18px' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12 }}>Est. Organic Traffic</div>
+            <ResponsiveContainer width="100%" height={160}>
+              <LineChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <XAxis dataKey="month" tick={{ fill: '#9ca3af', fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={{ background: '#1a0a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, fontSize: 12 }} labelStyle={{ color: '#c4b5fd' }} />
+                <Line type="monotone" dataKey="traffic" name="Est. Visits" stroke="#AE2BCF" strokeWidth={2.5} dot={{ fill: '#AE2BCF', r: 4 }} activeDot={{ r: 6 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* Position distribution + Top Keywords side by side */}
+      <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 14 }}>
+        {/* Position breakdown */}
+        {posData.length > 0 && (
+          <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: '16px 18px' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12 }}>Position Breakdown</div>
+            {posData.map(p => (
+              <div key={p.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <div style={{ fontSize: 12, color: '#d1d5db' }}>{p.label}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ width: Math.max(4, Math.min(80, p.count)), height: 6, borderRadius: 3, background: p.color, transition: 'width 0.3s' }} />
+                  <div style={{ fontSize: 12, fontWeight: 600, color: p.color, minWidth: 28, textAlign: 'right' }}>{p.count}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Top keywords */}
+        {topKw.length > 0 && (
+          <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, overflow: 'hidden' }}>
+            <div style={{ padding: '14px 16px 10px', fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Top Ranking Keywords</div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  <th style={{ padding: '6px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Keyword</th>
+                  <th style={{ padding: '6px 12px', textAlign: 'center', color: '#6b7280', fontWeight: 500 }}>Pos</th>
+                  <th style={{ padding: '6px 12px', textAlign: 'right', color: '#6b7280', fontWeight: 500 }}>Vol/mo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topKw.map((kw, i) => (
+                  <tr key={kw.keyword} style={{ borderBottom: i < topKw.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                    <td style={{ padding: '7px 16px', color: '#e5e7eb' }}>{kw.keyword}</td>
+                    <td style={{ padding: '7px 12px', textAlign: 'center' }}>
+                      <span style={{
+                        display: 'inline-block', minWidth: 28, padding: '1px 6px', borderRadius: 6, fontSize: 11, fontWeight: 700,
+                        background: kw.position <= 3 ? 'rgba(34,197,94,0.15)' : kw.position <= 10 ? 'rgba(234,179,8,0.15)' : 'rgba(107,114,128,0.15)',
+                        color: kw.position <= 3 ? '#22c55e' : kw.position <= 10 ? '#eab308' : '#9ca3af',
+                      }}>{kw.position}</span>
+                    </td>
+                    <td style={{ padding: '7px 12px', textAlign: 'right', color: '#9ca3af' }}>{kw.searchVolume?.toLocaleString() || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

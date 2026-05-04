@@ -10,7 +10,7 @@ export async function GET(req, { params }) {
     const { acronym } = await params
     const acr = acronym.toUpperCase()
 
-    const [snapshotsRes, gbpRes] = await Promise.all([
+    const [snapshotsRes, gbpRes, dfseoHistRes, dfseoKwRes] = await Promise.all([
       pool.query(
         `SELECT * FROM "ClientSEOSnapshot"
          WHERE "clientAcronym" = $1
@@ -23,10 +23,25 @@ export async function GET(req, { params }) {
          ORDER BY month DESC, "locationName" ASC`,
         [acr]
       ),
+      pool.query(
+        `SELECT * FROM "ClientDFSEOSnapshot"
+         WHERE "clientAcronym" = $1
+         ORDER BY "snapshotDate" ASC`,
+        [acr]
+      ),
+      pool.query(
+        `SELECT * FROM "ClientDFSEOKeyword"
+         WHERE "clientAcronym" = $1
+         ORDER BY position ASC, "searchVolume" DESC
+         LIMIT 50`,
+        [acr]
+      ),
     ])
 
     const snapshots = snapshotsRes.rows
     const gbpMonthly = gbpRes.rows
+    const dfseoHistory = dfseoHistRes.rows
+    const dfseoKeywords = dfseoKwRes.rows
 
     // Distinct locations (ordered: non-empty first, then "")
     const locationSet = new Set(snapshots.map((s) => s.locationName))
@@ -55,12 +70,20 @@ export async function GET(req, { params }) {
       gbpByLocation[loc] = gbpMonthly.filter((r) => r.locationName === loc).slice(0, 2)
     }
 
+    // DataForSEO current (latest snapshot)
+    const dfseoLatest = dfseoHistory.length > 0 ? dfseoHistory[dfseoHistory.length - 1] : null
+    const dfseoPrev   = dfseoHistory.length > 1 ? dfseoHistory[dfseoHistory.length - 2] : null
+
     return NextResponse.json({
       snapshots,
       gbpMonthly,
       locations,
       latestByLocation,
       gbpByLocation,
+      dfseoHistory,
+      dfseoKeywords,
+      dfseoLatest,
+      dfseoPrev,
     })
   } catch (e) {
     console.error('[SEO API]', e)
