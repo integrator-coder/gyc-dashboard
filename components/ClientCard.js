@@ -2612,68 +2612,100 @@ function HeatmapGrid({ points, gridSize = 5 }) {
 }
 
 function SEOHeatmapSection({ heatmaps }) {
-  const [activeKw, setActiveKw] = useState('daycare')
+  const [activeKw,     setActiveKw]     = useState('daycare')
+  const [activeRadius, setActiveRadius] = useState(3)
 
-  // Group by locationName
+  // Group by locationName → radiusMiles → keyword
   const byLocation = useMemo(() => {
     const map = {}
     for (const hm of heatmaps) {
-      if (!map[hm.locationName]) map[hm.locationName] = {}
-      map[hm.locationName][hm.keyword] = hm
+      const loc = hm.locationName || ''
+      const r   = Number(hm.radiusMiles) || 3
+      if (!map[loc]) map[loc] = {}
+      if (!map[loc][r]) map[loc][r] = {}
+      map[loc][r][hm.keyword] = hm
     }
     return map
   }, [heatmaps])
 
-  const locations = Object.keys(byLocation).sort()
-  const keywords  = [...new Set(heatmaps.map(h => h.keyword))].sort()
+  const locations     = Object.keys(byLocation).sort()
+  const radiiAvail    = [...new Set(heatmaps.map(h => Number(h.radiusMiles) || 3))].sort((a, b) => a - b)
+  const keywords      = [...new Set(heatmaps.map(h => h.keyword))].sort()
 
   if (locations.length === 0) return null
+
+  const toggleStyle = (active) => ({
+    padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+    border: active ? '1px solid #a78bfa' : '1px solid rgba(255,255,255,0.1)',
+    background: active ? 'rgba(167,139,250,0.15)' : 'rgba(0,0,0,0.3)',
+    color: active ? '#c4b5fd' : '#9ca3af',
+    textTransform: 'capitalize',
+  })
 
   return (
     <div>
       <SectionTitle>Local Rank Heatmap</SectionTitle>
 
-      {/* Keyword toggle */}
-      {keywords.length > 1 && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-          {keywords.map(kw => (
-            <button
-              key={kw}
-              onClick={() => setActiveKw(kw)}
-              style={{
-                padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                border: activeKw === kw ? '1px solid #a78bfa' : '1px solid rgba(255,255,255,0.1)',
-                background: activeKw === kw ? 'rgba(167,139,250,0.15)' : 'rgba(0,0,0,0.3)',
-                color: activeKw === kw ? '#c4b5fd' : '#9ca3af',
-                textTransform: 'capitalize',
-              }}
-            >{kw}</button>
-          ))}
+      {/* Controls row */}
+      <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+        {/* Radius selector */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 11, color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Radius</span>
+          {radiiAvail.length > 0
+            ? radiiAvail.map(r => (
+                <button key={r} onClick={() => setActiveRadius(r)} style={toggleStyle(activeRadius === r)}>
+                  {r} mi
+                </button>
+              ))
+            : [3, 5].map(r => (
+                <button key={r} onClick={() => setActiveRadius(r)} style={toggleStyle(activeRadius === r)}>
+                  {r} mi
+                </button>
+              ))
+          }
         </div>
-      )}
+
+        {/* Keyword toggle */}
+        {keywords.length > 1 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 11, color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Keyword</span>
+            {keywords.map(kw => (
+              <button key={kw} onClick={() => setActiveKw(kw)} style={toggleStyle(activeKw === kw)}>{kw}</button>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
         {locations.map(loc => {
-          const hm = byLocation[loc]?.[activeKw]
-          if (!hm) return null
-          const pts = hm.points || []
+          const hm = byLocation[loc]?.[activeRadius]?.[activeKw]
+          const pts = hm?.points || []
           const ranked  = pts.filter(p => p.rank != null).length
           const avgRank = ranked > 0
             ? (pts.filter(p => p.rank != null).reduce((s, p) => s + p.rank, 0) / ranked).toFixed(1)
-            : '—'
-          const scanDate = hm.scanDate ? new Date(hm.scanDate).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : ''
+            : null
+          const scanDate = hm?.scanDate ? new Date(hm.scanDate).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : null
 
           return (
             <div key={loc} style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: '16px 20px' }}>
               {loc && (
                 <div style={{ fontSize: 13, fontWeight: 700, color: '#c4b5fd', marginBottom: 4 }}>{loc}</div>
               )}
-              <div style={{ display: 'flex', gap: 16, marginBottom: 12, fontSize: 11, color: '#9ca3af' }}>
-                <span>Avg rank: <strong style={{ color: '#e5e7eb' }}>{avgRank}</strong></span>
-                <span>Ranked: <strong style={{ color: '#e5e7eb' }}>{ranked}/{pts.length}</strong></span>
-                {scanDate && <span>Scanned: <strong style={{ color: '#e5e7eb' }}>{scanDate}</strong></span>}
-              </div>
-              <HeatmapGrid points={pts} gridSize={hm.gridSize || 5} />
+              {!hm ? (
+                <div style={{ color: '#6b7280', fontSize: 12, padding: '20px 0', textAlign: 'center' }}>
+                  No {activeRadius}-mile scan available yet
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', gap: 16, marginBottom: 12, fontSize: 11, color: '#9ca3af' }}>
+                    {avgRank && <span>Avg rank: <strong style={{ color: '#e5e7eb' }}>{avgRank}</strong></span>}
+                    <span>Ranked: <strong style={{ color: '#e5e7eb' }}>{ranked}/{pts.length}</strong></span>
+                    {scanDate && <span>Scanned: <strong style={{ color: '#e5e7eb' }}>{scanDate}</strong></span>}
+                    <span style={{ color: '#6b7280' }}>{activeRadius}mi radius · {((hm.spacingKm || 2.414) / 1.60934).toFixed(1)}mi steps</span>
+                  </div>
+                  <HeatmapGrid points={pts} gridSize={hm.gridSize || 5} />
+                </>
+              )}
             </div>
           )
         })}

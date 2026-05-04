@@ -21,10 +21,13 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const AUTH = Buffer.from(`${process.env.DATAFORSEO_LOGIN}:${process.env.DATAFORSEO_PASSWORD}`).toString('base64')
 const HEADERS = { 'Authorization': `Basic ${AUTH}`, 'Content-Type': 'application/json' }
 
-const GRID_SIZE   = 5       // 5×5 grid
-const SPACING_KM  = 1.0     // 1km between points
-const KEYWORDS    = ['daycare', 'preschool']
-const MAX_RANK    = 20      // rank 21+ counts as "not found / 20+"
+const GRID_SIZE    = 5         // 5×5 grid
+const KM_PER_MILE  = 1.60934
+const KEYWORDS     = ['daycare', 'preschool']
+const MAX_RANK     = 20        // rank 21+ = "not found"
+// Radius options: each step = radiusMiles / 2 (half-grid)
+const RADIUS_OPTIONS = [3, 5]  // miles
+const DEFAULT_RADIUS = 3       // miles — used when running without --radius flag
 
 // Generate grid points around a center lat/lng
 function generateGrid(centerLat, centerLng, gridSize, spacingKm) {
@@ -74,8 +77,9 @@ function findRank(items, placeId, namePattern) {
   return null // not in top MAX_RANK results
 }
 
-async function scanLocation(acronym, locationName, centerLat, centerLng, placeId, namePattern) {
-  const gridPoints = generateGrid(centerLat, centerLng, GRID_SIZE, SPACING_KM)
+async function scanLocation(acronym, locationName, centerLat, centerLng, placeId, namePattern, radiusMiles = DEFAULT_RADIUS) {
+  const spacingKm  = (radiusMiles / 2) * KM_PER_MILE   // step size so edge = radiusMiles from center
+  const gridPoints = generateGrid(centerLat, centerLng, GRID_SIZE, spacingKm)
   const today = new Date().toISOString().slice(0, 10)
 
   for (const keyword of KEYWORDS) {
@@ -103,11 +107,11 @@ async function scanLocation(acronym, locationName, centerLat, centerLng, placeId
       // Upsert into DB
       await pool.query(
         `INSERT INTO "ClientSEOHeatmap"
-          ("clientAcronym","locationName","keyword","centerLat","centerLng","gridSize","spacingKm","scanDate","points")
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-         ON CONFLICT ("clientAcronym","locationName","keyword","scanDate")
+          ("clientAcronym","locationName","keyword","centerLat","centerLng","gridSize","spacingKm","scanDate","points","radiusMiles")
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+         ON CONFLICT ("clientAcronym","locationName","keyword","scanDate","radiusMiles")
          DO UPDATE SET points=$9, "centerLat"=$4, "centerLng"=$5`,
-        [acronym, locationName, keyword, centerLat, centerLng, GRID_SIZE, SPACING_KM, today, JSON.stringify(points)]
+        [acronym, locationName, keyword, centerLat, centerLng, GRID_SIZE, spacingKm, today, JSON.stringify(points), radiusMiles]
       )
 
       // Small pause between keywords
@@ -155,26 +159,29 @@ async function main() {
       console.log(`→ ${loc.clientAcronym} (${loc.companyName})`)
     }
 
-    const estimatedCost = GRID_SIZE * GRID_SIZE * KEYWORDS.length * 0.002
-    totalCost += estimatedCost
-    console.log(`  📍 ${loc.locationName || 'Main'} @ ${loc.lat?.toFixed(4)},${loc.lng?.toFixed(4)} (est. $${estimatedCost.toFixed(3)})`)
-
     if (!loc.lat || !loc.lng) {
-      console.log('    ⚠ No coordinates, skipping')
+      console.log(`  📍 ${loc.locationName || 'Main'} — ⚠ No coordinates, skipping`)
+      skipped++
       continue
     }
 
-    // Name pattern: use first meaningful word of company name for fallback matching
     const namePattern = loc.companyName?.split(' ').slice(0, 2).join(' ')
+    const estimatedCost = GRID_SIZE * GRID_SIZE * KEYWORDS.length * RADIUS_OPTIONS.length * 0.002
+    totalCost += estimatedCost
+    console.log(`  📍 ${loc.locationName || 'Main'} @ ${loc.lat?.toFixed(4)},${loc.lng?.toFixed(4)} (est. $${estimatedCost.toFixed(3)})`)
 
-    await scanLocation(
-      loc.clientAcronym,
-      loc.locationName || '',
-      loc.lat,
-      loc.lng,
-      loc.gbpPlaceId,
-      namePattern
-    )
+    for (const radiusMiles of RADIUS_OPTIONS) {
+      console.log(`    [${radiusMiles}mi radius]`)
+      await scanLocation(
+        loc.clientAcronym,
+        loc.locationName || '',
+        loc.lat,
+        loc.lng,
+        loc.gbpPlaceId,
+        namePattern,
+        radiusMiles
+      )
+    }
 
     // Pause between locations to stay within rate limits
     await new Promise(r => setTimeout(r, 1000))
