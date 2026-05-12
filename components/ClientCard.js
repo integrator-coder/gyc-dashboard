@@ -196,10 +196,10 @@ function Card({ children, className = '' }) {
   )
 }
 
-function StatBox({ label, value, sub, warn, big, cardClassName = '', valueClassName = '' }) {
+function StatBox({ label, value, sub, warn, big, cardClassName = '', valueClassName = '', tip = '' }) {
   return (
     <Card className={cardClassName}>
-      <div className="text-[11px] uppercase tracking-wider text-gray-400">{label}</div>
+      <div className="text-[11px] uppercase tracking-wider text-gray-400 flex items-center gap-1">{label}{tip && <InfoTip text={tip} />}</div>
       <div className={`mt-1 font-bold ${big ? 'text-3xl' : 'text-xl'} ${warn ? 'text-rose-300' : 'text-white'} ${valueClassName}`}>
         {value ?? '—'}
       </div>
@@ -581,7 +581,7 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount,
         <SectionTitle>Client Health</SectionTitle>
         <Card>
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-gray-300">Health Score</span>
+            <span className="text-sm font-medium text-gray-300 flex items-center gap-1">Health Score <InfoTip text="A 1–10 score that flags client risk at a glance. Starts at 10 and deducts points for: overdue invoice (−3), more than one overdue invoice (−1), funnel trend declining (−2), Stripe payment past due (−2). 8–10 = healthy, 5–7 = watch, below 5 = needs immediate attention." /></span>
             <span className={`text-2xl font-black ${
               profile.healthScore >= 8 ? 'text-emerald-400' :
               profile.healthScore >= 5 ? 'text-amber-400' : 'text-rose-400'
@@ -618,9 +618,9 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount,
           <Empty>No funnel data available for this client.</Empty>
         ) : (
           <div className="grid grid-cols-3 gap-3">
-            <StatBox label="Leads" value={latestMonth ? fmtNum(latestMonth.leads) : '—'} big />
-            <StatBox label="Tours" value={latestMonth ? fmtNum(latestMonth.tours) : '—'} big />
-            <StatBox label="Registrations" value={latestMonth ? fmtNum(latestMonth.registered) : '—'} big />
+            <StatBox label="Leads" value={latestMonth ? fmtNum(latestMonth.leads) : '—'} big tip="Total inquiries or leads received this month — phone calls, form fills, walk-ins tracked in the funnel." />
+            <StatBox label="Tours" value={latestMonth ? fmtNum(latestMonth.tours) : '—'} big tip="Number of leads who booked and completed a tour of the facility this month." />
+            <StatBox label="Registrations" value={latestMonth ? fmtNum(latestMonth.registered) : '—'} big tip="New enrollments this month — families who toured and signed up." />
           </div>
         )}
       </div>
@@ -649,17 +649,17 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount,
             <p className="text-[10px] text-gray-500 mb-2">Benchmarks: Lead→Tour 50% · Tour→Reg 50% · Overall 25%</p>
             <div className="grid grid-cols-3 gap-3">
               <Card>
-                <div className="text-[11px] uppercase tracking-wider text-gray-400">Tour Rate</div>
+                <div className="text-[11px] uppercase tracking-wider text-gray-400 flex items-center gap-1">Tour Rate <InfoTip text="% of leads who booked a tour. Benchmark: 50%+. Below 50% usually means the phone/follow-up process needs work — leads are coming in but not converting to tours." /></div>
                 <div className={`mt-1 font-bold text-xl ${tourRateNum != null ? lttColorClass : ''}`} style={tourRateNum == null ? { color: '#06b6d4' } : undefined}>{tourRate}</div>
                 <div className="mt-0.5 text-xs text-gray-400">Leads that booked a tour</div>
               </Card>
               <Card>
-                <div className="text-[11px] uppercase tracking-wider text-gray-400">Closing Rate</div>
+                <div className="text-[11px] uppercase tracking-wider text-gray-400 flex items-center gap-1">Closing Rate <InfoTip text="% of tours that resulted in enrollment. Benchmark: 50%+. Below 50% typically means the tour experience or the close conversation needs improvement." /></div>
                 <div className={`mt-1 font-bold text-xl ${closeRateNum != null ? ttrColorClass : ''}`} style={closeRateNum == null ? { color: '#8b5cf6' } : undefined}>{closeRate}</div>
                 <div className="mt-0.5 text-xs text-gray-400">Tours that enrolled</div>
               </Card>
               <Card>
-                <div className="text-[11px] uppercase tracking-wider text-gray-400">Conversion Rate</div>
+                <div className="text-[11px] uppercase tracking-wider text-gray-400 flex items-center gap-1">Conversion Rate <InfoTip text="% of total leads that became enrollments (end-to-end). Benchmark: 25%+. This is the ultimate efficiency metric — combines tour rate and closing rate into one number." /></div>
                 <div className={`mt-1 font-bold text-xl ${convRateNum != null ? ovColorClass : ''}`} style={convRateNum == null ? { color: '#C19C46' } : undefined}>{convRate}</div>
                 <div className="mt-0.5 text-xs text-gray-400">Lead to enrollment</div>
               </Card>
@@ -689,16 +689,19 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount,
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <StatBox
                   label="Lead to Tour Ratio"
+                  tip="12-month average % of leads who booked a tour. Benchmark: 50%+."
                   value={lttRate != null ? fmtPct(lttRate) : '—'}
                   valueClassName={lttRate != null ? lttColorClass : ''}
                 />
                 <StatBox
                   label="Tour to Enrollment"
+                  tip="12-month average % of tours that converted to enrollment. Benchmark: 50%+."
                   value={ttrRate != null ? fmtPct(ttrRate) : '—'}
                   valueClassName={ttrRate != null ? ttrColorClass : ''}
                 />
                 <StatBox
                   label="Conversion Rate"
+                  tip="12-month average end-to-end conversion: lead → enrollment. Benchmark: 25%+."
                   value={avgConvRate != null ? fmtPct(avgConvRate) : '—'}
                   valueClassName={avgConvRate != null ? ovColorClass : ''}
                 />
