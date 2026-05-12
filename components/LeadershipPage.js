@@ -60,6 +60,7 @@ export default function LeadershipPage() {
   const [error, setError] = useState('')
   const [data, setData] = useState({})
   const [newMoneyMetric, setNewMoneyMetric] = useState('contractValue')
+  const [serviceTimeframe, setServiceTimeframe] = useState('all')
   const [now] = useState(() => new Date())
 
   useEffect(() => {
@@ -93,19 +94,6 @@ export default function LeadershipPage() {
     const monthly = churn.monthly || []
     const latestChurn = monthly[monthly.length - 1] || {}
 
-    const salesAnalysisDeals = data.salesAnalysis?.rawDeals || []
-    const byService = {}
-    for (const d of salesAnalysisDeals) {
-      const type = d.dealType || classifyDealType(d.rep, d.year)
-      const s = d.service || 'Unknown'
-      if (!byService[s]) byService[s] = { service: s, salesFP: 0, upsellFP: 0, unclassifiedFP: 0, total: 0 }
-      if (type === 'Sales') byService[s].salesFP += Number(d.firstPayment || 0)
-      else if (type === 'Upsell') byService[s].upsellFP += Number(d.firstPayment || 0)
-      else byService[s].unclassifiedFP += Number(d.firstPayment || 0)
-      byService[s].total += Number(d.firstPayment || 0)
-    }
-    const serviceByType = Object.values(byService).sort((a, b) => b.total - a.total).slice(0, 10)
-
     const cx = data.cx || {}
     const currentQ = cx.currentQuarter || 'Q1'
     const qStats = (cx.quarterStats || {})[currentQ] || { met: 0, total: 0, pct: 0 }
@@ -124,17 +112,40 @@ export default function LeadershipPage() {
       avg7,
       latestChurn,
       nrr: churn.nrr || {},
-      serviceByType,
       qStats,
       alerts,
     }
   }, [data, now])
 
+  const serviceByType = useMemo(() => {
+    const salesAnalysisDeals = data.salesAnalysis?.rawDeals || []
+    const filtered = serviceTimeframe === 'all'
+      ? salesAnalysisDeals
+      : salesAnalysisDeals.filter((d) => {
+          if (!d.year && !d.month) return false
+          if (serviceTimeframe === 'month') return d.year === now.getFullYear() && d.month === (now.getMonth() + 1)
+          if (serviceTimeframe === 'quarter') return d.year === now.getFullYear() && Math.floor((d.month - 1) / 3) === Math.floor(now.getMonth() / 3)
+          if (serviceTimeframe === 'ytd') return d.year === now.getFullYear()
+          return true
+        })
+    const byService = {}
+    for (const d of filtered) {
+      const type = d.dealType || classifyDealType(d.rep, d.year)
+      const s = d.service || 'Unknown'
+      if (!byService[s]) byService[s] = { service: s, salesFP: 0, upsellFP: 0, unclassifiedFP: 0, total: 0 }
+      if (type === 'Sales') byService[s].salesFP += Number(d.firstPayment || 0)
+      else if (type === 'Upsell') byService[s].upsellFP += Number(d.firstPayment || 0)
+      else byService[s].unclassifiedFP += Number(d.firstPayment || 0)
+      byService[s].total += Number(d.firstPayment || 0)
+    }
+    return Object.values(byService).sort((a, b) => b.total - a.total).slice(0, 10)
+  }, [data, serviceTimeframe, now])
+
   if (loading) return <div className="flex h-full items-center justify-center executive-muted">Loading leadership board…</div>
   if (error) return <div className="p-6 text-rose-300">Error: {error}</div>
 
   const { finance, dunning, sales, leads, dealSize, newBusiness, clientHealth } = data
-  const { metrics, todayCash, yesterdayCash, avg7, latestChurn, nrr, serviceByType, qStats, alerts } = derived
+  const { metrics, todayCash, yesterdayCash, avg7, latestChurn, nrr, qStats, alerts } = derived
 
   const ytdCash = data?.finance?.ytdCash || 0
   const startOfYear = new Date(now.getFullYear(), 0, 1)
@@ -204,6 +215,8 @@ export default function LeadershipPage() {
     },
   }
   const selectedNewMoneyMetric = newMoneyMetricConfig[newMoneyMetric] || newMoneyMetricConfig.contractValue
+
+  const serviceTimeframeLabels = { month: 'This Month', quarter: 'This Quarter', ytd: 'YTD', all: 'All Time' }
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -335,7 +348,23 @@ export default function LeadershipPage() {
           </ResponsiveContainer>
         </Panel>
 
-        <Panel title="Service by Sale vs Upsell" sub="Cross-sectional leverage by service (first payment $)">
+        <Panel title="Service by Sale vs Upsell" sub={`Cross-sectional leverage by service (first payment $) · ${serviceTimeframeLabels[serviceTimeframe]}`}>
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {[
+              ['month', 'This Month'],
+              ['quarter', 'This Quarter'],
+              ['ytd', 'YTD'],
+              ['all', 'All Time'],
+            ].map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setServiceTimeframe(key)}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition ${serviceTimeframe === key ? 'border-[var(--brand-border-accent)] bg-[rgba(166,111,205,0.14)] text-white' : 'border-[var(--brand-border)] text-[var(--brand-text-muted)] hover:border-[var(--brand-border-strong)] hover:text-white'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={serviceByType}>
               <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />

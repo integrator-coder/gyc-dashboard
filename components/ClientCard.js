@@ -2266,8 +2266,8 @@ function ArpBadge({ label, value }) {
   )
 }
 
-function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatmaps = [], gbpInfo = null }) {
-  const [open,     setOpen]     = useState(true)
+function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatmaps = [], gbpInfo = null, isOnProgram = true }) {
+  const [open,     setOpen]     = useState(false)
   const [hmRadius, setHmRadius] = useState(3)
   const [hmKw,     setHmKw]     = useState('daycare')
 
@@ -2342,7 +2342,14 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
   }
 
   return (
-    <div style={{ marginBottom: 32 }}>
+    <div style={{
+        marginBottom: 32,
+        // Prospect sections get a subtle amber tint to distinguish from program locations
+        background: !isOnProgram ? 'rgba(251,191,36,0.03)' : 'transparent',
+        borderLeft: !isOnProgram ? '2px solid rgba(251,191,36,0.2)' : '2px solid transparent',
+        paddingLeft: !isOnProgram ? 10 : 0,
+        borderRadius: !isOnProgram ? 4 : 0,
+      }}>
       {/* Collapsible location header — always shown */}
       <button
         onClick={() => setOpen(o => !o)}
@@ -2352,8 +2359,8 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
           textAlign: 'left', flexWrap: 'wrap',
         }}
       >
-        <div style={{ width: 3, height: 20, borderRadius: 2, background: '#731494', flexShrink: 0 }} />
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: '#c4b5fd', margin: 0 }}>
+        <div style={{ width: 3, height: 20, borderRadius: 2, background: isOnProgram ? '#731494' : '#d97706', flexShrink: 0 }} />
+        <h3 style={{ fontSize: 15, fontWeight: 700, color: isOnProgram ? '#c4b5fd' : '#fcd34d', margin: 0 }}>
           {loc || 'Location'}
         </h3>
         {gbpInfo?.rating != null && (
@@ -2368,6 +2375,47 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
       </button>
 
       {open && <>
+
+      {/* Prospect-only banner — inside expanded content */}
+      {!isOnProgram && (
+        <div style={{
+          background: 'rgba(251,191,36,0.06)',
+          border: '1px solid rgba(251,191,36,0.25)',
+          borderRadius: 8,
+          padding: '8px 14px',
+          marginBottom: 16,
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 10,
+        }}>
+          <div style={{ fontSize: 16, lineHeight: 1 }}>⚠️</div>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#fbbf24' }}>Not on SEO Program — Prospect Intel Only</div>
+            <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 3 }}>This location is not enrolled in GYC’s SEO service. Heatmaps are refreshed monthly to keep GAs prepared for conversations. No ranking data is tracked.</div>
+          </div>
+        </div>
+      )}
+
+      {/* GBP live snapshot for non-program locations */}
+      {!isOnProgram && gbpInfo && (gbpInfo.rating != null || gbpInfo.reviewCount != null || gbpInfo.address) && (
+        <div style={{ marginBottom: 20, display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+          {gbpInfo.address && (
+            <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '8px 14px', fontSize: 12, color: '#9ca3af' }}>
+              📍 {gbpInfo.address}
+            </div>
+          )}
+          {gbpInfo.rating != null && (
+            <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '8px 14px', fontSize: 12, color: '#fbbf24', fontWeight: 600 }}>
+              ⭐ {gbpInfo.rating.toFixed(1)} Google Rating
+            </div>
+          )}
+          {gbpInfo.reviewCount != null && (
+            <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '8px 14px', fontSize: 12, color: '#9ca3af' }}>
+              {gbpInfo.reviewCount.toLocaleString()} Reviews
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Heatmap — map + grid above Primary Keywords */}
       {heatmaps.length > 0 && (
@@ -2641,6 +2689,375 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
   )
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// Demographics Tab
+// ─────────────────────────────────────────────────────────────────────────
+
+function incomeTierLabel(income) {
+  if (income >= 110000) return { label: 'Premium', color: '#22c55e', pct: 100 }
+  if (income >= 90000)  return { label: 'Upper Mid-Market', color: '#84cc16', pct: 80 }
+  if (income >= 70000)  return { label: 'Mid-Market', color: '#eab308', pct: 60 }
+  if (income >= 50000)  return { label: 'Value Market', color: '#f97316', pct: 40 }
+  return { label: 'Subsidy-Eligible', color: '#ef4444', pct: 20 }
+}
+
+function DemographicsLocationBlock({ loc, incomeHeatmap }) {
+  const score = loc.opportunityScore || 0
+  const scoreColor = score >= 70 ? '#22c55e' : score >= 40 ? '#F59E0B' : '#ef4444'
+  const incomeTier = incomeTierLabel(loc.medianHouseholdIncome || 0)
+  const ts = loc.timeSeries || null
+
+  return (
+    <div style={{ background: 'rgba(26,10,46,0.5)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: '20px 24px', marginBottom: 20 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{loc.locationName}</div>
+          <div style={{ fontSize: 12, color: '#9ca3af' }}>{loc.address}</div>
+          {loc.zip && <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>ZIP: {loc.zip}{loc.countyName ? ` · ${loc.countyName}` : ''}</div>}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 11, color: '#9ca3af' }}>Opportunity Score</span>
+            <span style={{
+              background: scoreColor + '22',
+              border: `1px solid ${scoreColor}55`,
+              color: scoreColor,
+              borderRadius: 8,
+              padding: '4px 12px',
+              fontSize: 18,
+              fontWeight: 800,
+              lineHeight: 1,
+            }}>{score}</span>
+          </div>
+          <span style={{ fontSize: 10, color: '#6b7280' }}>/100</span>
+        </div>
+      </div>
+
+      {/* Error state */}
+      {loc.error && (
+        <div style={{ color: '#ef4444', fontSize: 12, marginBottom: 12 }}>⚠️ {loc.error}</div>
+      )}
+
+      {!loc.error && (
+        <>
+          {/* Signals */}
+          {loc.signals && loc.signals.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+              {loc.signals.map((sig, i) => {
+                const sigColor = sig.type === 'positive' ? '#4ade80' : sig.type === 'warning' ? '#fbbf24' : '#60a5fa'
+                const sigBg = sig.type === 'positive' ? 'rgba(74,222,128,0.08)' : sig.type === 'warning' ? 'rgba(251,191,36,0.08)' : 'rgba(96,165,250,0.08)'
+                const sigBorder = sig.type === 'positive' ? 'rgba(74,222,128,0.25)' : sig.type === 'warning' ? 'rgba(251,191,36,0.25)' : 'rgba(96,165,250,0.25)'
+                return (
+                  <span key={i} style={{
+                    background: sigBg,
+                    border: `1px solid ${sigBorder}`,
+                    color: sigColor,
+                    borderRadius: 20,
+                    padding: '4px 12px',
+                    fontSize: 12,
+                    lineHeight: 1.4,
+                  }}>{sig.text}</span>
+                )
+              })}
+            </div>
+          )}
+
+          {/* 4 Key metric cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 16 }}>
+            {[
+              { icon: '🧒', label: 'Children Under 5', value: (loc.childrenUnder5 || 0).toLocaleString() },
+              { icon: '💼', label: 'Working Parents (kids <6)', value: (loc.workingParentsUnder6 || 0).toLocaleString() },
+              { icon: '💰', label: 'Median Household Income', value: `$${((loc.medianHouseholdIncome || 0) / 1000).toFixed(0)}K` },
+              { icon: '🏫', label: 'Childcare Centers in County', value: (loc.childcareCenterCount || 0).toLocaleString() },
+            ].map(({ icon, label, value }) => (
+              <div key={label} style={{
+                background: '#111111',
+                border: '1px solid #2a1a3e',
+                borderRadius: 12,
+                padding: '14px 16px',
+              }}>
+                <div style={{ fontSize: 20, marginBottom: 4 }}>{icon}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: '#fff', lineHeight: 1 }}>{value}</div>
+                <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4, lineHeight: 1.3 }}>{label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Births & Demand section */}
+          <div style={{ background: '#111111', border: '1px solid #2a1a3e', borderRadius: 12, padding: '14px 16px', marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#9ca3af', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Births &amp; Demand Signals</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 10 }}>
+              {[
+                { label: 'Births Last Year', value: (loc.birthsLastYear || 0).toLocaleString(), note: 'future demand proxy' },
+                { label: 'Births per Center', value: loc.birthsPerCenter != null ? loc.birthsPerCenter.toFixed(1) : '—', note: 'demand/supply ratio' },
+                { label: 'Children 5–9', value: (loc.children5to9 || 0).toLocaleString(), note: 'K–3 pipeline' },
+                { label: 'Children 10–14', value: (loc.children10to14 || 0).toLocaleString(), note: 'after-school pipeline' },
+              ].map(({ label, value, note }) => (
+                <div key={label}>
+                  <div style={{ fontSize: 17, fontWeight: 700, color: '#fff' }}>{value}</div>
+                  <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 1 }}>{label}</div>
+                  <div style={{ fontSize: 10, color: '#4b5563', marginTop: 1 }}>{note}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Income tier bar (summary) */}
+          <div style={{ background: '#111111', border: '1px solid #2a1a3e', borderRadius: 12, padding: '14px 16px', marginBottom: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Income Tier</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: incomeTier.color }}>{incomeTier.label}</span>
+            </div>
+            <div style={{ background: '#1f1f1f', borderRadius: 6, height: 8, overflow: 'hidden' }}>
+              <div style={{
+                height: '100%',
+                width: `${incomeTier.pct}%`,
+                background: `linear-gradient(90deg, #ef4444 0%, #f97316 25%, #eab308 50%, #84cc16 75%, #22c55e 100%)`,
+                borderRadius: 6,
+                transition: 'width 0.6s ease',
+              }} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+              <span style={{ fontSize: 9, color: '#4b5563' }}>&lt;$50K</span>
+              <span style={{ fontSize: 9, color: '#4b5563' }}>$70K</span>
+              <span style={{ fontSize: 9, color: '#4b5563' }}>$90K</span>
+              <span style={{ fontSize: 9, color: '#4b5563' }}>$110K+</span>
+            </div>
+          </div>
+
+          {/* Income Heatmap — 3mi radius grid */}
+          <div style={{ marginBottom: 16 }}>
+            <SectionTitle>Household Income Distribution — 3mi Radius</SectionTitle>
+            {incomeHeatmap ? (
+              <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: '16px 20px' }}>
+                <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 12 }}>
+                  Avg: <strong style={{ color: '#e5e7eb' }}>${incomeHeatmap.avgIncome != null ? Math.round(incomeHeatmap.avgIncome / 1000) : '—'}K</strong>
+                  {' · Range: '}
+                  <strong style={{ color: '#e5e7eb' }}>
+                    ${incomeHeatmap.minIncome != null ? Math.round(incomeHeatmap.minIncome / 1000) : '—'}K
+                    {' – '}
+                    ${incomeHeatmap.maxIncome != null ? Math.round(incomeHeatmap.maxIncome / 1000) : '—'}K
+                  </strong>
+                  {' · 3mi radius · ACS 2023'}
+                </div>
+                <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                  <iframe
+                    title={`${loc.locationName} income map`}
+                    src={`https://maps.google.com/maps?q=${loc.lat},${loc.lng}&z=13&output=embed`}
+                    style={{ width: 332, height: 332, flexShrink: 0, border: 'none', borderRadius: 10, opacity: 0.9 }}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
+                  <IncomeHeatmapGrid points={incomeHeatmap.points} gridSize={incomeHeatmap.gridSize || 7} />
+                </div>
+              </div>
+            ) : (
+              <div style={{ color: '#6b7280', fontSize: 12, padding: '12px 0' }}>
+                Loading income heatmap… (may take 60–90s on first load)
+              </div>
+            )}
+          </div>
+
+          {/* Time-series charts */}
+          {ts && (
+            <div style={{ marginBottom: 16 }}>
+
+              {/* Chart 1: Annual Births */}
+              {ts.births && ts.births.length > 1 && (
+                <div style={{ marginBottom: 20 }}>
+                  <SectionTitle>Annual Births in County — Trend</SectionTitle>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={ts.births} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                      <XAxis dataKey="year" tick={{ fill: '#9ca3af', fontSize: 11 }} />
+                      <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} tickFormatter={v => v.toLocaleString()} />
+                      <Tooltip
+                        contentStyle={{ background: '#111', border: '1px solid #374151', borderRadius: 8, fontSize: 12 }}
+                        formatter={v => [v.toLocaleString(), 'Births']}
+                        labelStyle={{ color: '#9ca3af' }}
+                      />
+                      <Bar dataKey="births" fill="#6366f1" radius={[3, 3, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
+              {/* Chart 2: Children Under 5 */}
+              {ts.childrenUnder5 && ts.childrenUnder5.length > 1 && (
+                <div style={{ marginBottom: 20 }}>
+                  <SectionTitle>Children Under 5 in ZIP — Trend</SectionTitle>
+                  <div style={{ fontSize: 10, color: '#4b5563', marginBottom: 6 }}>ACS 5-year rolling estimates — each point is a 5-year average</div>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <LineChart data={ts.childrenUnder5} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                      <XAxis dataKey="year" tick={{ fill: '#9ca3af', fontSize: 11 }} />
+                      <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} tickFormatter={v => v.toLocaleString()} />
+                      <Tooltip
+                        contentStyle={{ background: '#111', border: '1px solid #374151', borderRadius: 8, fontSize: 12 }}
+                        formatter={v => [v.toLocaleString(), 'Children Under 5']}
+                        labelStyle={{ color: '#9ca3af' }}
+                      />
+                      <Line type="monotone" dataKey="count" stroke="#22c55e" strokeWidth={2} dot={{ r: 3, fill: '#22c55e' }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
+              {/* Chart 3: Childcare Centers */}
+              {ts.childcareCenters && ts.childcareCenters.length > 1 && (
+                <div style={{ marginBottom: 20 }}>
+                  <SectionTitle>Childcare Centers in County — Trend</SectionTitle>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <LineChart data={ts.childcareCenters} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                      <XAxis dataKey="year" tick={{ fill: '#9ca3af', fontSize: 11 }} />
+                      <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} />
+                      <Tooltip
+                        contentStyle={{ background: '#111', border: '1px solid #374151', borderRadius: 8, fontSize: 12 }}
+                        formatter={v => [v, 'Centers']}
+                        labelStyle={{ color: '#9ca3af' }}
+                      />
+                      <Line type="monotone" dataKey="count" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3, fill: '#f59e0b' }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
+              {/* Chart 4: Children Per Center Ratio */}
+              {ts.childrenPerCenter && ts.childrenPerCenter.length > 1 && (() => {
+                const first = ts.childrenPerCenter[0]?.ratio || 0
+                const last  = ts.childrenPerCenter[ts.childrenPerCenter.length - 1]?.ratio || 0
+                const trendColor = last >= first ? '#22c55e' : '#ef4444'
+                return (
+                  <div style={{ marginBottom: 20 }}>
+                    <SectionTitle>Children per Childcare Center — Demand/Supply Ratio</SectionTitle>
+                    <div style={{ fontSize: 10, color: '#4b5563', marginBottom: 6 }}>Higher = underserved market. Lower = increasing competition.</div>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <LineChart data={ts.childrenPerCenter} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                        <XAxis dataKey="year" tick={{ fill: '#9ca3af', fontSize: 11 }} />
+                        <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} />
+                        <Tooltip
+                          contentStyle={{ background: '#111', border: '1px solid #374151', borderRadius: 8, fontSize: 12 }}
+                          formatter={v => [`${v}x`, 'Children / Center']}
+                          labelStyle={{ color: '#9ca3af' }}
+                        />
+                        <Line type="monotone" dataKey="ratio" stroke={trendColor} strokeWidth={2} dot={{ r: 3, fill: trendColor }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )
+              })()}
+
+            </div>
+          )}
+
+          {/* Data note */}
+          <div style={{ fontSize: 10, color: '#4b5563', textAlign: 'right', marginTop: 4 }}>
+            ACS 2023 5-Year Estimates · US Census Bureau · County Business Patterns 2022
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+function DemographicsTab({ acronym }) {
+  const [data,          setData]          = useState(null)
+  const [incomeData,    setIncomeData]    = useState(null)
+  const [loading,       setLoading]       = useState(true)
+  const [incomeLoading, setIncomeLoading] = useState(true)
+  const [error,         setError]         = useState(null)
+
+  useEffect(() => {
+    if (!acronym) return
+    setLoading(true)
+    setIncomeLoading(true)
+
+    // Fetch demographics + income heatmap in parallel
+    Promise.all([
+      fetch(`/api/clients/${acronym}/demographics`).then(r => r.json()),
+      fetch(`/api/clients/${acronym}/income-heatmap`).then(r => r.json()).catch(() => null),
+    ]).then(([demData, incData]) => {
+      setData(demData)
+      setIncomeData(incData)
+      setLoading(false)
+      setIncomeLoading(false)
+    }).catch(e => {
+      setError(e.message)
+      setLoading(false)
+      setIncomeLoading(false)
+    })
+  }, [acronym])
+
+  // Build a map of locationName -> heatmap for easy lookup
+  const incomeByLocation = useMemo(() => {
+    const map = {}
+    for (const loc of (incomeData?.locations || [])) {
+      if (loc.locationName) map[loc.locationName] = loc
+    }
+    return map
+  }, [incomeData])
+
+  if (loading) {
+    return (
+      <div style={{ padding: '40px 0', textAlign: 'center', color: '#9ca3af', fontSize: 14 }}>
+        <div style={{ marginBottom: 8, fontSize: 20 }}>📊</div>
+        Loading market intelligence… (may take a moment on first load)
+        <div style={{ fontSize: 11, color: '#4b5563', marginTop: 6 }}>Income heatmap may take 60–90s on first run</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div style={{ padding: '20px 0', color: '#ef4444', fontSize: 13 }}>
+        Error loading demographics data: {error}
+      </div>
+    )
+  }
+
+  const locations = data?.locations || []
+
+  if (locations.length === 0) {
+    return (
+      <div style={{ padding: '40px 0', textAlign: 'center', color: '#9ca3af', fontSize: 14 }}>
+        <div style={{ marginBottom: 8, fontSize: 20 }}>📊</div>
+        No GBP locations found for this client.
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ paddingTop: 24 }}>
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 4 }}>📊 Market Intelligence</div>
+        <div style={{ fontSize: 12, color: '#6b7280' }}>
+          US Census demographic &amp; competitive data by location · {locations.length} location{locations.length !== 1 ? 's' : ''}
+          {data?.updatedAt && (
+            <span style={{ marginLeft: 8 }}>· Last synced {new Date(data.updatedAt).toLocaleDateString()}</span>
+          )}
+          {incomeLoading && (
+            <span style={{ marginLeft: 8, color: '#6366f1' }}>· Loading income heatmap…</span>
+          )}
+        </div>
+      </div>
+      {locations.map(loc => (
+        <DemographicsLocationBlock
+          key={loc.locationName}
+          loc={loc}
+          incomeHeatmap={incomeByLocation[loc.locationName] || null}
+        />
+      ))}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// SEO Tab
+// ─────────────────────────────────────────────────────────────────────────
+
 function SEOTab({ profile, acronym }) {
   const [seoData, setSeoData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -2676,6 +3093,18 @@ function SEOTab({ profile, acronym }) {
   const locations = seoData?.locations || []
   const isMultiLoc = locations.length > 1 || (locations.length === 1 && locations[0] !== '')
 
+  const seoLocNames = new Set(locations)
+  const gbpLocations = seoData?.gbpLocations || []
+  const gbpOnlyLocations = gbpLocations.filter(g => {
+    const name = g.locationName || ''
+    const seoName = g.seoLocationName
+    // If seoLocationName is explicitly set (even empty string), it's already on the SEO program path
+    if (seoName !== null && seoName !== undefined) return false
+    // If it matches an SEO snapshot location name, skip it
+    if ([...seoLocNames].some(sl => sl && name.toLowerCase().includes(sl.toLowerCase()))) return false
+    return true
+  })
+
   return (
     <div className="space-y-6">
       {/* Service Details */}
@@ -2699,23 +3128,39 @@ function SEOTab({ profile, acronym }) {
           <SectionTitle>Rankings & Performance</SectionTitle>
           <InfoTip text="How visible this location is in Google local search results. Each location can be expanded or collapsed. Data sources: Local Falcon (SOLV/ARP grid scans), GBP (Google Business Profile performance), and DataForSEO (organic domain metrics)." />
         </div>
-        {!hasData ? (
+        {locations.length === 0 && gbpOnlyLocations.length === 0 ? (
           <PlaceholderBanner icon="📈" message="No ranking data synced yet. Data populates automatically from the SEO report sheets." />
         ) : (
           <div style={{ background: 'rgba(26,10,46,0.5)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 20, padding: '20px 24px' }}>
+            {/* SEO program locations */}
             {locations.map(loc => (
               <SEOLocationBlock
-                key={loc}
+                key={`seo-${loc}`}
                 acronym={acronym}
                 loc={loc}
                 snapshots={seoData.snapshots.filter(s => s.locationName === loc)}
                 gbpRows={(seoData.gbpByLocation?.[loc]) || []}
                 isMultiLoc={isMultiLoc}
+                isOnProgram={!!profile.hasSEO}
                 heatmaps={(seoData.heatmaps || []).filter(h => h.locationName === loc)}
                 gbpInfo={(seoData.gbpLocations || []).find(g =>
                   g.locationName?.toLowerCase().includes(loc.toLowerCase()) ||
                   loc.toLowerCase().split(' ').some(word => word.length > 3 && g.locationName?.toLowerCase().includes(word))
                 ) || null}
+              />
+            ))}
+            {/* GBP-only locations (heatmapEnabled=true but not on SEO program) */}
+            {gbpOnlyLocations.map(g => (
+              <SEOLocationBlock
+                key={`gbp-${g.id}`}
+                acronym={acronym}
+                loc={g.locationName || 'Location'}
+                snapshots={[]}
+                gbpRows={(seoData.gbpByLocation?.[g.locationName]) || []}
+                isMultiLoc={gbpOnlyLocations.length > 1}
+                isOnProgram={false}
+                heatmaps={(seoData.heatmaps || []).filter(h => h.locationName === g.locationName)}
+                gbpInfo={g}
               />
             ))}
           </div>
@@ -2822,6 +3267,69 @@ function HeatmapGrid({ points, gridSize = 5 }) {
   )
 }
 
+// ── Income Heatmap helpers ────────────────────────────────────────────────
+
+const INCOME_COLORS = [
+  { min: 0,      max: 40000,   bg: '#7f1d1d', text: '#fca5a5', label: '<$40K' },
+  { min: 40000,  max: 60000,   bg: '#9a3412', text: '#fdba74', label: '$40-60K' },
+  { min: 60000,  max: 80000,   bg: '#92400e', text: '#fcd34d', label: '$60-80K' },
+  { min: 80000,  max: 100000,  bg: '#3f6212', text: '#bef264', label: '$80-100K' },
+  { min: 100000, max: 130000,  bg: '#166534', text: '#86efac', label: '$100-130K' },
+  { min: 130000, max: Infinity, bg: '#14532d', text: '#4ade80', label: '$130K+' },
+]
+
+function incomeColor(income) {
+  if (income == null || income <= 0) return { bg: '#1f2937', text: '#6b7280' }
+  const tier = INCOME_COLORS.find(t => income >= t.min && income < t.max) || INCOME_COLORS[INCOME_COLORS.length - 1]
+  return { bg: tier.bg, text: tier.text }
+}
+
+function IncomeHeatmapGrid({ points, gridSize = 7 }) {
+  const half = Math.floor(gridSize / 2)
+  const rows = []
+  for (let r = -half; r <= half; r++) {
+    const cells = []
+    for (let c = -half; c <= half; c++) {
+      const pt       = points.find(p => p.row === r && p.col === c)
+      const income   = pt?.medianIncome ?? null
+      const color    = incomeColor(income)
+      const isCenter = r === 0 && c === 0
+      const label    = income != null ? `$${Math.round(income / 1000)}K` : '—'
+      cells.push(
+        <div
+          key={c}
+          title={income != null ? `Median income: $${income.toLocaleString()}` : 'No data'}
+          style={{
+            width: 44, height: 44,
+            background: color.bg,
+            border: isCenter ? '2px solid #c4b5fd' : '1px solid rgba(255,255,255,0.06)',
+            borderRadius: 8,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexDirection: 'column', cursor: 'default',
+          }}
+        >
+          <span style={{ fontSize: 10, fontWeight: 700, color: color.text }}>{label}</span>
+          {isCenter && <span style={{ fontSize: 7, color: '#c4b5fd', marginTop: 1 }}>HERE</span>}
+        </div>
+      )
+    }
+    rows.push(<div key={r} style={{ display: 'flex', gap: 4 }}>{cells}</div>)
+  }
+  return (
+    <div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>{rows}</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10, justifyContent: 'center' }}>
+        {INCOME_COLORS.map(t => (
+          <div key={t.label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <div style={{ width: 10, height: 10, borderRadius: 2, background: t.bg, border: '1px solid rgba(255,255,255,0.1)' }} />
+            <span style={{ fontSize: 10, color: '#9ca3af' }}>{t.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function SEOHeatmapSection({ heatmaps }) {
   const [activeKw,     setActiveKw]     = useState('daycare')
   const [activeRadius, setActiveRadius] = useState(3)
@@ -2920,7 +3428,7 @@ function SEOHeatmapSection({ heatmaps }) {
                     <iframe
                       title={`${loc || 'Location'} map`}
                       src={`https://maps.google.com/maps?q=${hm.centerLat},${hm.centerLng}&z=${activeRadius >= 5 ? 12 : 13}&output=embed`}
-                      style={{ flex: 1, minWidth: 220, height: 236, border: 'none', borderRadius: 10, opacity: 0.9 }}
+                      style={{ width: 236, height: 236, flexShrink: 0, border: 'none', borderRadius: 10, opacity: 0.9 }}
                       loading="lazy"
                       referrerPolicy="no-referrer-when-downgrade"
                     />
@@ -4652,21 +5160,34 @@ function CRMTab({ profile, acronym, funnelByLocation = [], locations = [], gbpLo
     const ordered = []
     const seen = new Set()
 
-    for (const name of [
-      ...locations,
-      ...funnelByLocation.map((row) => row.locationName),
-      ...gbpLocations.map((location) => location.locationName),
-    ]) {
+    // Step 1: funnel names first — these are the canonical names with actual data
+    for (const name of funnelByLocation.map((row) => row.locationName)) {
       const key = normalizeLocationKey(name)
       if (!key || seen.has(key)) continue
       seen.add(key)
       ordered.push(name)
     }
 
-    return ordered
-  }, [locations, funnelByLocation, gbpLocations])
+    // Step 2: GBP location names — skip if the GBP name CONTAINS an already-added funnel name
+    // (e.g. "The Eastside Preschool by Child Time" is suppressed when "Eastside Preschool" is already listed)
+    // One-directional check only: GBP long names absorb into funnel short names, never the reverse.
+    for (const location of gbpLocations) {
+      const name = location.locationName
+      const key = normalizeLocationKey(name)
+      if (!key || seen.has(key)) continue
+      const coveredByFunnel = ordered.some(existing => {
+        const ekey = normalizeLocationKey(existing)
+        return ekey.length > 4 && key.includes(ekey)
+      })
+      if (coveredByFunnel) continue
+      seen.add(key)
+      ordered.push(name)
+    }
 
-  const [openLocs, setOpenLocs] = useState(locationNames.length > 0 ? [locationNames[0]] : [])
+    return ordered
+  }, [funnelByLocation, gbpLocations])
+
+  const [openLocs, setOpenLocs] = useState([])
   const [locationForms, setLocationForms] = useState({})
   const [savingLocationKey, setSavingLocationKey] = useState('')
   const [savedLocationKey, setSavedLocationKey] = useState('')
@@ -4688,7 +5209,11 @@ function CRMTab({ profile, acronym, funnelByLocation = [], locations = [], gbpLo
   useEffect(() => {
     const nextForms = {}
     for (const name of locationNames) {
-      const match = gbpLocations.find((location) => normalizeLocationKey(location.locationName) === normalizeLocationKey(name))
+      const nameKey = normalizeLocationKey(name)
+      const match = gbpLocations.find((location) => {
+        const lkey = normalizeLocationKey(location.locationName)
+        return lkey === nameKey || (lkey.length > 4 && lkey.includes(nameKey))
+      })
       nextForms[normalizeLocationKey(name)] = {
         capacity: match?.capacity ?? '',
         currentEnrollment: match?.currentEnrollment ?? '',
@@ -4720,7 +5245,15 @@ function CRMTab({ profile, acronym, funnelByLocation = [], locations = [], gbpLo
 
   function getLatest(loc) { return (byLoc[loc] || [])[0] || null }
   function getLast12(loc)  { return (byLoc[loc] || []).slice(0, 12).reverse() }
-  function getLocationRecord(loc) { return gbpByKey[normalizeLocationKey(loc)] || null }
+  function getLocationRecord(loc) {
+    const key = normalizeLocationKey(loc)
+    if (gbpByKey[key]) return gbpByKey[key]
+    // Substring fallback: GBP long name contains the funnel short name (one direction only)
+    return gbpLocations.find(g => {
+      const gkey = normalizeLocationKey(g.locationName)
+      return gkey.length > 4 && gkey.includes(key)
+    }) || null
+  }
   function getLocationForm(loc) {
     return locationForms[normalizeLocationKey(loc)] || {
       capacity: '',
@@ -4827,233 +5360,129 @@ function CRMTab({ profile, acronym, funnelByLocation = [], locations = [], gbpLo
         </Card>
       </div>
 
-      {/* ── Section 2 + 3: Location Data ── */}
+      {/* ── Section 2 + 3: Location Data (unified collapsible per location) ── */}
       {locationNames.length === 0 ? (
         <div>
           <SectionTitle>Location Data</SectionTitle>
           <Empty>No location data available yet.</Empty>
         </div>
       ) : (
-        <>
-          {/* Section 2: Locations Summary */}
-          <div>
-            <SectionTitle>
-              Locations — {funnelByLocation[0] ? (() => {
-                const [y, m] = funnelByLocation[0].month.split('-')
-                return new Date(parseInt(y), parseInt(m)-1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-              })() : 'Latest Month'}
-            </SectionTitle>
-            <div className="overflow-x-auto rounded-2xl border border-[var(--brand-border)] bg-black/20">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-white/5 text-left text-[11px] uppercase tracking-wider text-gray-500">
-                    <th className="px-4 py-2.5">Location</th>
-                    <th className="px-3 py-2.5 text-center" style={{ color: '#6366f1' }}>Leads</th>
-                    <th className="px-3 py-2.5 text-center" style={{ color: '#C19C46' }}>Tours</th>
-                    <th className="px-3 py-2.5 text-center" style={{ color: '#10b981' }}>Enrolled</th>
-                    <th className="px-3 py-2.5 text-center" style={{ color: '#06b6d4' }}>Tour Rate</th>
-                    <th className="px-3 py-2.5 text-center" style={{ color: '#731494' }}>Close Rate</th>
-                    <th className="px-3 py-2.5 text-center" style={{ color: '#C19C46' }}>Conv Rate</th>
-                    <th className="px-3 py-2.5 text-center">Capacity</th>
-                    <th className="px-3 py-2.5 text-center">Registrations</th>
-                    <th className="px-3 py-2.5 text-center">Ave Tuition</th>
-                    <th className="px-3 py-2.5 text-center">MLoT</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {locationNames.map(loc => {
-                    const r = getLatest(loc)
-                    const locationRecord = getLocationRecord(loc)
-                    const savedMetrics = getLocationEnrollmentMetrics(locationRecord)
-                    const form = getLocationForm(loc)
-                    const editMetrics = getLocationEnrollmentMetrics({
-                      capacity: form.capacity,
-                      currentEnrollment: form.currentEnrollment,
-                      avgTuition: form.avgTuition,
-                    })
-                    const key = normalizeLocationKey(loc)
-                    const validationError = getLocationValidationError(form)
-                    const isSaving = savingLocationKey === key
-                    const isSaved = savedLocationKey === key
-                    const error = locationErrors[key]
-                    const dirty = isLocationDirty(loc)
-
-                    return (
-                      <Fragment key={loc}>
-                        <tr className="hover:bg-white/[0.02] transition">
-                          <td className="px-4 py-2.5 font-semibold text-white">{loc}</td>
-                          <td className="px-3 py-2.5 text-center" style={{ color: '#6366f1' }}>{r ? r.leads : '—'}</td>
-                          <td className="px-3 py-2.5 text-center" style={{ color: '#C19C46' }}>{r ? r.tours : '—'}</td>
-                          <td className="px-3 py-2.5 text-center" style={{ color: '#10b981' }}>{r ? r.registered : '—'}</td>
-                          <td className="px-3 py-2.5 text-center" style={{ color: '#06b6d4' }}>{r ? `${r.tourRate}%` : '—'}</td>
-                          <td className="px-3 py-2.5 text-center" style={{ color: '#731494' }}>{r ? `${r.closeRate}%` : '—'}</td>
-                          <td className="px-3 py-2.5 text-center" style={{ color: '#C19C46' }}>{r ? `${r.convRate}%` : '—'}</td>
-                          <td className="px-3 py-2.5 text-center text-gray-200">{fmtNum(locationRecord?.capacity)}</td>
-                          <td className="px-3 py-2.5 text-center text-gray-200">{fmtNum(locationRecord?.currentEnrollment)}</td>
-                          <td className="px-3 py-2.5 text-center text-gray-200">{fmtMoney(locationRecord?.avgTuition)}</td>
-                          <td className="px-3 py-2.5 text-center text-amber-300">{savedMetrics.hasAllSourceNumbers ? fmtMoney(savedMetrics.monthlyOpportunity) : '—'}</td>
-                        </tr>
-                        <tr className="bg-white/[0.02] align-top">
-                          <td colSpan={7} className="px-4 py-3 text-xs text-gray-400">
-                            <div className="font-medium text-gray-300">Location Enrollment Inputs</div>
-                            <div>Update current live enrollment, capacity, and average tuition here.</div>
-                            {(error || validationError) && <div className="mt-1 text-rose-400">{error || validationError}</div>}
-                            {isSaved && <div className="mt-1 text-emerald-400">✓ Saved</div>}
-                          </td>
-                          <td className="px-2 py-3">
-                            <input
-                              type="number"
-                              step="1"
-                              value={form.capacity}
-                              onChange={(event) => updateLocationForm(loc, 'capacity', event.target.value)}
-                              placeholder="Capacity"
-                              className="w-24 rounded-lg border border-[var(--brand-border)] bg-black/30 px-2 py-1.5 text-sm text-white outline-none focus:border-violet-500/50"
-                            />
-                          </td>
-                          <td className="px-2 py-3">
-                            <input
-                              type="number"
-                              step="1"
-                              value={form.currentEnrollment}
-                              onChange={(event) => updateLocationForm(loc, 'currentEnrollment', event.target.value)}
-                              placeholder="Registrations"
-                              className="w-24 rounded-lg border border-[var(--brand-border)] bg-black/30 px-2 py-1.5 text-sm text-white outline-none focus:border-violet-500/50"
-                            />
-                          </td>
-                          <td className="px-2 py-3">
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={form.avgTuition}
-                              onChange={(event) => updateLocationForm(loc, 'avgTuition', event.target.value)}
-                              placeholder="Ave Tuition"
-                              className="w-28 rounded-lg border border-[var(--brand-border)] bg-black/30 px-2 py-1.5 text-sm text-white outline-none focus:border-violet-500/50"
-                            />
-                          </td>
-                          <td className="px-2 py-3 text-center">
-                            <div className="text-sm font-semibold text-amber-300">{editMetrics.hasAllSourceNumbers ? fmtMoney(editMetrics.monthlyOpportunity) : '—'}</div>
-                            <button
-                              onClick={() => saveLocationMetrics(loc)}
-                              disabled={isSaving || !dirty}
-                              className="mt-2 rounded-lg border border-violet-500/40 bg-violet-500/15 px-3 py-1.5 text-xs font-medium text-violet-300 hover:bg-violet-500/25 disabled:opacity-50 transition"
-                            >
-                              {isSaving ? 'Saving…' : 'Save'}
-                            </button>
-                          </td>
-                        </tr>
-                      </Fragment>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Section 3: Trendlines per Location */}
-          <div>
-            <SectionTitle>Location Trendlines</SectionTitle>
-            <div className="space-y-3">
-              {locationNames.map((loc) => {
-                const isOpen = openLocs.includes(loc)
-                const data12 = getLast12(loc)
-                const key = normalizeLocationKey(loc)
-                const form = getLocationForm(loc)
-                const validationError = getLocationValidationError(form)
-                const locationMetrics = getLocationEnrollmentMetrics({
-                  capacity: form.capacity,
-                  currentEnrollment: form.currentEnrollment,
-                  avgTuition: form.avgTuition,
-                })
-                const isSaving = savingLocationKey === key
-                const isSaved = savedLocationKey === key
-                const error = locationErrors[key]
-                const dirty = isLocationDirty(loc)
-                return (
-                  <div key={loc} className="overflow-hidden rounded-2xl border border-[var(--brand-border)] bg-black/20">
-                    <button
-                      onClick={() => toggleLoc(loc)}
-                      className="flex w-full items-center justify-between px-4 py-3 text-left transition hover:bg-white/5"
-                    >
+        <div>
+          <SectionTitle>
+            Locations{funnelByLocation[0] ? (() => {
+              const [y, m] = funnelByLocation[0].month.split('-')
+              return ' — ' + new Date(parseInt(y), parseInt(m)-1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+            })() : ''}
+          </SectionTitle>
+          <div className="space-y-2">
+            {locationNames.map((loc) => {
+              const isOpen = openLocs.includes(loc)
+              const r = getLatest(loc)
+              const data12 = getLast12(loc)
+              const locationRecord = getLocationRecord(loc)
+              const savedMetrics = getLocationEnrollmentMetrics(locationRecord)
+              const form = getLocationForm(loc)
+              const editMetrics = getLocationEnrollmentMetrics({
+                capacity: form.capacity,
+                currentEnrollment: form.currentEnrollment,
+                avgTuition: form.avgTuition,
+              })
+              const key = normalizeLocationKey(loc)
+              const validationError = getLocationValidationError(form)
+              const isSaving = savingLocationKey === key
+              const isSaved = savedLocationKey === key
+              const error = locationErrors[key]
+              const dirty = isLocationDirty(loc)
+              return (
+                <div key={loc} className="overflow-hidden rounded-2xl border border-[var(--brand-border)] bg-black/20">
+                  {/* Collapsible header */}
+                  <button
+                    onClick={() => toggleLoc(loc)}
+                    className="flex w-full items-center justify-between px-4 py-3 text-left transition hover:bg-white/5"
+                  >
+                    <div className="flex flex-wrap items-center gap-4">
                       <span className="font-semibold text-white">{loc}</span>
-                      <span className={`text-lg text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`}>›</span>
-                    </button>
-                    {isOpen && (
-                      <div className="border-t border-[var(--brand-border)] px-4 pb-4 pt-3 space-y-4">
-                        <div className="rounded-2xl border border-[var(--brand-border)] bg-black/30 p-4">
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div>
-                              <div className="text-sm font-semibold text-white">Location Enrollment Inputs</div>
-                              <div className="mt-1 text-xs text-gray-400">Registrations means current live enrollment at this center.</div>
-                            </div>
-                            <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-right">
-                              <div className="text-[11px] uppercase tracking-wide text-amber-200/70">MLoT</div>
-                              <div className="text-sm font-semibold text-amber-300">
-                                {locationMetrics.hasAllSourceNumbers ? fmtMoney(locationMetrics.monthlyOpportunity) : '—'}
-                              </div>
-                              <div className="text-[11px] text-amber-200/60">Monthly Left on the Table</div>
-                            </div>
-                          </div>
+                      {r ? (
+                        <div className="flex gap-3 text-xs">
+                          <span style={{ color: '#6366f1' }}>Leads {r.leads}</span>
+                          <span style={{ color: '#C19C46' }}>Tours {r.tours}</span>
+                          <span style={{ color: '#10b981' }}>Enrolled {r.registered}</span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-600">No funnel data</span>
+                      )}
+                      {savedMetrics.hasAllSourceNumbers && savedMetrics.enrollmentGap > 0 && (
+                        <span className="text-xs text-amber-300">MLoT {fmtMoney(savedMetrics.monthlyOpportunity)}</span>
+                      )}
+                    </div>
+                    <span className={`text-lg text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`}>›</span>
+                  </button>
 
-                          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-                            <div>
-                              <label className="mb-1 block text-xs text-gray-400">Capacity</label>
-                              <input
-                                type="number"
-                                step="1"
-                                value={form.capacity}
-                                onChange={(event) => updateLocationForm(loc, 'capacity', event.target.value)}
-                                placeholder="e.g. 126"
-                                className={INPUT_CLS}
-                              />
-                            </div>
-                            <div>
-                              <label className="mb-1 block text-xs text-gray-400">Registrations</label>
-                              <input
-                                type="number"
-                                step="1"
-                                value={form.currentEnrollment}
-                                onChange={(event) => updateLocationForm(loc, 'currentEnrollment', event.target.value)}
-                                placeholder="e.g. 97"
-                                className={INPUT_CLS}
-                              />
-                            </div>
-                            <div>
-                              <label className="mb-1 block text-xs text-gray-400">Ave Tuition</label>
-                              <input
-                                type="number"
-                                step="0.01"
-                                value={form.avgTuition}
-                                onChange={(event) => updateLocationForm(loc, 'avgTuition', event.target.value)}
-                                placeholder="e.g. 1450"
-                                className={INPUT_CLS}
-                              />
-                            </div>
-                          </div>
+                  {/* Expanded content */}
+                  {isOpen && (
+                    <div className="border-t border-[var(--brand-border)] px-4 pb-4 pt-3 space-y-4">
 
-                          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-                            <StatBox label="Open Seats" value={!locationMetrics.hasAllSourceNumbers ? '—' : locationMetrics.isFull ? 'Full' : fmtNum(locationMetrics.enrollmentGap)} sub={!locationMetrics.hasAllSourceNumbers ? 'Add all 3 inputs to calculate' : locationMetrics.isFull ? 'At capacity' : 'Capacity - registrations'} />
-                            <StatBox label="MLoT" value={locationMetrics.hasAllSourceNumbers ? fmtMoney(locationMetrics.monthlyOpportunity) : '—'} sub="Open Seats × Ave Tuition" valueClassName={locationMetrics.hasAllSourceNumbers && locationMetrics.enrollmentGap > 0 ? 'text-amber-300' : ''} />
-                            <StatBox label="Annual Opportunity" value={locationMetrics.hasAllSourceNumbers ? fmtMoney(locationMetrics.annualOpportunity) : '—'} sub="MLoT × 12" valueClassName={locationMetrics.hasAllSourceNumbers && locationMetrics.enrollmentGap > 0 ? 'text-emerald-300' : ''} />
-                          </div>
+                      {/* Latest month metrics */}
+                      {r && (
+                        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                          <StatBox label="Leads"      value={r.leads} />
+                          <StatBox label="Tours"      value={r.tours} />
+                          <StatBox label="Enrolled"   value={r.registered} />
+                          <StatBox label="Tour Rate"  value={r.tourRate  != null ? `${r.tourRate}%`  : '—'} />
+                          <StatBox label="Close Rate" value={r.closeRate != null ? `${r.closeRate}%` : '—'} />
+                          <StatBox label="Conv Rate"  value={r.convRate  != null ? `${r.convRate}%`  : '—'} />
+                        </div>
+                      )}
 
-                          <div className="mt-4 flex flex-wrap items-center gap-3">
-                            <button
-                              onClick={() => saveLocationMetrics(loc)}
-                              disabled={isSaving || !dirty}
-                              className="rounded-xl border border-violet-500/40 bg-violet-500/15 px-4 py-2 text-sm font-medium text-violet-300 hover:bg-violet-500/25 disabled:opacity-50 transition"
-                            >
-                              {isSaving ? 'Saving…' : 'Save'}
-                            </button>
-                            {isSaved && <span className="text-sm text-emerald-400">✓ Saved</span>}
-                            {(error || validationError) && <span className="text-sm text-rose-400">{error || validationError}</span>}
+                      {/* Enrollment inputs + opportunity */}
+                      <div className="rounded-2xl border border-[var(--brand-border)] bg-black/30 p-4">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <div className="text-sm font-semibold text-white">Location Enrollment Inputs</div>
+                            <div className="mt-1 text-xs text-gray-400">Registrations means current live enrollment at this center.</div>
+                          </div>
+                          <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-right">
+                            <div className="text-[11px] uppercase tracking-wide text-amber-200/70">MLoT</div>
+                            <div className="text-sm font-semibold text-amber-300">
+                              {editMetrics.hasAllSourceNumbers ? fmtMoney(editMetrics.monthlyOpportunity) : '—'}
+                            </div>
+                            <div className="text-[11px] text-amber-200/60">Monthly Left on the Table</div>
                           </div>
                         </div>
+                        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+                          <div>
+                            <label className="mb-1 block text-xs text-gray-400">Capacity</label>
+                            <input type="number" step="1" value={form.capacity} onChange={e => updateLocationForm(loc, 'capacity', e.target.value)} placeholder="e.g. 126" className={INPUT_CLS} />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs text-gray-400">Registrations</label>
+                            <input type="number" step="1" value={form.currentEnrollment} onChange={e => updateLocationForm(loc, 'currentEnrollment', e.target.value)} placeholder="e.g. 97" className={INPUT_CLS} />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs text-gray-400">Ave Tuition</label>
+                            <input type="number" step="0.01" value={form.avgTuition} onChange={e => updateLocationForm(loc, 'avgTuition', e.target.value)} placeholder="e.g. 1450" className={INPUT_CLS} />
+                          </div>
+                        </div>
+                        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+                          <StatBox label="Open Seats" value={!editMetrics.hasAllSourceNumbers ? '—' : editMetrics.isFull ? 'Full' : fmtNum(editMetrics.enrollmentGap)} sub={!editMetrics.hasAllSourceNumbers ? 'Add all 3 inputs to calculate' : editMetrics.isFull ? 'At capacity' : 'Capacity - registrations'} />
+                          <StatBox label="MLoT" value={editMetrics.hasAllSourceNumbers ? fmtMoney(editMetrics.monthlyOpportunity) : '—'} sub="Open Seats × Ave Tuition" valueClassName={editMetrics.hasAllSourceNumbers && editMetrics.enrollmentGap > 0 ? 'text-amber-300' : ''} />
+                          <StatBox label="Annual Opportunity" value={editMetrics.hasAllSourceNumbers ? fmtMoney(editMetrics.annualOpportunity) : '—'} sub="MLoT × 12" valueClassName={editMetrics.hasAllSourceNumbers && editMetrics.enrollmentGap > 0 ? 'text-emerald-300' : ''} />
+                        </div>
+                        <div className="mt-4 flex flex-wrap items-center gap-3">
+                          <button onClick={() => saveLocationMetrics(loc)} disabled={isSaving || !dirty} className="rounded-xl border border-violet-500/40 bg-violet-500/15 px-4 py-2 text-sm font-medium text-violet-300 hover:bg-violet-500/25 disabled:opacity-50 transition">
+                            {isSaving ? 'Saving…' : 'Save'}
+                          </button>
+                          {isSaved && <span className="text-sm text-emerald-400">✓ Saved</span>}
+                          {(error || validationError) && <span className="text-sm text-rose-400">{error || validationError}</span>}
+                        </div>
+                      </div>
 
-                        {data12.length === 0 ? (
-                          <Empty>No trend data for this location.</Empty>
-                        ) : (
-                          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                            <div>
+                      {/* Trendline charts */}
+                      {data12.length === 0 ? (
+                        <Empty>No trend data for this location.</Empty>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                          <div>
                               <div className="mb-2 text-xs font-medium text-gray-400">Volume — Leads / Tours / Enrolled</div>
                               <div style={{ height: 200 }}>
                                 <ResponsiveContainer width="100%" height="100%">
@@ -5061,11 +5490,7 @@ function CRMTab({ profile, acronym, funnelByLocation = [], locations = [], gbpLo
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
                                     <XAxis dataKey="month" tick={{ fill: '#6b7280', fontSize: 9 }} tickFormatter={fmtMonth} />
                                     <YAxis tick={{ fill: '#6b7280', fontSize: 9 }} width={24} />
-                                    <Tooltip
-                                      contentStyle={{ background: '#0a0a0a', border: '1px solid #2a1a3e', borderRadius: 12 }}
-                                      labelStyle={{ color: '#9ca3af' }}
-                                      labelFormatter={fmtMonth}
-                                    />
+                                    <Tooltip contentStyle={{ background: '#0a0a0a', border: '1px solid #2a1a3e', borderRadius: 12 }} labelStyle={{ color: '#9ca3af' }} labelFormatter={fmtMonth} />
                                     <Bar dataKey="leads" fill="#6366f1" name="Leads" radius={[2,2,0,0]} />
                                     <Bar dataKey="tours" fill="#C19C46" name="Tours" radius={[2,2,0,0]} />
                                     <Bar dataKey="registered" fill="#10b981" name="Enrolled" radius={[2,2,0,0]} />
@@ -5081,12 +5506,7 @@ function CRMTab({ profile, acronym, funnelByLocation = [], locations = [], gbpLo
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
                                     <XAxis dataKey="month" tick={{ fill: '#6b7280', fontSize: 9 }} tickFormatter={fmtMonth} />
                                     <YAxis tick={{ fill: '#6b7280', fontSize: 9 }} width={32} domain={[0, 100]} tickFormatter={v => `${v}%`} />
-                                    <Tooltip
-                                      contentStyle={{ background: '#0a0a0a', border: '1px solid #2a1a3e', borderRadius: 12 }}
-                                      labelStyle={{ color: '#9ca3af' }}
-                                      labelFormatter={fmtMonth}
-                                      formatter={(val) => val != null ? `${val}%` : '—'}
-                                    />
+                                    <Tooltip contentStyle={{ background: '#0a0a0a', border: '1px solid #2a1a3e', borderRadius: 12 }} labelStyle={{ color: '#9ca3af' }} labelFormatter={fmtMonth} formatter={(val) => val != null ? `${val}%` : '—'} />
                                     <Line type="monotone" dataKey="tourRate" stroke="#06b6d4" strokeWidth={2} dot={false} name="Tour Rate" connectNulls />
                                     <Line type="monotone" dataKey="closeRate" stroke="#731494" strokeWidth={2} dot={false} name="Close Rate" connectNulls />
                                     <Line type="monotone" dataKey="convRate" stroke="#C19C46" strokeWidth={2} dot={false} name="Conv Rate" connectNulls />
@@ -5096,14 +5516,13 @@ function CRMTab({ profile, acronym, funnelByLocation = [], locations = [], gbpLo
                             </div>
                           </div>
                         )}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
-        </>
+        </div>
       )}
 
       {/* ── Section 4: Aggregate Summary ── */}
@@ -5691,9 +6110,76 @@ function ContactsTab({ profile, gbpLocations = [] }) {
 
 // ── Tab 10: Notes ─────────────────────────────────────────────────────────────
 
+// A single collapsible meeting note entry (top-level heading_3 with children)
+function MeetingNoteEntry({ text, children }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="overflow-hidden rounded-2xl border border-[var(--brand-border)] bg-black/20">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex w-full items-center justify-between px-4 py-3 text-left transition hover:bg-white/5"
+      >
+        <span className="text-sm font-semibold text-gray-200">{text || 'Meeting Note'}</span>
+        <span className={`text-lg text-gray-400 transition-transform ${open ? 'rotate-90' : ''}`}>›</span>
+      </button>
+      {open && (
+        <div className="border-t border-[var(--brand-border)] px-4 pb-4 pt-3">
+          <NotionBlockRenderer blocks={children} depth={1} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function NotionBlockRenderer({ blocks, depth = 0 }) {
+  return (
+    <div className={depth > 0 ? 'space-y-1 ml-3' : 'space-y-2'}>
+      {blocks.map((block, i) => {
+        const { type, text, children = [] } = block
+
+        // Top-level heading_3 with children = a collapsible meeting entry
+        if (depth === 0 && type === 'heading_3' && children.length > 0) {
+          return <MeetingNoteEntry key={i} text={text} children={children} />
+        }
+
+        let el
+        if (type === 'heading_1') el = <div className="text-base font-bold text-white mt-3 mb-1">{text}</div>
+        else if (type === 'heading_2') el = <div className="text-sm font-bold text-gray-200 mt-2 mb-1">{text}</div>
+        else if (type === 'heading_3') el = <div className="text-sm font-semibold text-gray-300 mt-2">{text}</div>
+        else if (type === 'bulleted_list_item') el = <div className="text-sm text-gray-300 flex gap-2"><span className="text-gray-500 shrink-0">•</span><span>{text}</span></div>
+        else if (type === 'numbered_list_item') el = <div className="text-sm text-gray-300 flex gap-2"><span className="text-gray-500 shrink-0">{i+1}.</span><span>{text}</span></div>
+        else if (type === 'callout') el = <div className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 my-2">{text}</div>
+        else if (type === 'divider') el = <hr className="border-white/10 my-2" />
+        else if (type === 'child_page') el = <div className="text-sm font-semibold text-violet-400 mt-3">📄 {text}</div>
+        else if (type === 'toggle') el = <div className="text-sm font-medium text-gray-200">{text}</div>
+        else if (text) el = <div className="text-sm text-gray-300 leading-relaxed">{text}</div>
+        else el = null
+
+        return (
+          <div key={i}>
+            {el}
+            {children.length > 0 && <NotionBlockRenderer blocks={children} depth={depth + 1} />}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function NotesTab({ profile, acronym }) {
+  const [notesData, setNotesData] = useState(null)
+  const [loading, setLoading]     = useState(true)
+
+  useEffect(() => {
+    fetch(`/api/clients/${acronym}/notes`)
+      .then(r => r.json())
+      .then(d => { setNotesData(d); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [acronym])
+
   return (
     <div className="space-y-6">
+      {/* Editable team notes */}
       <EditableNotes
         label="Team Notes"
         value={profile.teamNotes}
@@ -5702,15 +6188,45 @@ function NotesTab({ profile, acronym }) {
         placeholder="Add internal notes for the team — strategy decisions, known issues, context…"
       />
 
-      {/* Notion contact notes (read-only) */}
-      {profile.notes && (
+      {/* GHL Notes — only show when there are actual human-written notes (payment auto-notes are filtered out) */}
+      {!loading && notesData?.ghlNotes?.notes?.length > 0 && (
         <div>
-          <SectionTitle>Notion Contact Notes <span className="normal-case font-normal text-gray-600">(read-only, from Notion)</span></SectionTitle>
+          <SectionTitle>GHL Notes</SectionTitle>
           <Card>
-            <pre className="whitespace-pre-wrap text-sm text-gray-300 leading-relaxed">{profile.notes}</pre>
+            <div className="divide-y divide-white/5 space-y-0">
+              {notesData.ghlNotes.notes.map((note, i) => (
+                <div key={i} className="py-3 first:pt-0 last:pb-0">
+                  <div className="text-xs text-gray-500 mb-1">{new Date(note.dateAdded).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}{note.user?.name ? ` · ${note.user.name}` : ''}</div>
+                  <pre className="whitespace-pre-wrap text-sm text-gray-300 leading-relaxed font-sans">{note.body}</pre>
+                </div>
+              ))}
+            </div>
           </Card>
         </div>
       )}
+
+      {/* Notion Notes */}
+      <div>
+        <SectionTitle>Meeting Notes <span className="normal-case font-normal text-gray-600 text-xs">(from Notion, read-only)</span></SectionTitle>
+        {loading ? (
+          <Card><div className="text-sm text-gray-500 py-2">Loading…</div></Card>
+        ) : notesData?.notionNotes?.error === 'not_shared' ? (
+          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm">
+            <div className="font-semibold text-amber-300 mb-1">Notes page not shared with Wall-E</div>
+            <div className="text-amber-200/70 text-xs">{notesData.notionNotes.message}</div>
+          </div>
+        ) : notesData?.notionNotes?.blocks?.length > 0 ? (
+          <Card>
+            <NotionBlockRenderer blocks={notesData.notionNotes.blocks} />
+          </Card>
+        ) : profile.notes ? (
+          <Card>
+            <pre className="whitespace-pre-wrap text-sm text-gray-300 leading-relaxed">{profile.notes}</pre>
+          </Card>
+        ) : (
+          <Card><div className="text-sm text-gray-500">No Notion notes available.</div></Card>
+        )}
+      </div>
 
       {/* Timestamps */}
       <div className="text-xs text-gray-600 space-y-1">
@@ -5932,7 +6448,8 @@ export default function ClientCard({ acronym, user }) {
     { key: 'financial',  label: 'Financial',             show: true, alert: !!profile.isOverdue },
     { key: 'gbp',        label: 'GBP',                   show: !!profile.hasSEO },
     { key: 'website',    label: 'Website',               show: true },                             // always visible
-    { key: 'seo',        label: 'SEO',                   show: !!profile.hasSEO },
+    { key: 'seo',        label: 'SEO',                   show: true },
+    { key: 'demographics', label: '📊 Demographics',        show: true },
     { key: 'crm',        label: 'CRM',                   show: !!profile.hasCRM },
     { key: 'blueprint',  label: 'Blueprint',             show: !!profile.hasBlueprint },
     { key: 'paidmedia',  label: 'Paid Media',            show: !!(profile.hasGoogleAds || profile.hasPaidMedia) },
@@ -6056,6 +6573,9 @@ export default function ClientCard({ acronym, user }) {
         )}
         {currentTab === 'seo' && (
           <SEOTab profile={profile} acronym={acronym} />
+        )}
+        {currentTab === 'demographics' && (
+          <DemographicsTab acronym={acronym} />
         )}
         {currentTab === 'gbp' && (
           <GBPTab profile={profile} acronym={acronym} user={user} />

@@ -44,12 +44,12 @@ export async function GET(req, { params }) {
         [acr]
       ),
       pool.query(
-        `SELECT "locationName", "gbpPlaceId",
+        `SELECT id, "locationName", "gbpPlaceId", "seoLocationName", "heatmapEnabled",
                 ("liveDataSnapshot"->>'rating')::float   AS rating,
                 ("liveDataSnapshot"->>'reviewCount')::int AS "reviewCount",
                 "liveDataSnapshot"->>'address'            AS address
          FROM "GBPLocation"
-         WHERE "clientAcronym" = $1 AND "liveDataSnapshot" IS NOT NULL
+         WHERE "clientAcronym" = $1
          ORDER BY "locationName" ASC`,
         [acr]
       ),

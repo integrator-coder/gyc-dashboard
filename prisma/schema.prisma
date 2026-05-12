@@ -446,6 +446,82 @@ model ClientWebsiteAuditSnapshot {
   @@index([tenantId, clientAcronym, periodMonth(sort: Desc)], map: "ClientWebsiteAuditSnapshot_client_period_idx")
 }
 
+model GBPLocation {
+  id                Int           @id @default(autoincrement())
+  tenantId          String        @default("gyc")
+  clientAcronym     String
+  locationName      String
+  gbpPlaceId        String?
+  placeId           String?       @unique
+  cid               String?
+  gbpUrl            String?
+  address           String?
+  city              String?
+  state             String?
+  isActive          Boolean?
+  latitude          Float?
+  longitude         Float?
+  heatmapEnabled    Boolean?
+  seoLocationName   String?
+  locationVerified  Boolean?
+  capacity          Int?
+  currentEnrollment Int?
+  avgTuition        Decimal?
+  liveDataSnapshot  Json?
+  liveDataUpdatedAt DateTime?
+  createdAt         DateTime?     @default(now())
+  updatedAt         DateTime?
+  lastSyncedAt      DateTime?
+  snapshots         GBPSnapshot[]
+  reviews           GBPReview[]
+
+  @@unique([tenantId, clientAcronym, locationName])
+  @@index([tenantId, clientAcronym], map: "GBPLocation_client_idx")
+}
+
+model GBPSnapshot {
+  id                Int         @id @default(autoincrement())
+  tenantId          String      @default("gyc")
+  locationId        Int
+  snapshotDate      DateTime    @db.Date
+  reviewCount       Int?
+  avgRating         Decimal?
+  photoCount        Int?
+  postCount         Int?
+  responseRate      Decimal?
+  rankKeyword1      Int?
+  rankKeyword2      Int?
+  syncedAt          DateTime?
+  rating            Float?
+  businessStatus    String?
+  isVerified        Boolean     @default(false)
+  viewCount         Int?
+  searchCount       Int?
+  callCount         Int?
+  websiteClicks     Int?
+  directionRequests Int?
+  rawData           Json?
+  location          GBPLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([locationId, snapshotDate])
+  @@index([locationId, snapshotDate(sort: Desc)])
+}
+
+model GBPReview {
+  id               String      @id
+  locationId       Int
+  authorName       String
+  rating           Int
+  text             String?     @db.Text
+  publishedAt      DateTime
+  ownerResponse    String?     @db.Text
+  ownerRespondedAt DateTime?
+  firstSeenAt      DateTime    @default(now())
+  location         GBPLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@index([locationId, publishedAt(sort: Desc)])
+}
+
 model ClientWebsiteTrafficMonthly {
   id                 BigInt   @id @default(autoincrement())
   tenantId           String   @default("gyc")

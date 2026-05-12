@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * sync-seo-heatmaps.js  — Weekly SEO heatmap runner
+ * sync-seo-heatmaps.js  — Weekly SEO heatmap runner + monthly prospect heatmap runner
  *
- * Scans a 5×5 grid of lat/lng points for every active SEO client location
- * that has valid coordinates in GBPLocation, at 3mi and 5mi radius.
- * Each run creates NEW date-stamped rows — historical data is preserved.
+ * Scans a 5×5 grid of lat/lng points for:
+ *   1. Active SEO clients (hasSEO=true) — weekly cadence (skip if scanned <6 days ago)
+ *   2. Non-SEO clients with heatmapEnabled=true on a GBPLocation — monthly cadence (skip if <28 days ago)
  *
  * Cost: $0.002/point × 25 pts × 2 keywords × 2 radii = $0.20/location
- *   Full 24-client run (avg 1.2 locs): ~$5.80
+ *   Full run (avg 1.2 locs per client): ~$5.80 for SEO clients
  *
  * Usage:
  *   node scripts/sync-seo-heatmaps.js          # all clients
@@ -29,6 +29,11 @@ const RADII        = [3, 5]    // miles
 const MAX_RANK     = 20
 const TODAY        = new Date().toISOString().slice(0, 10)
 const TARGET       = process.argv[2]?.toUpperCase() || null
+const FORCE        = process.argv.includes('--force') // bypass skip thresholds
+
+// Skip thresholds
+const SEO_SKIP_DAYS      = 6   // skip SEO locations scanned within 6 days
+const PROSPECT_SKIP_DAYS = 28  // skip prospect locations scanned within 28 days
 
 function makeGrid(centerLat, centerLng, radiusMiles) {
   const spacingKm = (radiusMiles / 2) * KM_PER_MILE
@@ -68,9 +73,9 @@ function findRank(items, placeId, namePattern) {
 }
 
 async function scanGrid(acronym, seoLocName, centerLat, centerLng, placeId, namePattern, radiusMiles, keyword) {
-  const grid     = makeGrid(centerLat, centerLng, radiusMiles)
+  const grid      = makeGrid(centerLat, centerLng, radiusMiles)
   const spacingKm = (radiusMiles / 2) * KM_PER_MILE
-  const pts      = []
+  const pts       = []
 
   for (const p of grid) {
     const items = await queryRank(p.lat, p.lng, keyword)
@@ -94,25 +99,55 @@ async function scanGrid(acronym, seoLocName, centerLat, centerLng, placeId, name
 }
 
 async function main() {
-  console.log(`🗺  SEO Heatmap Weekly Run — ${TODAY}${TARGET ? ` (${TARGET} only)` : ''}\n`)
+  console.log(`🗺  SEO Heatmap Run — ${TODAY}${TARGET ? ` (${TARGET} only)` : ''}\n`)
 
-  // Load all GBP locations with valid coordinates for SEO-active clients
+  // Load locations: UNION of SEO clients + non-SEO heatmapEnabled locations
+  const targetFilter = TARGET ? `AND gl."clientAcronym" = '${TARGET}'` : ''
   const locsRes = await pool.query(`
+    -- Branch 1: Active SEO clients (weekly cadence)
     SELECT
-      gl."clientAcronym" AS acronym,
-      gl."locationName"  AS gbp_loc_name,
-      gl."gbpPlaceId"    AS place_id,
+      gl."clientAcronym"   AS acronym,
+      gl."locationName"    AS gbp_loc_name,
+      gl."seoLocationName" AS seo_loc_name,
+      gl."gbpPlaceId"      AS place_id,
       (gl."liveDataSnapshot"->>'latitude')::float  AS lat,
       (gl."liveDataSnapshot"->>'longitude')::float AS lng,
-      cp."companyName"
+      gl."locationVerified" AS verified,
+      cp."companyName",
+      true  AS is_seo,
+      false AS is_prospect
     FROM "GBPLocation" gl
     JOIN "ClientProfile" cp ON cp.acronym = gl."clientAcronym"
     WHERE cp."hasSEO" = true
       AND cp.status   = 'active'
       AND (gl."liveDataSnapshot"->>'latitude') IS NOT NULL
-      AND (gl."liveDataSnapshot"->>'latitude')::float NOT BETWEEN 36.8 AND 36.9  -- filter out known bad seed value
-      ${TARGET ? `AND gl."clientAcronym" = '${TARGET}'` : ''}
-    ORDER BY gl."clientAcronym", gl."locationName"
+      AND (gl."liveDataSnapshot"->>'latitude')::float NOT BETWEEN 36.8 AND 36.9
+      ${targetFilter}
+
+    UNION ALL
+
+    -- Branch 2: Non-SEO clients with heatmapEnabled=true (monthly cadence)
+    SELECT
+      gl."clientAcronym"   AS acronym,
+      gl."locationName"    AS gbp_loc_name,
+      gl."seoLocationName" AS seo_loc_name,
+      gl."gbpPlaceId"      AS place_id,
+      (gl."liveDataSnapshot"->>'latitude')::float  AS lat,
+      (gl."liveDataSnapshot"->>'longitude')::float AS lng,
+      gl."locationVerified" AS verified,
+      cp."companyName",
+      false AS is_seo,
+      true  AS is_prospect
+    FROM "GBPLocation" gl
+    JOIN "ClientProfile" cp ON cp.acronym = gl."clientAcronym"
+    WHERE gl."heatmapEnabled" = true
+      AND cp."hasSEO" = false
+      AND cp.status   = 'active'
+      AND (gl."liveDataSnapshot"->>'latitude') IS NOT NULL
+      AND (gl."liveDataSnapshot"->>'latitude')::float NOT BETWEEN 36.8 AND 36.9
+      ${targetFilter}
+
+    ORDER BY acronym, gbp_loc_name
   `)
 
   if (locsRes.rows.length === 0) {
@@ -120,8 +155,18 @@ async function main() {
     await pool.end(); return
   }
 
-  // For each GBP location, find the best matching SEO location name
-  // (SEO snapshots use short names like "Eastside" vs GBP "The Eastside Preschool by Child Time")
+  // Load last scan dates per (clientAcronym, locationName) for skip checks
+  const lastScanRes = await pool.query(`
+    SELECT "clientAcronym", "locationName", MAX("scanDate") AS last_scan
+    FROM "ClientSEOHeatmap"
+    GROUP BY "clientAcronym", "locationName"
+  `)
+  const lastScanMap = {}
+  for (const row of lastScanRes.rows) {
+    lastScanMap[`${row.clientAcronym}::${row.locationName}`] = row.last_scan
+  }
+
+  // Build SEO snapshot location map for name matching fallback
   const seoSnaps = await pool.query(`
     SELECT DISTINCT "clientAcronym", "locationName"
     FROM "ClientSEOSnapshot"
@@ -133,38 +178,61 @@ async function main() {
     seoLocMap[row.clientAcronym].push(row.locationName)
   }
 
-  function matchSEOName(acronym, gbpLocName) {
-    const seoLocs = seoLocMap[acronym] || []
-    // Try: SEO name is substring of GBP name (e.g. "Eastside" in "The Eastside Preschool by Child Time")
-    for (const seo of seoLocs) {
-      if (seo && gbpLocName?.toLowerCase().includes(seo.toLowerCase())) return seo
+  function matchSEOName(loc) {
+    // If seo_loc_name is explicitly set (including empty string), use it directly
+    if (loc.seo_loc_name !== null && loc.seo_loc_name !== undefined) {
+      return loc.seo_loc_name
     }
-    // Try reverse: any word in GBP name matches SEO name
-    for (const seo of seoLocs) {
-      const words = (seo || '').toLowerCase().split(/\s+/).filter(w => w.length > 3)
-      if (words.some(w => gbpLocName?.toLowerCase().includes(w))) return seo
-    }
-    // Fallback: use first SEO location name (single-location clients)
-    return seoLocs[0] || gbpLocName || ''
+    // seo_loc_name = null means this GBP location is NOT mapped to any SEO snapshot name.
+    // Use the GBP location name itself as the heatmap location name (no fuzzy matching).
+    return loc.gbp_loc_name || ''
+  }
+
+  function daysSince(dateStr) {
+    if (!dateStr) return Infinity
+    const d = new Date(dateStr)
+    const now = new Date()
+    return Math.floor((now - d) / (1000 * 60 * 60 * 24))
   }
 
   let totalCost = 0
+  let skipped   = 0
   let currentAcronym = null
 
-  console.log(`Found ${locsRes.rows.length} location(s) to scan\n`)
+  console.log(`Found ${locsRes.rows.length} candidate location(s)\n`)
 
   for (const loc of locsRes.rows) {
     if (loc.acronym !== currentAcronym) {
       currentAcronym = loc.acronym
-      console.log(`→ ${loc.acronym} (${loc.companyName})`)
+      const label = loc.is_seo ? 'SEO' : 'Prospect'
+      console.log(`→ ${loc.acronym} (${loc.companyName}) [${label}]`)
     }
 
-    const seoLocName  = matchSEOName(loc.acronym, loc.gbp_loc_name)
-    const namePattern = loc.companyName?.split(' ').slice(0, 2).join(' ')
-    const locCost     = RADII.length * KEYWORDS.length * GRID_SIZE * GRID_SIZE * 0.002
-    totalCost += locCost
+    const seoLocName    = matchSEOName(loc)
+    const skipThreshold = loc.is_seo ? SEO_SKIP_DAYS : PROSPECT_SKIP_DAYS
+    const scanKey       = `${loc.acronym}::${seoLocName}`
+    const lastScan      = lastScanMap[scanKey]
+    const age           = daysSince(lastScan)
+    const typeLabel     = loc.is_seo ? 'SEO' : 'Prospect'
 
-    console.log(`  📍 ${loc.gbp_loc_name} → SEO: "${seoLocName}" (est. $${locCost.toFixed(2)})`)
+    // Skip unverified locations
+    if (!loc.verified) {
+      console.log(`  ⚠️  [${typeLabel}] ${loc.gbp_loc_name} → "${seoLocName}" — SKIPPED (location not verified)\n      ❌ GBP map link must be confirmed before running heatmaps.\n      Set locationVerified=TRUE in GBPLocation table to enable.`)
+      skipped++
+      continue
+    }
+
+    if (!FORCE && age < skipThreshold) {
+      console.log(`  ⏭  [${typeLabel}] ${loc.gbp_loc_name} → "${seoLocName}" — skipped (last scan ${age}d ago, threshold ${skipThreshold}d)`)
+      skipped++
+      continue
+    }
+
+    const locCost = RADII.length * KEYWORDS.length * GRID_SIZE * GRID_SIZE * 0.002
+    totalCost += locCost
+    const namePattern = loc.companyName?.split(' ').slice(0, 2).join(' ')
+
+    console.log(`  📍 [${typeLabel}] ${loc.gbp_loc_name} → SEO: "${seoLocName}" (est. $${locCost.toFixed(2)}, last scan: ${lastScan || 'never'})`)
 
     for (const radius of RADII) {
       for (const kw of KEYWORDS) {
@@ -180,7 +248,7 @@ async function main() {
     }
   }
 
-  console.log(`\n✅ Done! Est. total cost: $${totalCost.toFixed(2)}`)
+  console.log(`\n✅ Done! Est. total cost: $${totalCost.toFixed(2)} | Skipped: ${skipped} location(s)`)
   await pool.end()
 }
 

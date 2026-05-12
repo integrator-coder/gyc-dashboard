@@ -69,6 +69,7 @@ function buildDashboardGroup(user) {
 
   if (['superadmin', 'admin', 'ga'].includes(user?.role)) {
     children.push({ label: 'Production', emoji: '🔧', href: '/production' })
+    children.push({ label: 'Workload', emoji: '⚙️', href: '/workload' })
   }
 
   return {

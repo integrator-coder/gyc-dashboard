@@ -1,0 +1,84 @@
+// Add these models to your existing schema.prisma
+
+model GBPLocation {
+  id                Int       @id @default(autoincrement())
+  clientAcronym     String    // e.g., "RMP"
+  locationName      String    // e.g., "Centennial"
+  
+  // Google identifiers
+  placeId           String    @unique  // ChIJ...
+  cid               String?   // Numeric CID for Maps URL
+  
+  // Address
+  address           String
+  city              String
+  state             String
+  latitude          Float?
+  longitude         Float?
+  
+  // Metadata
+  createdAt         DateTime  @default(now())
+  lastSyncedAt      DateTime?
+  
+  // Relations
+  snapshots         GBPSnapshot[]
+  reviews           GBPReview[]
+  
+  @@unique([clientAcronym, locationName])
+  @@index([clientAcronym])
+}
+
+model GBPSnapshot {
+  id                Int       @id @default(autoincrement())
+  locationId        Int
+  snapshotDate      DateTime  @default(now())
+  
+  // Core GBP Metrics (what clients care about)
+  rating            Float?    // 4.7
+  reviewCount       Int?      // 142
+  photoCount        Int?      // 89
+  postCount         Int?      // 12
+  
+  // Status
+  businessStatus    String?   // "OPERATIONAL", "CLOSED_TEMPORARILY"
+  isVerified        Boolean   @default(false)
+  
+  // Engagement metrics (from DataForSEO or GA4)
+  viewCount         Int?      // Profile views
+  searchCount       Int?      // Search appearances
+  callCount         Int?      // Click-to-call
+  websiteClicks     Int?      // Website button clicks
+  directionRequests Int?      // Directions clicks
+  
+  // Raw JSON for everything else (hours, categories, attributes, etc.)
+  rawData           Json?
+  
+  // Relations
+  location          GBPLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  
+  @@unique([locationId, snapshotDate])
+  @@index([locationId, snapshotDate(sort: Desc)])
+}
+
+model GBPReview {
+  id                String    @id  // Google review ID
+  locationId        Int
+  
+  // Review content
+  authorName        String
+  rating            Int       // 1-5
+  text              String?   @db.Text
+  publishedAt       DateTime
+  
+  // GYC response tracking
+  ownerResponse     String?   @db.Text
+  ownerRespondedAt  DateTime?
+  
+  // Metadata
+  firstSeenAt       DateTime  @default(now())
+  
+  // Relations
+  location          GBPLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  
+  @@index([locationId, publishedAt(sort: Desc)])
+}

@@ -174,14 +174,40 @@ export default function HRPage() {
     return Number(val).toFixed(1)
   }
 
+  // Current month derived values (used in latestMonthRow + JSX)
+  const monthlyPayroll = data?.config?.monthlyPayroll ?? 132500
+  const impliedHeadcount = data?.computed?.impliedHeadcount ?? 18.5
+  const rpe = data?.computed?.rpe ?? null
+  const mrr = data?.computed?.mrr ?? 0
+
+  // Synthetic "Latest Month" row from live config + computed data
+  const latestMonthRow = {
+    period: 'Latest Month',
+    periodType: 'monthly',
+    revenue: mrr,
+    headcount: impliedHeadcount,
+    baseSalaryTotal: monthlyPayroll,
+    totalComp: monthlyPayroll,
+    rpe: impliedHeadcount > 0 ? (mrr * 12) / impliedHeadcount : null,
+    impliedHcBase: (monthlyPayroll * 12) / 85000,
+    impliedHcTotal: (monthlyPayroll * 12) / 85000,
+    standardizedRpe: ((monthlyPayroll * 12) / 85000) > 0
+      ? (mrr * 12) / ((monthlyPayroll * 12) / 85000)
+      : null,
+    compRatioPct: mrr > 0 ? (monthlyPayroll / mrr) * 100 : null,
+    roi: monthlyPayroll > 0 ? mrr / monthlyPayroll : null,
+  }
+
+  const displayScorecard = scorecard.length > 0 ? [...scorecard, latestMonthRow] : []
+
   // Build YoY table columns/rows dynamically from scorecard
-  const scorecardCols = scorecard.length > 0
-    ? ['Metric', ...scorecard.map(r => r.period)]
+  const scorecardCols = displayScorecard.length > 0
+    ? ['Metric', ...displayScorecard.map(r => r.period)]
     : ['Metric', '2023', '2024', '2025', '2026 YTD']
 
   function buildRowValues(getVal, getFmt, getColor) {
-    if (scorecard.length === 0) return []
-    return scorecard.map(r => {
+    if (displayScorecard.length === 0) return []
+    return displayScorecard.map(r => {
       const raw = getVal(r)
       return { display: getFmt(raw, r), color: getColor ? getColor(raw) : null }
     })
@@ -271,11 +297,6 @@ export default function HRPage() {
     },
   ]
 
-  const monthlyPayroll = data?.config?.monthlyPayroll ?? 132500
-  const impliedHeadcount = data?.computed?.impliedHeadcount ?? 18.5
-  const rpe = data?.computed?.rpe ?? null
-  const mrr = data?.computed?.mrr ?? 0
-
   return (
     <div className="max-w-5xl mx-auto space-y-8">
 
@@ -334,7 +355,7 @@ export default function HRPage() {
           <div className="flex items-center justify-between mb-1">
             <div>
               <p style={{ color: B.muted }} className="text-xs font-semibold uppercase tracking-widest mb-1">
-                Monthly Payroll
+                Latest Month Payroll
               </p>
               {editing ? (
                 <div className="flex items-center gap-3">
@@ -471,8 +492,11 @@ export default function HRPage() {
                 {scorecardCols.map((col) => (
                   <th
                     key={col}
-                    className="px-4 py-3 text-left font-semibold text-white"
-                    style={{ borderBottom: `1px solid ${B.border}` }}
+                    className="px-4 py-3 text-left font-semibold"
+                    style={{
+                      borderBottom: `1px solid ${B.border}`,
+                      color: col === 'Latest Month' ? B.p4 : '#ffffff',
+                    }}
                   >
                     {col}
                   </th>
@@ -506,7 +530,7 @@ export default function HRPage() {
                     <td
                       key={i}
                       className="px-4 py-3 font-mono"
-                      style={{ color: cell.color || '#e5e7eb' }}
+                      style={{ color: cell.color || (scorecardCols[i + 1] === 'Latest Month' ? B.p4 : '#e5e7eb') }}
                     >
                       {cell.display}
                     </td>

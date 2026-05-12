@@ -102,10 +102,17 @@ async function fetchLiveData(loc) {
 async function main() {
   console.log(`\ud83d\udd04 Refreshing GBP live data${target ? ` for ${target}` : ' for all SEO clients'}...\n`)
 
+  // Daily spend tracker — DataForSEO charges ~$0.02 per Maps Live request
+  let dailySpend = 0
+  const MAX_DAILY_SPEND = 4.80
+  const COST_PER_CALL = 0.02
+
   const locsRes = await pool.query(`
     SELECT gl.id, gl."clientAcronym", gl."locationName", gl."gbpPlaceId",
            gl."gbpUrl", gl.address, gl.city, gl.state,
-           gl."liveDataSnapshot"->>'latitude' AS existing_lat
+           gl."liveDataSnapshot"->>'latitude' AS existing_lat,
+           gl."liveDataSnapshot"->>'resolvedAt' AS last_fetched_at,
+           gl."liveDataUpdatedAt"
     FROM "GBPLocation" gl
     JOIN "ClientProfile" cp ON cp.acronym = gl."clientAcronym"
     WHERE cp."hasSEO" = true
@@ -125,8 +132,29 @@ async function main() {
 
     const label = `  \ud83d\udccd ${loc.locationName || 'Main'}`
 
+    // Spend guard — stop if daily budget exhausted
+    if (dailySpend >= MAX_DAILY_SPEND) {
+      console.warn(`\u26a0\ufe0f  Daily spend limit $${MAX_DAILY_SPEND} reached ($${dailySpend.toFixed(2)} spent). Stopping.`)
+      skipped++
+      continue
+    }
+
+    // Staleness check — skip locations refreshed within the last 7 days
+    const staleCutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    const lastFetchedAt = loc.liveDataUpdatedAt
+      ? new Date(loc.liveDataUpdatedAt)
+      : loc.last_fetched_at
+        ? new Date(loc.last_fetched_at)
+        : null
+    if (lastFetchedAt && lastFetchedAt > staleCutoff) {
+      console.log(`${label}: \u23ed\ufe0f  skipped (refreshed ${lastFetchedAt.toLocaleDateString()}, <7 days ago)`)
+      skipped++
+      continue
+    }
+
     try {
       const data = await fetchLiveData(loc)
+      dailySpend += COST_PER_CALL
 
       if (!data) {
         console.log(`${label}: no results found`)

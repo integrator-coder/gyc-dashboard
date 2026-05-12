@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import ProductionPipeline from '@/components/ProductionPipeline'
 import {
   Bar,
   BarChart,
@@ -53,10 +54,23 @@ function StageNode({ label, value, accent = '#AE2BCF', danger = false }) {
   )
 }
 
-function SectionShell({ title, subtitle, children }) {
+function SectionDivider() {
+  return (
+    <div className="my-10">
+      <div style={{
+        height: 2,
+        background: 'linear-gradient(to right, transparent, #731494 15%, #AE2BCF 50%, #731494 85%, transparent)',
+        boxShadow: '0 0 16px rgba(174,43,207,0.5), 0 0 40px rgba(174,43,207,0.2)',
+      }} />
+    </div>
+  )
+}
+
+function SectionShell({ title, subtitle, children, divider = true }) {
   return (
     <section>
-      <div className="flex items-end justify-between gap-4 mb-3">
+      {divider && <SectionDivider />}
+      <div className="flex items-end justify-between gap-4 mb-3 mt-4">
         <div>
           <h2 className="text-gray-200 text-lg font-semibold">{title}</h2>
           {subtitle && <p className="text-gray-300 text-sm mt-1">{subtitle}</p>}
@@ -213,7 +227,7 @@ export default function ProductionPage() {
         </button>
       </div>
 
-      <SectionShell title="WEB Builds" subtitle="Live view of active web production, delivery health, and project mix.">
+      <SectionShell title="WEB Builds" subtitle="Active web builds — delivery health and project pipeline." divider={false}>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
           <ProductionMetricCard
             title="Projects In Production"
@@ -246,7 +260,7 @@ export default function ProductionPage() {
           <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
             <div>
               <h3 className="text-white font-semibold">Stage Pipeline</h3>
-              <p className="text-gray-300 text-sm mt-1">Design → Copy → FL Build → Client Approval, with blocked work called out separately.</p>
+              <p className="text-gray-300 text-sm mt-1">Copy → Image Selection → Design → FL Build → QC → Client Approval, with blocked work called out separately.</p>
             </div>
             <div className="rounded-full px-3 py-1 text-xs font-semibold border border-red-800 bg-red-950 text-red-300">
               Blocked: {webBlockedCount}
@@ -255,11 +269,15 @@ export default function ProductionPage() {
 
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex flex-wrap items-center gap-3 text-gray-300">
-              <StageNode label="Design" value={stageBreakdown.design || 0} accent="#A855F7" />
+              <StageNode label="Copy" value={stageBreakdown.copy || 0} accent="#A855F7" />
               <span className="text-2xl text-gray-200">→</span>
-              <StageNode label="Copy" value={stageBreakdown.copy || 0} accent="#8B5CF6" />
+              <StageNode label="Image Selection" value={stageBreakdown.imageSelection || 0} accent="#9333EA" />
               <span className="text-2xl text-gray-200">→</span>
-              <StageNode label="FL Build" value={stageBreakdown.flBuild || 0} accent="#7C3AED" />
+              <StageNode label="Design" value={stageBreakdown.design || 0} accent="#8B5CF6" />
+              <span className="text-2xl text-gray-200">→</span>
+              <StageNode label="FL Build" value={stageBreakdown.build || 0} accent="#7C3AED" />
+              <span className="text-2xl text-gray-200">→</span>
+              <StageNode label="QC" value={stageBreakdown.qc || 0} accent="#6D28D9" />
               <span className="text-2xl text-gray-200">→</span>
               <StageNode label="Client Approval" value={stageBreakdown.clientApproval || 0} accent="#22c55e" />
             </div>
@@ -282,37 +300,40 @@ export default function ProductionPage() {
             <ProductionMetricCard title="Other" value={typeBreakdown.other || 0} accent="#4C1D95" />
           </div>
         </div>
-      </SectionShell>
 
-      <SectionShell title="⏳ Client Approval Queue" subtitle="Projects waiting for client review — sorted by longest wait time.">
-        <div className="mb-4">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg" style={{ backgroundColor: avgClientApprovalDays > 30 ? '#450a0a' : '#1a0a2e', border: `1px solid ${avgClientApprovalDays > 30 ? '#991b1b' : '#3b1d8a'}` }}>
-            <span className="text-sm text-gray-400">Avg time in Client Approval:</span>
-            <span className={`text-lg font-bold ${avgClientApprovalDays > 30 ? 'text-red-400' : avgClientApprovalDays > 14 ? 'text-yellow-400' : 'text-green-400'}`}>
-              {avgClientApprovalDays} days
-            </span>
+        <div className="mt-4">
+          <h3 className="text-white font-semibold mb-3">⏳ Client Approval Queue</h3>
+          <div className="mb-4">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg" style={{ backgroundColor: avgClientApprovalDays > 30 ? '#450a0a' : '#1a0a2e', border: `1px solid ${avgClientApprovalDays > 30 ? '#991b1b' : '#3b1d8a'}` }}>
+              <span className="text-sm text-gray-400">Avg time in Client Approval:</span>
+              <span className={`text-lg font-bold ${avgClientApprovalDays > 30 ? 'text-red-400' : avgClientApprovalDays > 14 ? 'text-yellow-400' : 'text-green-400'}`}>
+                {avgClientApprovalDays} days
+              </span>
+            </div>
           </div>
-        </div>
-        {clientApprovalQueue.length === 0 ? (
-          <p className="text-gray-300 text-sm">No projects in Client Approval.</p>
-        ) : (
-          <div className="space-y-2">
-            {clientApprovalQueue.map((project, i) => (
-              <div key={i} className="flex items-center justify-between px-4 py-3 rounded-lg" style={{ backgroundColor: '#0a0a0a', border: '1px solid #1f1f3a' }}>
-                <span className="text-sm text-white">{project.name}</span>
-                <div className="flex items-center gap-4">
-                  {project.dueDate && <span className="text-xs text-gray-300">Due: {project.dueDate}</span>}
-                  <span className={`text-sm font-semibold ${(project.daysWaiting || 0) > 60 ? 'text-red-400' : (project.daysWaiting || 0) > 30 ? 'text-yellow-400' : 'text-gray-300'}`}>
-                    {project.daysWaiting != null ? `${project.daysWaiting}d` : '—'}
-                  </span>
+          {clientApprovalQueue.length === 0 ? (
+            <p className="text-gray-300 text-sm">No projects in Client Approval.</p>
+          ) : (
+            <div className="space-y-2">
+              {clientApprovalQueue.map((project, i) => (
+                <div key={i} className="flex items-center justify-between px-4 py-3 rounded-lg" style={{ backgroundColor: '#0a0a0a', border: '1px solid #1f1f3a' }}>
+                  <span className="text-sm text-white">{project.name}</span>
+                  <div className="flex items-center gap-4">
+                    {project.dueDate && <span className="text-xs text-gray-300">Due: {project.dueDate}</span>}
+                    <span className={`text-sm font-semibold ${(project.daysWaiting || 0) > 60 ? 'text-red-400' : (project.daysWaiting || 0) > 30 ? 'text-yellow-400' : 'text-gray-300'}`}>
+                      {project.daysWaiting != null ? `${project.daysWaiting}d` : '—'}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
+
+        <ProductionPipeline dept="WEB" />
       </SectionShell>
 
-      <SectionShell title="SEO Builds" subtitle="Active SEO work with stage visibility and at-risk projects.">
+      <SectionShell title="SEO" subtitle="Active SEO projects — stage breakdown and project pipeline.">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
           <ProductionMetricCard
             title="SEO In Production"
@@ -349,6 +370,12 @@ export default function ProductionPage() {
             </div>
           </div>
         </div>
+
+        <ProductionPipeline dept="SEO" />
+      </SectionShell>
+
+      <SectionShell title="CRM Builds" subtitle="Active CRM onboarding and build projects — stage breakdown and project pipeline.">
+        <ProductionPipeline dept="CRM" />
       </SectionShell>
 
       <SectionShell title="Blocked Projects" subtitle="Anything stalled in production across WEB and SEO.">
@@ -360,16 +387,44 @@ export default function ProductionPage() {
               {blockedProjects.map(project => (
                 <div
                   key={`${project.department}-${project.name}`}
-                  className="rounded-lg border border-red-900 bg-black/20 px-4 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-2"
+                  className="rounded-lg border border-red-900 bg-black/20 px-4 py-4 flex flex-col gap-2"
                 >
-                  <div>
-                    <p className="text-white font-semibold">{project.name}</p>
-                    <p className="text-sm text-red-200/80">{project.department}</p>
+                  {/* Header row */}
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {project.escalation && (
+                        <span className="text-base" title="Escalated">{project.escalation}</span>
+                      )}
+                      <p className="text-white font-semibold">{project.name}</p>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-red-950 text-red-400 border border-red-800">
+                        {project.department}
+                      </span>
+                      {project.ga && (
+                        <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#1a1a2e', color: '#9ca3af', border: '1px solid #2a1a3e' }}>
+                          GA: {project.ga}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-sm text-red-100/90 md:text-right shrink-0">
+                      <p>{project.daysPastDue === null ? 'no due date' : `${project.daysPastDue}d past due`}</p>
+                      {project.dueDate && <p className="text-red-300/70 text-xs">{project.dueDate}</p>}
+                    </div>
                   </div>
-                  <div className="text-sm text-red-100/90 md:text-right">
-                    <p>{project.daysPastDue === null ? 'no due date' : `${project.daysPastDue} days past due`}</p>
-                    <p className="text-red-300/70">{project.dueDate || 'No due date set'}</p>
-                  </div>
+                  {/* Reason row */}
+                  {(project.status || project.notes) && (
+                    <div className="flex flex-col gap-1 pl-1">
+                      {project.status && (
+                        <p className="text-sm font-medium" style={{ color: '#fca5a5' }}>
+                          {project.status}
+                        </p>
+                      )}
+                      {project.notes && (
+                        <p className="text-sm text-gray-400 italic">
+                          {project.notes}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

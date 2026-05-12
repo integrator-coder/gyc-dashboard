@@ -69,9 +69,11 @@ function getCompletionMetrics(project) {
 function getStageBucket(stage) {
   if (stage.includes('blocked')) return 'blocked'
   if (stage.includes('client approval')) return 'clientApproval'
+  if (stage.includes('qc')) return 'qc'
+  if (stage.includes('fl build') || stage.includes('hp build') || (stage.includes('build') && !stage.includes('image'))) return 'build'
   if (stage.includes('design')) return 'design'
+  if (stage.includes('image selection') || stage.includes('image')) return 'imageSelection'
   if (stage.includes('copy')) return 'copy'
-  if (stage.includes('fl build') || stage.includes('build')) return 'flBuild'
   return 'other'
 }
 
@@ -398,7 +400,7 @@ export async function GET() {
         acc[getStageBucket(getNormalizedStage(project))] += 1
         return acc
       },
-      { design: 0, copy: 0, flBuild: 0, clientApproval: 0, blocked: 0, other: 0 }
+      { copy: 0, imageSelection: 0, design: 0, build: 0, qc: 0, clientApproval: 0, blocked: 0, other: 0 }
     )
 
     const typeBreakdown = activeWebProjects.reduce(
@@ -525,6 +527,10 @@ export async function GET() {
           department: String(project.fieldMap.Department || '').toUpperCase() || 'OTHER',
           dueDate: dueDate ? dueDate.toISOString().slice(0, 10) : null,
           daysPastDue: dueDate && dueDate < today ? diffDays(dueDate, today) : null,
+          notes: String(project.fieldMap.Notes || '').trim() || null,
+          status: String(project.fieldMap.Status || '').trim() || null,
+          escalation: String(project.fieldMap.Escalation || '').trim() || null,
+          ga: String(project.fieldMap.GA || '').trim() || null,
         }
       })
       .sort((a, b) => {
