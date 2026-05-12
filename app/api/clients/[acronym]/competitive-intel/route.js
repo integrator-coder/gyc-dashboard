@@ -79,8 +79,33 @@ async function fetchNearbyCompetitors(lat, lng, ownPlaceIds, apiKey) {
   const data = await res.json()
   const places = data.places || []
 
+  // Keywords that indicate a non-childcare result (Google miscategorization)
+  const EXCLUDE_KEYWORDS = [
+    'target', 'walmart', 'costco', 'kroger', 'safeway', 'gym', 'fitness',
+    'ymca', 'crossfit', 'planet fitness', 'anytime fitness', 'snap fitness',
+    'hospital', 'clinic', 'urgent care', 'dentist', 'pharmacy', 'cvs', 'walgreens',
+    'church', 'library', 'community center', 'recreation center',
+  ]
+
+  const CHILDCARE_TYPES = [
+    'child care', 'childcare', 'day care', 'daycare', 'preschool', 'nursery',
+    'kindergarten', 'early childhood', 'early learning', 'montessori',
+    'child development', 'kids', 'toddler',
+  ]
+
+  function isLikelyChildcare(place) {
+    const name = (place.displayName?.text || '').toLowerCase()
+    const type = (place.primaryTypeDisplayName?.text || '').toLowerCase()
+    // Exclude obvious non-childcare names
+    if (EXCLUDE_KEYWORDS.some(kw => name.includes(kw))) return false
+    // If type is present, it should contain a childcare keyword
+    if (type && !CHILDCARE_TYPES.some(kw => type.includes(kw))) return false
+    return true
+  }
+
   return places
     .filter(p => !ownPlaceIds.has(p.id))
+    .filter(p => isLikelyChildcare(p))
     .map(p => {
       const pLat = p.location?.latitude
       const pLng = p.location?.longitude
@@ -104,7 +129,17 @@ async function fetchNearbyCompetitors(lat, lng, ownPlaceIds, apiKey) {
         editorialSummary: p.editorialSummary?.text || null,
       }
     })
-    .sort((a, b) => (a.distanceMiles ?? 999) - (b.distanceMiles ?? 999))
+    .map(comp => {
+      // Threat score: rating quality × review volume × proximity
+      // Higher = more competitive threat to the client
+      const r = comp.rating || 3.0
+      const reviews = comp.reviewCount || 0
+      const dist = comp.distanceMiles || 5
+      comp.threatScore = Math.round((r * Math.log10(reviews + 1)) / Math.max(dist, 0.1) * 10) / 10
+      return comp
+    })
+    .sort((a, b) => b.threatScore - a.threatScore)
+    .map((comp, i) => ({ ...comp, rank: i + 1 }))
 }
 
 export async function GET(req, { params }) {

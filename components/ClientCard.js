@@ -3271,15 +3271,19 @@ function CompetitiveIntelTab({ acronym }) {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12 }}>
                     {topCompetitors.map(comp => {
                       const ss = statusStyle(comp.businessStatus, comp.isOpen)
+                      const rankColor = comp.rank === 1 ? '#ef4444' : comp.rank <= 3 ? '#f97316' : comp.rank <= 5 ? '#f59e0b' : '#6b7280'
                       return (
                         <div key={comp.placeId} style={{
                           background: 'rgba(0,0,0,0.35)',
-                          border: '1px solid rgba(255,255,255,0.07)',
+                          border: `1px solid ${comp.rank <= 3 ? 'rgba(239,68,68,0.25)' : 'rgba(255,255,255,0.07)'}`,
                           borderRadius: 12, padding: '12px 14px',
                         }}>
                           {/* Name + distance + status */}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6, marginBottom: 8 }}>
-                            <div style={{ fontWeight: 600, color: '#f3f4f6', fontSize: 13, lineHeight: '1.3' }}>{comp.name}</div>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                              <span style={{ fontSize: 11, fontWeight: 800, color: rankColor, background: 'rgba(0,0,0,0.4)', borderRadius: 6, padding: '2px 6px', whiteSpace: 'nowrap', flexShrink: 0, marginTop: 1 }}>#{comp.rank}</span>
+                              <div style={{ fontWeight: 600, color: '#f3f4f6', fontSize: 13, lineHeight: '1.3' }}>{comp.name}</div>
+                            </div>
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
                               {comp.distanceMiles != null && (
                                 <span style={{ fontSize: 11, color: '#9ca3af', whiteSpace: 'nowrap' }}>📍 {comp.distanceMiles} mi</span>
