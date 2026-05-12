@@ -81,10 +81,21 @@ async function fetchNearbyCompetitors(lat, lng, ownPlaceIds, apiKey) {
 
   // Keywords that indicate a non-childcare result (Google miscategorization)
   const EXCLUDE_KEYWORDS = [
-    'target', 'walmart', 'costco', 'kroger', 'safeway', 'gym', 'fitness',
-    'ymca', 'crossfit', 'planet fitness', 'anytime fitness', 'snap fitness',
-    'hospital', 'clinic', 'urgent care', 'dentist', 'pharmacy', 'cvs', 'walgreens',
-    'church', 'library', 'community center', 'recreation center',
+    // Retail
+    'target', 'walmart', 'costco', 'kroger', 'safeway', 'cvs', 'walgreens',
+    // Gyms & fitness
+    'gym', 'fitness', 'ymca', 'crossfit', 'planet fitness', 'anytime fitness',
+    'snap fitness', 'orangetheory', 'f45', 'barre', 'pilates', 'yoga studio',
+    'martial arts', 'karate', 'taekwondo', 'judo', 'jiu-jitsu',
+    // Schools (K-12, not childcare)
+    'elementary school', 'middle school', 'high school', 'charter school',
+    'public school', 'private school', 'academy', 'preparatory', 'prep school',
+    'k-12', 'k12', 'grade school',
+    // Medical
+    'hospital', 'clinic', 'urgent care', 'dentist', 'pharmacy', 'pediatrics',
+    'medical', 'health center', 'therapy',
+    // Other
+    'church', 'library', 'community center', 'recreation center', 'park',
   ]
 
   const CHILDCARE_TYPES = [
@@ -93,11 +104,20 @@ async function fetchNearbyCompetitors(lat, lng, ownPlaceIds, apiKey) {
     'child development', 'kids', 'toddler',
   ]
 
+  const EXCLUDE_TYPES = [
+    'gym', 'fitness', 'school', 'elementary', 'middle school', 'high school',
+    'university', 'college', 'tutoring', 'martial arts', 'sports',
+    'church', 'religious', 'medical', 'hospital', 'pharmacy', 'retail',
+    'supermarket', 'department store',
+  ]
+
   function isLikelyChildcare(place) {
     const name = (place.displayName?.text || '').toLowerCase()
     const type = (place.primaryTypeDisplayName?.text || '').toLowerCase()
     // Exclude obvious non-childcare names
     if (EXCLUDE_KEYWORDS.some(kw => name.includes(kw))) return false
+    // Exclude non-childcare place types
+    if (type && EXCLUDE_TYPES.some(kw => type.includes(kw))) return false
     // If type is present, it should contain a childcare keyword
     if (type && !CHILDCARE_TYPES.some(kw => type.includes(kw))) return false
     return true
