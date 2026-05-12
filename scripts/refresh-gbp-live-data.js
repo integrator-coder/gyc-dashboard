@@ -104,7 +104,7 @@ async function main() {
 
   // Daily spend tracker — DataForSEO charges ~$0.02 per Maps Live request
   let dailySpend = 0
-  const MAX_DAILY_SPEND = 4.80
+  const MAX_DAILY_SPEND = 14.80
   const COST_PER_CALL = 0.02
 
   const locsRes = await pool.query(`

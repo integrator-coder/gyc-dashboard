@@ -3055,6 +3055,288 @@ function DemographicsTab({ acronym }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+// Competitive Intelligence Tab
+// ─────────────────────────────────────────────────────────────────────────
+
+function CompetitiveIntelTab({ acronym }) {
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState(null)
+  const [expandedLocs, setExpandedLocs] = useState({})
+
+  function load(force = false) {
+    if (force) setRefreshing(true)
+    else setLoading(true)
+    const method = force ? 'POST' : 'GET'
+    fetch(`/api/clients/${acronym}/competitive-intel`, { method })
+      .then(r => r.json())
+      .then(d => {
+        setData(d)
+        setLoading(false)
+        setRefreshing(false)
+        // Auto-expand all locations
+        if (d.locations) {
+          const expanded = {}
+          d.locations.forEach(l => { expanded[l.locationId] = true })
+          setExpandedLocs(expanded)
+        }
+      })
+      .catch(e => { setError(e.message); setLoading(false); setRefreshing(false) })
+  }
+
+  useEffect(() => { if (acronym) load() }, [acronym])
+
+  if (loading) {
+    return (
+      <div style={{ padding: '40px 0', textAlign: 'center', color: '#9ca3af', fontSize: 14 }}>
+        <div style={{ marginBottom: 8, fontSize: 20 }}>🔍</div>
+        Scanning nearby competitors…
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div style={{ padding: '20px 0', color: '#ef4444', fontSize: 13 }}>
+        Error: {error}
+      </div>
+    )
+  }
+
+  const locations = data?.locations || []
+
+  // Market-wide summary
+  const allCompetitors = locations.flatMap(l => l.competitors || [])
+  const uniqueIds = new Set(allCompetitors.map(c => c.placeId))
+  const ratedCompetitors = allCompetitors.filter(c => c.rating)
+  const avgCompetitorRating = ratedCompetitors.length
+    ? (ratedCompetitors.reduce((s, c) => s + c.rating, 0) / ratedCompetitors.length).toFixed(1)
+    : null
+  const totalAreaReviews = allCompetitors.reduce((s, c) => s + (c.reviewCount || 0), 0)
+  const latestScan = locations.reduce((latest, l) => {
+    if (!l.scannedAt) return latest
+    return !latest || new Date(l.scannedAt) > new Date(latest) ? l.scannedAt : latest
+  }, null)
+
+  function fmtScanTime(ts) {
+    if (!ts) return '—'
+    const d = new Date(ts)
+    return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+  }
+
+  function photoColor(count) {
+    if (count >= 50) return '#10b981' // green
+    if (count >= 20) return '#f59e0b' // yellow
+    return '#ef4444' // red
+  }
+
+  function statusStyle(status, isOpen) {
+    if (status === 'CLOSED_PERMANENTLY') return { bg: '#450a0a', color: '#fca5a5', label: 'PERM. CLOSED' }
+    if (status === 'CLOSED_TEMPORARILY') return { bg: '#422006', color: '#fed7aa', label: 'TEMP. CLOSED' }
+    if (isOpen) return { bg: '#052e16', color: '#86efac', label: 'OPEN' }
+    return { bg: '#1c1917', color: '#a8a29e', label: 'CLOSED' }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <SectionTitle>Competitive Intelligence</SectionTitle>
+            <InfoTip text="Childcare centers within 5 miles of each location, sourced from Google Places. Results are cached for 24 hours. Click Refresh Scan to force a fresh pull." />
+          </div>
+          {latestScan && (
+            <div style={{ fontSize: 12, color: '#6b7280', marginTop: -8 }}>Last scanned: {fmtScanTime(latestScan)}</div>
+          )}
+        </div>
+        <button
+          onClick={() => load(true)}
+          disabled={refreshing}
+          style={{
+            padding: '6px 14px',
+            borderRadius: 8,
+            border: '1px solid rgba(139,92,246,0.3)',
+            background: refreshing ? 'rgba(139,92,246,0.05)' : 'rgba(139,92,246,0.15)',
+            color: refreshing ? '#6b7280' : '#c4b5fd',
+            fontSize: 13,
+            cursor: refreshing ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {refreshing ? '⏳ Scanning…' : '🔄 Refresh Scan'}
+        </button>
+      </div>
+
+      {/* Market Summary */}
+      {locations.length > 1 && (
+        <div>
+          <SectionTitle>Service Area Overview</SectionTitle>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
+            <Card>
+              <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Unique Competitors</div>
+              <div style={{ fontSize: 24, fontWeight: 700, color: '#fff', marginTop: 4 }}>{uniqueIds.size}</div>
+              <div style={{ fontSize: 11, color: '#6b7280' }}>across {locations.length} locations</div>
+            </Card>
+            <Card>
+              <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Avg Competitor Rating</div>
+              <div style={{ fontSize: 24, fontWeight: 700, color: avgCompetitorRating >= 4.5 ? '#f59e0b' : '#fff', marginTop: 4 }}>
+                {avgCompetitorRating ? `${avgCompetitorRating} ★` : '—'}
+              </div>
+              <div style={{ fontSize: 11, color: '#6b7280' }}>area average</div>
+            </Card>
+            <Card>
+              <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Area Reviews</div>
+              <div style={{ fontSize: 24, fontWeight: 700, color: '#fff', marginTop: 4 }}>{totalAreaReviews.toLocaleString()}</div>
+              <div style={{ fontSize: 11, color: '#6b7280' }}>all competitors combined</div>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Per-location sections */}
+      {locations.length === 0 && (
+        <PlaceholderBanner icon="🔍" message="No GBP locations found for this client. Add locations in the GBP tab first." />
+      )}
+
+      {locations.map(loc => {
+        const isExpanded = expandedLocs[loc.locationId] !== false
+        const competitors = loc.competitors || []
+        const topCompetitors = competitors.slice(0, 10)
+        const ratedHere = competitors.filter(c => c.rating)
+        const avgRatingHere = ratedHere.length
+          ? (ratedHere.reduce((s, c) => s + c.rating, 0) / ratedHere.length).toFixed(1)
+          : null
+        const totalReviewsHere = competitors.reduce((s, c) => s + (c.reviewCount || 0), 0)
+
+        return (
+          <div key={loc.locationId} style={{ border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, overflow: 'hidden' }}>
+            {/* Location header */}
+            <div
+              onClick={() => setExpandedLocs(prev => ({ ...prev, [loc.locationId]: !isExpanded }))}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '14px 18px', cursor: 'pointer',
+                background: 'rgba(26,10,46,0.5)',
+              }}
+            >
+              <div>
+                <div style={{ fontWeight: 600, color: '#e5e7eb', fontSize: 14 }}>📍 {loc.locationName}</div>
+                {loc.address && <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>{loc.address}</div>}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 12, color: '#9ca3af' }}>{competitors.length} competitors found</span>
+                {avgRatingHere && (
+                  <span style={{
+                    fontSize: 12, padding: '2px 8px', borderRadius: 6,
+                    background: 'rgba(245,158,11,0.1)', color: '#fcd34d', border: '1px solid rgba(245,158,11,0.2)'
+                  }}>avg ★{avgRatingHere}</span>
+                )}
+                <span style={{ color: '#6b7280', fontSize: 16 }}>{isExpanded ? '▲' : '▼'}</span>
+              </div>
+            </div>
+
+            {/* Location summary bar */}
+            {isExpanded && competitors.length > 0 && (
+              <div style={{
+                display: 'flex', gap: 20, padding: '10px 18px',
+                background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid rgba(255,255,255,0.04)',
+                fontSize: 12, color: '#9ca3af', flexWrap: 'wrap'
+              }}>
+                <span>🏆 Area avg rating: <strong style={{ color: '#fcd34d' }}>{avgRatingHere || '—'} ★</strong></span>
+                <span>💬 Total reviews in area: <strong style={{ color: '#e5e7eb' }}>{totalReviewsHere.toLocaleString()}</strong></span>
+                {loc.error && <span style={{ color: '#f87171' }}>⚠️ {loc.error}</span>}
+              </div>
+            )}
+
+            {/* Competitor cards */}
+            {isExpanded && (
+              <div style={{ padding: 16 }}>
+                {competitors.length === 0 ? (
+                  <div style={{ color: '#6b7280', fontSize: 13, padding: '8px 0' }}>No competitors found within 5 miles.</div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12 }}>
+                    {topCompetitors.map(comp => {
+                      const ss = statusStyle(comp.businessStatus, comp.isOpen)
+                      return (
+                        <div key={comp.placeId} style={{
+                          background: 'rgba(0,0,0,0.35)',
+                          border: '1px solid rgba(255,255,255,0.07)',
+                          borderRadius: 12, padding: '12px 14px',
+                        }}>
+                          {/* Name + distance + status */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6, marginBottom: 8 }}>
+                            <div style={{ fontWeight: 600, color: '#f3f4f6', fontSize: 13, lineHeight: '1.3' }}>{comp.name}</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
+                              {comp.distanceMiles != null && (
+                                <span style={{ fontSize: 11, color: '#9ca3af', whiteSpace: 'nowrap' }}>📍 {comp.distanceMiles} mi</span>
+                              )}
+                              <span style={{
+                                fontSize: 10, padding: '1px 6px', borderRadius: 4,
+                                background: ss.bg, color: ss.color, fontWeight: 600,
+                              }}>{ss.label}</span>
+                            </div>
+                          </div>
+
+                          {/* Rating */}
+                          {comp.rating ? (
+                            <div style={{ fontSize: 12, color: '#fcd34d', marginBottom: 4 }}>
+                              ⭐ {comp.rating} <span style={{ color: '#9ca3af' }}>({comp.reviewCount?.toLocaleString()} reviews)</span>
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: 12, color: '#4b5563', marginBottom: 4 }}>⭐ No rating</div>
+                          )}
+
+                          {/* Type + address */}
+                          {comp.primaryType && (
+                            <div style={{ fontSize: 11, color: '#8b5cf6', marginBottom: 3 }}>📁 {comp.primaryType}</div>
+                          )}
+                          {comp.address && (
+                            <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 5 }}>{comp.address}</div>
+                          )}
+
+                          {/* Hours */}
+                          {comp.hours && (
+                            <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 5 }}>
+                              🕐 {Object.entries(comp.hours).slice(0, 2).map(([d, h]) => `${d}: ${h}`).join(' · ')}
+                              {Object.keys(comp.hours).length > 2 ? ` +${Object.keys(comp.hours).length - 2} more` : ''}
+                            </div>
+                          )}
+
+                          {/* Photos */}
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 11, marginBottom: 5 }}>
+                            <span style={{ color: photoColor(comp.photoCount) }}>📸 {comp.photoCount} photos</span>
+                          </div>
+
+                          {/* Links */}
+                          <div style={{ display: 'flex', gap: 10, marginTop: 6, flexWrap: 'wrap' }}>
+                            {comp.phone && (
+                              <a href={`tel:${comp.phone}`} style={{ fontSize: 11, color: '#60a5fa', textDecoration: 'none' }}>📞 {comp.phone}</a>
+                            )}
+                            {comp.website && (
+                              <a href={comp.website} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#34d399', textDecoration: 'none' }}>🌐 Website ↗</a>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+                {competitors.length > 10 && (
+                  <div style={{ marginTop: 10, fontSize: 12, color: '#6b7280', textAlign: 'center' }}>
+                    + {competitors.length - 10} more competitors (showing top 10 by distance)
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 // SEO Tab
 // ─────────────────────────────────────────────────────────────────────────
 
@@ -6449,6 +6731,7 @@ export default function ClientCard({ acronym, user }) {
     { key: 'gbp',        label: 'GBP',                   show: !!profile.hasSEO },
     { key: 'website',    label: 'Website',               show: true },                             // always visible
     { key: 'seo',        label: 'SEO',                   show: true },
+    { key: 'market-intel', label: '🔍 Market Intel',        show: true },
     { key: 'demographics', label: '📊 Demographics',        show: true },
     { key: 'crm',        label: 'CRM',                   show: !!profile.hasCRM },
     { key: 'blueprint',  label: 'Blueprint',             show: !!profile.hasBlueprint },
@@ -6573,6 +6856,9 @@ export default function ClientCard({ acronym, user }) {
         )}
         {currentTab === 'seo' && (
           <SEOTab profile={profile} acronym={acronym} />
+        )}
+        {currentTab === 'market-intel' && (
+          <CompetitiveIntelTab acronym={acronym} />
         )}
         {currentTab === 'demographics' && (
           <DemographicsTab acronym={acronym} />

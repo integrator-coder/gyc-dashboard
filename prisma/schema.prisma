@@ -542,3 +542,15 @@ model ClientWebsiteTrafficMonthly {
   @@unique([tenantId, clientAcronym, periodMonth], map: "ClientWebsiteTrafficMonthly_client_period_unique")
   @@index([tenantId, clientAcronym, periodMonth(sort: Desc)], map: "ClientWebsiteTrafficMonthly_client_period_idx")
 }
+
+model CompetitorScan {
+  id            Int      @id @default(autoincrement())
+  tenantId      String   @default("gyc")
+  clientAcronym String
+  locationId    Int
+  scannedAt     DateTime @default(now())
+  radiusMiles   Float    @default(5)
+  competitors   Json     // array of competitor objects
+
+  @@index([clientAcronym, locationId, scannedAt(sort: Desc)])
+}
