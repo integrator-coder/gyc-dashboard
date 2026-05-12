@@ -81,8 +81,13 @@ async function fetchNearbyCompetitors(lat, lng, ownPlaceIds, apiKey) {
 
   // Keywords that indicate a non-childcare result (Google miscategorization)
   const EXCLUDE_KEYWORDS = [
-    // Retail
+    // Retail & stores
     'target', 'walmart', 'costco', 'kroger', 'safeway', 'cvs', 'walgreens',
+    'dollar tree', 'dollar general', 'family dollar', 'five below', 'tjmaxx',
+    'marshalls', 'homegoods', 'ross', 'burlington', 'kohls', 'macys',
+    'nordstrom', 'jcpenney', 'sears', 'best buy', 'home depot', 'lowes',
+    'hobby lobby', 'michaels', 'joann', 'party city', 'toys r us',
+    'store', 'shop', 'boutique', 'outlet',
     // Gyms & fitness
     'gym', 'fitness', 'ymca', 'crossfit', 'planet fitness', 'anytime fitness',
     'snap fitness', 'orangetheory', 'f45', 'barre', 'pilates', 'yoga studio',
