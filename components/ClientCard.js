@@ -6746,19 +6746,19 @@ export default function ClientCard({ acronym, user }) {
 
   // ── Build visible tabs ───────────────────────────────────────────────────
   const ALL_TABS = [
-    { key: 'overview',   label: 'Overview',              show: true },
-    { key: 'financial',  label: 'Financial',             show: true, alert: !!profile.isOverdue },
-    { key: 'gbp',        label: 'GBP',                   show: !!profile.hasSEO },
-    { key: 'website',    label: 'Website',               show: true },                             // always visible
-    { key: 'seo',        label: 'SEO',                   show: true },
-    { key: 'market-intel', label: '🔍 Market Intel',        show: true },
-    { key: 'demographics', label: '📊 Demographics',        show: true },
-    { key: 'crm',        label: 'CRM',                   show: !!profile.hasCRM },
-    { key: 'blueprint',  label: 'Blueprint',             show: !!profile.hasBlueprint },
-    { key: 'paidmedia',  label: 'Paid Media',            show: !!(profile.hasGoogleAds || profile.hasPaidMedia) },
-    { key: 'contacts',   label: 'Contacts',              show: true },
-    { key: 'notes',      label: 'Notes',                 show: true },
-    { key: 'calls',      label: `Calls (${allCalls.length})`, show: true },
+    { key: 'overview',     label: 'Overview',                  show: true },
+    { key: 'financial',    label: 'Financial',                 show: true, alert: !!profile.isOverdue },
+    { key: 'gbp',          label: 'GBP',                       show: true },
+    { key: 'website',      label: 'Website',                   show: true },
+    { key: 'seo',          label: 'SEO',                       show: true },
+    { key: 'crm',          label: 'CRM',                       show: true },
+    { key: 'paidmedia',    label: 'Paid Media',                show: true },
+    { key: 'demographics', label: 'Demographics',              show: true },
+    { key: 'market-intel', label: 'Market Intel',              show: true },
+    { key: 'contacts',     label: 'Contacts',                  show: true },
+    { key: 'notes',        label: 'Notes',                     show: true },
+    { key: 'calls',        label: `Calls (${allCalls.length})`, show: true },
+    { key: 'blueprint',    label: 'Blueprint',                 show: !!profile.hasBlueprint },
   ]
   const visibleTabs = ALL_TABS.filter((t) => t.show)
 
