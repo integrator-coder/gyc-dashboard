@@ -23,8 +23,8 @@ export default function CompetitorMapInner({ clientLocation, competitors = [], r
 
       mapInstanceRef.current = map
 
-      // CartoDB dark matter tile layer
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      // CartoDB Voyager — bright, high-contrast, readable over dark dashboard
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
         subdomains: 'abcd',
         maxZoom: 19,
@@ -33,17 +33,17 @@ export default function CompetitorMapInner({ clientLocation, competitors = [], r
       // Custom icons
       const clientIcon = L.divIcon({
         className: '',
-        html: `<div style="width:14px;height:14px;border-radius:50%;background:#731494;border:2px solid #AE2BCF;box-shadow:0 0 8px rgba(115,20,148,0.9)"></div>`,
-        iconSize: [14, 14],
-        iconAnchor: [7, 7],
+        html: `<div style="width:20px;height:20px;border-radius:50%;background:#731494;border:3px solid #fff;box-shadow:0 0 0 2px #AE2BCF, 0 2px 8px rgba(0,0,0,0.5)"></div>`,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
         popupAnchor: [0, -10],
       })
 
       const competitorIcon = L.divIcon({
         className: '',
-        html: `<div style="width:10px;height:10px;border-radius:50%;background:#f59e0b;border:2px solid #fbbf24;box-shadow:0 0 5px rgba(245,158,11,0.7)"></div>`,
-        iconSize: [10, 10],
-        iconAnchor: [5, 5],
+        html: `<div style="width:14px;height:14px;border-radius:50%;background:#ef4444;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>`,
+        iconSize: [14, 14],
+        iconAnchor: [7, 7],
         popupAnchor: [0, -8],
       })
 
@@ -132,7 +132,7 @@ export default function CompetitorMapInner({ clientLocation, competitors = [], r
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden' }}>
+    <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', border: '2px solid rgba(115,20,148,0.4)', boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }}>
       <div ref={mapRef} style={{ height, width: '100%', borderRadius: 12 }} />
       {/* Legend */}
       <div style={{
@@ -155,7 +155,7 @@ export default function CompetitorMapInner({ clientLocation, competitors = [], r
           <span>Client Location</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b', border: '2px solid #fbbf24', flexShrink: 0 }} />
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444', border: '2px solid #fff', flexShrink: 0 }} />
           <span>Competitor</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
