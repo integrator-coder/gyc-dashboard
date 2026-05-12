@@ -19,6 +19,7 @@ import {
 } from 'recharts'
 import { ClientFinanceReviewPanel } from '@/components/StripeLinkageReviewPage'
 import { funnelStatus } from '@/lib/funnel-benchmarks'
+import CompetitorMap from '@/components/CompetitorMap'
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
@@ -3235,6 +3236,18 @@ function CompetitiveIntelTab({ acronym }) {
                 <span style={{ color: '#6b7280', fontSize: 16 }}>{isExpanded ? '▲' : '▼'}</span>
               </div>
             </div>
+
+            {/* Competitor Map */}
+            {isExpanded && competitors.length > 0 && (
+              <div style={{ padding: '12px 16px 0 16px' }}>
+                <CompetitorMap
+                  clientLocation={{ name: loc.locationName, address: loc.address, lat: loc.lat, lng: loc.lng }}
+                  competitors={competitors}
+                  radiusMiles={5}
+                  height="360px"
+                />
+              </div>
+            )}
 
             {/* Location summary bar */}
             {isExpanded && competitors.length > 0 && (
