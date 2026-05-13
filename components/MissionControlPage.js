@@ -936,7 +936,7 @@ export default function MissionControlPage() {
             M3 Integration Project
           </a>
           <a
-            href="/team/m3-integration#toolkit-console"
+            href="/team/toolkit"
             className="rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/20"
           >
             Toolkit Console
