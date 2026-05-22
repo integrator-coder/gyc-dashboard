@@ -1,0 +1,64 @@
+services:
+  - type: web
+    name: gyc-dashboard
+    runtime: node
+    region: ohio
+    plan: starter
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_APP_NAME
+        value: GYC Dashboard
+      - key: DATABASE_URL
+        fromDatabase:
+          name: gyc-dashboard-db
+          property: connectionString
+      - key: NEON_DATABASE_URL
+        fromDatabase:
+          name: gyc-dashboard-db
+          property: connectionString
+      - key: NEXTAUTH_URL
+        value: https://gyc-dashboard.onrender.com
+      - key: NEXTAUTH_SECRET
+        generateValue: true
+      - key: CREDENTIALS_ENCRYPTION_KEY
+        value: 2623aec9819990789ff8b216664b47d9b383e2dc8a72947bbc1b42dfb1889775
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: GHL_API_KEY
+        sync: false
+      - key: GHL_LOCATION_ID
+        sync: false
+      - key: NOTION_API_KEY
+        sync: false
+      - key: ZOOM_ACCOUNT_ID
+        sync: false
+      - key: ZOOM_CLIENT_ID
+        sync: false
+      - key: ZOOM_CLIENT_SECRET
+        sync: false
+      - key: PANDADOC_API_KEY
+        sync: false
+      - key: ZENDESK_API_TOKEN
+        sync: false
+      - key: ZENDESK_EMAIL
+        sync: false
+      - key: ZENDESK_SUBDOMAIN
+        sync: false
+      - key: GOOGLE_PLACES_API_KEY
+        sync: false
+      - key: ASANA_PAT
+        sync: false
+      - key: DATAFORSEO_LOGIN
+        sync: false
+      - key: DATAFORSEO_PASSWORD
+        sync: false
+      - key: CENSUS_API_KEY
+        sync: false
