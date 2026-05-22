@@ -17,6 +17,7 @@ model ApiConnection {
   errorMessage   String?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime
+  tenantId       String       @default("gyc")
   Organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, provider])
@@ -31,6 +32,7 @@ model AsanaAssigneeLoad {
   overdue           Int           @default(0)
   dueSoon           Int           @default(0)
   completedThisWeek Int           @default(0)
+  tenantId          String        @default("gyc")
   AsanaSnapshot     AsanaSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
 }
 
@@ -43,6 +45,7 @@ model AsanaSnapshot {
   dueSoon            Int                 @default(0)
   completedThisWeek  Int                 @default(0)
   completedThisMonth Int                 @default(0)
+  tenantId           String              @default("gyc")
   AsanaAssigneeLoad  AsanaAssigneeLoad[]
 }
 
@@ -51,12 +54,17 @@ model CXHandoff {
   clientName        String
   clientId          String?
   repName           String?
-  closedAt          DateTime
-  createdAt         DateTime            @default(now())
+  closedAt          DateTime            @db.Timestamptz(6)
+  createdAt         DateTime            @default(now()) @db.Timestamptz(6)
   pipelinePhase     String              @default("phase1-mvp")
   rawOutputJson     Json
-  PromiseLedgerItem PromiseLedgerItem[]
+  assignedGA        String?
+  assignedGAEmail   String?
+  assignedGAAt      DateTime?           @db.Timestamptz(6)
+  tenantId          String              @default("gyc")
   CXHandoffCall     CXHandoffCall[]
+  CXHandoffDataGap  CXHandoffDataGap[]
+  PromiseLedgerItem PromiseLedgerItem[]
 
   @@unique([clientName, closedAt])
   @@index([closedAt])
@@ -74,7 +82,10 @@ model Client {
   notesAt           DateTime?
   lastSyncAt        DateTime?
   createdAt         DateTime            @default(now())
+  tenantId          String              @default("gyc")
   ClientFunnelMonth ClientFunnelMonth[]
+
+  @@index([tenantId])
 }
 
 model ClientFunnelMonth {
@@ -90,9 +101,11 @@ model ClientFunnelMonth {
   tourToReg    Float?
   leadToReg    Float?
   syncedAt     DateTime @default(now())
+  tenantId     String   @default("gyc")
   Client       Client   @relation(fields: [clientId], references: [id])
 
   @@unique([clientId, month, locationName])
+  @@index([tenantId])
 }
 
 model ClientGAMetrics {
@@ -110,10 +123,12 @@ model ClientGAMetrics {
   paidSocial         Int      @default(0) @map("paidSocial")
   referral           Int      @default(0)
   avgSessionDuration Float    @default(0) @map("avgSessionDuration")
-  syncedAt           DateTime @default(now()) @map("syncedAt")
+  syncedAt           DateTime @default(now()) @map("syncedAt") @db.Timestamptz(6)
+  tenantId           String   @default("gyc")
 
   @@id([acronym, period])
   @@index([period, sessions(sort: Desc)])
+  @@index([tenantId])
 }
 
 model DailyRevenue {
@@ -123,6 +138,9 @@ model DailyRevenue {
   chargeCount    Int      @default(0)
   syncedAt       DateTime @default(now())
   organizationId String   @default("default")
+  tenantId       String   @default("gyc")
+
+  @@index([tenantId])
 }
 
 model Organization {
@@ -133,6 +151,7 @@ model Organization {
   logoUrl       String?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime
+  tenantId      String          @default("gyc")
   ApiConnection ApiConnection[]
   User          User[]
 }
@@ -149,8 +168,9 @@ model PromiseLedgerItem {
   reviewComment  String?
   evidenceSource String?
   evidenceLink   String?
-  createdAt      DateTime  @default(now())
-  CXHandoff      CXHandoff @relation(fields: [handoffId], references: [id], onDelete: Cascade)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
+  tenantId       String    @default("gyc")
+  CXHandoff      CXHandoff @relation(fields: [handoffId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([handoffId])
   @@index([category])
@@ -173,6 +193,16 @@ model StripeCustomer {
   canceledAt     DateTime?
   updatedAt      DateTime
   organizationId String    @default("default")
+  ghlContactId   String?
+  companyName    String?
+  phone          String?
+  tags           String[]
+  ownerName      String?
+  tenantId       String    @default("gyc")
+  acronym        String?
+
+  @@index([ghlContactId])
+  @@index([tenantId])
 }
 
 model StripeMetrics {
@@ -185,6 +215,9 @@ model StripeMetrics {
   churnedCustomers Int
   netRevenue       Float
   organizationId   String   @default("default")
+  tenantId         String   @default("gyc")
+
+  @@index([tenantId])
 }
 
 model SyncLog {
@@ -205,8 +238,12 @@ model User {
   organizationId Int
   createdAt      DateTime     @default(now())
   updatedAt      DateTime
+  disabled       Boolean?     @default(false)
+  tenantId       String       @default("gyc")
   Organization   Organization @relation(fields: [organizationId], references: [id])
   UserTeam       UserTeam[]
+
+  @@index([tenantId])
 }
 
 model UserTeam {
@@ -219,19 +256,20 @@ model UserTeam {
 }
 
 model ReconDraft {
-  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  prospectName   String
-  websiteUrl     String
-  requestedBy    String
-  status         String          @default("draft")
-  rawAutoData    Json            @default("{}")
-  validatedData  Json?
-  reviewedBy     String?
-  reviewedAt     DateTime?
-  notes          String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  ReconLocation  ReconLocation[]
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  prospectName  String
+  websiteUrl    String
+  requestedBy   String
+  status        String          @default("draft")
+  rawAutoData   Json            @default("{}")
+  validatedData Json?
+  reviewedBy    String?
+  reviewedAt    DateTime?       @db.Timestamptz(6)
+  notes         String?
+  createdAt     DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
+  tenantId      String          @default("gyc")
+  ReconLocation ReconLocation[]
 
   @@index([status, createdAt(sort: Desc)])
 }
@@ -250,9 +288,10 @@ model ReconLocation {
   autoData      Json       @default("{}")
   manualData    Json?
   locationIndex Int        @default(0)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  ReconDraft    ReconDraft @relation(fields: [reconDraftId], references: [id], onDelete: Cascade)
+  createdAt     DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime   @default(now()) @updatedAt @db.Timestamptz(6)
+  tenantId      String     @default("gyc")
+  ReconDraft    ReconDraft @relation(fields: [reconDraftId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([reconDraftId, locationIndex])
 }
@@ -266,23 +305,23 @@ model VerificationToken {
 }
 
 model ZoomCall {
-  id                   String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  meetingId            String
+  id                   String    @id @default(dbgenerated("gen_random_uuid()"))
+  meetingId            String?
   meetingUuid          String?
   meetingTopic         String?
-  startedAt            DateTime?
+  startedAt            DateTime? @db.Timestamptz(6)
   durationSecs         Int?
   repName              String?
   clientName           String?
-  callDate             DateTime?       @db.Date
+  callDate             DateTime? @db.Date
   callLink             String?
-  matchMethod          String
-  matchConfidence      Float           @default(0)
+  matchMethod          String?
+  matchConfidence      Float?    @default(0)
   matchReasonCode      String?
-  sourceRef            String
-  purposes             String[]
-  createdAt            DateTime        @default(now())
-  classificationStatus String?         @default("needs-confirmation")
+  sourceRef            String?
+  purposes             String[]  @default([])
+  createdAt            DateTime? @default(now()) @db.Timestamptz(6)
+  classificationStatus String?   @default("auto")
   hostEmail            String?
   hostName             String?
   acronym              String?
@@ -291,39 +330,67 @@ model ZoomCall {
   ghlMatchConfidence   Float?
   ghlMatchMethod       String?
   ghlMatchCandidates   Json?
-  ZoomTranscript       ZoomTranscript?
-  CallAnalysis         CallAnalysis[]
-  CXHandoffCall        CXHandoffCall[]
+  tenantId             String    @default("gyc")
+  topic                String?
+  startTime            DateTime? @db.Timestamp(6)
+  duration             Int?
+  participants         Json?
+  recordingUrl         String?
+  transcriptUrl        String?
+  transcriptText       String?
+  aiSummary            String?
+  aiClassification     String?
+  aiConfidence         Decimal?  @db.Decimal(3, 2)
+  classifiedAs         String?
+  classifiedBy         String?
+  classifiedAt         DateTime? @db.Timestamp(6)
+  ghlPipelineStage     String?
+  assignedRepEmail     String?
+  assignedRepName      String?
+  status               String?   @default("pending")
+  workflowTriggered    String?
+  notes                String?
+  syncedAt             DateTime? @default(now()) @db.Timestamp(6)
+  clientProfileId      Int?
+  dealClosed           Boolean?  @default(false)
+  onboardingAgentEmail String?
+  onboardingAgentName  String?
+  gaEmail              String?
+  gaName               String?
 
   @@unique([meetingId, sourceRef])
   @@index([meetingId])
   @@index([callDate])
   @@index([clientName])
+  @@index([aiClassification])
+  @@index([startTime])
+  @@index([status])
+  @@index([tenantId])
 }
 
 model ZoomTranscript {
-  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  zoomCallId            String                  @unique @db.Uuid
-  vttRaw                String                  @db.Text
-  parsedAt              DateTime?
-  createdAt             DateTime                @default(now())
-  ZoomCall              ZoomCall                @relation(fields: [zoomCallId], references: [id], onDelete: Cascade)
+  id                    String                  @id(map: "ZoomTranscript_new_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  zoomCallId            String                  @unique(map: "ZoomTranscript_new_zoomCallId_key") @db.Uuid
+  vttRaw                String
+  parsedAt              DateTime?               @db.Timestamptz(6)
+  createdAt             DateTime                @default(now()) @db.Timestamptz(6)
+  tenantId              String                  @default("gyc")
   ZoomTranscriptSegment ZoomTranscriptSegment[]
 
   @@index([zoomCallId])
 }
 
 model ZoomTranscriptSegment {
-  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id             String         @id(map: "ZoomTranscriptSegment_new_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   transcriptId   String         @db.Uuid
   startMs        Int
   endMs          Int?
   speaker        String?
-  text           String         @db.Text
-  tags           String[]
-  purposes       String[]
-  createdAt      DateTime       @default(now())
-  ZoomTranscript ZoomTranscript @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
+  text           String
+  tags           String[]       @default([])
+  purposes       String[]       @default([])
+  createdAt      DateTime       @default(now()) @db.Timestamptz(6)
+  ZoomTranscript ZoomTranscript @relation(fields: [transcriptId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "ZoomTranscriptSegment_new_transcriptId_fkey")
 
   @@index([transcriptId])
   @@index([startMs])
@@ -334,9 +401,9 @@ model CallAnalysis {
   zoomCallId   String   @db.Uuid
   purpose      String
   analysisJson Json
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  ZoomCall     ZoomCall @relation(fields: [zoomCallId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  tenantId     String   @default("gyc")
 
   @@unique([zoomCallId, purpose])
   @@index([purpose])
@@ -344,13 +411,12 @@ model CallAnalysis {
 
 model CXHandoffCall {
   handoffId  Int
-  zoomCallId String   @db.Uuid
-  createdAt  DateTime @default(now())
-  CXHandoff  CXHandoff @relation(fields: [handoffId], references: [id], onDelete: Cascade)
-  ZoomCall   ZoomCall  @relation(fields: [zoomCallId], references: [id], onDelete: Cascade)
+  zoomCallId String    @db.Uuid
+  createdAt  DateTime  @default(now()) @db.Timestamptz(6)
+  tenantId   String    @default("gyc")
+  CXHandoff  CXHandoff @relation(fields: [handoffId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([handoffId, zoomCallId])
-  @@unique([handoffId, zoomCallId])
   @@index([zoomCallId])
 }
 
@@ -421,26 +487,26 @@ model ZendeskSnapshot {
 }
 
 model ClientWebsiteAuditSnapshot {
-  id                BigInt   @id @default(autoincrement())
-  tenantId          String   @default("gyc")
+  id                BigInt    @id @default(autoincrement())
+  tenantId          String    @default("gyc")
   clientAcronym     String
   periodMonth       String
   websiteUrl        String?
   pageSpeedScore    Int?
-  pageSpeedLcp      Decimal?
-  pageSpeedTbt      Decimal?
-  pageSpeedCls      Decimal?
+  pageSpeedLcp      Decimal?  @db.Decimal(8, 2)
+  pageSpeedTbt      Decimal?  @db.Decimal(10, 2)
+  pageSpeedCls      Decimal?  @db.Decimal(8, 3)
   mobileScore       Int?
   mobileMaxScore    Int?
   technicalSeoScore Int?
+  topIssues         Json      @default("[]")
+  source            String?
+  checkedAt         DateTime? @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime  @default(now()) @db.Timestamptz(6)
   pageSpeedData     Json?
   mobileData        Json?
   technicalSeoData  Json?
-  topIssues         Json     @default("[]")
-  source            String?
-  checkedAt         DateTime?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @default(now())
 
   @@unique([tenantId, clientAcronym, periodMonth], map: "ClientWebsiteAuditSnapshot_client_period_unique")
   @@index([tenantId, clientAcronym, periodMonth(sort: Desc)], map: "ClientWebsiteAuditSnapshot_client_period_idx")
@@ -452,28 +518,29 @@ model GBPLocation {
   clientAcronym     String
   locationName      String
   gbpPlaceId        String?
-  placeId           String?       @unique
-  cid               String?
   gbpUrl            String?
   address           String?
   city              String?
   state             String?
-  isActive          Boolean?
-  latitude          Float?
-  longitude         Float?
-  heatmapEnabled    Boolean?
-  seoLocationName   String?
-  locationVerified  Boolean?
+  isActive          Boolean?      @default(true)
+  createdAt         DateTime?     @default(now()) @db.Timestamp(6)
+  updatedAt         DateTime?     @default(now()) @db.Timestamp(6)
   capacity          Int?
   currentEnrollment Int?
-  avgTuition        Decimal?
+  avgTuition        Decimal?      @db.Decimal(10, 2)
   liveDataSnapshot  Json?
-  liveDataUpdatedAt DateTime?
-  createdAt         DateTime?     @default(now())
-  updatedAt         DateTime?
-  lastSyncedAt      DateTime?
-  snapshots         GBPSnapshot[]
+  liveDataUpdatedAt DateTime?     @db.Timestamptz(6)
+  heatmapEnabled    Boolean?      @default(false)
+  seoLocationName   String?
+  locationVerified  Boolean?      @default(false)
+  placeId           String?       @unique
+  cid               String?
+  latitude          Float?
+  longitude         Float?
+  lastSyncedAt      DateTime?     @db.Timestamptz(6)
+  GBPAudit          GBPAudit[]
   reviews           GBPReview[]
+  snapshots         GBPSnapshot[]
 
   @@unique([tenantId, clientAcronym, locationName])
   @@index([tenantId, clientAcronym], map: "GBPLocation_client_idx")
@@ -485,13 +552,13 @@ model GBPSnapshot {
   locationId        Int
   snapshotDate      DateTime    @db.Date
   reviewCount       Int?
-  avgRating         Decimal?
+  avgRating         Decimal?    @db.Decimal(3, 2)
   photoCount        Int?
   postCount         Int?
-  responseRate      Decimal?
+  responseRate      Decimal?    @db.Decimal(5, 2)
   rankKeyword1      Int?
   rankKeyword2      Int?
-  syncedAt          DateTime?
+  syncedAt          DateTime?   @default(now()) @db.Timestamp(6)
   rating            Float?
   businessStatus    String?
   isVerified        Boolean     @default(false)
@@ -501,7 +568,7 @@ model GBPSnapshot {
   websiteClicks     Int?
   directionRequests Int?
   rawData           Json?
-  location          GBPLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  location          GBPLocation @relation(fields: [locationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([locationId, snapshotDate])
   @@index([locationId, snapshotDate(sort: Desc)])
@@ -512,19 +579,19 @@ model GBPReview {
   locationId       Int
   authorName       String
   rating           Int
-  text             String?     @db.Text
-  publishedAt      DateTime
-  ownerResponse    String?     @db.Text
-  ownerRespondedAt DateTime?
-  firstSeenAt      DateTime    @default(now())
-  location         GBPLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  text             String?
+  publishedAt      DateTime    @db.Timestamptz(6)
+  ownerResponse    String?
+  ownerRespondedAt DateTime?   @db.Timestamptz(6)
+  firstSeenAt      DateTime    @default(now()) @db.Timestamptz(6)
+  location         GBPLocation @relation(fields: [locationId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([locationId, publishedAt(sort: Desc)])
 }
 
 model ClientWebsiteTrafficMonthly {
-  id                 BigInt   @id @default(autoincrement())
-  tenantId           String   @default("gyc")
+  id                 BigInt    @id @default(autoincrement())
+  tenantId           String    @default("gyc")
   clientAcronym      String
   propertyId         String?
   periodMonth        String
@@ -533,11 +600,11 @@ model ClientWebsiteTrafficMonthly {
   newUsers           Int?
   engagementRate     Int?
   bounceRate         Int?
-  avgSessionDuration Decimal?
+  avgSessionDuration Decimal?  @db.Decimal(10, 2)
   source             String?
-  checkedAt          DateTime?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @default(now())
+  checkedAt          DateTime? @db.Timestamptz(6)
+  createdAt          DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime  @default(now()) @db.Timestamptz(6)
 
   @@unique([tenantId, clientAcronym, periodMonth], map: "ClientWebsiteTrafficMonthly_client_period_unique")
   @@index([tenantId, clientAcronym, periodMonth(sort: Desc)], map: "ClientWebsiteTrafficMonthly_client_period_idx")
@@ -550,7 +617,856 @@ model CompetitorScan {
   locationId    Int
   scannedAt     DateTime @default(now())
   radiusMiles   Float    @default(5)
-  competitors   Json     // array of competitor objects
+  competitors   Json
 
-  @@index([clientAcronym, locationId, scannedAt(sort: Desc)])
+  @@index([clientAcronym, locationId, scannedAt(sort: Desc)], map: "CompetitorScan_client_loc_scanned_idx")
+}
+
+model ClientMeeting {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  acronym           String
+  meetingDate       DateTime  @db.Timestamptz(6)
+  meetingType       String
+  title             String?
+  hostEmail         String?
+  hostName          String?
+  attendees         String[]  @default([])
+  durationSecs      Int?
+  zoomMeetingId     String?
+  zoomCallId        String?   @db.Uuid
+  execSummary       String?
+  topics            Json?
+  decisions         Json?
+  tasks             Json?
+  outstandingIssues Json?
+  rawSummaryJson    Json?
+  source            String    @default("zoom_scribe")
+  status            String    @default("pending_review")
+  reviewedBy        String?
+  submittedAt       DateTime? @db.Timestamptz(6)
+  notionUrl         String?
+  transcriptUrl     String?
+  createdAt         DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@index([acronym])
+  @@index([status])
+  @@index([meetingDate])
+  @@index([source])
+}
+
+model ActivityLog {
+  id            String    @id
+  tenantId      String    @default("gyc")
+  type          String
+  referenceId   String?
+  referenceType String?
+  entityId      String?
+  entityType    String?
+  summary       String
+  detail        Json?
+  actorEmail    String?
+  actorName     String?
+  createdAt     DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([entityId])
+  @@index([referenceId])
+  @@index([tenantId])
+  @@index([type])
+}
+
+model AgentAuditLog {
+  id              BigInt   @id @default(autoincrement())
+  tenantId        String   @default("gyc")
+  agentId         String
+  agentName       String
+  action          String
+  target          String?
+  targetId        String?
+  summary         String?
+  status          String   @default("ok")
+  errorMessage    String?
+  durationMs      Int?
+  recordsAffected Int?
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([agentId])
+  @@index([createdAt(sort: Desc)])
+  @@index([tenantId])
+}
+
+model AgentJobCheckpoint {
+  id           BigInt    @id @default(autoincrement())
+  tenantId     String    @default("gyc")
+  jobId        String
+  agentId      String
+  jobType      String
+  status       String    @default("running")
+  checkpoint   Json?
+  inputContext Json?
+  outputSoFar  Json?
+  startedAt    DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @db.Timestamptz(6)
+  completedAt  DateTime? @db.Timestamptz(6)
+  errorMessage String?
+
+  @@unique([jobId, agentId])
+  @@index([agentId])
+  @@index([startedAt(sort: Desc)])
+  @@index([status])
+}
+
+model AgreementsSnapshot {
+  id          BigInt    @id @default(autoincrement())
+  syncedAt    DateTime  @default(now()) @db.Timestamptz(6)
+  docId       String    @unique
+  name        String
+  status      String
+  sentStatus  String
+  amount      Decimal?  @db.Decimal(12, 2)
+  mrr         Decimal?  @db.Decimal(12, 2)
+  createdAt   DateTime? @db.Timestamptz(6)
+  modifiedAt  DateTime? @db.Timestamptz(6)
+  completedAt DateTime? @db.Timestamptz(6)
+  recipients  String[]
+  tokens      Json?
+
+  @@index([createdAt(sort: Desc)], map: "AS_createdAt_idx")
+  @@index([sentStatus], map: "AS_sentStatus_idx")
+  @@index([status], map: "AS_status_idx")
+  @@index([syncedAt(sort: Desc)], map: "AS_syncedAt_idx")
+}
+
+model CXHandoffDataGap {
+  id            Int       @id @default(autoincrement())
+  handoffId     Int
+  source        String
+  gapCode       String
+  description   String
+  filledBy      String?
+  filledAt      DateTime? @db.Timestamptz(6)
+  resolvedValue String?
+  status        String    @default("open")
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+  tenantId      String    @default("gyc")
+  CXHandoff     CXHandoff @relation(fields: [handoffId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([handoffId, source, gapCode, description])
+  @@index([handoffId])
+  @@index([status])
+}
+
+model ClientContract {
+  id                     Int       @id @default(autoincrement())
+  ghlContactId           String?
+  clientName             String
+  acronym                String?
+  documentRef            String?
+  contractType           String?
+  programLevel           String?
+  signedAt               DateTime? @db.Timestamptz(6)
+  termMonths             Int?      @default(12)
+  autoRenews             Boolean?  @default(true)
+  cancellationNoticeDays Int?      @default(45)
+  services               Json?     @default("[]")
+  monthlyFee             Decimal?  @db.Decimal
+  totalContractValue     Decimal?  @db.Decimal
+  paidInFull             Boolean?  @default(false)
+  guarantee              String?
+  notes                  String?
+  rawText                String?
+  pdfPath                String?
+  source                 String?   @default("manual")
+  createdAt              DateTime? @default(now()) @db.Timestamptz(6)
+  updatedAt              DateTime? @default(now()) @db.Timestamptz(6)
+  tenantId               String    @default("gyc")
+
+  @@index([tenantId])
+}
+
+model ClientDFSEOKeyword {
+  id            Int       @id @default(autoincrement())
+  clientAcronym String
+  domain        String
+  pulledAt      DateTime? @default(now()) @db.Timestamptz(6)
+  keyword       String
+  position      Int?
+  searchVolume  Int?
+  url           String?
+  positionType  String?
+
+  @@unique([clientAcronym, keyword])
+  @@index([clientAcronym], map: "ClientDFSEOKeyword_acronym_idx")
+}
+
+model ClientDFSEOSnapshot {
+  id            Int       @id @default(autoincrement())
+  clientAcronym String
+  domain        String
+  snapshotDate  DateTime  @db.Date
+  organicCount  Int?
+  organicEtv    Float?
+  organicValue  Float?
+  pos1          Int?
+  pos2_3        Int?
+  pos4_10       Int?
+  pos11_20      Int?
+  pos21_100     Int?
+  isNew         Int?
+  isUp          Int?
+  isDown        Int?
+  isLost        Int?
+  snapshotType  String    @default("monthly")
+  createdAt     DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@unique([clientAcronym, snapshotDate, snapshotType])
+  @@index([clientAcronym], map: "ClientDFSEOSnapshot_acronym_idx")
+}
+
+model ClientEnrollmentVerification {
+  id                Int      @id @default(autoincrement())
+  tenantId          String   @default("gyc")
+  clientAcronym     String
+  locationName      String?
+  periodMonth       String
+  status            String
+  capacity          Int?
+  currentEnrollment Int?
+  avgTuition        Decimal? @db.Decimal(10, 2)
+  checkedAt         DateTime @default(now()) @db.Timestamp(6)
+  checkedBy         String?
+  notes             String?
+  createdAt         DateTime @default(now()) @db.Timestamp(6)
+  updatedAt         DateTime @default(now()) @db.Timestamp(6)
+
+  @@index([tenantId, clientAcronym, periodMonth(sort: Desc)], map: "ClientEnrollmentVerification_client_idx")
+}
+
+model ClientGoogleAds {
+  id           Int       @id @default(autoincrement())
+  ghlContactId String?
+  acronym      String?
+  date         DateTime  @db.Date
+  clicks       Int?      @default(0)
+  impressions  Int?      @default(0)
+  avgCpc       Decimal?  @db.Decimal
+  cost         Decimal?  @default(0) @db.Decimal
+  source       String?   @default("manual-csv")
+  createdAt    DateTime? @default(now()) @db.Timestamptz(6)
+  tenantId     String    @default("gyc")
+
+  @@index([tenantId])
+}
+
+model ClientIdentityMap {
+  id               BigInt   @id @default(autoincrement())
+  tenantId         String   @default("gyc")
+  clientSlug       String
+  displayName      String?
+  stripeCustomerId String?
+  ghlContactId     String?
+  zendeskOrgId     String?
+  ga4PropertyId    String?
+  sheetsClientId   String?
+  acronym          String?
+  createdAt        DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([tenantId, clientSlug])
+  @@index([ghlContactId])
+  @@index([stripeCustomerId])
+  @@index([tenantId])
+  @@index([zendeskOrgId])
+}
+
+model ClientIncomeHeatmap {
+  id            BigInt    @id @default(autoincrement())
+  tenantId      String    @default("gyc")
+  clientAcronym String
+  gbpLocationId Int?
+  locationName  String?
+  centerLat     Decimal?  @db.Decimal(10, 7)
+  centerLng     Decimal?  @db.Decimal(10, 7)
+  gridSize      Int?      @default(7)
+  radiusMiles   Int?      @default(3)
+  points        Json
+  computedAt    DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@unique([tenantId, gbpLocationId], map: "CIH_loc_idx")
+}
+
+model ClientMarketIntelligence {
+  id                        BigInt   @id @default(autoincrement())
+  tenantId                  String   @default("gyc")
+  acronym                   String?
+  stripeCustomerId          String?
+  companyName               String?
+  zip                       String
+  stateFips                 String?
+  countyFips                String?
+  countyName                String?
+  year                      Int      @default(2023)
+  totalPopulation           Int?
+  childrenUnder5            Int?
+  children5to9              Int?
+  children10to14            Int?
+  medianHouseholdIncome     Int?
+  workingParentsUnder6      Int?
+  belowPovertyLine          Int?
+  spanishSpeakingHouseholds Int?
+  birthsLastYear            Int?
+  childcareCenterCount      Int?
+  childcareEmployment       Int?
+  childcarePayrollK         Int?
+  opportunityScore          Int?
+  birthsPerCenter           Decimal? @db.Decimal(8, 2)
+  syncedAt                  DateTime @default(now()) @db.Timestamptz(6)
+  locationName              String?
+  gbpLocationId             Int?
+  lat                       Decimal? @db.Decimal(10, 7)
+  lng                       Decimal? @db.Decimal(10, 7)
+  timeSeries                Json?
+
+  @@unique([tenantId, gbpLocationId, year], map: "CMI_loc_year_idx")
+  @@index([acronym], map: "CMI_acronym_idx")
+  @@index([tenantId], map: "CMI_tenantId_idx")
+  @@index([zip], map: "CMI_zip_idx")
+}
+
+model ClientProfile {
+  id                     Int                      @id @default(autoincrement())
+  tenantId               String                   @default("gyc")
+  acronym                String?
+  companyName            String
+  ownerName              String?
+  email                  String?
+  phone                  String?
+  website                String?
+  locationCount          Int?                     @default(1)
+  state                  String?
+  city                   String?
+  zipCode                String?
+  status                 String?                  @default("active")
+  assignedGA             String?
+  assignedGAEmail        String?
+  crmType                String?
+  startDate              DateTime?                @db.Date
+  cancelledDate          DateTime?                @db.Date
+  hasWebsite             Boolean?                 @default(false)
+  hasSEO                 Boolean?                 @default(false)
+  hasCRM                 Boolean?                 @default(false)
+  hasGoogleAds           Boolean?                 @default(false)
+  hasBlueprint           Boolean?                 @default(false)
+  hasPaidMedia           Boolean?                 @default(false)
+  hasCommand             Boolean?                 @default(false)
+  serviceList            String[]
+  mrr                    Decimal?                 @default(0) @db.Decimal(10, 2)
+  stripeCustomerId       String?
+  stripeStatus           String?
+  isOverdue              Boolean?                 @default(false)
+  overdueAmount          Decimal?                 @default(0) @db.Decimal(10, 2)
+  lifetimeValue          Decimal?                 @default(0) @db.Decimal(12, 2)
+  overdueCount           Int?                     @default(0)
+  lastOverdueDate        DateTime?                @db.Date
+  avgDaysToCatchUp       Int?
+  catchUpRate            Decimal?                 @db.Decimal(4, 2)
+  lastOverdueReason      String?
+  ghlContactId           String?
+  ghlPipelineStage       String?
+  notes                  String?
+  teamNotes              String?
+  lastEnrichedAt         DateTime?                @default(now()) @db.Timestamp(6)
+  createdAt              DateTime?                @default(now()) @db.Timestamp(6)
+  updatedAt              DateTime?                @default(now()) @db.Timestamp(6)
+  latestFunnelMonth      String?
+  avgMonthlyLeads        Decimal?                 @db.Decimal(8, 2)
+  avgMonthlyTours        Decimal?                 @db.Decimal(8, 2)
+  avgMonthlyRegistered   Decimal?                 @db.Decimal(8, 2)
+  leadToTourRate         Decimal?                 @db.Decimal(8, 2)
+  tourToRegRate          Decimal?                 @db.Decimal(8, 2)
+  funnelDataMonths       Int?                     @default(0)
+  funnelTrend            String?
+  lastFunnelUpdated      DateTime?                @db.Timestamp(6)
+  trendWindow            String?
+  trendChangePct         Int?
+  directorName           String?
+  directorEmail          String?
+  directorPhone          String?
+  avgTuition             Decimal?                 @db.Decimal(10, 2)
+  currentEnrollment      String?
+  centerCapacity         String?
+  schoolYearBegins       String?
+  timeZone               String?
+  clientFolderUrl        String?
+  leadDataUrl            String?
+  notionPageId           String?
+  gmbAccess              String?
+  gbpBaselineReviews     Int?
+  gbpBaselineRating      Decimal?                 @db.Decimal(3, 2)
+  gbpBaselineDate        DateTime?                @db.Date
+  websiteNotes           String?
+  seoNotes               String?
+  crmNotes               String?
+  seoSheetId             String?
+  ClientStripeLink       ClientStripeLink[]
+  ClientStripeLinkReview ClientStripeLinkReview[]
+
+  @@unique([tenantId, companyName])
+  @@index([acronym], map: "CP_acronym_idx")
+  @@index([assignedGA], map: "CP_assignedGA_idx")
+  @@index([status], map: "CP_status_idx")
+  @@index([stripeCustomerId], map: "CP_stripeCustomerId_idx")
+  @@index([tenantId], map: "CP_tenantId_idx")
+}
+
+model ClientSEOGBPMonthly {
+  id                  Int       @id @default(autoincrement())
+  clientAcronym       String
+  locationName        String    @default("")
+  month               DateTime  @db.Date
+  profileInteractions Int?
+  profileViews        Int?
+  searches            Int?
+  topSearch1          String?
+  topSearch2          String?
+  topSearch3          String?
+  topSearch4          String?
+  calls               Int?
+  directionRequests   Int?
+  websiteClicks       Int?
+  createdAt           DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@unique([clientAcronym, locationName, month])
+  @@index([clientAcronym], map: "ClientSEOGBPMonthly_acronym_idx")
+}
+
+model ClientSEOHeatmap {
+  id            Int       @id @default(autoincrement())
+  clientAcronym String
+  locationName  String    @default("")
+  keyword       String
+  centerLat     Float
+  centerLng     Float
+  gridSize      Int       @default(5)
+  spacingKm     Float     @default(1.0)
+  scanDate      DateTime  @db.Date
+  points        Json
+  createdAt     DateTime? @default(now()) @db.Timestamptz(6)
+  radiusMiles   Float     @default(3.0)
+
+  @@unique([clientAcronym, locationName, keyword, scanDate, radiusMiles], map: "ClientSEOHeatmap_unique")
+  @@index([clientAcronym], map: "ClientSEOHeatmap_acronym_idx")
+}
+
+model ClientSEOSnapshot {
+  id                 Int       @id @default(autoincrement())
+  clientAcronym      String
+  locationName       String    @default("")
+  scanDate           DateTime  @db.Date
+  keywordGroup       String
+  solvDaycare        Float?
+  solvPreschool      Float?
+  arpDaycare         String?
+  arpPreschool       String?
+  reportUrlDaycare   String?
+  reportUrlPreschool String?
+  createdAt          DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@unique([clientAcronym, locationName, scanDate, keywordGroup])
+  @@index([clientAcronym], map: "ClientSEOSnapshot_acronym_idx")
+}
+
+model ClientServiceMap {
+  id             Int       @id @default(autoincrement())
+  tenantId       String    @default("gyc")
+  acronym        String?   @unique
+  companyName    String?
+  crmType        String?
+  assignedGA     String?
+  locations      Int?
+  hasWebsite     Boolean?  @default(false)
+  hasSEO         Boolean?  @default(false)
+  hasGoogleAds   Boolean?  @default(false)
+  hasBlueprint   Boolean?  @default(false)
+  hasCommand     Boolean?  @default(false)
+  hasS3          Boolean?  @default(false)
+  hasRecruitment Boolean?  @default(false)
+  syncedAt       DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([acronym], map: "CSM_acronym_idx")
+  @@index([tenantId], map: "CSM_tenantId_idx")
+}
+
+model ClientStripeLink {
+  id               BigInt        @id @default(autoincrement())
+  tenantId         String        @default("gyc")
+  clientProfileId  Int
+  stripeCustomerId String
+  isPrimary        Boolean       @default(false)
+  linkSource       String        @default("system")
+  matchMethod      String?
+  matchConfidence  String        @default("medium")
+  matchScore       Int?
+  matchSignals     String[]      @default([])
+  notes            String?
+  firstLinkedAt    DateTime      @default(now()) @db.Timestamp(6)
+  lastSeenAt       DateTime      @default(now()) @db.Timestamp(6)
+  createdAt        DateTime      @default(now()) @db.Timestamp(6)
+  updatedAt        DateTime      @default(now()) @db.Timestamp(6)
+  ClientProfile    ClientProfile @relation(fields: [clientProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([tenantId, clientProfileId, stripeCustomerId])
+  @@index([tenantId, clientProfileId, isPrimary], map: "ClientStripeLink_primary_idx")
+  @@index([tenantId, clientProfileId], map: "ClientStripeLink_tenant_client_idx")
+  @@index([tenantId, stripeCustomerId], map: "ClientStripeLink_tenant_stripe_idx")
+}
+
+model ClientStripeLinkReview {
+  id               BigInt         @id @default(autoincrement())
+  tenantId         String         @default("gyc")
+  caseKey          String
+  clientProfileId  Int?
+  stripeCustomerId String?
+  reason           String
+  reviewStatus     String         @default("pending")
+  resolution       String?
+  notes            String?
+  payload          Json           @default("{}")
+  reviewedAt       DateTime?      @db.Timestamp(6)
+  createdBy        String?
+  updatedBy        String?
+  createdAt        DateTime       @default(now()) @db.Timestamp(6)
+  updatedAt        DateTime       @default(now()) @db.Timestamp(6)
+  ClientProfile    ClientProfile? @relation(fields: [clientProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([tenantId, caseKey])
+  @@index([tenantId, clientProfileId], map: "ClientStripeLinkReview_client_idx")
+  @@index([tenantId, stripeCustomerId], map: "ClientStripeLinkReview_stripe_idx")
+  @@index([tenantId, reviewStatus, reason], map: "ClientStripeLinkReview_tenant_status_idx")
+}
+
+model DunningHistory {
+  id                 Int       @id @default(autoincrement())
+  tenantId           String    @default("gyc")
+  clientName         String?
+  companyAcronym     String?
+  inCollections      Boolean?  @default(false)
+  totalAmountDue     Decimal?  @db.Decimal(10, 2)
+  totalCatchUpAmount Decimal?  @db.Decimal(10, 2)
+  catchUpRate        Decimal?  @db.Decimal(6, 4)
+  firstDueDate       String?
+  services           String?
+  reasons            String?
+  notes              String?
+  syncedAt           DateTime? @default(now()) @db.Timestamp(6)
+  lastPaymentDate    DateTime? @db.Date
+  lastPaymentAmount  Decimal?  @db.Decimal(10, 2)
+  updatedAt          DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([companyAcronym], map: "DH_acronym_idx")
+  @@index([clientName], map: "DH_clientName_idx")
+  @@index([tenantId], map: "DH_tenantId_idx")
+}
+
+model GAMetricsDaily {
+  id                 BigInt   @id @default(autoincrement())
+  propertyId         String
+  propertyName       String?
+  date               DateTime @db.Date
+  sessions           BigInt?  @default(0)
+  activeUsers        BigInt?  @default(0)
+  newUsers           BigInt?  @default(0)
+  bounceRate         Decimal? @default(0) @db.Decimal(5, 4)
+  avgSessionDuration Decimal? @default(0) @db.Decimal(10, 2)
+  organicSearch      BigInt?  @default(0)
+  paidSearch         BigInt?  @default(0)
+  directSessions     BigInt?  @default(0)
+  organicSocial      BigInt?  @default(0)
+  syncedAt           DateTime @default(now()) @db.Timestamptz(6)
+  tenantId           String   @default("gyc")
+  sourceSystem       String   @default("ga4")
+
+  @@unique([propertyId, date])
+  @@index([date])
+  @@index([propertyId])
+  @@index([tenantId])
+}
+
+model GBPAudit {
+  id                     Int         @id @default(autoincrement())
+  tenantId               String      @default("gyc")
+  locationId             Int
+  auditDate              DateTime?   @default(now()) @db.Timestamp(6)
+  triggerType            String      @default("manual")
+  triggeredBy            String?
+  isClaimed              Boolean?
+  reviewCount            Int?
+  avgRating              Decimal?    @db.Decimal(3, 2)
+  photoCount             Int?
+  primaryCategoryCorrect Boolean?
+  secondaryCategoriesSet Boolean?
+  descriptionComplete    Boolean?
+  websiteLinked          Boolean?
+  phoneListened          Boolean?
+  hoursComplete          Boolean?
+  has50Reviews           Boolean?
+  ratingAbove4           Boolean?
+  respondedToReviews     Boolean?
+  photoRecentMonth       Boolean?
+  postRecentWeek         Boolean?
+  qaActive               Boolean?
+  servicesListed         Boolean?
+  serviceAreaConfigured  Boolean?
+  specialHoursUpdated    Boolean?
+  checklistNotes         Json?       @default("{}")
+  compositeScore         Int?
+  auditNotes             String?
+  snapshotData           Json?       @default("{}")
+  GBPLocation            GBPLocation @relation(fields: [locationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([auditDate], map: "GBPAudit_date_idx")
+  @@index([locationId], map: "GBPAudit_location_idx")
+}
+
+model HRConfig {
+  id             Int       @id @default(autoincrement())
+  tenantId       String    @default("gyc")
+  monthlyPayroll Decimal?  @db.Decimal(12, 2)
+  updatedAt      DateTime? @default(now()) @db.Timestamp(6)
+  updatedBy      String?
+}
+
+model HRScorecard {
+  id              Int       @id @default(autoincrement())
+  period          String
+  periodType      String
+  year            Int
+  quarter         Int?
+  quarterKey      Int       @default(0)
+  revenue         Decimal?  @db.Decimal(14, 2)
+  headcount       Decimal?  @db.Decimal(6, 2)
+  baseSalaryTotal Decimal?  @db.Decimal(14, 2)
+  totalComp       Decimal?  @db.Decimal(14, 2)
+  syncedAt        DateTime? @default(now()) @db.Timestamp(6)
+  updatedAt       DateTime? @default(now()) @db.Timestamp(6)
+
+  @@unique([year, quarterKey])
+}
+
+model IntelSnapshot {
+  id       BigInt   @id @default(autoincrement())
+  asOf     DateTime @default(now()) @db.Timestamptz(6)
+  payload  Json
+  tenantId String   @default("gyc")
+
+  @@index([asOf(sort: Desc)])
+}
+
+model LeadershipSnapshot {
+  id       BigInt   @id @default(autoincrement())
+  asOf     DateTime @default(now()) @db.Timestamptz(6)
+  payload  Json
+  tenantId String   @default("gyc")
+
+  @@index([asOf(sort: Desc)])
+}
+
+model MRRHistory {
+  id                  Int       @id @default(autoincrement())
+  tenantId            String    @default("gyc")
+  month               String
+  mrr                 Decimal?  @db.Decimal(12, 2)
+  newMrr              Decimal?  @db.Decimal(12, 2)
+  churnedMrr          Decimal?  @db.Decimal(12, 2)
+  expansionMrr        Decimal?  @db.Decimal(12, 2)
+  activeSubscriptions Int?
+  syncedAt            DateTime? @default(now()) @db.Timestamp(6)
+
+  @@unique([tenantId, month])
+}
+
+model NewBusinessSnapshot {
+  id       BigInt   @id @default(autoincrement())
+  asOf     DateTime @default(now()) @db.Timestamptz(6)
+  payload  Json
+  tenantId String   @default("gyc")
+
+  @@index([asOf(sort: Desc)])
+}
+
+model PandaDocAgreement {
+  id             String    @id
+  tenantId       String    @default("gyc")
+  name           String?
+  status         String?
+  createdAt      DateTime? @db.Timestamp(6)
+  sentAt         DateTime? @db.Timestamp(6)
+  completedAt    DateTime? @db.Timestamp(6)
+  expiresAt      DateTime? @db.Timestamp(6)
+  totalAmount    Decimal?  @db.Decimal(12, 2)
+  currency       String?   @default("USD")
+  recipientName  String?
+  recipientEmail String?
+  ownerName      String?
+  mrr            Decimal?  @db.Decimal(12, 2)
+  isSigned       Boolean?  @default(false)
+  isProposed     Boolean?  @default(false)
+  isExpired      Boolean?  @default(false)
+  syncedAt       DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([sentAt])
+}
+
+model ProductionSnapshot {
+  id       BigInt   @id @default(autoincrement())
+  asOf     DateTime @default(now()) @db.Timestamptz(6)
+  payload  Json
+  tenantId String   @default("gyc")
+
+  @@index([asOf(sort: Desc)])
+}
+
+model ReconSnapshot {
+  id       BigInt   @id @default(autoincrement())
+  asOf     DateTime @default(now()) @db.Timestamptz(6)
+  payload  Json
+  tenantId String   @default("gyc")
+
+  @@index([asOf(sort: Desc)])
+}
+
+model SalesActivitySnapshot {
+  id       BigInt   @id @default(autoincrement())
+  asOf     DateTime @default(now()) @db.Timestamptz(6)
+  payload  Json
+  tenantId String   @default("gyc")
+
+  @@index([asOf(sort: Desc)])
+}
+
+model SalesAnalysisSnapshot {
+  id       BigInt   @id @default(autoincrement())
+  asOf     DateTime @default(now()) @db.Timestamptz(6)
+  payload  Json
+  tenantId String   @default("gyc")
+
+  @@index([asOf(sort: Desc)])
+}
+
+model SalesDeal {
+  id            BigInt    @id @default(autoincrement())
+  yearLabel     String
+  dealDate      DateTime? @db.Date
+  clientName    String?
+  service       String?
+  quarter       String?
+  month         String?
+  firstPayment  Decimal?  @default(0) @db.Decimal(10, 2)
+  mrr           Decimal?  @default(0) @db.Decimal(10, 2)
+  term          Decimal?  @default(0) @db.Decimal(5, 2)
+  fullTerm      Decimal?  @default(0) @db.Decimal(10, 2)
+  firstYear     Decimal?  @default(0) @db.Decimal(10, 2)
+  pif           Boolean?  @default(false)
+  renewalAmount Decimal?  @default(0) @db.Decimal(10, 2)
+  rep           String?
+  dealType      String?
+  syncedAt      DateTime  @default(now()) @db.Timestamptz(6)
+  tenantId      String    @default("gyc")
+  sourceSystem  String    @default("google-sheets")
+
+  @@unique([yearLabel, dealDate, clientName, service, rep])
+  @@index([dealDate])
+  @@index([rep])
+  @@index([tenantId])
+  @@index([yearLabel])
+}
+
+model StripeInvoiceSnapshot {
+  id               String    @id
+  tenantId         String    @default("gyc")
+  stripeCustomerId String
+  subscriptionId   String?
+  chargeId         String?
+  paymentIntentId  String?
+  invoiceNumber    String?
+  status           String?
+  billingReason    String?
+  currency         String?   @default("usd")
+  amountDue        Decimal?  @db.Decimal(12, 2)
+  amountPaid       Decimal?  @db.Decimal(12, 2)
+  amountRemaining  Decimal?  @db.Decimal(12, 2)
+  subtotal         Decimal?  @db.Decimal(12, 2)
+  total            Decimal?  @db.Decimal(12, 2)
+  attemptCount     Int?
+  attempted        Boolean?
+  paid             Boolean?
+  forgiven         Boolean?
+  collectionMethod String?
+  dueDate          DateTime? @db.Timestamp(6)
+  periodStart      DateTime? @db.Timestamp(6)
+  periodEnd        DateTime? @db.Timestamp(6)
+  invoiceCreatedAt DateTime? @db.Timestamp(6)
+  paidAt           DateTime? @db.Timestamp(6)
+  hostedInvoiceUrl String?
+  invoicePdf       String?
+  description      String?
+  rawLines         Json?
+  lastPaymentError String?
+  syncedAt         DateTime  @default(now()) @db.Timestamp(6)
+  createdAt        DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt        DateTime  @default(now()) @db.Timestamp(6)
+
+  @@index([tenantId, invoiceCreatedAt(sort: Desc)], map: "StripeInvoiceSnapshot_tenant_created_idx")
+  @@index([tenantId, stripeCustomerId], map: "StripeInvoiceSnapshot_tenant_customer_idx")
+  @@index([tenantId, status], map: "StripeInvoiceSnapshot_tenant_status_idx")
+}
+
+model StripeSubscriptionHistory {
+  id              String    @id
+  tenantId        String    @default("gyc")
+  customerId      String
+  subscriptionId  String
+  productId       String?
+  productName     String?
+  productCategory String?
+  priceId         String?
+  amount          Decimal?  @db.Decimal(10, 2)
+  currency        String?   @default("usd")
+  interval        String?
+  status          String?
+  startDate       DateTime? @db.Timestamp(6)
+  canceledAt      DateTime? @db.Timestamp(6)
+  createdAt       DateTime? @default(now()) @db.Timestamp(6)
+  syncedAt        DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([customerId], map: "SSH_customerId_idx")
+  @@index([productCategory], map: "SSH_productCategory_idx")
+  @@index([startDate], map: "SSH_startDate_idx")
+  @@index([status], map: "SSH_status_idx")
+  @@index([tenantId], map: "SSH_tenantId_idx")
+}
+
+model TenantConfig {
+  id               BigInt   @id @default(autoincrement())
+  tenantId         String   @unique
+  displayName      String
+  industry         String?  @default("childcare")
+  timezone         String?  @default("America/Toronto")
+  stripeAccountId  String?
+  ghlLocationId    String?
+  ga4PropertyId    String?
+  sheetsId         String?
+  zendeskSubdomain String?
+  activeModules    String[] @default(["finance", "sales", "cx"])
+  createdAt        DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model WebAnalyticsSnapshot {
+  id       BigInt   @id @default(autoincrement())
+  asOf     DateTime @default(now()) @db.Timestamptz(6)
+  payload  Json
+  tenantId String   @default("gyc")
+
+  @@index([asOf(sort: Desc)])
 }

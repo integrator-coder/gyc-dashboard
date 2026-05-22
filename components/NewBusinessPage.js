@@ -10,7 +10,7 @@ import {
 const fmt$ = (n) => '$' + Math.round(n).toLocaleString()
 const fmtK = (n) => n >= 1000 ? '$' + (n / 1000).toFixed(0) + 'K' : '$' + Math.round(n)
 
-const REPS_ORDER = ['Jesse', 'Briana', 'Sebastian', 'JC', 'Zu', 'Pia', 'Todd']
+const REPS_ORDER = ['Jesse', 'Sebastian', 'JC', 'Zu', 'Briana', 'Pia', 'Todd']  // Jesse = only active sales rep. Briana/Pia = historical; Briana now GA.
 const TEAL = '#14B8A6'
 const GRAY = '#374151'
 const TEAL_LIGHT = '#2DD4BF'
@@ -444,7 +444,7 @@ export default function NewBusinessPage() {
       {/* Sales vs Upsells Split */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
         <h2 className="text-white font-semibold mb-1">Sales vs Upsells (Historical Rule-Based Split)</h2>
-        <p className="text-gray-300 text-xs mb-4">Sales reps: Jesse, Pia, Briana, Matt, Lex (+ Sebastian in 2025) · Upsell reps: JC, Zu, Stefen, Todd, Travis, Kim (+ Sebastian in 2026)</p>
+        <p className="text-gray-300 text-xs mb-4">Active sales: Jesse · Historical only: Briana (now GA), Pia (starting), Matt, Lex · Upsell reps: JC, Zu, Stefen, Todd, Travis, Kim</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
           <div className="rounded-xl border border-gray-800 bg-gray-950/60 p-4">

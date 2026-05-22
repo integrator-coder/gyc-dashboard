@@ -106,8 +106,8 @@ function TeamProductCard({ productKey, teamData }) {
 // Per-rep row showing their individual contribution + est. commission
 function RepRow({ repName, repData, teamData }) {
   const products = ['website', 'blueprint', 'seoCore', 'seoAdvanced']
-  const bgColors   = { Jesse: 'bg-blue-900',   Briana: 'bg-purple-900' }
-  const textColors = { Jesse: 'text-blue-300',  Briana: 'text-purple-300' }
+  const bgColors   = { Jesse: 'bg-blue-900' }
+  const textColors = { Jesse: 'text-blue-300' }
 
   // Estimated commission = rep's totalValue × team tier rate
   let totalEst = 0
@@ -213,7 +213,7 @@ export default function CommissionTierTracker({ data, loading }) {
           <div>
             <p className="text-gray-300 text-xs uppercase tracking-wider mb-2">Rep Contributions</p>
             <div className="space-y-2">
-              {['Jesse', 'Briana'].map(rep => (
+              {['Jesse'].map(rep => (
                 <RepRow key={rep} repName={rep} repData={data.reps?.[rep]} teamData={data.team} />
               ))}
             </div>

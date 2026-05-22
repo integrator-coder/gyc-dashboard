@@ -40,7 +40,7 @@ const REP_ALIASES = {
   'matt': 'Matt',
 }
 
-const SALES_REPS = new Set(['Jesse', 'Pia', 'Briana', 'Matt', 'Lex'])
+const SALES_REPS = new Set(['Jesse', 'Pia', 'Briana', 'Matt', 'Lex'])  // Kept for historical attribution. Active sales: Jesse only. Briana now GA. Pia starting.
 const UPSELL_REPS = new Set(['JC', 'Zu', 'Stefen', 'Todd', 'Travis', 'Kim'])
 
 function normaliseRep(raw) {

@@ -240,9 +240,9 @@ export async function GET() {
     const sheets = google.sheets({ version: 'v4', auth: client })
 
     const [marketingRows, camRows, recruitingRows] = await Promise.all([
-      readTab(sheets, 'Marketing', 'A1:AQ200'),
-      readTab(sheets, 'Marketing Revenue by MC', 'A1:AQ200'),
-      readTab(sheets, 'Recruiting', 'A1:AQ200'),
+      readTab(sheets, 'Marketing', 'A1:AZ200'),
+      readTab(sheets, 'Marketing Revenue by MC', 'A1:AZ200'),
+      readTab(sheets, 'Recruiting', 'A1:AZ200'),
     ])
 
     const marketingMonthly  = parseTabData(marketingRows)

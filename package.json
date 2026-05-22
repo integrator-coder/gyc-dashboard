@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.96.0",
     "@google-analytics/admin": "^9.0.1",
     "@google-analytics/data": "^5.2.1",
     "@notionhq/client": "^5.12.0",

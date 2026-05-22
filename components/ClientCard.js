@@ -20,6 +20,8 @@ import {
 import { ClientFinanceReviewPanel } from '@/components/StripeLinkageReviewPage'
 import { funnelStatus } from '@/lib/funnel-benchmarks'
 import CompetitorMap from '@/components/CompetitorMap'
+import dynamic from 'next/dynamic'
+const OverlayTestTab = dynamic(() => import('@/components/OverlayTestTab'), { ssr: false, loading: () => <div className="p-8 text-gray-400">Loading map...</div> })
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
@@ -6630,6 +6632,254 @@ function CallsTab({ profile, allCalls, pendingCalls, potentialUnlinkedCount }) {
   )
 }
 
+// ── Meetings Tab ──────────────────────────────────────────────────────────────
+function MeetingsTab({ acronym, profile }) {
+  const [meetings, setMeetings] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [expanded, setExpanded] = useState(null)
+  const [submitting, setSubmitting] = useState(null)
+  const [filter, setFilter] = useState('all') // 'all' | 'pending_review' | 'submitted'
+
+  useEffect(() => {
+    fetch(`/api/clients/${acronym}/meetings`)
+      .then(r => r.json())
+      .then(d => { setMeetings(d.meetings || []); setLoading(false) })
+      .catch(e => { setError(e.message); setLoading(false) })
+  }, [acronym])
+
+  async function handleAction(id, action) {
+    setSubmitting(id)
+    try {
+      await fetch(`/api/clients/${acronym}/meetings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action }),
+      })
+      setMeetings(prev => prev.map(m => m.id === id
+        ? { ...m, status: action === 'approve' ? 'approved' : 'submitted' }
+        : m
+      ))
+    } finally {
+      setSubmitting(null)
+    }
+  }
+
+  const filtered = filter === 'all' ? meetings : meetings.filter(m => m.status === filter)
+
+  const statusBadge = (status) => {
+    const map = {
+      pending_review: 'border-amber-500/40 bg-amber-500/10 text-amber-300',
+      approved:       'border-violet-500/40 bg-violet-500/10 text-violet-300',
+      submitted:      'border-emerald-500/40 bg-emerald-500/10 text-emerald-300',
+    }
+    const label = { pending_review: 'Pending Review', approved: 'Approved', submitted: 'Submitted' }
+    return (
+      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${map[status] || ''}`}>
+        {label[status] || status}
+      </span>
+    )
+  }
+
+  const sourceLabel = (src) => ({
+    zoom_scribe: '🤖 Scribe',
+    notion_import: '📥 Notion',
+    manual: '✏️ Manual',
+  }[src] || src)
+
+  const pending = meetings.filter(m => m.status === 'pending_review').length
+
+  if (loading) return <div className="py-8 text-center text-sm text-gray-500">Loading meetings…</div>
+  if (error) return <div className="py-8 text-center text-sm text-rose-400">Error: {error}</div>
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="text-sm font-semibold text-white">Meeting Records</div>
+          <div className="text-xs text-gray-400 mt-0.5">
+            {meetings.length} total
+            {pending > 0 && <span className="ml-2 text-amber-300 font-semibold">· {pending} pending review</span>}
+          </div>
+        </div>
+        <div className="flex gap-1.5">
+          {['all', 'pending_review', 'submitted'].map(f => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide transition ${
+                filter === f
+                  ? 'border-violet-500/50 bg-violet-500/15 text-violet-200'
+                  : 'border-white/10 bg-black/20 text-gray-400 hover:text-white'
+              }`}
+            >
+              {f === 'all' ? 'All' : f === 'pending_review' ? 'Pending' : 'Submitted'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Meeting list */}
+      {filtered.length === 0 ? (
+        <div className="rounded-2xl border border-white/8 bg-black/20 py-10 text-center">
+          <div className="text-sm text-gray-500">
+            {filter === 'pending_review' ? 'No meetings pending review.' : 'No meeting records yet.'}
+          </div>
+          <div className="mt-1 text-xs text-gray-600">
+            Meeting summaries will appear here after calls are processed by Scribe.
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2.5">
+          {filtered.map(m => {
+            const isOpen = expanded === m.id
+            const date = new Date(m.meetingDate).toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'America/Toronto' })
+            const tasks = Array.isArray(m.tasks) ? m.tasks : (m.tasks ? JSON.parse(m.tasks) : [])
+            const decisions = Array.isArray(m.decisions) ? m.decisions : (m.decisions ? JSON.parse(m.decisions) : [])
+            const topics = Array.isArray(m.topics) ? m.topics : (m.topics ? JSON.parse(m.topics) : [])
+            const issues = Array.isArray(m.outstandingIssues) ? m.outstandingIssues : (m.outstandingIssues ? JSON.parse(m.outstandingIssues) : [])
+
+            return (
+              <div key={m.id} className="rounded-2xl border border-white/8 bg-black/20 overflow-hidden">
+                {/* Card header — always visible */}
+                <button
+                  className="w-full flex items-start justify-between gap-3 px-4 py-3.5 text-left hover:bg-white/3 transition"
+                  onClick={() => setExpanded(isOpen ? null : m.id)}
+                >
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className="mt-0.5 shrink-0">
+                      <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">{date}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">{sourceLabel(m.source)}</div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-white truncate">{m.title || m.meetingType?.replace('_', ' ') || 'Meeting'}</div>
+                      {m.execSummary && (
+                        <div className="mt-1 text-xs leading-5 text-gray-400 line-clamp-2">{m.execSummary}</div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {statusBadge(m.status)}
+                    <span className={`text-gray-400 transition-transform text-sm ${isOpen ? 'rotate-90' : ''}`}>›</span>
+                  </div>
+                </button>
+
+                {/* Expanded detail */}
+                {isOpen && (
+                  <div className="border-t border-white/8 px-5 py-4 space-y-4">
+                    {/* Exec summary */}
+                    {m.execSummary && (
+                      <div>
+                        <div className="text-[11px] font-semibold uppercase tracking-wider text-violet-300 mb-1.5">Executive Summary</div>
+                        <p className="text-sm leading-6 text-gray-300">{m.execSummary}</p>
+                      </div>
+                    )}
+
+                    {/* 4-column grid: topics, decisions, tasks, issues */}
+                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                      {topics.length > 0 && (
+                        <div>
+                          <div className="text-[11px] font-semibold uppercase tracking-wider text-cyan-300 mb-2">Topics</div>
+                          <ul className="space-y-1">{topics.map((t, i) => (
+                            <li key={i} className="flex items-start gap-2 text-xs text-gray-300">
+                              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-400/60" />{t}
+                            </li>
+                          ))}</ul>
+                        </div>
+                      )}
+                      {decisions.length > 0 && (
+                        <div>
+                          <div className="text-[11px] font-semibold uppercase tracking-wider text-emerald-300 mb-2">Decisions</div>
+                          <ul className="space-y-1">{decisions.map((d, i) => (
+                            <li key={i} className="flex items-start gap-2 text-xs text-gray-300">
+                              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400/60" />{d}
+                            </li>
+                          ))}</ul>
+                        </div>
+                      )}
+                      {tasks.length > 0 && (
+                        <div>
+                          <div className="text-[11px] font-semibold uppercase tracking-wider text-amber-300 mb-2">Tasks</div>
+                          <ul className="space-y-1.5">{tasks.map((t, i) => (
+                            <li key={i} className="text-xs text-gray-300">
+                              <span className="font-medium text-amber-200">{t.owner || 'TBD'}:</span> {typeof t === 'string' ? t : t.task}
+                            </li>
+                          ))}</ul>
+                        </div>
+                      )}
+                      {issues.length > 0 && (
+                        <div>
+                          <div className="text-[11px] font-semibold uppercase tracking-wider text-rose-300 mb-2">Outstanding</div>
+                          <ul className="space-y-1">{issues.map((issue, i) => (
+                            <li key={i} className="flex items-start gap-2 text-xs text-gray-300">
+                              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400/60" />{issue}
+                            </li>
+                          ))}</ul>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Meta + actions */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-white/8">
+                      <div className="flex flex-wrap gap-3 text-xs text-gray-500">
+                        {m.hostName && <span>Host: {m.hostName}</span>}
+                        {m.durationSecs && <span>Duration: {Math.round(m.durationSecs / 60)}m</span>}
+                        {m.transcriptUrl && (
+                          <a href={m.transcriptUrl} target="_blank" rel="noreferrer" className="text-violet-400 hover:text-violet-300 transition">
+                            View transcript ↗
+                          </a>
+                        )}
+                        {m.notionUrl && (
+                          <a href={m.notionUrl} target="_blank" rel="noreferrer" className="text-cyan-400 hover:text-cyan-300 transition">
+                            Notion entry ↗
+                          </a>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        {m.status === 'pending_review' && (
+                          <>
+                            <button
+                              disabled={submitting === m.id}
+                              onClick={() => handleAction(m.id, 'approve')}
+                              className="rounded-lg border border-violet-500/40 bg-violet-500/10 px-3 py-1.5 text-xs font-semibold text-violet-200 hover:bg-violet-500/20 disabled:opacity-40 transition"
+                            >
+                              {submitting === m.id ? '…' : 'Approve'}
+                            </button>
+                            <button
+                              disabled={submitting === m.id}
+                              onClick={() => handleAction(m.id, 'submit')}
+                              className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-200 hover:bg-emerald-500/20 disabled:opacity-40 transition"
+                            >
+                              {submitting === m.id ? '…' : 'Approve + Submit'}
+                            </button>
+                          </>
+                        )}
+                        {m.status === 'approved' && (
+                          <button
+                            disabled={submitting === m.id}
+                            onClick={() => handleAction(m.id, 'submit')}
+                            className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-200 hover:bg-emerald-500/20 disabled:opacity-40 transition"
+                          >
+                            {submitting === m.id ? '…' : 'Submit to Notion'}
+                          </button>
+                        )}
+                        {m.status === 'submitted' && (
+                          <span className="text-xs text-emerald-400">✓ Submitted{m.submittedAt ? ' · ' + new Date(m.submittedAt).toLocaleDateString() : ''}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Raw data (admin collapsible) ──────────────────────────────────────────────
 
 function RawDataSection({ profile, user }) {
@@ -6755,9 +7005,10 @@ export default function ClientCard({ acronym, user }) {
     { key: 'paidmedia',    label: 'Paid Media',                show: true },
     { key: 'demographics', label: 'Demographics',              show: true },
     { key: 'market-intel', label: 'Market Intel',              show: true },
+    { key: 'overlay-test', label: '🧪 Overlay Test',           show: acronym === 'CTI' },
     { key: 'contacts',     label: 'Contacts',                  show: true },
     { key: 'notes',        label: 'Notes',                     show: true },
-    { key: 'calls',        label: `Calls (${allCalls.length})`, show: true },
+    { key: 'meetings',     label: 'Meetings',                  show: true },
     { key: 'blueprint',    label: 'Blueprint',                 show: !!profile.hasBlueprint },
   ]
   const visibleTabs = ALL_TABS.filter((t) => t.show)
@@ -6883,6 +7134,11 @@ export default function ClientCard({ acronym, user }) {
         {currentTab === 'demographics' && (
           <DemographicsTab acronym={acronym} />
         )}
+        {currentTab === 'overlay-test' && (
+          <div style={{ height: '700px' }}>
+            <OverlayTestTab acronym={acronym} />
+          </div>
+        )}
         {currentTab === 'gbp' && (
           <GBPTab profile={profile} acronym={acronym} user={user} />
         )}
@@ -6909,13 +7165,8 @@ export default function ClientCard({ acronym, user }) {
         {currentTab === 'notes' && (
           <NotesTab profile={profile} acronym={acronym} />
         )}
-        {currentTab === 'calls' && (
-          <CallsTab
-            profile={profile}
-            allCalls={allCalls}
-            pendingCalls={pendingCalls}
-            potentialUnlinkedCount={potentialUnlinkedCount}
-          />
+        {currentTab === 'meetings' && (
+          <MeetingsTab acronym={acronym} profile={profile} />
         )}
       </div>
 

@@ -936,6 +936,24 @@ export default function MissionControlPage() {
             M3 Integration Project
           </a>
           <a
+            href="/team/skunkworks"
+            className="rounded-xl border border-amber-500/40 bg-amber-500/15 px-4 py-2 text-sm font-medium text-amber-100 transition hover:bg-amber-500/25"
+          >
+            ⚗️ Skunk Works
+          </a>
+          <a
+            href="/team/calendar"
+            className="rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/20"
+          >
+            📅 Meeting Playbooks
+          </a>
+          <a
+            href="/team/vision"
+            className="rounded-xl border border-amber-500/40 bg-amber-500/15 px-4 py-2 text-sm font-medium text-amber-100 transition hover:bg-amber-500/25"
+          >
+            🎯 Vision Board
+          </a>
+          <a
             href="/team/toolkit"
             className="rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/20"
           >

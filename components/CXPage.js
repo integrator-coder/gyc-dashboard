@@ -7,7 +7,7 @@ import {
   ReferenceLine
 } from 'recharts'
 
-const GROWTH_ADVISORS = ['Sebastian', 'Stefen', 'JC', 'Zu']
+const GROWTH_ADVISORS = ['Sebastian', 'Stefen', 'JC', 'Zu', 'Briana']  // Briana added May 2026 — GA for Website-only + Website+Blueprint clients
 
 function formatUpdated(isoStr) {
   if (!isoStr) return ''

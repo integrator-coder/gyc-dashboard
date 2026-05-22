@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import LeadIntelPanel from './LeadIntelPanel'
 
 const STATUS_OPTIONS = ['verified', 'manually-entered', 'not-claimed', 'not-found', 'skip']
 const CLAIM_OPTIONS = ['yes', 'no', 'unknown']
@@ -257,6 +258,8 @@ export default function TeamReconPage({ user }) {
 
   return (
     <div className="mx-auto max-w-[1600px] space-y-6">
+      {/* Lead Intel Panel */}
+      <LeadIntelPanel />
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="text-sm font-semibold uppercase tracking-[0.24em] text-violet-300">Team Portal</div>

@@ -2,9 +2,9 @@
 import { NextResponse } from 'next/server'
 import { getRepData, parseRepSheet } from '@/lib/sheets'
 
-const PRIMARY_REPS = ['Jesse', 'Briana']
-const OUTBOUND_REPS = ['Pia']
-const GROWTH_ADVISORS = ['Sebastian', 'Stefen', 'JC', 'Zu']
+const PRIMARY_REPS = ['Jesse']              // Active sales reps with targets
+const OUTBOUND_REPS = []                       // Pia: on team but no targets set yet — re-add when active
+const GROWTH_ADVISORS = ['Briana', 'Sebastian', 'Stefen', 'JC', 'Zu']  // Briana moved to GA (Website-only clients)
 
 // GHL user IDs per rep — Conversion Rate numerator comes from GHL Closed Won
 const GHL_USER_IDS = {
@@ -219,7 +219,7 @@ export async function GET() {
       repFlags[rep] = getDataFlags(rep, sheetMetrics)
     })
 
-    // Team totals (Jesse + Briana) — all periods
+    // Team totals — Jesse only (active sales rep as of May 2026)
     const teamMetrics = {}
     for (const metric of Object.keys(DAILY_TARGETS)) {
       const isRate = RATE_METRICS.has(metric)

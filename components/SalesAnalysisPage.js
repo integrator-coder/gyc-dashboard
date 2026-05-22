@@ -50,7 +50,7 @@ function fmt$(v) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(Number(v || 0))
 }
 
-const SALES_REPS = new Set(['Jesse', 'Pia', 'Briana', 'Matt', 'Lex'])
+const SALES_REPS = new Set(['Jesse'])  // Active sales team. Pia: starting, no targets yet. Briana: moved to GA (Website-only). Matt/Lex: historical only.
 const UPSELL_REPS = new Set(['JC', 'Zu', 'Stefen', 'Todd', 'Travis', 'Kim'])
 
 function classifyDealType(rep, year) {
@@ -748,7 +748,7 @@ export default function SalesAnalysisPage() {
       {/* ── Sales vs Upsells split ────────────────────────────────────────────── */}
       <Section
         title="Sales vs Upsells (Current Filter)"
-        sub="Historical rule-based split: Sales = Jesse/Pia/Briana · Upsells = JC/Zu/Stefen/Todd"
+        sub="Historical rule-based split: Sales = Jesse (active) · Upsells = JC/Zu/Stefen/Todd"
       >
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <Panel h={280}>

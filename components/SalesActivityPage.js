@@ -341,7 +341,7 @@ export default function SalesPage() {
 
       <section>
         <h2 className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-3">
-          Team — Jesse + Briana
+          Sales Team — Jesse Poirier
         </h2>
 
         <div className="mb-4">
@@ -409,7 +409,7 @@ export default function SalesPage() {
           Individual Reps
         </h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {['Jesse', 'Briana'].map(rep => (
+          {['Jesse'].map(rep => (
             <RepCard
               key={rep}
               repName={rep}
@@ -422,12 +422,14 @@ export default function SalesPage() {
         </div>
       </section>
 
+      {/* Pia: on team but no active targets yet — uncomment when ready
       <section>
         <h2 className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-3">
           Outbound Activity
         </h2>
         <PiaCard repData={reps['Pia']} period={period} />
       </section>
+      */}
 
       <section>
         <h2 className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-1">
@@ -454,7 +456,7 @@ export default function SalesPage() {
                 </thead>
                 <tbody>
                   {(() => {
-                    const knownGAs = data?.growthAdvisors || ['Sebastian', 'Stefen', 'JC', 'Zu']
+                    const knownGAs = data?.growthAdvisors || ['Sebastian', 'Stefen', 'JC', 'Zu', 'Briana']
                     const byRep = ghlData?.byRep || {}
                     const unknownGHLReps = Object.keys(byRep).filter(r => !knownGAs.includes(r))
                     const allReps = [...knownGAs, ...unknownGHLReps]

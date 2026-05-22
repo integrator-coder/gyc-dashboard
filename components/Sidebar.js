@@ -96,6 +96,9 @@ const TEAM_PORTAL_GROUP = {
   children: [
     { label: 'CX Handoffs', emoji: '🧾', href: '/cx-handoff', roles: ['sales', 'ga', 'cx', 'admin', 'superadmin'] },
     { label: 'Recon', emoji: '🔍', href: '/team/recon', roles: ['recon', 'admin', 'superadmin'] },
+    { label: 'Toolkit', emoji: '🔧', href: '/team/toolkit', roles: ['sales', 'ga', 'cx', 'recon', 'admin', 'superadmin'] },
+    { label: 'Presentation Library', emoji: '🎬', href: '/team/presentations', roles: ['sales', 'ga', 'cx', 'recon', 'admin', 'superadmin'] },
+    { label: 'AI Training Hub', emoji: '🤖', href: 'https://www.notion.so/growyourcenter/362ca865e19781c2b416d4e96b008c22', roles: ['sales', 'ga', 'cx', 'recon', 'admin', 'superadmin'], external: true },
   ],
 }
 
@@ -128,6 +131,21 @@ function groupHasActiveChild(group, pathname) {
 
 function GroupLink({ item, pathname }) {
   const isActive = itemIsActive(pathname, item.href)
+
+  if (item.external) {
+    return (
+      <a
+        href={item.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="nav-link flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium"
+      >
+        <span className="text-sm">{item.emoji}</span>
+        <span>{item.label}</span>
+        <span className="ml-auto text-[10px] text-gray-600">↗</span>
+      </a>
+    )
+  }
 
   return (
     <Link

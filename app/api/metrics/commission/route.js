@@ -240,7 +240,7 @@ export async function GET() {
     }
 
     // Calculate TEAM totals per product (tiers are cumulative by team, not per rep)
-    const SALES_REPS = ['Jesse', 'Briana', 'Pia']
+    const SALES_REPS = ['Jesse']  // Jesse is the only active sales rep with targets. Briana: now GA. Pia: starting, no targets yet.
     const teamTotals = {
       website:     { count: 0, totalValue: 0 },
       blueprint:   { count: 0, totalValue: 0 },

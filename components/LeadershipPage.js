@@ -9,7 +9,7 @@ import {
   CartesianGrid, XAxis, YAxis, Tooltip, Legend,
 } from 'recharts'
 
-const SALES_REPS = new Set(['Jesse', 'Pia', 'Briana', 'Matt', 'Lex'])
+const SALES_REPS = new Set(['Jesse'])  // Jesse is the only active sales rep. Briana: moved to GA. Pia: starting, no targets. Matt/Lex: historical only.
 const UPSELL_REPS = new Set(['JC', 'Zu', 'Stefen', 'Todd', 'Travis', 'Kim'])
 const fmt$ = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(Number(n || 0))
 const fmtN = (n) => new Intl.NumberFormat('en-US').format(Number(n || 0))

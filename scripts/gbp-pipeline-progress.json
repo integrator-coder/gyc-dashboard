@@ -1,0 +1,906 @@
+{
+  "processed": {
+    "ACC::https://share.google/3DcsbpgdVtUGzVpoO": {
+      "placeResult": {
+        "placeId": "ChIJg14bUdgkO4gRnPJS7ct998g",
+        "displayName": "Anderdon Child Care Inc",
+        "formattedAddress": "3170 Middle Side Rd, Amherstburg, ON N9V 2Y9, Canada",
+        "latitude": 42.1431156,
+        "longitude": -83.0661356
+      },
+      "kgmid": "/g/11xklqxbz8"
+    },
+    "ABCCA::https://share.google/QddQGCH3oTYAmCUjj -https://share.google/cglj0rtrlZcCJgjGCCC": {
+      "placeResult": {
+        "placeId": "ChIJPapLLHBTzIcR1bKs5aBjn2I",
+        "displayName": "ABC Children's Academy",
+        "formattedAddress": "500 E 3rd St, Russellville, AR 72801, USA",
+        "latitude": 35.2756034,
+        "longitude": -93.1279029
+      },
+      "kgmid": null
+    },
+    "AALLC::https://share.google/BW4YjumtHQ1C6MTuQ": {
+      "placeResult": {
+        "placeId": "ChIJ_eMOkxQ7b4cRuFouv8zjykg",
+        "displayName": "Alphabet Academy V, LLC",
+        "formattedAddress": "2110 Grasslands Pkwy, Cheyenne, WY 82001, USA",
+        "latitude": 41.1451497,
+        "longitude": -104.75416129999999
+      },
+      "kgmid": "/g/11y1r0vrky"
+    },
+    "AFYA::https://share.google/wkywNelvuegybLsF4": {
+      "placeResult": {
+        "placeId": "ChIJVTumL4hUa4gRqP4ENPQ4tus",
+        "displayName": "The Academy for Young Achievers",
+        "formattedAddress": "6601 Grandview Dr, Indianapolis, IN 46260, USA",
+        "latitude": 39.8781895,
+        "longitude": -86.18737159999999
+      },
+      "kgmid": "/g/1tfbtml8"
+    },
+    "AKW::https://share.google/dW2wcEhAOBkguGxzS": {
+      "placeResult": {
+        "placeId": "ChIJXffoMZI19IgRDsWpR5SpPJU",
+        "displayName": "A Kid's World - Covington",
+        "formattedAddress": "25 Kirkland Rd, Covington, GA 30016, USA",
+        "latitude": 33.5852977,
+        "longitude": -83.9152379
+      },
+      "kgmid": "/g/1tdng2hw"
+    },
+    "ACP::https://share.google/RtRzg8DBpaMQJYGGX": {
+      "placeResult": {
+        "placeId": "ChIJU51U02o8TIYRFBnsuaBISgg",
+        "displayName": "Apple Creek Private Preschool",
+        "formattedAddress": "7797 Stonebrook Pkwy, Frisco, TX 75034, USA",
+        "latitude": 33.139412199999995,
+        "longitude": -96.81581249999999
+      },
+      "kgmid": "/g/1tnhyr24"
+    },
+    "ASDLA::https://share.google/aBN4fzth0KbyenqfP": {
+      "placeResult": {
+        "placeId": "ChIJzfAiIWzrQIYRvqYza7brAok",
+        "displayName": "Apogee STEM Discovery Learning Academy",
+        "formattedAddress": "12921 S Post Oak Rd, Houston, TX 77045, USA",
+        "latitude": 29.6401575,
+        "longitude": -95.4629435
+      },
+      "kgmid": "/g/11gn2240z9"
+    },
+    "AVAC::https://share.google/AGaemyVjsW0ELYXAI": {
+      "placeResult": {
+        "placeId": "ChIJM4J0xD0Dr1QRw__n8tz3j2k",
+        "displayName": "Avimor Academy",
+        "formattedAddress": "18551 N McLeod Wy, Boise, ID 83714, USA",
+        "latitude": 43.77258,
+        "longitude": -116.262191
+      },
+      "kgmid": "/g/11z1rmt9r5"
+    },
+    "AZCC::https://share.google/3Rf2FupF0c1mAiZ8T - https://share.google/SMZgsCNWcSnBxnZ2v": {
+      "placeResult": {
+        "placeId": "ChIJL7nlQVpNR4YR0VdNR4kErLE",
+        "displayName": "Alphabet Zone Early Steam Center",
+        "formattedAddress": "1418 Northpark Dr, Kingwood, TX 77339, USA",
+        "latitude": 30.0676611,
+        "longitude": -95.23276159999999
+      },
+      "kgmid": null
+    },
+    "BCPA::https://share.google/qJpbuHGToZ3Ju98Zu": {
+      "placeResult": {
+        "placeId": "ChIJhyPOZn1CkYARzqMExykCnQ4",
+        "displayName": "Bear Country Preschool & After School",
+        "formattedAddress": "2115 Wardrobe Ave, Merced, CA 95341, USA",
+        "latitude": 37.298645,
+        "longitude": -120.52043320000001
+      },
+      "kgmid": "/g/1tgpyfqf"
+    },
+    "BED::https://share.google/gRtaidWRXIIKd8jDN - https://share.google/xQlp9kfQdhnFPoTv1": {
+      "placeResult": {
+        "placeId": "ChIJD77zoyeL6IkRKbI3gbRRcDU",
+        "displayName": "Bright & Early Discoveries Learning Center",
+        "formattedAddress": "608 Northville Turnpike, Riverhead, NY 11901, USA",
+        "latitude": 40.9253984,
+        "longitude": -72.6606202
+      },
+      "kgmid": null
+    },
+    "BLC::https://share.google/ZiAFV0VzhLMcUXqrB - https://share.google/cx2IcW1JeUg6wwB5r - https://share.google/HymvOUHUT2h1QcWnG": {
+      "placeResult": {
+        "placeId": "ChIJSyOMWbkGzkwRhNvFfkltVzY",
+        "displayName": "Early Beginnings Multicultural ChildDevelopmentCentre Of Ottawa-Carleton",
+        "formattedAddress": "11 Nadolny Sachs Private, Ottawa, ON K2A 1R9, Canada",
+        "latitude": 45.376486,
+        "longitude": -75.7522932
+      },
+      "kgmid": null
+    },
+    "CBG::https://share.google/Aznk4vrBiSgHJeq7B": {
+      "placeResult": {
+        "placeId": "ChIJx87aEGfAQIYRvpBIgVrg-5Y",
+        "displayName": "Crossing Borders International School & Camps",
+        "formattedAddress": "2353 Rice Boulevard, Houston, TX 77005, USA",
+        "latitude": 29.71706,
+        "longitude": -95.4134674
+      },
+      "kgmid": "/g/11b6mpgrw_"
+    },
+    "BSEC::https://share.google/raF9TAqhTuMMxfUc8 - https://share.google/cJdilq3OU5KpcadeO -": {
+      "placeResult": {
+        "placeId": "ChIJh4Smkn4QtIkRsIYpyQoElHM",
+        "displayName": "Bright Side Early Care and Learning Center - Dogwood Village",
+        "formattedAddress": "462 N Madison Rd A, Orange, VA 22960, USA",
+        "latitude": 38.2541553,
+        "longitude": -78.11564109999999
+      },
+      "kgmid": null
+    },
+    "CCDC::https://share.google/bdvNdjm2NioEG4F9e": {
+      "placeResult": {
+        "placeId": "ChIJ8d69SrzZgoAR3rBXpPv_w70",
+        "displayName": "Chico Child Development Center",
+        "formattedAddress": "120 Mission Ranch Blvd, Chico, CA 95926, USA",
+        "latitude": 39.754034,
+        "longitude": -121.8613372
+      },
+      "kgmid": "/g/11t8p90pcx"
+    },
+    "CEDAT::https://share.google/SNt86Afhb7bvUnlez": {
+      "placeResult": {
+        "placeId": "ChIJG6j_3wAzR4YRj_5S0TRwiuU",
+        "displayName": "CEDAT Center for the Development of Talent",
+        "formattedAddress": "24525 Gosling Rd Suite B, Spring, TX 77389, USA",
+        "latitude": 30.121452800000004,
+        "longitude": -95.50662679999999
+      },
+      "kgmid": "/g/11xp1p2b1s"
+    },
+    "CPC::https://share.google/D0JUv6bW1w0s18aU5": {
+      "placeResult": {
+        "placeId": "ChIJEUcozHcLIocRMhMe-z-7uGY",
+        "displayName": "Children's Promise Centers Alvarado",
+        "formattedAddress": "401 Alvarado Dr SE, Albuquerque, NM 87108, USA",
+        "latitude": 35.073803999999996,
+        "longitude": -106.5824098
+      },
+      "kgmid": "/g/11kc7y5mc1"
+    },
+    "CLAC::https://share.google/te7m1MUZKHVNixlUG": {
+      "placeResult": {
+        "placeId": "ChIJp-7JoBzBkIgRZ6N2CtppE-g",
+        "displayName": "Creative Learning Academy",
+        "formattedAddress": "3151 Hyde Park Rd, Pensacola, FL 32503, USA",
+        "latitude": 30.439095100000003,
+        "longitude": -87.177405
+      },
+      "kgmid": "/g/11tcm5j0sk"
+    },
+    "CPMD::https://share.google/WUu7tnl0rW4TJEtu0": {
+      "placeResult": {
+        "placeId": "ChIJ7YC9OJcPyIkRy6_458OTyNE",
+        "displayName": "Central Presbyterian Church Preschool",
+        "formattedAddress": "7308 York Rd, Towson, MD 21204, USA",
+        "latitude": 39.3848859,
+        "longitude": -76.6081196
+      },
+      "kgmid": "/g/11f63y64kz"
+    },
+    "CTAB::https://share.google/JGinVKm3kT7fn87By": {
+      "placeResult": {
+        "placeId": "ChIJK_qslUW8-4sRR2XnD6IK-yk",
+        "displayName": "Faith Factory Enrichment Center",
+        "formattedAddress": "26555 Franklin Rd, Southfield, MI 48033, USA",
+        "latitude": 42.4828767,
+        "longitude": -83.2888306
+      },
+      "kgmid": "/g/11n99wz4hq"
+    },
+    "CTI::https://share.google/hQiL8307dJ1agnqPK - https://share.google/7mlr28mWNHqIzz0vP": {
+      "placeResult": {
+        "placeId": "ChIJW9h2z-kGzkwRl89ylbPURs8",
+        "displayName": "Playtime Daycare Centre",
+        "formattedAddress": "1160 Maitland Ave, Ottawa, ON K2C 2C2, Canada",
+        "latitude": 45.365028099999996,
+        "longitude": -75.749928
+      },
+      "kgmid": null
+    },
+    "EA::https://share.google/mMoPmdNHH64PhG34l": {
+      "placeResult": {
+        "placeId": "ChIJ09_8ZfL8zUwR5CtV-qFN0QM",
+        "displayName": "Educara Montessori Child Care",
+        "formattedAddress": "275 Tartan Dr, Nepean, ON K2J 3T1, Canada",
+        "latitude": 45.260975699999996,
+        "longitude": -75.7670497
+      },
+      "kgmid": "/g/1tf2t0jv"
+    },
+    "EBLC::https://share.google/MceRqdiUwEdn9C676": {
+      "placeResult": {
+        "placeId": "ChIJS-Yp20fNFogRTm5iiQYniMA",
+        "displayName": "East Bank Learning Center",
+        "formattedAddress": "425 E Madison St, South Bend, IN 46617, USA",
+        "latitude": 41.6816369,
+        "longitude": -86.2459113
+      },
+      "kgmid": "/g/1tmxg4rz"
+    },
+    "EIE::https://share.google/7Z0qqChNRfzQ5gKRw - https://share.google/7Z0qqChNRfzQ5gKRw": {
+      "placeResult": {
+        "placeId": "ChIJf-y_KyZLR4YRY06jLDYyaUo",
+        "displayName": "Early Ivy Education",
+        "formattedAddress": "2814 Trailing Vine Rd, Spring, TX 77373, USA",
+        "latitude": 30.0496197,
+        "longitude": -95.3920148
+      },
+      "kgmid": null
+    },
+    "FCA::https://share.google/k7LzoT8qH1GmitIKg": {
+      "placeResult": {
+        "placeId": "ChIJvQapRxnQRIYRFd3ELH6ofeU",
+        "displayName": "The Fellowship Christian Academy",
+        "formattedAddress": "3379 Gattis School Rd, Round Rock, TX 78664, USA",
+        "latitude": 30.495568400000003,
+        "longitude": -97.6288759
+      },
+      "kgmid": "/g/1tk1zfkn"
+    },
+    "ELAT::https://share.google/wxdOAkkpRz3lBlsqq - https://share.google/pOhnEStnIV96wF2Df - https://share.google/XuJN5mrpE0sauYOqm": {
+      "placeResult": {
+        "placeId": "ChIJ5wwgMBaIWogRXXZY2uVPAa4",
+        "displayName": "Boones Creek Early Learning Academy",
+        "formattedAddress": "1806 Old Gray Station Rd, Johnson City, TN 37615, USA",
+        "latitude": 36.3820841,
+        "longitude": -82.4098817
+      },
+      "kgmid": null
+    },
+    "FA::https://share.google/qFcymOE3wPXZSRusK - https://share.google/dn57bYd7rDh3DJ9nF - https://share.google/U6nGSoRLwTY8Xy0dy - https://share.google/siQtTxVXqIYflWMec - https://share.google/Q1DHNrWAAwBpxkiYX": {
+      "placeResult": {
+        "placeId": "ChIJvbTPu6eG54gR4GqQBM2IBEo",
+        "displayName": "Foundation Academy - Tilden Campus",
+        "formattedAddress": "15304 Tilden Rd, Winter Garden, FL 34787, USA",
+        "latitude": 28.5055057,
+        "longitude": -81.61619069999999
+      },
+      "kgmid": null
+    },
+    "FDCS::https://share.google/RjArIADz8sCJVAKSY - https://share.google/BpxNOL4o7ui8VF0J5": {
+      "placeResult": {
+        "placeId": "ChIJr-3I6ZfOMIgRcrue3nNiM4I",
+        "displayName": "The Fox's Den ChildCare Wadsworth",
+        "formattedAddress": "157 Wadsworth Rd, Wadsworth, OH 44281, USA",
+        "latitude": 41.026689999999995,
+        "longitude": -81.7533851
+      },
+      "kgmid": null
+    },
+    "FM::https://share.google/HfkSR0BWKY7evYGCd - https://share.google/bzK8voaKAB9AveMSP": {
+      "placeResult": {
+        "placeId": "ChIJ3wkP9qMWdkgRFZ8eTCGEpeE",
+        "displayName": "Fountain Montessori Pre-School Edgware",
+        "formattedAddress": "Edgware House, 389 Burnt Oak Broadway, Edgware HA8 5TX, UK",
+        "latitude": 51.6072262,
+        "longitude": -0.2757164
+      },
+      "kgmid": null
+    },
+    "FSC::https://share.google/MZjaV64GgS33MpmXY": {
+      "placeResult": {
+        "placeId": "ChIJT02dHLaFTYcRUWI5wf0fIxI",
+        "displayName": "Four Sisters Child Care",
+        "formattedAddress": "1834 Sandhill Rd, Orem, UT 84058, USA",
+        "latitude": 40.2636227,
+        "longitude": -111.70723980000001
+      },
+      "kgmid": "/g/11hzwjh5vg"
+    },
+    "GEA::https://share.google/04ep47qGpYFma9I3r": {
+      "placeResult": {
+        "placeId": "ChIJS-1fdLWz2YgRVdN4ZzAzrqc",
+        "displayName": "Green Explorers Academy, Nature Preschool",
+        "formattedAddress": "10860 NE 12th Ave, Miami, FL 33161, USA",
+        "latitude": 25.8757174,
+        "longitude": -80.17394829999999
+      },
+      "kgmid": "/g/11lfdmff5y"
+    },
+    "GBD::https://share.google/PooTMzwFVWaBTqPzj": {
+      "placeResult": {
+        "placeId": "ChIJSyOMWbkGzkwRhNvFfkltVzY",
+        "displayName": "Early Beginnings Multicultural ChildDevelopmentCentre Of Ottawa-Carleton",
+        "formattedAddress": "11 Nadolny Sachs Private, Ottawa, ON K2A 1R9, Canada",
+        "latitude": 45.376486,
+        "longitude": -75.7522932
+      },
+      "kgmid": "/g/1tl1n_82"
+    },
+    "FSELC::https://share.google/v3iaYs92eB1tA1toz": {
+      "placeResult": {
+        "placeId": "ChIJNYfZ9LR_PIgRDL-2FPxtGCI",
+        "displayName": "First Steps Early Learning Center",
+        "formattedAddress": "5855 W Sylvania Ave, Toledo, OH 43623, USA",
+        "latitude": 41.690444,
+        "longitude": -83.6832221
+      },
+      "kgmid": "/g/11w9fmlp22"
+    },
+    "GMLA::https://share.google/aChWOc7G1mfrctfpd - https://share.google/38LBceXut80AWVaUz": {
+      "placeResult": {
+        "placeId": "ChIJ1ZWcZsvxa4cRGti-5kD5Vr0",
+        "displayName": "Growing Minds Learning Academy",
+        "formattedAddress": "3700 Canfield St, Boulder, CO 80301, USA",
+        "latitude": 40.0403763,
+        "longitude": -105.24294630000001
+      },
+      "kgmid": null
+    },
+    "GHCC::https://share.google/yIsgEM48cyOqCHNk6": {
+      "placeResult": {
+        "placeId": "ChIJ7-bOhBYUhYARBHX6ejy7eZU",
+        "displayName": "Growing Hearts Early Learning Center",
+        "formattedAddress": "1830 W Texas St, Fairfield, CA 94533, USA",
+        "latitude": 38.249659,
+        "longitude": -122.06224639999998
+      },
+      "kgmid": "/g/11bccmpttt"
+    },
+    "GKLC::https://share.google/gV0RRwLhBmguywLbb - https://share.google/TRLr0lGHyEZNxWzCc - https://share.google/GOntLUPRKtzvO7gjJ - https://share.google/czKiPkDkpUA2O88ED - https://share.google/kNHvVzlfepBe61esK - https://share.google/aTTvtuEKAZKxofmk8 - https://share.google/f64HFBp6BX8p38a64  - https://share.google/IQfWXJrxrmYkoTc2Q - https://share.google/9nkQZ6AfPok4EZWis -": {
+      "placeResult": {
+        "placeId": "ChIJ3z0ogOH9zUwR1W27xMFpM2w",
+        "displayName": "Guide and Grow STEM Preschool",
+        "formattedAddress": "3013 Jockvale Rd, Nepean, ON K2J 4E4, Canada",
+        "latitude": 45.2725656,
+        "longitude": -75.75877779999999
+      },
+      "kgmid": null
+    },
+    "GTK::https://share.google/NTb1vKKUWtoZfnSTU - https://share.google/nrxTHdXSakl1IEoZv": {
+      "placeResult": {
+        "placeId": "ChIJ7bu25NnrQIYRm_CiyiPXDOI",
+        "displayName": "Gifted & Talented Kids Academy",
+        "formattedAddress": "12707 Kirby Dr, Houston, TX 77047, USA",
+        "latitude": 29.6268449,
+        "longitude": -95.3962387
+      },
+      "kgmid": null
+    },
+    "GRCDC::https://share.google/Z8gxLmwKAPeBBWTu8 - https://share.google/BVs6DbdhzBjRGtxFl": {
+      "placeResult": {
+        "placeId": "ChIJLb6x4LnNjIgRO_yeiq0vF48",
+        "displayName": "Growing Room Child Development Center",
+        "formattedAddress": "1600 1st Ave, Columbus, GA 31901, USA",
+        "latitude": 32.476340799999996,
+        "longitude": -84.991654
+      },
+      "kgmid": null
+    },
+    "GPP::https://share.google/JAXByvh0AWG4OPnEH": {
+      "placeResult": {
+        "placeId": "ChIJZ1kBq4JLRYYRgIIM8fFTlF4",
+        "displayName": "The Great Play Place",
+        "formattedAddress": "208 E Elms Rd, Killeen, TX 76542, USA",
+        "latitude": 31.082616,
+        "longitude": -97.7442378
+      },
+      "kgmid": "/g/11qbqwd4_h"
+    },
+    "HATS::https://share.google/zpxgqV3eeLcAnCyep": {
+      "placeResult": {
+        "placeId": "ChIJhazXEpLZ54kRoB2GcnuYFwQ",
+        "displayName": "Harris and Tucker School, Inc.",
+        "formattedAddress": "412 Newhall St, Hamden, CT 06511, USA",
+        "latitude": 41.3349678,
+        "longitude": -72.9271643
+      },
+      "kgmid": "/g/1t_wqcy8"
+    },
+    "HAA::https://share.google/Udc5fhm70A6RQSNQa": {
+      "placeResult": {
+        "placeId": "ChIJV7ATSWkz3YARRn87XsJAWm0",
+        "displayName": "Heaven's Angels Academy",
+        "formattedAddress": "2272 Pacific Ave, Long Beach, CA 90806, USA",
+        "latitude": 33.798583799999996,
+        "longitude": -118.19342160000001
+      },
+      "kgmid": "/g/11ycbtdnhq"
+    },
+    "HAFH::https://share.google/vzXQ3XhgHArSX3xdn": {
+      "placeResult": {
+        "placeId": "ChIJzTZPxfC3t4kRlh9FH2rW3eQ",
+        "displayName": "Home Away From Home Child Development Center, Inc.",
+        "formattedAddress": "414 R St NW, Washington, DC 20001, USA",
+        "latitude": 38.9124777,
+        "longitude": -77.0167716
+      },
+      "kgmid": "/g/1tgh8g31"
+    },
+    "IPA::https://share.google/4KwZrXM2icg2Y68nu - https://share.google/YBvIHFX9Ruasni0ZO - https://share.google/2dLSny7PQse0IPkVW": {
+      "placeResult": {
+        "placeId": "ChIJ1TwDJwir9YgRX2NHMt5-B0U",
+        "displayName": "International Preparatory Academy",
+        "formattedAddress": "4138 Snapfinger Woods Dr, Decatur, GA 30035, USA",
+        "latitude": 33.7151467,
+        "longitude": -84.22118909999999
+      },
+      "kgmid": null
+    },
+    "JCC::https://share.google/27DbPdugsnGxqAS6M": {
+      "placeResult": {
+        "placeId": "ChIJ-7QobeKDwYkRKW3bCQYoYdk",
+        "displayName": "Jersey Child Care",
+        "formattedAddress": "920 Cedarbridge Ave, Brick Township, NJ 08723, USA",
+        "latitude": 40.0534123,
+        "longitude": -74.13403450000001
+      },
+      "kgmid": "/g/11l8r8stg4"
+    },
+    "HTCDC::https://share.google/TMpMh7ZgatYjcev3o - https://share.google/vFELgJxMNP0efAFKH": {
+      "placeResult": {
+        "placeId": "ChIJIYLesCd03IARPeFD58Folhk",
+        "displayName": "Happy Times Child Development Center",
+        "formattedAddress": "755 Civic Center Dr, Vista, CA 92084, USA",
+        "latitude": 33.1958854,
+        "longitude": -117.23425300000001
+      },
+      "kgmid": null
+    },
+    "KC::https://share.google/2aYbhg6hvIPR1EW2I - https://share.google/1SgLqBs6KcNBGLMma - https://share.google/5L9IKYMG1WDlY6qUQ": {
+      "placeResult": {
+        "placeId": "ChIJ0X18BhK1r1QRYJ2Q6HkSCCU",
+        "displayName": "Kangaroo Clubhouse Caldwell",
+        "formattedAddress": "306 Badiola St, Caldwell, ID 83605, USA",
+        "latitude": 43.6605621,
+        "longitude": -116.67442849999999
+      },
+      "kgmid": null
+    },
+    "KLS::https://share.google/WtWu5TJiYj98CmS6O - https://share.google/9gBIRtGzmH1NqikrR - https://share.google/MSxxDtlRHfoOJXSXy": {
+      "placeResult": {
+        "placeId": "ChIJN3cyBbosDogRkpgIErp1ZVw",
+        "displayName": "First Steps of Learning Centers",
+        "formattedAddress": "160 N La Salle Dr, Chicago, IL 60601, USA",
+        "latitude": 41.8847275,
+        "longitude": -87.6327278
+      },
+      "kgmid": null
+    },
+    "KG::https://share.google/ReiDkt4E2UpfIknO6": {
+      "placeResult": {
+        "placeId": "ChIJDQLWjBe7woARwceN6hs4EgY",
+        "displayName": "Kigala Preschool",
+        "formattedAddress": "2705 Pico Blvd, Santa Monica, CA 90405, USA",
+        "latitude": 34.023992199999995,
+        "longitude": -118.4613571
+      },
+      "kgmid": "/g/1tggb70n"
+    },
+    "KOK::https://share.google/JO4SdEBvliYgIfOeQ - https://share.google/IwB4GPTueihPDamJO - https://share.google/VMGDMqd4YBr5nnEM9 - https://share.google/9lbDOmN6FpUv3Spqp": {
+      "placeResult": {
+        "placeId": "ChIJd5P7jmUnQYYRS4HJB4beSOU",
+        "displayName": "Kiddos of Katy",
+        "formattedAddress": "24820 Franz Rd, Katy, TX 77493, USA",
+        "latitude": 29.802143599999997,
+        "longitude": -95.7983639
+      },
+      "kgmid": null
+    },
+    "KPS::https://share.google/Xyrqjx4IucOBiLzBG": {
+      "placeResult": {
+        "placeId": "ChIJ8dYucHD9FYgR0pG1FPfFgrw",
+        "displayName": "Kiddie Prep School",
+        "formattedAddress": "8611 Mayhew Rd, Fort Wayne, IN 46835, USA",
+        "latitude": 41.1649264,
+        "longitude": -85.07181539999999
+      },
+      "kgmid": "/g/1tgpbwr8"
+    },
+    "KRKPMC::https://share.google/IID2j2E8AHyIiiROp": {
+      "placeResult": {
+        "placeId": "ChIJBeouAeEpWIgR02Kbhm8tiUI",
+        "displayName": "Kids 'R' Kids Learning Academy of Pelham Medical Center",
+        "formattedAddress": "390 Westmoreland Rd, Greer, SC 29651, USA",
+        "latitude": 34.8588053,
+        "longitude": -82.217801
+      },
+      "kgmid": "/g/1v3gsmbq"
+    },
+    "KSA::https://share.google/7zU9Zd5cnVYcL5GVP": {
+      "placeResult": {
+        "placeId": "ChIJhWoR4ArB2YgRgYgpiGe9aM4",
+        "displayName": "Kids Steps Academy Inc",
+        "formattedAddress": "12039 SW 132nd Ct #16, Miami, FL 33186, USA",
+        "latitude": 25.6557461,
+        "longitude": -80.40767989999999
+      },
+      "kgmid": "/g/11bwcv2nd6"
+    },
+    "KWLC::https://share.google/okWy85Rpqm8BnvJvw": {
+      "placeResult": {
+        "placeId": "ChIJubfGuVBH-ogRjZJloLCkybA",
+        "displayName": "Kids World Learning Center",
+        "formattedAddress": "367 Savannah Ave, Statesboro, GA 30458, USA",
+        "latitude": 32.4425561,
+        "longitude": -81.7688929
+      },
+      "kgmid": "/g/125_ztz3_"
+    },
+    "LABC::https://share.google/80LcHdsQU6eC8XXIn": {
+      "placeResult": {
+        "placeId": "ChIJSb3SLZ_IEIgRFOSwl0JmFy0",
+        "displayName": "Lylabugs & Buttons",
+        "formattedAddress": "1924 Territorial Rd, Benton Harbor, MI 49022, USA",
+        "latitude": 42.1213695,
+        "longitude": -86.4126854
+      },
+      "kgmid": "/g/11fll6g3sw"
+    },
+    "LAFC::https://share.google/PwTXaFEj3XYOApx6U - https://share.google/Hfup5uuch69NS0oZp": {
+      "placeResult": {
+        "placeId": "ChIJc7VNJJ0xR4YRc7wlswOj8KM",
+        "displayName": "Legacy Oaks Academy",
+        "formattedAddress": "4714 FM 1488 Suite #205, Conroe, TX 77384, USA",
+        "latitude": 30.225564999999996,
+        "longitude": -95.538372
+      },
+      "kgmid": null
+    },
+    "LCM::https://share.google/f6UWPSgQYWNJfmCoP": {
+      "placeResult": {
+        "placeId": "ChIJIV4p2znNRIYR8jGBf-dlggM",
+        "displayName": "LakeCreek Montessori - Chinese Immersion School",
+        "formattedAddress": "10127 Lake Creek Pkwy, Austin, TX 78729, USA",
+        "latitude": 30.462270999999998,
+        "longitude": -97.79072699999999
+      },
+      "kgmid": "/g/11b81sj5xy"
+    },
+    "LATX::https://share.google/KkrIgU6NJRKdiUrOU": {
+      "placeResult": {
+        "placeId": "ChIJZXWPUfBB5IcRGIDhiT_VELk",
+        "displayName": "Little Angels Learning Center",
+        "formattedAddress": "214 E Jefferson St, Iowa City, IA 52245, USA",
+        "latitude": 41.6628202,
+        "longitude": -91.53240459999999
+      },
+      "kgmid": "/g/1tf6s5nn"
+    },
+    "LFN::https://share.google/KXOlxTJ5CjQPpPXvK": {
+      "placeResult": {
+        "placeId": "ChIJsapobC3TQIYRfQ1pQxzPVaA",
+        "displayName": "Little Fish Nursery",
+        "formattedAddress": "13615 Kluge Rd Suite #200, Cypress, TX 77429, USA",
+        "latitude": 29.972954800000004,
+        "longitude": -95.6348944
+      },
+      "kgmid": "/g/11m38sv3zk"
+    },
+    "LSAEE::https://share.google/Nwb7QuX4pdhLgunKB": {
+      "placeResult": {
+        "placeId": "ChIJl-L16vM7xIkR_Ip8mc4EnPk",
+        "displayName": "The Lehigh School Academy of Early Education Inc",
+        "formattedAddress": "1593 Lehigh St, Allentown, PA 18103, USA",
+        "latitude": 40.578261600000005,
+        "longitude": -75.4786443
+      },
+      "kgmid": "/g/11w4xdtyw3"
+    },
+    "LSP::https://share.google/83R4bNAnG1ZSLkqgX": {
+      "placeResult": {
+        "placeId": "ChIJt7qTLQfsIogRWkVD0P6GnTE",
+        "displayName": "Little Scholars Preparatory School",
+        "formattedAddress": "1754 E Clark Rd, Lansing, MI 48906, USA",
+        "latitude": 42.8125885,
+        "longitude": -84.5275896
+      },
+      "kgmid": "/g/126142xy2"
+    },
+    "LTA::https://share.google/97K6gcYY2SHXvlwMt": {
+      "placeResult": {
+        "placeId": "ChIJG_BRD7icwoAR0ZX6g58zAjU",
+        "displayName": "Little Treehouse Academy",
+        "formattedAddress": "18510 Plummer St, Northridge, CA 91324, USA",
+        "latitude": 34.242041199999996,
+        "longitude": -118.5370662
+      },
+      "kgmid": "/g/1thn5s55"
+    },
+    "MELC::https://share.google/jIey1UL7lREk8e4dQ": {
+      "placeResult": {
+        "placeId": "ChIJIfb4g4WHO4gRL4y_m9_j2YI",
+        "displayName": "Mosaic Early Learning Center",
+        "formattedAddress": "860 Orchard St, Toledo, OH 43609, USA",
+        "latitude": 41.6280889,
+        "longitude": -83.56117669999999
+      },
+      "kgmid": "/g/11lc_7s8qk"
+    },
+    "MCA::https://share.google/kx00YmSdYiisWWUHT": {
+      "placeResult": {
+        "placeId": "ChIJd_Gz6yAEzkwRgHYPVLOK-TA",
+        "displayName": "Ottawa Children's Montessori Centre",
+        "formattedAddress": "630 Island Park Dr, Ottawa, ON K1Y 0B7, Canada",
+        "latitude": 45.389463299999996,
+        "longitude": -75.7337459
+      },
+      "kgmid": "/g/1tfzhkvy"
+    },
+    "MFA::https://share.google/ILoctjnOdWz7T9xLr": {
+      "placeResult": {
+        "placeId": "ChIJExWSoeKF3YgReK01aFWv8ps",
+        "displayName": "My First Academy",
+        "formattedAddress": "2245 Fortune Rd, Kissimmee, FL 34744, USA",
+        "latitude": 28.305391099999998,
+        "longitude": -81.35262519999999
+      },
+      "kgmid": "/g/11vf6d88z7"
+    },
+    "MHCC::https://share.google/sjEprEOtXbIkfXxnX - https://share.google/4nvGfKjmNJsmyb6SM - https://share.google/P1VIHCSQEeM6c5cvN - https://share.google/OVxwYit7w9AThNksp": {
+      "placeResult": {
+        "placeId": "ChIJ8asttXP9zUwRokkCU__KB6E",
+        "displayName": "Mother of 7 - Home Childcare",
+        "formattedAddress": "96 Mesa Dr, Nepean, ON K2J 6V9, Canada",
+        "latitude": 45.2501283,
+        "longitude": -75.7576102
+      },
+      "kgmid": null
+    },
+    "NAEL::https://share.google/jkl3sBw7s0nqhubxh": {
+      "placeResult": {
+        "placeId": "ChIJ0xWERYofVIgRT95N4yXj5r8",
+        "displayName": "Northside Academy for Early Learning",
+        "formattedAddress": "333 Jeremiah Blvd, Charlotte, NC 28262, USA",
+        "latitude": 35.2836778,
+        "longitude": -80.7848102
+      },
+      "kgmid": "/g/11hygcrht3"
+    },
+    "OGNS::https://share.google/7CVy304UVKQ6hAPPE": {
+      "placeResult": {
+        "placeId": "ChIJJwEgakEXyYcRWBgbbQOOfO8",
+        "displayName": "Olive Grove Nature School",
+        "formattedAddress": "2127 W Olive St, Rogers, AR 72756, USA",
+        "latitude": 36.341824599999995,
+        "longitude": -94.1479598
+      },
+      "kgmid": "/g/11x6n30qc_"
+    },
+    "PATT::https://share.google/aSAJDxkvMo4lZwjxW": {
+      "placeResult": {
+        "placeId": "ChIJm90aDoTJwogRsyuNA62Fsjs",
+        "displayName": "Premier Academy of Temple Terrace",
+        "formattedAddress": "12420 Telecom Dr, Tampa, FL 33637, USA",
+        "latitude": 28.0586509,
+        "longitude": -82.3745495
+      },
+      "kgmid": "/g/11t61xsbpg"
+    },
+    "PLKC::https://share.google/KEC0wkcNJRXFIxy2G": {
+      "placeResult": {
+        "placeId": "ChIJg64nyRSRQIYRM1JcWswXauQ",
+        "displayName": "Pearland Kids Club",
+        "formattedAddress": "1925 Pearland Pkwy #170, Pearland, TX 77581, USA",
+        "latitude": 29.574478499999998,
+        "longitude": -95.26263929999999
+      },
+      "kgmid": "/g/11c1ncwhyk"
+    },
+    "PM::https://share.google/uH5wHlYWz77eTLZHH": {
+      "placeResult": {
+        "placeId": "ChIJzxNZQ_uRbIcRXD56uSoCngU",
+        "displayName": "Parker Montessori",
+        "formattedAddress": "10750 Victorian Dr, Parker, CO 80138, USA",
+        "latitude": 39.5192389,
+        "longitude": -104.7622696
+      },
+      "kgmid": "/g/1wv_sq8h"
+    },
+    "PPELC::https://share.google/0NGDoo8RXz2SOGJVj": {
+      "placeResult": {
+        "placeId": "ChIJtbxsqPhB6IkRIYjeRjTYuY4",
+        "displayName": "Paper Planes Early Learning Center",
+        "formattedAddress": "620 NY-25A, Mt Sinai, NY 11766, USA",
+        "latitude": 40.935925399999995,
+        "longitude": -73.0147425
+      },
+      "kgmid": "/g/11hfy0_cr1"
+    },
+    "PPS::https://share.google/3VyvceILxVaFeWkOR": {
+      "placeResult": {
+        "placeId": "ChIJRf2ijq3ZTYYR4BRW7JCXznI",
+        "displayName": "Premier Prep School",
+        "formattedAddress": "4040 Heritage Trace Pkwy, Keller, TX 76244, USA",
+        "latitude": 32.914657399999996,
+        "longitude": -97.2978303
+      },
+      "kgmid": "/g/1tcxvn57"
+    },
+    "RMP::https://share.google/It73eR0F8r6IKLz4q - https://share.google/BG9UeGsifcMTVnCkv": {
+      "placeResult": {
+        "placeId": "ChIJwd8-LDiEbIcR9yCE9XmCAWY",
+        "displayName": "Rocky Mountain Preschool",
+        "formattedAddress": "8100 S Quebec St # B5, Centennial, CO 80112, USA",
+        "latitude": 39.568874799999996,
+        "longitude": -104.9024434
+      },
+      "kgmid": null
+    },
+    "SBCA::https://share.google/tci8bVys7lb22ShtL - https://share.google/xxC9lPPFvzhU132oD": {
+      "placeResult": {
+        "placeId": "ChIJXRo1zqx2ZIgRvCqvckI1jDc",
+        "displayName": "Sunshine and Broccoli Christian Academy",
+        "formattedAddress": "2006 Johnson Industrial Blvd, Nolensville, TN 37135, USA",
+        "latitude": 35.9559548,
+        "longitude": -86.6680727
+      },
+      "kgmid": null
+    },
+    "SELC::https://share.google/H8kvkh56hqIjsoVkl": {
+      "placeResult": {
+        "placeId": "ChIJVdwVDFJjx4kRAeriSd08eYU",
+        "displayName": "Shell's Early Learning Center - Camden",
+        "formattedAddress": "2116 S Dupont Hwy, Camden, DE 19934, USA",
+        "latitude": 39.1202379,
+        "longitude": -75.5348558
+      },
+      "kgmid": "/g/11b6jh2k_6"
+    },
+    "SLC::https://share.google/IKiUUlo2z51aHTsfe": {
+      "placeResult": {
+        "placeId": "ChIJYdBXNd1x54gR4QlVBJPJhtE",
+        "displayName": "Serendipity Learning Center",
+        "formattedAddress": "410 Ridge Rd, Casselberry, FL 32730, USA",
+        "latitude": 28.651467699999994,
+        "longitude": -81.3509619
+      },
+      "kgmid": "/g/11c5hk8gwt"
+    },
+    "TFA::https://share.google/99SB7YxQ0SKAbaJvj": {
+      "placeResult": {
+        "placeId": "ChIJK2Ri8MQn9YgRiz5LSJ-zu_4",
+        "displayName": "Tiny Footprints Academy",
+        "formattedAddress": "2112 Fairburn Rd, Douglasville, GA 30135, USA",
+        "latitude": 33.748242600000005,
+        "longitude": -84.7019061
+      },
+      "kgmid": "/g/11r_cf23z4"
+    },
+    "TEYP::https://share.google/8tjzchInClAwQAdrE": {
+      "placeResult": {
+        "placeId": "ChIJVQKduDYPzkwRUqbRqoZ8gps",
+        "displayName": "EarlyON Child and Family Centre/Centre pour l'enfant et la famille ON y va – Ottawa South/Sud",
+        "formattedAddress": "2330 Don Reid Dr #101, Ottawa, ON K1H 1E1, Canada",
+        "latitude": 45.3816121,
+        "longitude": -75.6346578
+      },
+      "kgmid": "/g/1thmfmp4"
+    },
+    "TGL::https://share.google/IOA4SvEEy8bVubu3T": {
+      "placeResult": {
+        "placeId": "ChIJc2uaezWTQIYRyqU-vtqWuTc",
+        "displayName": "Top Grade Learning",
+        "formattedAddress": "9415 W Broadway St Suite 121, Pearland, TX 77584, USA",
+        "latitude": 29.5586632,
+        "longitude": -95.3661731
+      },
+      "kgmid": "/g/11lns4nrgg"
+    },
+    "TRYCC::https://share.google/VAKsoh2y7Dhd6tCAh": {
+      "placeResult": {
+        "placeId": "ChIJxdj_TkFVa4gRRs1bu0zBkQg",
+        "displayName": "The Riley Youth Community Center",
+        "formattedAddress": "4040 W 71st St, Indianapolis, IN 46268, USA",
+        "latitude": 39.8828881,
+        "longitude": -86.2302465
+      },
+      "kgmid": "/g/11f631ymz2"
+    },
+    "TSI::https://share.google/9kr19IW9hpMhcis9X": {
+      "placeResult": {
+        "placeId": "ChIJZ4Swo9e_uokRaYINpy2PvuQ",
+        "displayName": "The Sitter, Inc",
+        "formattedAddress": "Shopping Center, 857 Chimney Hill Pkwy, Virginia Beach, VA 23452, USA",
+        "latitude": 36.8124143,
+        "longitude": -76.1017514
+      },
+      "kgmid": "/g/1260j227b"
+    },
+    "TTPJ::https://share.google/wQ1KhcUAsdijaK48f": {
+      "placeResult": {
+        "placeId": "ChIJX248MeAp34gRhhxjsiI0KPU",
+        "displayName": "Tiny Turtles Preschool of Jupiter",
+        "formattedAddress": "601 N Hepburn Ave, Jupiter, FL 33458, USA",
+        "latitude": 26.939767,
+        "longitude": -80.09720899999999
+      },
+      "kgmid": "/g/11b7q562hg"
+    },
+    "TVLC::https://share.google/JhF3ZjAF7SzTdfRMR": {
+      "placeResult": {
+        "placeId": "ChIJmyqPEIStr1QRineWg4QC79w",
+        "displayName": "The Valley Learning Center",
+        "formattedAddress": "594 N Star Rd, Star, ID 83669, USA",
+        "latitude": 43.697328,
+        "longitude": -116.492728
+      },
+      "kgmid": "/g/11tx9j3bdf"
+    },
+    "WALP::https://share.google/V8wJmz4CntdP1JnLX": {
+      "placeResult": {
+        "placeId": "ChIJDwX4yq4lVIgRBJrZsPV5pXI",
+        "displayName": "Wonder Academy Lake Park",
+        "formattedAddress": "3309 Faith Church Rd, Indian Trail, NC 28079, USA",
+        "latitude": 35.076691499999995,
+        "longitude": -80.6366371
+      },
+      "kgmid": "/g/11j5wwstj0"
+    },
+    "WKA::https://share.google/cUFG10CLnMZ0KYJ5L": {
+      "placeResult": {
+        "placeId": "ChIJ44cX9dC72YgRlTtQk5HN5e0",
+        "displayName": "World of Kids Academy",
+        "formattedAddress": "8130 NW 56th St, Doral, FL 33166, USA",
+        "latitude": 25.8238584,
+        "longitude": -80.3292602
+      },
+      "kgmid": "/g/1tgx7dp3"
+    },
+    "WOA::https://share.google/QBG4MFv3UEW8iqzxx": {
+      "placeResult": {
+        "placeId": "ChIJC7zknj1hUocRmun4s3Ct2Sw",
+        "displayName": "Woodland Oaks Academy",
+        "formattedAddress": "2677 E Parleys Way, Salt Lake City, UT 84109, USA",
+        "latitude": 40.719622199999996,
+        "longitude": -111.8146122
+      },
+      "kgmid": "/g/11w9zs0_9f"
+    },
+    "YHS::https://share.google/Ugsn182nVQWjzsRM3": {
+      "placeResult": {
+        "placeId": "ChIJJwZyKKbZyYkRrN_Mq7zGFj8",
+        "displayName": "Young Horizons School, Frederick",
+        "formattedAddress": "4714 Arcadia Dr Suite #150, Frederick, MD 21703, USA",
+        "latitude": 39.361791499999995,
+        "longitude": -77.42212289999999
+      },
+      "kgmid": "/g/11xdv0mngx"
+    },
+    "QUALITYCL::https://share.google/J8IyrffRlLUuRsAiO": {
+      "placeResult": {
+        "placeId": "ChIJwbA2lcjMD4gRW6KED_K7-kQ",
+        "displayName": "Quality Classroom Childcare + Preschool",
+        "formattedAddress": "1417 N Leclaire Ave, Chicago, IL 60651, USA",
+        "latitude": 41.906456,
+        "longitude": -87.753039
+      },
+      "kgmid": "/g/11g8_mn8zn"
+    },
+    "TINYTOWN::https://share.google/nJgFV1mI6dZS41YdD": {
+      "placeResult": {
+        "placeId": "ChIJ5RkIRWHBMIgRTQ_Yjyb-HXk",
+        "displayName": "Tiny Town Childcare - Brunswick",
+        "formattedAddress": "3824 Center Rd, Brunswick, OH 44212, USA",
+        "latitude": 41.236514299999996,
+        "longitude": -81.8233945
+      },
+      "kgmid": "/g/11ywh4z72d"
+    },
+    "ROYALCHIL::https://share.google/1kszQeZ7rEE5bCiED": {
+      "placeResult": {
+        "placeId": "ChIJATviExh9OIgRw0qqTmswR3Y",
+        "displayName": "Royal Child Academy",
+        "formattedAddress": "3200 Brice Rd, Canal Winchester, OH 43110, USA",
+        "latitude": 39.912108499999995,
+        "longitude": -82.8321385
+      },
+      "kgmid": "/g/1262nx61l"
+    }
+  },
+  "failed": {},
+  "startedAt": "2026-05-22T16:01:03.894Z"
+}
