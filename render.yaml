@@ -4,14 +4,55 @@ services:
     runtime: node
     region: ohio
     plan: starter
-    nodeVersion: "20.x"
-    buildCommand: npm ci && npm run build
-    startCommand: node node_modules/.bin/next start -p $PORT
+    branch: main
+    repo: https://github.com/integrator-coder/gyc-dashboard
+    buildCommand: npm ci && npx prisma generate && npm run build
+    startCommand: npm start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 3000
+      - key: DATABASE_URL
+        sync: false
+      - key: NEON_DATABASE_URL
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: NOTION_API_KEY
+        sync: false
+      - key: GHL_API_KEY
+        sync: false
+      - key: GHL_LOCATION_ID
+        value: hmTIYUexYXIXgmJzbx3s
+      - key: ZENDESK_SUBDOMAIN
+        value: gycawesome
+      - key: ZENDESK_EMAIL
+        value: todd@growyourcenter.com
+      - key: ZENDESK_API_TOKEN
+        sync: false
+      - key: ASANA_PAT
+        sync: false
+      - key: ANTHROPIC_BILLING_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: PANDADOC_API_KEY
+        sync: false
+      - key: ZOOM_ACCOUNT_ID
+        value: XYzKiXWlQDuk6RyMxAo-rw
+      - key: ZOOM_CLIENT_ID
+        value: g0MPvV35SSKKt9wMGGowA
+      - key: ZOOM_CLIENT_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: DATAFORSEO_LOGIN
+        value: todd@growyourcenter.com
+      - key: DATAFORSEO_PASSWORD
+        sync: false
+      - key: CENSUS_API_KEY
+        sync: false
+      - key: GOOGLE_PLACES_API_KEY
+        sync: false
       - key: NEXT_PUBLIC_APP_NAME
         value: GYC Dashboard
