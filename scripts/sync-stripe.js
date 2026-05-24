@@ -159,7 +159,7 @@ async function sync() {
     await prisma.stripeCustomer.upsert({
       where: { id: c.id },
       update: { name: c.name, email: c.email, status: c.status, mrr: c.mrr },
-      create: c
+      create: { ...c, updatedAt: new Date() }
     })
   }
 
