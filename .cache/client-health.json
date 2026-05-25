@@ -1,19 +1,19 @@
 {
-  "green": 11,
-  "yellow": 4,
+  "green": 10,
+  "yellow": 3,
   "red": 0,
-  "total": 15,
-  "greenPct": 73.3,
-  "yellowPct": 26.7,
+  "total": 13,
+  "greenPct": 76.9,
+  "yellowPct": 23.1,
   "redPct": 0,
-  "contactsWithScores": 15,
+  "contactsWithScores": 13,
   "fieldIds": {
     "clientHappiness": "WZx9JcXna04pa3Br7mhE",
     "businessStability": "dSZ4TSf0QnaxKkdwNe0t"
   },
-  "sampleSize": 288,
-  "matchedContacts": 285,
+  "sampleSize": 274,
+  "matchedContacts": 271,
   "awaitingScores": false,
   "cached": false,
-  "updatedAt": "2026-05-22T13:02:30.948Z"
+  "updatedAt": "2026-05-25T16:02:18.222Z"
 }
