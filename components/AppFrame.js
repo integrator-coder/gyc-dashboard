@@ -51,7 +51,7 @@ export default function AppFrame({ children }) {
   return (
     <div className="flex min-h-screen executive-app-shell">
       <Sidebar />
-      <main className="page-shell flex-1 overflow-auto px-6 py-6 md:px-8 md:py-7">{children}</main>
+      <main className="page-shell flex-1 overflow-auto px-6 py-6 pt-16 md:px-8 md:py-7">{children}</main>
     </div>
   )
 }

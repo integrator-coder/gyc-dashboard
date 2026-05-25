@@ -4,6 +4,33 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 
+function HamburgerIcon({ isOpen }) {
+  return (
+    <svg
+      className="h-6 w-6"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      {isOpen ? (
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M6 18L18 6M6 6l12 12"
+        />
+      ) : (
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M4 6h16M4 12h16M4 18h16"
+        />
+      )}
+    </svg>
+  )
+}
+
 function canSeeFinance(user) {
   return ['superadmin', 'admin'].includes(user?.role)
 }
@@ -208,6 +235,12 @@ export default function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const [session, setSession] = useState({ loading: true, user: null })
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
+  // Close mobile menu when pathname changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false)
+  }, [pathname])
 
   useEffect(() => {
     let active = true
@@ -237,7 +270,33 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="nav-shell flex w-64 shrink-0 flex-col">
+    <>
+      {/* Mobile hamburger button */}
+      <button
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        className="fixed left-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--brand-border)] bg-[var(--brand-surface)] text-white shadow-lg md:hidden"
+        aria-label="Toggle menu"
+      >
+        <HamburgerIcon isOpen={isMobileMenuOpen} />
+      </button>
+
+      {/* Mobile overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`
+          nav-shell flex w-64 shrink-0 flex-col
+          fixed md:relative inset-y-0 left-0 z-40
+          transform transition-transform duration-300 ease-in-out
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}
+      >
       <div className="border-b border-[var(--brand-border)] px-5 py-6">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--brand-border-accent)] bg-[linear-gradient(180deg,rgba(166,111,205,0.38),rgba(95,53,132,0.92))] text-sm font-bold text-white shadow-[0_12px_28px_rgba(95,53,132,0.26)]">G</div>
@@ -275,6 +334,7 @@ export default function Sidebar() {
         )}
         <p className="text-xs executive-faint">Grow Your Childcare</p>
       </div>
-    </aside>
+      </aside>
+    </>
   )
 }
