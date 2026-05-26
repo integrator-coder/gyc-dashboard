@@ -424,6 +424,61 @@ export default function SkunkWorksBoard() {
         </div>
       </HUDFrame>
 
+      {/* ── Section 3b: M3 Module Catalog ─────────────────────────────── */}
+      <HUDFrame title="GYC → M3 Module Catalog" eyebrow="Every GYC build is a potential M3 product" tone="emerald">
+        <p className="mb-5 text-sm leading-6 text-gray-400">
+          GYC is M3&apos;s R&amp;D lab. We build and prove every module in production first. M3 pulls when they&apos;re ready.
+          The goal: Hakeem always knows what&apos;s on the shelf and what to ask for next.
+        </p>
+        <div className="mb-6 flex items-center gap-3 rounded-2xl border border-emerald-400/30 bg-emerald-400/5 px-5 py-3">
+          <span className="text-lg">🚀</span>
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">First Pull — Ready Now</div>
+            <div className="text-sm font-semibold text-white">ACL / Client Cards — 8-tab client intelligence card, 392 clients, live in production</div>
+          </div>
+        </div>
+        <div className="space-y-2">
+          {[
+            { module: 'ACL / Client Cards', gyc: 'KPI Dashboard (8 tabs)', status: 'live', pull: '1st — Ready Now' },
+            { module: 'Revenue Intelligence', gyc: 'Stripe Analytics / MRR', status: 'live', pull: 'Ready Now' },
+            { module: 'Leadership Board', gyc: 'Leadership Tab', status: 'live', pull: 'Live at GYC — M3 pull queued' },
+            { module: 'Call Coaching Engine', gyc: 'VC + SEO + Client Call Evaluators', status: 'building', pull: 'Prompts done — wiring next' },
+            { module: 'GBP Management Module', gyc: 'GBP Data Pipeline', status: 'building', pull: '67% coverage — in active build' },
+            { module: 'Meeting Automation Module', gyc: 'Zoom Classification', status: 'building', pull: 'Classification done — evaluators next' },
+            { module: 'Sales Intelligence Module', gyc: 'Recon', status: 'building', pull: 'In active build' },
+            { module: 'Lead Automation Module', gyc: 'Speed to Lead / GHL', status: 'building', pull: 'In active build' },
+            { module: 'Team Performance Module', gyc: 'Staff Evaluation Portal', status: 'scoped', pull: 'Scoped — DB migration next' },
+            { module: 'Client Reporting Engine', gyc: 'Client Health Report', status: 'scoped', pull: 'Scoped — API build next' },
+            { module: 'Pre-Call Intelligence', gyc: 'GA Meeting Prep (T-7 package)', status: 'scoped', pull: 'Designed — build queued' },
+            { module: 'Market Intel Module', gyc: 'Competitive Density + Birth Rate', status: 'scoped', pull: 'Scoped — queued' },
+            { module: 'Sales Coaching Module', gyc: 'AI Sales Call Review', status: 'planned', pull: 'Phase 2' },
+          ].map((row) => {
+            const statusColors = {
+              live: 'bg-emerald-400/20 text-emerald-300 border-emerald-400/30',
+              building: 'bg-cyan-400/20 text-cyan-300 border-cyan-400/30',
+              scoped: 'bg-violet-400/20 text-violet-300 border-violet-400/30',
+              planned: 'bg-amber-400/20 text-amber-300 border-amber-400/30',
+            }
+            const statusLabel = { live: '✅ Live', building: '🛠 Building', scoped: '📋 Scoped', planned: '🔵 Planned' }
+            return (
+              <div key={row.module} className="flex items-center gap-3 rounded-xl border border-white/6 bg-white/3 px-4 py-3">
+                <span className={`shrink-0 rounded-lg border px-2 py-0.5 text-[10px] font-semibold ${statusColors[row.status]}`}>
+                  {statusLabel[row.status]}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-semibold text-white">{row.module}</span>
+                  <span className="ml-2 text-xs text-gray-500">→ {row.gyc}</span>
+                </div>
+                <span className="shrink-0 text-xs text-gray-400">{row.pull}</span>
+              </div>
+            )
+          })}
+        </div>
+        <div className="mt-4 rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-xs text-amber-200/70">
+          📌 <strong className="text-amber-300">Operating principle:</strong> GYC builds → proves in production → documents spec → M3 pulls when ready. Hakeem: tell Todd what you want next and the spec is already done.
+        </div>
+      </HUDFrame>
+
       {/* ── Section 4: M3 Bridge ────────────────────────────────────────── */}
       <HUDFrame title="→ M3 Promotion Pipeline" tone="emerald">
         <p className="mb-6 text-sm leading-6 text-gray-400">
