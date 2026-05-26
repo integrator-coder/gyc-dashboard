@@ -494,6 +494,49 @@ export default function SkunkWorksBoard() {
         </p>
         <div className="space-y-4">
 
+          {/* Session 2 — May 28, 2026 */}
+          <div className="rounded-[22px] border border-cyan-400/30 bg-cyan-400/8 p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-300">May 28, 2026</span>
+              <span className="text-[11px] text-gray-500">Session 2 — Call Intelligence + Staff Evaluation</span>
+              <span className="ml-auto text-[10px] uppercase tracking-wider text-cyan-400/60">Attendees: Todd + Wall·E</span>
+            </div>
+            <ul className="space-y-2 mb-4">
+              {[
+                'All 3 call frameworks built: Vision Call, SEO Onboarding, Client Call — each has checklist, structure outline, and 44-point AI evaluation rubric',
+                'AI evaluator prompts written for all 3 call types — auto-scores every call after classification, sends scorecard to Lada via Slack',
+                'Staff Evaluation Portal scoped: one card per GA (Briana, Sebastian, Kaci, JC, Stefen, Zu) — calls + scores + ZD + Asana',
+                'Client Health Report defined: monthly PDF covering SEO, GBP, traffic, funnel, AND billing — GA reviews before client sees it',
+                'ACL data gaps addressed: 226-client GBP Maps URL sheet created and shared — GAs to fill in their clients this week',
+                'MRR backfill complete: 145 clients corrected — ClientProfile.mrr now sourced from Stripe for all 395 active clients',
+                'Todd now owns hybrid-shine GCP project — Drive API + new SA key unlocks fully autonomous Google Doc/Sheet creation',
+                'Mission Control project board updated with % complete on all projects',
+              ].map((bullet, i) => (
+                <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-400/70" />
+                  {bullet}
+                </li>
+              ))}
+            </ul>
+            <div className="mb-2 rounded-xl border border-amber-400/20 bg-amber-400/5 p-3">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-300 mb-2">Action Items</div>
+              <ul className="space-y-1.5">
+                {[
+                  { owner: 'GAs', item: 'Fill in missing Google Maps URLs in the GBP sheet (226 clients) — each GA covers their own clients' },
+                  { owner: 'Kaci', item: 'Enable Drive API on hybrid-shine GCP project + download new SA key for wall-e@hybrid-shine → send to Wall·E' },
+                  { owner: 'Todd + Wall·E', item: 'DB migration: StaffCard + CallEvaluation tables → wire evaluator prompts into Zoom classification pipeline' },
+                  { owner: 'Todd + Wall·E', item: 'Build Client Health Report: /api/health-report endpoint + PDF generator + monthly cron' },
+                  { owner: 'Kaci/Todd', item: 'Add remaining GA properties to Google OAuth scope to expand website traffic coverage (161 → 392 clients)' },
+                ].map((a, i) => (
+                  <li key={i} className="flex items-start gap-2 text-xs text-gray-300">
+                    <span className="shrink-0 rounded-md border border-amber-400/30 bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-300">{a.owner}</span>
+                    <span className="leading-5">{a.item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
           {/* Session 1 — summary + collapsed full notes */}
           <div className="rounded-[22px] border border-cyan-400/20 bg-cyan-400/5 p-5">
             <div className="flex items-center gap-3 mb-3">
@@ -687,6 +730,18 @@ const ACTION_OWNERS = [
         source: 'Session 1',
         status: 'open',
       },
+      {
+        task: 'Enable Drive API on hybrid-shine GCP project + send new SA key to Wall·E',
+        detail: 'Todd now owns the project. Enable at console.developers.google.com/?project=hybrid-shine-489717-e0. Download new JSON key for wall-e@hybrid-shine-489717-e0.iam.gserviceaccount.com. Once done: Wall·E can create Docs/Sheets/Drive files autonomously.',
+        source: 'Session 2',
+        status: 'open',
+      },
+      {
+        task: 'Add remaining GA properties to OAuth scope for website traffic expansion',
+        detail: 'Currently 161/392 clients have GA traffic data. Add remaining client GA properties to todd@growyourcenter.com as Viewer, then re-authorize OAuth. Wall·E syncs automatically after.',
+        source: 'Session 2',
+        status: 'open',
+      },
     ],
   },
   {
@@ -753,6 +808,12 @@ const ACTION_OWNERS = [
         source: 'Session 1',
         status: 'open',
       },
+      {
+        task: 'Fill in missing Google Maps URLs for your clients (GBP sheet)',
+        detail: '226 clients missing GBP place_ids. Sheet shared with Todd. Each GA covers their own clients. Once filled, Wall·E runs bulk populate script automatically.',
+        source: 'Session 2',
+        status: 'open',
+      },
     ],
   },
   {
@@ -775,6 +836,18 @@ const ACTION_OWNERS = [
         task: 'Pre-populate 2-min context block before each Skunk Works session',
         detail: 'Pull from Memory + Mission Control taskboard. Summarize: what shipped since last session, what\'s in flight, next milestone. Deliver to Todd before each meeting.',
         source: 'sw-004',
+        status: 'open',
+      },
+      {
+        task: 'Build Staff Evaluation Portal — StaffCard + CallEvaluation DB migration + UI',
+        detail: 'Phase 1 staff: Briana, Sebastian, Kaci, JC, Stefen, Zu. Evaluator prompts written for VC, SEO Onboarding, Client Call. Wire into Zoom classification pipeline. Show trend charts per GA.',
+        source: 'Session 2',
+        status: 'open',
+      },
+      {
+        task: 'Build Client Health Report — API endpoint + PDF generator + monthly cron',
+        detail: 'Covers: SEO rankings, GBP, website traffic, lead→tour funnel, AND billing. GA reviews before client sees it. Cadence: 1st of every month.',
+        source: 'Session 2',
         status: 'open',
       },
     ],
