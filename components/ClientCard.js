@@ -851,11 +851,17 @@ function FinancialTab({ profile, recentPayments = [], user = null }) {
       .map(([year, data]) => ({ year, ...data }))
   }, [recentPayments])
 
-  // Filtered payment list
+  // Filtered payment list — always sorted most recent first
   const filteredPayments = useMemo(() => {
-    if (!paymentSearch.trim()) return recentPayments
+    const sorted = [...recentPayments].sort((a, b) => {
+      if (!a.date && !b.date) return 0
+      if (!a.date) return 1
+      if (!b.date) return -1
+      return b.date.localeCompare(a.date)
+    })
+    if (!paymentSearch.trim()) return sorted
     const q = paymentSearch.toLowerCase()
-    return recentPayments.filter(p =>
+    return sorted.filter(p =>
       (p.date && p.date.includes(q)) ||
       (p.description && p.description.toLowerCase().includes(q))
     )
