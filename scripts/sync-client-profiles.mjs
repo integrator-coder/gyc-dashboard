@@ -316,14 +316,13 @@ async function readDunningHistory() {
     const { rows } = await pool.query(`
       SELECT
         "clientName",
-        COUNT(*)                                                       AS "overdueCount",
-        MAX("dueDate")                                                 AS "lastOverdueDate",
-        AVG("daysToCatchUp")                                           AS "avgDaysToCatchUp",
-        AVG(CASE WHEN "everPaidBack" THEN 1.0 ELSE 0 END)             AS "catchUpRate",
-        (array_agg("reason" ORDER BY "dueDate" DESC))[1]              AS "lastOverdueReason"
+        CASE WHEN "inCollections" THEN 1 ELSE 0 END                    AS "overdueCount",
+        "firstDueDate"                                                 AS "lastOverdueDate",
+        NULL::FLOAT                                                    AS "avgDaysToCatchUp",
+        "catchUpRate",
+        NULL::TEXT                                                     AS "lastOverdueReason"
       FROM "DunningHistory"
       WHERE "tenantId" = 'gyc'
-      GROUP BY "clientName"
     `)
     const map = {}
     for (const r of rows) {
@@ -797,15 +796,19 @@ async function main() {
         ghlContactId,
       })
       const relatedStripe = stripeBundle?.bundle?.length ? stripeBundle.bundle : [sc]
-      const linkResult = await syncClientStripeLinks(pool, {
-        tenantId: 'gyc',
-        clientProfileId,
-        profile: { acronym, companyName, ghlContactId, stripeCustomerId },
-        stripeRows: relatedStripe,
-        primaryStripeCustomerId: stripeCustomerId,
-        linkSource: 'sync-client-profiles',
-      })
-      stripeLinkRows += linkResult.linkedCount
+      try {
+        const linkResult = await syncClientStripeLinks(pool, {
+          tenantId: 'gyc',
+          clientProfileId,
+          profile: { acronym, companyName, ghlContactId, stripeCustomerId },
+          stripeRows: relatedStripe,
+          primaryStripeCustomerId: stripeCustomerId,
+          linkSource: 'sync-client-profiles',
+        })
+        stripeLinkRows += linkResult.linkedCount
+      } catch (linkErr) {
+        console.warn(`  ⚠️  ClientStripeLink error for ${acronym}: ${linkErr.message}`)
+      }
     }
 
     if (isNew) created++

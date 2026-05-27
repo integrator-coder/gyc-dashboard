@@ -1,70 +1,86 @@
 import { NextResponse } from 'next/server'
+import { PrismaClient } from '@prisma/client'
 import { requireApiUser } from '@/lib/auth'
-import { pool } from '@/lib/pg'
 
-export const dynamic = 'force-dynamic'
+const prisma = new PrismaClient()
 
-export async function GET(_req, { params }) {
-  const auth = await requireApiUser(_req)
-  if (!auth || auth.error) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const { acronym } = await params
-  const acr = acronym.toUpperCase()
-
-  const result = await pool.query(
-    `SELECT * FROM "ClientMeeting" WHERE acronym = $1 ORDER BY "meetingDate" DESC`,
-    [acr]
-  )
-  return NextResponse.json({ meetings: result.rows })
-}
-
-export async function PATCH(req, { params }) {
-  const auth = await requireApiUser(req, ['admin', 'superadmin', 'ga'])
-  if (!auth || auth.error) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const { acronym } = await params
-  const acr = acronym.toUpperCase()
-  const body = await req.json()
-  const { id, action, edits } = body
-
-  if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
-
-  if (action === 'approve') {
-    await pool.query(
-      `UPDATE "ClientMeeting" SET status = 'approved', "reviewedBy" = $1, "updatedAt" = now() WHERE id = $2 AND acronym = $3`,
-      [auth.user?.email || 'unknown', id, acr]
-    )
-    return NextResponse.json({ ok: true, status: 'approved' })
+/**
+ * GET /api/clients/[acronym]/meetings
+ * Returns meeting history for a specific client
+ * 
+ * Auth: ga, cx, admin, superadmin
+ */
+export async function GET(request, { params }) {
+  // Check auth
+  const authResult = await requireApiUser(request, ['ga', 'cx', 'admin', 'superadmin'])
+  if (authResult.error) {
+    return NextResponse.json({ error: authResult.error }, { status: authResult.status })
   }
 
-  if (action === 'submit') {
-    await pool.query(
-      `UPDATE "ClientMeeting" SET status = 'submitted', "submittedAt" = now(), "reviewedBy" = $1, "updatedAt" = now() WHERE id = $2 AND acronym = $3`,
-      [auth.user?.email || 'unknown', id, acr]
-    )
-    return NextResponse.json({ ok: true, status: 'submitted' })
+  const { acronym } = params
+
+  if (!acronym) {
+    return NextResponse.json({ error: 'Missing acronym' }, { status: 400 })
   }
 
-  if (action === 'edit' && edits) {
-    const allowed = ['execSummary', 'topics', 'decisions', 'tasks', 'outstandingIssues']
-    const sets = []
-    const vals = []
-    let idx = 1
-    for (const [k, v] of Object.entries(edits)) {
-      if (allowed.includes(k)) {
-        sets.push(`"${k}" = $${idx}`)
-        vals.push(typeof v === 'object' ? JSON.stringify(v) : v)
-        idx++
-      }
-    }
-    if (sets.length === 0) return NextResponse.json({ error: 'no valid fields' }, { status: 400 })
-    vals.push(id, acr)
-    await pool.query(
-      `UPDATE "ClientMeeting" SET ${sets.join(', ')}, "updatedAt" = now() WHERE id = $${idx} AND acronym = $${idx + 1}`,
-      vals
-    )
-    return NextResponse.json({ ok: true })
-  }
+  try {
+    // Fetch meetings for this client
+    const meetings = await prisma.zoomCall.findMany({
+      where: {
+        acronym: acronym,
+        tenantId: 'gyc',
+        aiClassification: {
+          in: ['client_meeting', 'onboarding', 'blueprint']
+        }
+      },
+      select: {
+        id: true,
+        topic: true,
+        startTime: true,
+        duration: true,
+        aiClassification: true,
+        aiSummary: true,
+        meetingRecap: true,
+        followUpEmailDraft: true,
+        recapGeneratedAt: true,
+        recordingUrl: true,
+        transcriptUrl: true,
+        gaName: true,
+        gaEmail: true
+      },
+      orderBy: {
+        startTime: 'desc'
+      },
+      take: 20
+    })
 
-  return NextResponse.json({ error: 'unknown action' }, { status: 400 })
+    // Transform to API format
+    const formattedMeetings = meetings.map(m => ({
+      id: m.id,
+      topic: m.topic,
+      date: m.startTime ? m.startTime.toISOString().split('T')[0] : null,
+      duration: m.duration,
+      callType: m.aiClassification,
+      aiSummary: m.aiSummary,
+      meetingRecap: m.meetingRecap,
+      followUpEmailDraft: m.followUpEmailDraft,
+      recapGeneratedAt: m.recapGeneratedAt ? m.recapGeneratedAt.toISOString() : null,
+      recordingUrl: m.recordingUrl,
+      transcriptUrl: m.transcriptUrl,
+      gaName: m.gaName,
+      gaEmail: m.gaEmail
+    }))
+
+    return NextResponse.json({
+      acronym,
+      meetings: formattedMeetings,
+      count: formattedMeetings.length
+    })
+  } catch (err) {
+    console.error('[API] /api/clients/[acronym]/meetings error:', err)
+    return NextResponse.json(
+      { error: 'Failed to fetch meetings', details: err.message },
+      { status: 500 }
+    )
+  }
 }

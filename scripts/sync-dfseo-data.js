@@ -141,7 +141,7 @@ async function main() {
   // Get all active SEO clients with websites
   const res = await pool.query(
     `SELECT acronym, "companyName", website FROM "ClientProfile"
-     WHERE "hasSEO" = true AND status = 'active' AND website IS NOT NULL
+     WHERE status = 'active' AND website IS NOT NULL
      ORDER BY acronym`
   )
 
