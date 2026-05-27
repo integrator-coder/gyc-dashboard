@@ -240,8 +240,9 @@ export default function WebAnalyticsPage() {
 
       {/* AI Traffic Tracker */}
       {historical && historical.length > 0 && (() => {
-        const aiMonths = historical.filter(m => m.aiTotal > 0)
-        const latest   = aiMonths[aiMonths.length - 1]
+        // AI traffic: use all months, defaulting aiTotal to 0 when not detected
+        const aiMonths = historical.filter(m => (m.aiTotal || 0) > 0)
+        const latest   = historical[historical.length - 1]  // use latest month regardless
         const prev     = aiMonths[aiMonths.length - 2]
         const totalAI  = aiMonths.reduce((s, m) => s + m.aiTotal, 0)
         const momGrowth = latest && prev && prev.aiTotal > 0
@@ -280,7 +281,7 @@ export default function WebAnalyticsPage() {
             {/* Stats row */}
             <div className="grid grid-cols-4 gap-3 mb-5">
               {[
-                { label: 'This Month', value: latest ? fmt(latest.aiTotal) : '—', sub: 'sessions from AI' },
+                { label: 'This Month', value: latest ? fmt(latest.aiTotal || 0) : '0', sub: aiMonths.length === 0 ? 'Not yet detected in GA4' : 'sessions from AI' },
                 { label: 'Of Total Traffic', value: currentPct.toFixed(2) + '%', sub: `vs ${TIPPING_POINT}% tipping point`, color: currentPct >= 0.5 ? 'text-yellow-400' : 'text-white' },
                 { label: 'Month-on-Month', value: momGrowth !== null ? (momGrowth > 0 ? '+' : '') + momGrowth + '%' : '—', sub: 'vs prior month', color: momGrowth > 0 ? 'text-green-400' : momGrowth < 0 ? 'text-red-400' : 'text-white' },
                 { label: 'All-Time AI Sessions', value: fmt(totalAI), sub: 'since Jan 2023' },
@@ -315,6 +316,12 @@ export default function WebAnalyticsPage() {
               {/* Trend chart */}
               <div className="col-span-2">
                 <p className="text-gray-300 text-xs mb-2 uppercase tracking-wide">Monthly AI sessions trend</p>
+                {aiMonths.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-28 rounded-xl border border-dashed border-amber-500/30 bg-amber-500/5 text-center px-4">
+                    <p className="text-amber-400 text-sm font-medium">🔭 Monitoring Active</p>
+                    <p className="text-gray-400 text-xs mt-1">GA4 currently classifies AI referrals under Direct or Referral. Wall·E is watching for when it separates into its own channel.</p>
+                  </div>
+                ) : (
                 <ResponsiveContainer width="100%" height={120}>
                   <AreaChart data={aiMonths.map(m => ({ month: fmtMonth(m.month), ai: m.aiTotal, pct: m.aiPct }))}>
                     <defs>
@@ -331,6 +338,7 @@ export default function WebAnalyticsPage() {
                     <Area type="monotone" dataKey="ai" name="ai" stroke="#3B82F6" fill="url(#ai-grad)" strokeWidth={2} dot={false} />
                   </AreaChart>
                 </ResponsiveContainer>
+                )}
               </div>
             </div>
           </div>
