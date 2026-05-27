@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid, Legend } from 'recharts'
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid, Legend, LineChart, Line } from 'recharts'
 
 function fmt(n) { return n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n || 0) }
 function fmtMonth(m) {
@@ -35,7 +35,7 @@ export default function WebAnalyticsPage() {
   )
   if (!data || data.error) return <div className="text-red-400 p-6">Failed to load analytics data.</div>
 
-  const { clients, totals, lastSync, clientCount } = data
+  const { clients, totals, lastSync, clientCount, trafficSourceTrend } = data
 
   // Portfolio traffic mix
   const totalSessions = totals.sessions
@@ -142,6 +142,70 @@ export default function WebAnalyticsPage() {
           </div>
         </div>
       </div>
+
+      {/* NEW: Traffic Source Trends */}
+      {historical && historical.length >= 2 && (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <h2 className="text-white font-semibold mb-1">Traffic Source Trends</h2>
+          <p className="text-gray-300 text-xs mb-4">Monthly sessions by channel across all clients ({historical[historical.length-1]?.clientCount || 0} clients · 13 months)</p>
+          <ResponsiveContainer width="100%" height={320}>
+            <LineChart
+              data={historical.map(m => ({
+                month: fmtMonth(m.month),
+                organic: m.organicSearch || 0,
+                paid: (m.paidSearch || 0) + (m.paidSocial || 0),
+                direct: m.directSessions || 0,
+                social: m.organicSocial || 0,
+                ai: m.aiTotal || 0,
+              }))}
+              margin={{ top: 5, right: 20, bottom: 5, left: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#1F2937" />
+              <XAxis dataKey="month" tick={{ fill: '#6B7280', fontSize: 11 }} />
+              <YAxis tick={{ fill: '#6B7280', fontSize: 11 }} tickFormatter={fmt} />
+              <Tooltip contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: 8, fontSize: 12 }}
+                formatter={(v, n) => [fmt(v), n]} />
+              <Legend wrapperStyle={{ color: '#9CA3AF', fontSize: 12 }} />
+              <Line type="monotone" dataKey="organic" name="Organic Search" stroke="#22c55e" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="paid" name="Paid Traffic" stroke="#a855f7" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="direct" name="Direct" stroke="#3b82f6" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="social" name="Social" stroke="#ec4899" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="ai" name="AI Traffic" stroke="#f59e0b" strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+          
+          {/* AI Traffic Callout */}
+          {(() => {
+            const latestMonth = trafficSourceTrend[trafficSourceTrend.length - 1]
+            const aiSessions = latestMonth?.ai || 0
+            const totalSessions = latestMonth?.total || 1
+            const aiPct = totalSessions > 0 ? ((aiSessions / totalSessions) * 100).toFixed(2) : '0.00'
+            
+            return (
+              <div className="mt-4 bg-amber-900/20 border border-amber-800 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">🤖</span>
+                  <h3 className="text-white font-semibold text-sm">AI Traffic This Month</h3>
+                </div>
+                {aiSessions > 0 ? (
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-2xl font-bold text-amber-400">{fmt(aiSessions)}</span>
+                    <span className="text-gray-300 text-sm">sessions ({aiPct}% of total)</span>
+                  </div>
+                ) : (
+                  <p className="text-gray-300 text-sm">No AI traffic detected yet — backfill may still be in progress</p>
+                )}
+              </div>
+            )
+          })()}
+        </div>
+      )}
+      {trafficSourceTrend && trafficSourceTrend.length < 2 && (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <h2 className="text-white font-semibold mb-1">Traffic Source Trends</h2>
+          <p className="text-yellow-400 text-sm">⏳ Backfill in progress — check back in a few minutes</p>
+        </div>
+      )}
 
       {/* 5-Year Traffic Source Trend */}
       {historical && historical.length > 0 && (
@@ -276,18 +340,39 @@ export default function WebAnalyticsPage() {
       {/* Top performers + worst bounce */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-          <h2 className="text-white font-semibold mb-4">Top 5 by Sessions</h2>
-          <div className="space-y-3">
-            {top5.map((c, i) => (
-              <div key={c.acronym} className="flex items-center gap-3">
-                <span className="text-gray-300 text-sm w-4">{i + 1}</span>
-                <span className="text-white font-medium w-16">{c.acronym}</span>
-                <div className="flex-1 bg-gray-800 rounded-full h-2">
-                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${Math.round(c.sessions / top5[0].sessions * 100)}%` }} />
+          <h2 className="text-white font-semibold mb-1">Top 5 by Sessions</h2>
+          <p className="text-gray-300 text-xs mb-4">Traffic source breakdown this month</p>
+          <div className="space-y-4">
+            {top5.map((c, i) => {
+              const organic = c.organicSearch || 0
+              const paid = c.paidTotal || 0
+              const direct = c.directSessions || 0
+              const social = c.organicSocial || 0
+              const other = Math.max(0, c.sessions - organic - paid - direct - social)
+              const total = c.sessions || 1
+              
+              return (
+                <div key={c.acronym}>
+                  <div className="flex items-center gap-3 mb-1.5">
+                    <span className="text-gray-300 text-sm w-4">{i + 1}</span>
+                    <span className="text-white font-medium w-16">{c.acronym}</span>
+                    <span className="text-gray-300 text-sm ml-auto">{fmt(c.sessions)}</span>
+                  </div>
+                  <div className="flex gap-0.5 h-2 rounded-full overflow-hidden ml-8">
+                    {organic > 0 && <div className="bg-green-500" style={{ width: `${(organic/total*100)}%` }} title={`Organic: ${Math.round(organic/total*100)}%`} />}
+                    {paid > 0 && <div className="bg-purple-500" style={{ width: `${(paid/total*100)}%` }} title={`Paid: ${Math.round(paid/total*100)}%`} />}
+                    {direct > 0 && <div className="bg-blue-500" style={{ width: `${(direct/total*100)}%` }} title={`Direct: ${Math.round(direct/total*100)}%`} />}
+                    {social > 0 && <div className="bg-yellow-500" style={{ width: `${(social/total*100)}%` }} title={`Social: ${Math.round(social/total*100)}%`} />}
+                    {other > 0 && <div className="bg-gray-600" style={{ width: `${(other/total*100)}%` }} title={`Other: ${Math.round(other/total*100)}%`} />}
+                  </div>
+                  <div className="flex gap-3 text-xs text-gray-400 mt-1 ml-8">
+                    <span>🟢 {Math.round(organic/total*100)}%</span>
+                    <span>🟣 {Math.round(paid/total*100)}%</span>
+                    <span>🔵 {Math.round(direct/total*100)}%</span>
+                  </div>
                 </div>
-                <span className="text-gray-300 text-sm w-12 text-right">{fmt(c.sessions)}</span>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 

@@ -232,14 +232,15 @@ export async function GET(_request, { params }) {
 
       // Recent payments from StripeInvoiceSnapshot
       pool.query(`
-        SELECT sis.id, sis."amountPaid", sis."paidAt", sis.status,
-               sis."invoiceNumber", sis."hostedInvoiceUrl", sis.description
+        SELECT sis.id, sis."amountPaid", sis."paidAt", sis."invoiceCreatedAt", sis.status,
+               sis."invoiceNumber", sis."hostedInvoiceUrl", sis.description,
+               sis."periodStart", sis."periodEnd"
         FROM "StripeInvoiceSnapshot" sis
         JOIN "ClientStripeLink" csl ON csl."stripeCustomerId" = sis."stripeCustomerId"
         WHERE csl."tenantId" = 'gyc'
           AND csl."clientProfileId" = $1
           AND sis.status = 'paid'
-        ORDER BY sis."paidAt" DESC
+        ORDER BY sis."paidAt" DESC NULLS LAST
         LIMIT 100
       `, [profileId]).catch(() => ({ rows: [] })),
     ])
@@ -284,12 +285,24 @@ export async function GET(_request, { params }) {
     const recentPayments = (paymentsRes.rows || []).map((r) => ({
       id:          r.id,
       amount:      Number(r.amountPaid || 0),
+      date:        r.paidAt || r.invoiceCreatedAt,
       paidAt:      r.paidAt,
       status:      r.status,
       invoiceNumber: r.invoiceNumber,
       invoiceUrl:  r.hostedInvoiceUrl,
       description: r.description,
+      periodStart: r.periodStart,
+      periodEnd:   r.periodEnd,
     }))
+
+    // Derive next billing date from most recent invoice's periodEnd
+    const nextBillingDate = recentPayments.length > 0
+      ? recentPayments[0].periodEnd || null
+      : null
+    // Subscription start = oldest invoice date
+    const subscriptionStartDate = recentPayments.length > 0
+      ? recentPayments[recentPayments.length - 1].periodStart || recentPayments[recentPayments.length - 1].paidAt || null
+      : null
 
     const gbpLocations = gbpLocationsRes.rows.map((row) => ({
       ...row,
@@ -354,6 +367,8 @@ export async function GET(_request, { params }) {
       potentialUnlinkedCount: Number(potentialCallsRes.rows[0]?.count || 0),
       // Recent Stripe payments
       recentPayments,
+      nextBillingDate,
+      subscriptionStartDate,
     })
   } catch (error) {
     console.error('[GET /api/clients/[acronym]/profile]', error)

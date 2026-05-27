@@ -96,6 +96,47 @@ function buildSnapshotFromCurrentMetrics(rows) {
 
 export async function GET() {
   try {
+    // PRIMARY: ClientWebsiteTrafficMonthly — populated by backfill-ga-monthly.mjs
+    if (await tableExists('"ClientWebsiteTrafficMonthly"')) {
+      const { rows: checkRows } = await pool.query(`SELECT COUNT(*) FROM "ClientWebsiteTrafficMonthly" WHERE "organicSearch" IS NOT NULL AND "organicSearch" > 0`)
+      if (Number(checkRows[0].count) > 0) {
+        const { rows } = await pool.query(`
+          SELECT
+            "periodMonth" AS month,
+            SUM(COALESCE("organicSearch",0))::int AS "organicSearch",
+            SUM(COALESCE("paidSearch",0))::int AS "paidSearch",
+            SUM(COALESCE("directSessions",0))::int AS "directSessions",
+            SUM(COALESCE("organicSocial",0))::int AS "organicSocial",
+            SUM(COALESCE("paidSocial",0))::int AS "paidSocial",
+            SUM(COALESCE(referral,0))::int AS referral,
+            0::int AS other,
+            SUM(COALESCE(sessions,0))::int AS total,
+            COUNT(DISTINCT "clientAcronym")::int AS "clientCount",
+            SUM(COALESCE("aiTotal",0))::int AS "aiTotal",
+            SUM(COALESCE("aiChatgpt",0))::int AS "aiChatgpt",
+            SUM(COALESCE("aiGemini",0))::int AS "aiGemini",
+            SUM(COALESCE("aiPerplexity",0))::int AS "aiPerplexity",
+            0::int AS "aiCopilot",
+            SUM(COALESCE("aiOther",0))::int AS "aiOther",
+            MAX("checkedAt") AS "syncedAt"
+          FROM "ClientWebsiteTrafficMonthly"
+          WHERE "tenantId" = 'gyc'
+          GROUP BY "periodMonth"
+          ORDER BY "periodMonth" ASC
+        `)
+        if (rows.length >= 2) {
+          return NextResponse.json({
+            monthly: rows.map(r => ({
+              ...normalizeHistoricalRow(r),
+              aiPct: r.total > 0 ? Math.round((Number(r.aiTotal) / Number(r.total)) * 10000) / 100 : 0,
+            })),
+            source: 'ClientWebsiteTrafficMonthly',
+            syncedAt: rows[rows.length - 1].syncedAt?.toISOString?.() || null,
+          })
+        }
+      }
+    }
+
     if (await tableExists('"GAPortfolioMonthly"')) {
       const { rows } = await pool.query(`
         SELECT month, "organicSearch", "paidSearch", "directSessions", "organicSocial",

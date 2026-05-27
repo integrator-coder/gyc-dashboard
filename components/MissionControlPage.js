@@ -1413,6 +1413,12 @@ export default function MissionControlPage() {
         </Panel>
       )}
 
+      {tab === 'cost' && (
+        <div className="mt-6">
+          <PlatformSpendTracker />
+        </div>
+      )}
+
       {tab === 'ideas' && <IdeaBoard />}
       {tab === 'brand' && <BrandGuide />}
       {tab === 'intel' && <FulcrumIntel />}
@@ -1481,6 +1487,154 @@ function DailyTokenCustomTooltip({ active, payload, label }) {
         </div>
       </div>
     </div>
+  )
+}
+
+// ─── Platform Spend Tracker ─────────────────────────────────────────────────
+function PlatformSpendTracker() {
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch('/api/mission-control/spend', { cache: 'no-store' })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const json = await res.json()
+        setData(json)
+        setError(null)
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+    const interval = setInterval(load, 300000) // Refresh every 5 minutes
+    return () => clearInterval(interval)
+  }, [])
+
+  if (loading) {
+    return (
+      <Panel title="💳 Platform Spend">
+        <div className="text-center py-8 text-gray-400 text-sm">Loading spend data...</div>
+      </Panel>
+    )
+  }
+
+  if (error) {
+    return (
+      <Panel title="💳 Platform Spend">
+        <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-200">
+          Error loading spend data: {error}
+        </div>
+      </Panel>
+    )
+  }
+
+  const breakdown = data?.breakdown || []
+  const byCategory = data?.byCategory || {}
+  const totalMonthly = data?.totalMonthly || 0
+
+  // Sort breakdown by amount descending
+  const sortedBreakdown = [...breakdown].sort((a, b) => b.amount - a.amount)
+
+  // Category colors
+  const categoryColors = {
+    'AI': '#a855f7',
+    'Infrastructure': '#3b82f6',
+    'CRM': '#10b981',
+    'Support': '#f59e0b',
+    'Productivity': '#06b6d4',
+    'Sales': '#ec4899',
+    'Communication': '#8b5cf6',
+    'Data': '#6366f1',
+  }
+
+  return (
+    <Panel title="💳 Platform Spend">
+      <div className="space-y-4">
+        {/* Summary Cards */}
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-4">
+            <div className="text-sm text-gray-400">Total Monthly Spend</div>
+            <div className="mt-2 text-2xl font-bold text-white">${totalMonthly.toFixed(2)}</div>
+            <div className="mt-1 text-xs text-gray-500">{data?.month}</div>
+          </div>
+          
+          {Object.entries(byCategory).slice(0, 3).map(([category, amount]) => (
+            <div key={category} className="rounded-xl border border-[var(--brand-border)] bg-black/30 p-4">
+              <div className="text-sm text-gray-400">{category}</div>
+              <div className="mt-2 text-xl font-bold" style={{ color: categoryColors[category] || '#fff' }}>
+                ${amount.toFixed(2)}
+              </div>
+              <div className="mt-1 text-xs text-gray-500">
+                {((amount / totalMonthly) * 100).toFixed(1)}% of total
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Breakdown Table */}
+        <div className="rounded-xl border border-[var(--brand-border)] bg-black/20 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[var(--brand-border)] bg-black/40">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Service</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Category</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">Amount</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-400 uppercase tracking-wider">Source</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--brand-border)]">
+                {sortedBreakdown.map((item, idx) => (
+                  <tr key={idx} className="hover:bg-white/5 transition">
+                    <td className="px-4 py-3 font-medium text-white">{item.service}</td>
+                    <td className="px-4 py-3">
+                      <span 
+                        className="inline-block rounded-full px-2 py-0.5 text-xs font-semibold"
+                        style={{ 
+                          backgroundColor: `${categoryColors[item.category] || '#6b7280'}20`,
+                          color: categoryColors[item.category] || '#9ca3af',
+                          border: `1px solid ${categoryColors[item.category] || '#6b7280'}40`
+                        }}
+                      >
+                        {item.category}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono text-white">
+                      ${item.amount.toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${
+                        item.source === 'live' 
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                          : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
+                      }`}>
+                        {item.source === 'live' ? '🔴 Live' : '📌 Fixed'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Last Updated */}
+        <div className="text-xs text-gray-500 text-right">
+          Last updated: {data?.lastUpdated ? new Date(data.lastUpdated).toLocaleString() : '—'}
+        </div>
+
+        {/* Note about fixed subscriptions */}
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+          <strong>Note:</strong> Fixed subscriptions are hardcoded estimates. Live sources fetch real-time data from API providers.
+          To update fixed amounts, contact R2 or edit the FIXED_SUBSCRIPTIONS array in <code className="bg-black/40 px-1 py-0.5 rounded">app/api/mission-control/spend/route.js</code>
+        </div>
+      </div>
+    </Panel>
   )
 }
 

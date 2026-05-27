@@ -832,7 +832,7 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount,
 
 // ── Tab 2: Financial ──────────────────────────────────────────────────────────
 
-function FinancialTab({ profile, recentPayments = [], user = null }) {
+function FinancialTab({ profile, recentPayments = [], nextBillingDate = null, subscriptionStartDate = null, user = null }) {
   const [paymentSearch, setPaymentSearch] = useState('')
   const isPIF = profile.lifetimeValue && profile.mrr && Number(profile.lifetimeValue) > Number(profile.mrr) * 10
   const hasRecentPayments = recentPayments.length > 0
@@ -914,6 +914,18 @@ function FinancialTab({ profile, recentPayments = [], user = null }) {
                 <div className="text-sm text-rose-300">⚠️ Account is overdue</div>
               ) : (
                 <div className="text-sm text-emerald-400">✅ No overdue balance</div>
+              )}
+              {nextBillingDate && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-400">Next billing:</span>
+                  <span className="text-sm font-medium text-gray-200">{fmtDate(nextBillingDate)}</span>
+                </div>
+              )}
+              {subscriptionStartDate && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-400">Client since:</span>
+                  <span className="text-sm font-medium text-gray-200">{fmtDate(subscriptionStartDate)}</span>
+                </div>
               )}
             </div>
             {profile.stripeCustomerId && (
@@ -6998,6 +7010,8 @@ export default function ClientCard({ acronym, user }) {
     enrollmentVerification = null,
     potentialUnlinkedCount = 0,
     recentPayments = [],
+    nextBillingDate = null,
+    subscriptionStartDate = null,
   } = data
 
   // ── Build visible tabs ───────────────────────────────────────────────────
@@ -7126,7 +7140,7 @@ export default function ClientCard({ acronym, user }) {
           />
         )}
         {currentTab === 'financial' && (
-          <FinancialTab profile={profile} recentPayments={recentPayments} user={user} />
+          <FinancialTab profile={profile} recentPayments={recentPayments} nextBillingDate={nextBillingDate} subscriptionStartDate={subscriptionStartDate} user={user} />
         )}
         {currentTab === 'website' && (
           <WebsiteTab profile={profile} acronym={acronym} user={user} />

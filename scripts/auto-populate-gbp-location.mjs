@@ -76,6 +76,19 @@ export async function lookupPlaceId({ businessName, address, city, state }) {
  * Upsert a GBPLocation row with Place ID data.
  */
 export async function upsertGBPLocation({ clientAcronym, locationName, businessName, address, city, state, placeResult }) {
+  // Check if another record already has this placeId — if so, skip to avoid unique constraint crash
+  const existing = await prisma.gBPLocation.findFirst({
+    where: {
+      tenantId: 'gyc',
+      placeId: placeResult.placeId,
+      NOT: { clientAcronym, locationName },
+    },
+  })
+  if (existing) {
+    console.log(`   ⚠️  placeId ${placeResult.placeId} already used by ${existing.clientAcronym}/${existing.locationName} — skipping duplicate`)
+    return null
+  }
+
   const record = await prisma.gBPLocation.upsert({
     where: {
       tenantId_clientAcronym_locationName: {
@@ -86,6 +99,7 @@ export async function upsertGBPLocation({ clientAcronym, locationName, businessN
     },
     update: {
       placeId: placeResult.placeId,
+      gbpPlaceId: placeResult.placeId,
       latitude: placeResult.latitude,
       longitude: placeResult.longitude,
       address: address || null,
@@ -98,6 +112,7 @@ export async function upsertGBPLocation({ clientAcronym, locationName, businessN
       clientAcronym,
       locationName,
       placeId: placeResult.placeId,
+      gbpPlaceId: placeResult.placeId,
       latitude: placeResult.latitude,
       longitude: placeResult.longitude,
       address: address || null,

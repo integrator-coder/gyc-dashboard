@@ -30,7 +30,29 @@ function isFresh(asOf) {
 
 async function fetchLive(origin) {
   const res = await fetch(`${origin}/api/metrics/ga-overview`, { cache: 'no-store' })
-  return res.json()
+  const data = await res.json()
+  
+  // Add traffic source trend from ClientWebsiteTrafficMonthly
+  const trendResult = await pool.query(`
+    SELECT
+      "periodMonth" AS month,
+      SUM("organicSearch") AS organic,
+      SUM("paidSearch" + "paidSocial") AS paid,
+      SUM("directSessions") AS direct,
+      SUM("aiTotal") AS ai,
+      SUM(referral) AS referral,
+      SUM("organicSocial") AS social,
+      SUM(sessions) AS total,
+      COUNT(DISTINCT "clientAcronym") AS "clientCount"
+    FROM "ClientWebsiteTrafficMonthly"
+    WHERE "tenantId" = 'gyc'
+      AND sessions IS NOT NULL
+    GROUP BY "periodMonth"
+    ORDER BY "periodMonth" ASC
+  `)
+  
+  data.trafficSourceTrend = trendResult.rows
+  return data
 }
 
 export async function GET(req) {

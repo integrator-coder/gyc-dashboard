@@ -31,6 +31,23 @@ export default function KpiCard({
 
   const valueSize = size === 'large' ? 'text-4xl' : 'text-[1.75rem]'
 
+  // Rate metrics (close rate, show rate, etc.) — show as standalone stat
+  // with target as a benchmark label, not a progress bar
+  if (isRate) {
+    return (
+      <div className="surface-card rounded-2xl p-4">
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] executive-muted">{title}</p>
+        <div className="mb-1 flex items-end justify-between gap-3">
+          <span className={`metric-card-value ${valueSize} font-semibold ${color}`}>{displayActual}</span>
+          <span className="rounded-full border border-[var(--brand-border)] px-2 py-0.5 text-[10px] executive-muted">target {displayTarget}</span>
+        </div>
+        <p className={`mt-2 text-xs ${color}`}>
+          {effectivePct >= 100 ? '✅ At target' : effectivePct >= 75 ? '⚠️ Close to target' : `↓ ${Math.round(effectivePct)}% of target`}
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="surface-card rounded-2xl p-4">
       <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] executive-muted">{title}</p>
