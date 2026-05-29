@@ -171,22 +171,23 @@ export async function GET() {
       allCardsOk ? null : `These cards are showing zero — data sync may be broken for: ${nullFields.join(', ')}`
     )
 
-    // ── Check 7: RPE sanity ($50K–$500K annually) ─────────────────────────────
+    // ── Check 7: RPE sanity ($1.5K–$60K annually per client) ─────────────────
+    // GYC clients typically pay $125–$4,000/mo → $1,500–$48,000/yr per client
     if (mrrVal > 0 && activeCount > 0) {
       const rpeAnnual = (mrrVal / activeCount) * 12
-      const pass = rpeAnnual >= 50_000 && rpeAnnual <= 500_000
+      const pass = rpeAnnual >= 1_500 && rpeAnnual <= 60_000
       addCheck(
-        'RPE Sanity ($50K–$500K/yr)',
+        'Revenue Per Client ($1.5K–$60K/yr)',
         pass,
         `${fmtMoney(Math.round(rpeAnnual))}/yr per client`,
-        pass ? null : `RPE of ${fmtMoney(Math.round(rpeAnnual))} is outside $50K–$500K band — check client count or MRR`
+        pass ? null : `Revenue per client of ${fmtMoney(Math.round(rpeAnnual))} is outside expected $1.5K–$60K band — check client count or MRR`
       )
     } else {
       addCheck(
-        'RPE Sanity ($50K–$500K/yr)',
+        'Revenue Per Client ($1.5K–$60K/yr)',
         false,
         'Cannot compute',
-        'MRR or active client count is zero — RPE check skipped'
+        'MRR or active client count is zero — revenue per client check skipped'
       )
     }
 

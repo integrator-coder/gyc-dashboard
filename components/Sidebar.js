@@ -49,6 +49,7 @@ function buildDashboardGroup(user) {
       items: [
         { label: 'Overview', emoji: '🏆', href: '/leadership' },
         { label: 'HR', emoji: '🧑‍💼', href: '/hr' },
+        { label: 'Harvest', emoji: '🕐', href: '/harvest' },
       ],
     })
   }
