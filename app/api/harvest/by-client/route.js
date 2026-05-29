@@ -69,10 +69,11 @@ export async function GET() {
 
     currentEntries.forEach(entry => {
       const clientName = entry.client?.name
+      const clientId = entry.client?.id
       if (!clientName || isInternalClient(clientName)) return
       
       if (!clientMap.has(clientName)) {
-        clientMap.set(clientName, { name: clientName, currentMonthHours: 0, lastMonthHours: 0 })
+        clientMap.set(clientName, { name: clientName, harvestId: clientId, currentMonthHours: 0, lastMonthHours: 0 })
       }
       clientMap.get(clientName).currentMonthHours += entry.hours || 0
     })

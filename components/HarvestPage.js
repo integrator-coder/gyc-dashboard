@@ -80,9 +80,17 @@ export default function HarvestPage({ isLada = false }) {
   const [trends, setTrends] = useState({ months: [], totalHours: [], byUser: {} })
   const [mrrMap, setMrrMap] = useState({})
   const [weeklyData, setWeeklyData] = useState({ weeks: [], users: [] })
+  const [thisWeek, setThisWeek] = useState({ users: [], weekStart: '' })
+  const [expandedClient, setExpandedClient] = useState(null)
+  const [clientDetail, setClientDetail] = useState({})
 
   useEffect(() => {
     let active = true
+
+    // Fetch this-week separately (no cache, real-time)
+    fetch('/api/harvest/this-week').then(r => r.json()).then(d => {
+      if (active && !d.error) setThisWeek(d)
+    })
 
     Promise.all([
       fetch('/api/harvest/summary').then(r => r.json()),
@@ -241,6 +249,35 @@ export default function HarvestPage({ isLada = false }) {
             sub="GYC internal"
           />
         </div>
+      )}
+
+      {/* This Week — Real-Time Capacity Panel */}
+      {thisWeek.users.length > 0 && (
+        <Panel title="⚡ This Week — Real-Time" sub={`Hours used vs capacity since ${thisWeek.weekStart ? new Date(thisWeek.weekStart + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }) : 'Monday'} · sorted by most used`}>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {thisWeek.users
+              .filter(u => !isLada || PRODUCTION_TEAM.has(u.name))
+              .map((u, idx) => {
+                const pct = u.pctUsed
+                const barColor = pct >= 90 ? '#fb7185' : pct >= 70 ? '#fbbf24' : '#34d399'
+                return (
+                  <div key={idx} className="rounded-xl bg-gray-900 p-3">
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="text-xs font-medium text-white truncate" title={u.name}>{u.name.split(' ')[0]}</span>
+                      <span className="text-xs executive-muted">{pct}%</span>
+                    </div>
+                    <div className="relative h-1.5 w-full rounded-full bg-gray-800">
+                      <div className="absolute left-0 top-0 h-full rounded-full transition-all" style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: barColor }} />
+                    </div>
+                    <div className="mt-1.5 flex justify-between text-[10px] executive-muted">
+                      <span>{u.hoursThisWeek}h used</span>
+                      <span className="text-emerald-400">{u.hoursRemaining}h left</span>
+                    </div>
+                  </div>
+                )
+              })}
+          </div>
+        </Panel>
       )}
 
       {/* Distribution Charts */}
@@ -407,18 +444,81 @@ export default function HarvestPage({ isLada = false }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
-                  {enrichedClients.map((client, idx) => (
-                    <tr key={idx} className={client.isHighMaintenance ? 'text-rose-300' : 'text-white'}>
-                      <td className="py-2 max-w-[160px] truncate" title={client.name}>
-                        {client.isHighMaintenance && <span className="mr-1 text-xs">⚠️</span>}
-                        {client.name}
-                      </td>
-                      <td className="py-2 text-right font-semibold">{client.currentMonthHours}</td>
-                      <td className="py-2 text-right text-gray-400">{client.lastMonthHours}</td>
-                      <td className="py-2 text-right">{client.mrr > 0 ? `$${Math.round(client.mrr)}` : '—'}</td>
-                      <td className="py-2 text-right">{client.dollarPerHour > 0 ? `$${Math.round(client.dollarPerHour)}` : '—'}</td>
-                    </tr>
-                  ))}
+                  {enrichedClients.map((client, idx) => {
+                    const isExpanded = expandedClient === client.harvestId
+                    const detail = clientDetail[client.harvestId]
+                    return (
+                      <>
+                        <tr
+                          key={idx}
+                          className={`${client.isHighMaintenance ? 'text-rose-300' : 'text-white'} ${client.harvestId ? 'cursor-pointer hover:bg-gray-800/40' : ''}`}
+                          onClick={() => {
+                            if (!client.harvestId) return
+                            if (isExpanded) { setExpandedClient(null); return }
+                            setExpandedClient(client.harvestId)
+                            if (!detail) {
+                              fetch(`/api/harvest/client-projects?clientId=${client.harvestId}`)
+                                .then(r => r.json())
+                                .then(d => setClientDetail(prev => ({ ...prev, [client.harvestId]: d })))
+                            }
+                          }}
+                        >
+                          <td className="py-2 max-w-[160px] truncate" title={client.name}>
+                            {client.isHighMaintenance && <span className="mr-1 text-xs">⚠️</span>}
+                            {client.harvestId && <span className="mr-1 text-xs text-gray-500">{isExpanded ? '▼' : '▶'}</span>}
+                            {client.name}
+                          </td>
+                          <td className="py-2 text-right font-semibold">{client.currentMonthHours}</td>
+                          <td className="py-2 text-right text-gray-400">{client.lastMonthHours}</td>
+                          <td className="py-2 text-right">{client.mrr > 0 ? `$${Math.round(client.mrr)}` : '—'}</td>
+                          <td className="py-2 text-right">{client.dollarPerHour > 0 ? `$${Math.round(client.dollarPerHour)}` : '—'}</td>
+                        </tr>
+                        {isExpanded && (
+                          <tr key={`${idx}-detail`}>
+                            <td colSpan={5} className="pb-3 pt-0">
+                              {!detail ? (
+                                <div className="ml-4 text-xs text-gray-500">Loading breakdown…</div>
+                              ) : detail.error ? (
+                                <div className="ml-4 text-xs text-rose-300">{detail.error}</div>
+                              ) : (
+                                <div className="ml-4 rounded-lg bg-gray-900 p-3 text-xs">
+                                  <div className="grid grid-cols-3 gap-4">
+                                    <div>
+                                      <div className="mb-1.5 font-semibold text-gray-400 uppercase tracking-wide">By Project</div>
+                                      {detail.byProject.map((p, i) => (
+                                        <div key={i} className="flex justify-between py-0.5">
+                                          <span className="text-gray-300 truncate mr-2" title={p.name}>{p.name}</span>
+                                          <span className="text-white font-medium shrink-0">{p.hours}h</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <div>
+                                      <div className="mb-1.5 font-semibold text-gray-400 uppercase tracking-wide">By Task</div>
+                                      {detail.byTask.map((t, i) => (
+                                        <div key={i} className="flex justify-between py-0.5">
+                                          <span className="text-gray-300 truncate mr-2" title={t.name}>{t.name}</span>
+                                          <span className="text-white font-medium shrink-0">{t.hours}h</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <div>
+                                      <div className="mb-1.5 font-semibold text-gray-400 uppercase tracking-wide">By Person</div>
+                                      {detail.byPerson.map((p, i) => (
+                                        <div key={i} className="flex justify-between py-0.5">
+                                          <span className="text-gray-300 truncate mr-2">{p.name}</span>
+                                          <span className="text-white font-medium shrink-0">{p.hours}h</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        )}
+                      </>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
