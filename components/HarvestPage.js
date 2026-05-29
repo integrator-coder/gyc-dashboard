@@ -29,6 +29,13 @@ const PRODUCTION_TEAM = new Set([
   'Briana Stewart',
 ])
 
+// Excluded from the This Week real-time capacity panel
+const THIS_WEEK_EXCLUDE = new Set([
+  'Bruce Spurr',
+  'Sebastian E',
+  'Hakeem Warner',
+])
+
 function Card({ label, value, sub, tone = 'default', tooltip }) {
   const toneCls = tone === 'good' ? 'text-emerald-300' : tone === 'warn' ? 'text-amber-300' : tone === 'bad' ? 'text-rose-300' : 'text-white'
   return (
@@ -256,6 +263,7 @@ export default function HarvestPage({ isLada = false }) {
         <Panel title="⚡ This Week — Real-Time" sub={`Hours used vs capacity since ${thisWeek.weekStart ? new Date(thisWeek.weekStart + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }) : 'Monday'} · sorted by most used`}>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {thisWeek.users
+              .filter(u => !THIS_WEEK_EXCLUDE.has(u.name))
               .filter(u => !isLada || PRODUCTION_TEAM.has(u.name))
               .map((u, idx) => {
                 const pct = u.pctUsed
