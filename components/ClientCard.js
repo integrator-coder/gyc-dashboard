@@ -834,6 +834,20 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount,
 
 function FinancialTab({ profile, recentPayments = [], nextBillingDate = null, subscriptionStartDate = null, user = null }) {
   const [paymentSearch, setPaymentSearch] = useState('')
+  const [harvestHours, setHarvestHours] = useState(null)
+  const [harvestLoading, setHarvestLoading] = useState(false)
+
+  useEffect(() => {
+    if (!profile?.acronym && !profile?.companyName) return
+    setHarvestLoading(true)
+    const params = profile.acronym
+      ? `acronym=${encodeURIComponent(profile.acronym)}`
+      : `name=${encodeURIComponent(profile.companyName)}`
+    fetch(`/api/harvest/client-hours?${params}`)
+      .then(r => r.json())
+      .then(d => { if (!d.error) setHarvestHours(d) })
+      .finally(() => setHarvestLoading(false))
+  }, [profile?.acronym, profile?.companyName])
   const isPIF = profile.lifetimeValue && profile.mrr && Number(profile.lifetimeValue) > Number(profile.mrr) * 10
   const hasRecentPayments = recentPayments.length > 0
 
@@ -892,6 +906,19 @@ function FinancialTab({ profile, recentPayments = [], nextBillingDate = null, su
             💰 Paid-in-full indicator — lifetime value is significantly above MRR
           </div>
         )}
+      </div>
+
+      {/* Harvest Time This Month */}
+      <div>
+        <SectionTitle>Time Logged This Month</SectionTitle>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <StatBox
+            label={harvestHours?.monthLabel || 'This Month'}
+            value={harvestLoading ? '…' : harvestHours?.notFound ? 'Not in Harvest' : harvestHours?.hoursThisMonth != null ? `${harvestHours.hoursThisMonth} hrs` : '—'}
+            sub={harvestHours?.hoursThisMonth != null && profile.mrr ? `$${Math.round(profile.mrr / Math.max(harvestHours.hoursThisMonth, 0.1))}/hr effective` : null}
+            big
+          />
+        </div>
       </div>
 
       {/* Stripe */}
