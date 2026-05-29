@@ -274,11 +274,14 @@ export default function HarvestPage({ isLada = false }) {
                       <span className="text-xs font-medium text-white truncate" title={u.name}>{u.name.split(' ')[0]}</span>
                       <span className="text-xs executive-muted">{pct}%</span>
                     </div>
+                    <div className="mt-1 mb-2">
+                      <span className="text-2xl font-bold" style={{ color: barColor }}>{u.hoursThisWeek}</span>
+                      <span className="ml-1 text-xs executive-muted">hrs</span>
+                    </div>
                     <div className="relative h-1.5 w-full rounded-full bg-gray-800">
                       <div className="absolute left-0 top-0 h-full rounded-full transition-all" style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: barColor }} />
                     </div>
-                    <div className="mt-1.5 flex justify-between text-[10px] executive-muted">
-                      <span>{u.hoursThisWeek}h used</span>
+                    <div className="mt-1.5 text-[10px] text-right executive-muted">
                       <span className="text-emerald-400">{u.hoursRemaining}h left</span>
                     </div>
                   </div>
