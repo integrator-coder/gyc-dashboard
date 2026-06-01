@@ -81,12 +81,6 @@ export async function GET(request) {
     const params = ['gyc']
     const conditions = [`cp."tenantId" = $1`]
 
-    // RBAC: GA role can only see their own clients
-    if (userHasRole(user, ['ga']) && !userHasRole(user, ['admin', 'superadmin', 'cx'])) {
-      params.push(user.email.toLowerCase())
-      conditions.push(`lower(COALESCE(cp."assignedGAEmail", '')) = $${params.length}`)
-    }
-
     if (search) {
       params.push(`%${search.toLowerCase()}%`)
       const idx = params.length
