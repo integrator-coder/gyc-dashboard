@@ -6,8 +6,9 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(_req, { params }) {
   try {
-    const user = await requireApiUser(_req)
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const auth = await requireApiUser(['ga', 'cx', 'admin', 'superadmin'])
+    if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status })
+    const { user } = auth
 
     const { acronym } = await params
     const acr = acronym.toUpperCase()
