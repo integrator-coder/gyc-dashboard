@@ -113,13 +113,6 @@ export async function GET(_request, { params }) {
     let profileQuery = `SELECT * FROM "ClientProfile" WHERE "tenantId" = $1 AND acronym = $2 LIMIT 1`
     let profileParams = ['gyc', upper]
 
-    if (userHasRole(user, ['ga']) && !userHasRole(user, ['admin', 'superadmin', 'cx'])) {
-      profileQuery = `SELECT * FROM "ClientProfile"
-        WHERE "tenantId" = $1 AND acronym = $2
-          AND lower(COALESCE("assignedGAEmail",'')) = $3
-        LIMIT 1`
-      profileParams = ['gyc', upper, user.email.toLowerCase()]
-    }
 
     const profileRes = await pool.query(profileQuery, profileParams)
     if (!profileRes.rows.length) {
