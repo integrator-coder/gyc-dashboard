@@ -48,10 +48,9 @@ function calcCompositeScore(body) {
 }
 
 export async function POST(req, { params }) {
-  const user = await requireApiUser(req)
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!userHasRole(user, ['admin', 'superadmin', 'ga']))
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const auth = await requireApiUser(['admin', 'superadmin', 'ga'])
+  if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status })
+  const { user } = auth
 
   const { acronym } = await params
   const body = await req.json()

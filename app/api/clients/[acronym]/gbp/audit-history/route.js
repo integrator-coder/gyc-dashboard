@@ -12,8 +12,9 @@ import { requireApiUser } from '@/lib/auth'
 import { pool } from '@/lib/pg'
 
 export async function GET(req, { params }) {
-  const user = await requireApiUser(req)
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireApiUser(['ga', 'cx', 'admin', 'superadmin'])
+  if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status })
+  const { user } = auth
 
   const { acronym } = await params
 
