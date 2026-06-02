@@ -191,6 +191,22 @@ export async function GET(req, { params }) {
       return NextResponse.json({ locations: [], updatedAt: null })
     }
 
+    // Check if this is an international (non-US) client
+    // Detection: any location with state = 'England' or non-US lat/lng (lat > 54 or lng > 0)
+    const isInternational = locRes.rows.some(loc => {
+      const state = (loc.state || '').toLowerCase()
+      if (state === 'england' || state === 'scotland' || state === 'wales' || state === 'northern ireland') return true
+      // No US ZIP code in address
+      const hasUsZip = /\b\d{5}(?:-\d{4})?\b/.test(loc.address || '')
+      const hasUkPostcode = /[A-Z]{1,2}\d[\dA-Z]?\s*\d[A-Z]{2}/i.test(loc.address || '')
+      if (hasUkPostcode && !hasUsZip) return true
+      return false
+    })
+
+    if (isInternational) {
+      return NextResponse.json({ isInternational: true, locations: [], updatedAt: null })
+    }
+
     // 2. Get tenant ID
     const tenantRes = await pool.query(
       `SELECT "tenantId" FROM "GBPLocation" WHERE "clientAcronym" = $1 LIMIT 1`,

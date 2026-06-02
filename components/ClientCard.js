@@ -3071,6 +3071,21 @@ function DemographicsTab({ acronym }) {
 
   const locations = data?.locations || []
 
+  // International clients: US Census data not applicable
+  if (data?.isInternational) {
+    return (
+      <div style={{ padding: '40px 0', textAlign: 'center', color: '#9ca3af', fontSize: 14 }}>
+        <div style={{ marginBottom: 8, fontSize: 28 }}>🌍</div>
+        <div style={{ color: '#d1d5db', fontWeight: 600, fontSize: 15, marginBottom: 8 }}>Demographics Not Available for International Clients</div>
+        <div style={{ fontSize: 12, color: '#6b7280', maxWidth: 400, margin: '0 auto', lineHeight: 1.6 }}>
+          This client operates outside the United States. The Demographics tab uses US Census Bureau data which does not cover international locations.
+          <br /><br />
+          <span style={{ color: '#6366f1' }}>UK Census integration is on the roadmap.</span>
+        </div>
+      </div>
+    )
+  }
+
   if (locations.length === 0) {
     return (
       <div style={{ padding: '40px 0', textAlign: 'center', color: '#9ca3af', fontSize: 14 }}>
@@ -3408,12 +3423,20 @@ function CompetitiveIntelTab({ acronym }) {
 // ─────────────────────────────────────────────────────────────────────────
 
 function SEOTab({ profile, acronym }) {
+  // International clients: DataForSEO heatmaps use US-centric proximity search
+  // Detect by timezone (UK/EU) or by explicit country signal
+  const isInternationalClient = (() => {
+    const tz = (profile?.timeZone || '').toLowerCase()
+    return tz.includes('greenwich') || tz.includes('london') || tz.includes('europe') ||
+           tz.includes('gmt') || tz.includes('bst') || tz.includes('cet')
+  })()
+
   const [seoData, setSeoData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    if (!acronym) return
+    if (!acronym || isInternationalClient) return
     setLoading(true)
     fetch(`/api/clients/${acronym}/seo`)
       .then(r => r.json())
@@ -3434,6 +3457,20 @@ function SEOTab({ profile, acronym }) {
     return (
       <div style={{ padding: '20px 0', color: '#ef4444', fontSize: 13 }}>
         Error loading SEO data: {error}
+      </div>
+    )
+  }
+
+  if (isInternationalClient) {
+    return (
+      <div style={{ padding: '40px 0', textAlign: 'center', color: '#9ca3af', fontSize: 14 }}>
+        <div style={{ marginBottom: 8, fontSize: 28 }}>🌍</div>
+        <div style={{ color: '#d1d5db', fontWeight: 600, fontSize: 15, marginBottom: 8 }}>SEO Heatmaps Not Available for International Clients</div>
+        <div style={{ fontSize: 12, color: '#6b7280', maxWidth: 400, margin: '0 auto', lineHeight: 1.6 }}>
+          The SEO heatmap tool uses proximity-based local search which currently supports US markets only.
+          <br /><br />
+          <span style={{ color: '#6366f1' }}>UK & international SEO tracking is on the roadmap.</span>
+        </div>
       </div>
     )
   }
