@@ -194,7 +194,87 @@ function SignalPill({ label, value, tone = 'default' }) {
   )
 }
 
-function ClientGridCard({ client }) {
+function GASelector({ client, user, onUpdate }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const gaName = client.assignedGA || 'Unassigned'
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin'
+
+  const GA_LIST = ['Sebastian', 'Stefen', 'JC', 'Briana', 'Zu']
+
+  async function handleSelect(newGA) {
+    if (newGA === gaName) {
+      setIsOpen(false)
+      return
+    }
+
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/clients/${client.acronym}/assign-ga`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assignedGA: newGA }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to reassign GA.')
+      
+      // Show success feedback
+      if (onUpdate) onUpdate(client.acronym, newGA)
+      
+      // Close dropdown
+      setIsOpen(false)
+    } catch (err) {
+      alert(`Error: ${err.message}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (!isAdmin) {
+    return <span className="font-medium text-gray-200">{gaName}</span>
+  }
+
+  return (
+    <div className="relative inline-block">
+      <button
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          setIsOpen(!isOpen)
+        }}
+        disabled={saving}
+        className="font-medium text-violet-300 underline decoration-violet-500/30 hover:decoration-violet-500 disabled:opacity-50"
+      >
+        {saving ? 'Saving...' : gaName}
+      </button>
+      {isOpen && (
+        <div
+          className="absolute left-0 top-full z-50 mt-1 w-36 rounded-lg border border-white/20 bg-[#1a1325] shadow-lg"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+          }}
+        >
+          {GA_LIST.map((ga) => (
+            <button
+              key={ga}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                handleSelect(ga)
+              }}
+              className="block w-full px-3 py-2 text-left text-sm text-gray-200 hover:bg-violet-500/20 first:rounded-t-lg last:rounded-b-lg"
+            >
+              {ga}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ClientGridCard({ client, user, onUpdate }) {
   const companyName = client.companyName || client.name || client.acronym || 'Unnamed client'
   const ownerName = client.ownerName || client.owner || client.contactName || 'Unknown owner'
   const gaName = client.assignedGA || 'Unassigned'
@@ -234,7 +314,7 @@ function ClientGridCard({ client }) {
 
       <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-gray-400">
         <div className="truncate">
-          GA <span className="font-medium text-gray-200">{gaName}</span>
+          GA <GASelector client={client} user={user} onUpdate={onUpdate} />
         </div>
         <div className="truncate text-right sm:text-left xl:text-right">
           {location || 'No location'}
@@ -295,6 +375,7 @@ export default function ActiveClientList({ user }) {
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
 
   const [search, setSearch] = useState('')
   const [ga, setGa] = useState('All GAs')
@@ -392,6 +473,18 @@ export default function ActiveClientList({ user }) {
     setPage(1)
   }
 
+  function handleGAUpdate(acronym, newGA) {
+    // Optimistic update
+    setClients((current) =>
+      current.map((c) =>
+        c.acronym === acronym ? { ...c, assignedGA: newGA } : c
+      )
+    )
+    // Show success toast
+    setSuccessMessage(`Reassigned to ${newGA}`)
+    setTimeout(() => setSuccessMessage(''), 3000)
+  }
+
   const roleDescription = user?.role === 'ga'
     ? 'Your assigned clients, arranged for faster triage and scanability.'
     : 'A denser view of the book with faster scanning across status, services, and revenue.'
@@ -478,6 +571,10 @@ export default function ActiveClientList({ user }) {
         <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-300">{error}</div>
       ) : null}
 
+      {successMessage ? (
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-300">{successMessage}</div>
+      ) : null}
+
       <div className="overflow-hidden rounded-3xl border border-white/10 bg-[linear-gradient(180deg,#110b18_0%,#0b0710_54%,#060409_100%)] shadow-[0_28px_56px_rgba(0,0,0,0.34),0_0_0_1px_rgba(115,20,148,0.06),inset_0_1px_0_rgba(255,255,255,0.03)]">
         {loading ? (
           <div className="py-16 text-center text-gray-500">
@@ -492,7 +589,7 @@ export default function ActiveClientList({ user }) {
           <div className="bg-[radial-gradient(circle_at_top,rgba(174,43,207,0.06),transparent_28%),linear-gradient(180deg,#0d0814_0%,#09060d_100%)] p-4">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {clients.map((client) => (
-                <ClientGridCard key={client.id} client={client} />
+                <ClientGridCard key={client.id} client={client} user={user} onUpdate={handleGAUpdate} />
               ))}
             </div>
           </div>
