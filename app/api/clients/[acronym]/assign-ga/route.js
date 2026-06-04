@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { requireApiUser } from '@/lib/auth'
-import pool from '@/lib/db'
+import { prisma } from '@/lib/db'
 
 const GA_EMAILS = {
   'Stefen': 'stefen@growyourcenter.com',
@@ -36,19 +36,14 @@ export async function PATCH(request, { params }) {
     const assignedGAEmail = GA_EMAILS[assignedGA] || null
 
     // Update the ClientProfile record
-    const result = await pool.query(
-      `UPDATE "ClientProfile"
-       SET "assignedGA" = $1, "assignedGAEmail" = $2
-       WHERE LOWER("acronym") = LOWER($3)
-       RETURNING *`,
-      [assignedGA, assignedGAEmail, acronym]
-    )
+    const updated = await prisma.clientProfile.update({
+      where: { acronym: acronym.toUpperCase() },
+      data: { assignedGA, assignedGAEmail },
+    }).catch(() => null)
 
-    if (result.rowCount === 0) {
+    if (!updated) {
       return NextResponse.json({ error: 'Client not found.' }, { status: 404 })
     }
-
-    const updated = result.rows[0]
     return NextResponse.json({
       success: true,
       client: {

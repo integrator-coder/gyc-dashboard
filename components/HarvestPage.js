@@ -88,6 +88,7 @@ export default function HarvestPage({ isLada = false }) {
   const [mrrMap, setMrrMap] = useState({})
   const [weeklyData, setWeeklyData] = useState({ weeks: [], users: [] })
   const [thisWeek, setThisWeek] = useState({ users: [], weekStart: '' })
+  const [monthComparison, setMonthComparison] = useState(null)
   const [expandedClient, setExpandedClient] = useState(null)
   const [clientDetail, setClientDetail] = useState({})
 
@@ -97,6 +98,11 @@ export default function HarvestPage({ isLada = false }) {
     // Fetch this-week separately (no cache, real-time)
     fetch('/api/harvest/this-week').then(r => r.json()).then(d => {
       if (active && !d.error) setThisWeek(d)
+    })
+
+    // Fetch month-on-month comparison
+    fetch('/api/harvest/month-comparison').then(r => r.json()).then(d => {
+      if (active && !d.error) setMonthComparison(d)
     })
 
     Promise.all([
@@ -257,6 +263,82 @@ export default function HarvestPage({ isLada = false }) {
           />
         </div>
       )}
+
+      {/* Month Comparison Panel */}
+      {!isLada && monthComparison && (() => {
+        const { dayOfMonth, curMonthLabel, lastMonthLabel, currentTotal, lastFullTotal, lastSameTotal, users } = monthComparison
+        const pctVsSame = lastSameTotal > 0 ? Math.round((currentTotal / lastSameTotal - 1) * 100) : null
+        const pctVsFull = lastFullTotal > 0 ? Math.round((currentTotal / lastFullTotal) * 100) : null
+        const trendColor = pctVsSame === null ? '' : pctVsSame >= 0 ? 'text-emerald-300' : 'text-rose-300'
+        const trendIcon = pctVsSame === null ? '' : pctVsSame >= 0 ? '↑' : '↓'
+
+        return (
+          <Panel
+            title={`📅 ${curMonthLabel} So Far — Day ${dayOfMonth}`}
+            sub={`${curMonthLabel} 1–${dayOfMonth} vs ${lastMonthLabel} 1–${dayOfMonth} (same period) and ${lastMonthLabel} full month`}
+          >
+            {/* Totals row */}
+            <div className="mb-5 grid grid-cols-3 gap-4">
+              <div className="rounded-xl bg-gray-900 p-4 text-center">
+                <div className="text-[10px] font-semibold uppercase tracking-widest executive-muted mb-1">{curMonthLabel} MTD</div>
+                <div className="text-3xl font-bold text-white">{currentTotal}</div>
+                <div className="text-xs executive-muted mt-0.5">hrs (days 1–{dayOfMonth})</div>
+              </div>
+              <div className="rounded-xl bg-gray-900 p-4 text-center">
+                <div className="text-[10px] font-semibold uppercase tracking-widest executive-muted mb-1">{lastMonthLabel} Same Period</div>
+                <div className="text-3xl font-bold text-gray-300">{lastSameTotal}</div>
+                <div className={`text-xs mt-0.5 font-semibold ${trendColor}`}>
+                  {pctVsSame !== null ? `${trendIcon} ${Math.abs(pctVsSame)}% ${pctVsSame >= 0 ? 'ahead' : 'behind'}` : '—'}
+                </div>
+              </div>
+              <div className="rounded-xl bg-gray-900 p-4 text-center">
+                <div className="text-[10px] font-semibold uppercase tracking-widest executive-muted mb-1">{lastMonthLabel} Full Month</div>
+                <div className="text-3xl font-bold text-gray-400">{lastFullTotal}</div>
+                <div className="text-xs executive-muted mt-0.5">
+                  {pctVsFull !== null ? `${curMonthLabel} is ${pctVsFull}% of last month's total` : '—'}
+                </div>
+              </div>
+            </div>
+
+            {/* Per-person comparison bars */}
+            <div className="space-y-2">
+              {users.map((u, idx) => {
+                const maxHours = Math.max(u.current, u.lastFull, u.lastSame, 1)
+                const curPct = Math.round((u.current / maxHours) * 100)
+                const samePct = Math.round((u.lastSame / maxHours) * 100)
+                const diff = lastSameTotal > 0 ? Math.round((u.current - u.lastSame) * 10) / 10 : null
+                const diffColor = diff === null ? '' : diff >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                return (
+                  <div key={idx} className="rounded-lg bg-gray-900 px-3 py-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium text-white">{u.name.split(' ')[0]}</span>
+                      <div className="flex items-center gap-3 text-xs">
+                        <span className="text-white font-semibold">{u.current}h</span>
+                        <span className="executive-muted">vs {u.lastSame}h</span>
+                        {diff !== null && <span className={`font-semibold ${diffColor}`}>{diff >= 0 ? '+' : ''}{diff}h</span>}
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-16 text-[10px] executive-muted text-right shrink-0">{curMonthLabel.slice(0,3)}</span>
+                        <div className="flex-1 relative h-2 rounded-full bg-gray-800">
+                          <div className="absolute left-0 top-0 h-full rounded-full bg-violet-400" style={{ width: `${curPct}%` }} />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-16 text-[10px] executive-muted text-right shrink-0">{lastMonthLabel.slice(0,3)} D{dayOfMonth}</span>
+                        <div className="flex-1 relative h-2 rounded-full bg-gray-800">
+                          <div className="absolute left-0 top-0 h-full rounded-full bg-gray-500" style={{ width: `${samePct}%` }} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </Panel>
+        )
+      })()}
 
       {/* This Week — Real-Time Capacity Panel */}
       {thisWeek.users.length > 0 && (
