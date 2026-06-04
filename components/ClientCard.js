@@ -237,6 +237,78 @@ function InfoRow({ label, value, href, mono }) {
   )
 }
 
+function FolderUrlRow({ acronym, initialUrl, onRefresh }) {
+  const [editing, setEditing] = useState(false)
+  const [url, setUrl] = useState(initialUrl || '')
+  const [saving, setSaving] = useState(false)
+
+  async function save() {
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/clients/${acronym}/profile`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientFolderUrl: url }),
+      })
+      if (!res.ok) throw new Error('Failed to save')
+      await onRefresh?.()
+      setEditing(false)
+    } catch (e) {
+      alert(e.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-gray-400 w-28 shrink-0">Client folder</span>
+        <input
+          type="url"
+          value={url}
+          onChange={e => setUrl(e.target.value)}
+          placeholder="https://drive.google.com/..."
+          className="flex-1 rounded bg-gray-800 border border-gray-600 px-2 py-1 text-xs text-white focus:outline-none focus:border-violet-400 min-w-0"
+          autoFocus
+        />
+        <button
+          onClick={save}
+          disabled={saving}
+          className="shrink-0 rounded bg-violet-600 hover:bg-violet-500 px-2 py-1 text-xs text-white disabled:opacity-50"
+        >
+          {saving ? '…' : 'Save'}
+        </button>
+        <button
+          onClick={() => { setEditing(false); setUrl(initialUrl || '') }}
+          className="shrink-0 rounded bg-gray-700 hover:bg-gray-600 px-2 py-1 text-xs text-gray-300"
+        >
+          Cancel
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-2 group">
+      <span className="text-xs text-gray-400 w-28 shrink-0">Client folder</span>
+      {url ? (
+        <a href={url} target="_blank" rel="noreferrer" className="text-xs text-violet-300 hover:underline flex-1 truncate">
+          Open folder ↗
+        </a>
+      ) : (
+        <span className="text-xs text-gray-600 italic flex-1">Not set</span>
+      )}
+      <button
+        onClick={() => setEditing(true)}
+        className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity rounded px-1.5 py-0.5 text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-400"
+      >
+        Edit
+      </button>
+    </div>
+  )
+}
+
 function SectionTitle({ children }) {
   return <h3 className="mb-3 text-sm font-semibold uppercase tracking-widest text-gray-400">{children}</h3>
 }
@@ -823,9 +895,8 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount,
             {profile.directorName && <InfoRow label="Director" value={profile.directorName} />}
             <InfoRow label="Location" value={[profile.city, profile.state].filter(Boolean).join(', ')} />
             <InfoRow label="Since"    value={profile.startDate ? fmtDate(profile.startDate) : null} />
-            {profile.clientFolderUrl && (
-              <InfoRow label="Client folder" value="Open folder ↗" href={profile.clientFolderUrl} />
-            )}
+            {/* Inline-editable client folder URL */}
+            <FolderUrlRow acronym={acronym} initialUrl={profile.clientFolderUrl} onRefresh={onRefresh} />
           </div>
         </Card>
       </div>

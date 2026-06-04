@@ -100,7 +100,7 @@ const CALL_SELECT = `
 
 export async function GET(_request, { params }) {
   try {
-    const auth = await requireApiUser(['ga', 'cx', 'admin', 'superadmin'])
+    const auth = await requireApiUser(['ga', 'cx', 'manager', 'admin', 'superadmin'])
     if (auth.error) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
@@ -375,7 +375,7 @@ export async function PATCH(request, { params }) {
   try {
     // Notes can be saved by any authenticated user
     // GBP baseline fields require admin or superadmin
-    const auth = await requireApiUser(['ga', 'cx', 'admin', 'superadmin'])
+    const auth = await requireApiUser(['ga', 'cx', 'manager', 'admin', 'superadmin'])
     if (auth.error) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
@@ -458,6 +458,12 @@ export async function PATCH(request, { params }) {
         vals.push(body[field])
         serviceUpdates[field] = body[field]
       }
+    }
+
+    // Client folder URL — any authenticated user
+    if (typeof body.clientFolderUrl === 'string') {
+      sets.push(`"clientFolderUrl" = $${idx++}`)
+      vals.push(body.clientFolderUrl.trim() || null)
     }
 
     // Admin-only fields
