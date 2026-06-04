@@ -823,6 +823,9 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount,
             {profile.directorName && <InfoRow label="Director" value={profile.directorName} />}
             <InfoRow label="Location" value={[profile.city, profile.state].filter(Boolean).join(', ')} />
             <InfoRow label="Since"    value={profile.startDate ? fmtDate(profile.startDate) : null} />
+            {profile.clientFolderUrl && (
+              <InfoRow label="Client folder" value="Open folder ↗" href={profile.clientFolderUrl} />
+            )}
           </div>
         </Card>
       </div>
