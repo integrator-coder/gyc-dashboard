@@ -4,7 +4,7 @@ import { requireUser } from '@/lib/auth'
 export const dynamic = 'force-dynamic'
 
 export default async function Page() {
-  const user = await requireUser(['admin', 'superadmin'])
+  const user = await requireUser(['admin', 'superadmin', 'manager'])
   
   return <HarvestPageComponent isLada={false} />
 }

@@ -22,7 +22,7 @@ function getMonthRange() {
 }
 
 export async function GET(request) {
-  const auth = await requireApiUser(['admin', 'superadmin'])
+  const auth = await requireApiUser(['admin', 'superadmin', 'manager'])
   if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
   const { searchParams } = new URL(request.url)

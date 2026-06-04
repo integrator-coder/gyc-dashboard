@@ -36,7 +36,7 @@ function canSeeFinance(user) {
 }
 
 function isAdminPlus(user) {
-  return ['superadmin', 'admin'].includes(user?.role)
+  return ['superadmin', 'admin', 'manager'].includes(user?.role)
 }
 
 function buildDashboardGroup(user) {
@@ -76,7 +76,7 @@ function buildDashboardGroup(user) {
     items: [
       { label: 'Sales Activity', emoji: '📞', href: '/sales-activity' },
       { label: 'New Business', emoji: '💵', href: '/new-business' },
-      ...(['superadmin', 'admin', 'ga', 'sales'].includes(user?.role)
+      ...(['superadmin', 'admin', 'manager', 'ga', 'sales'].includes(user?.role)
         ? [{ label: 'Sales Analysis', emoji: '🧮', href: '/sales-analysis' }]
         : []),
     ],
@@ -95,7 +95,7 @@ function buildDashboardGroup(user) {
 
   children.push({ label: 'Marketing', emoji: '📣', href: '/marketing' })
 
-  if (['superadmin', 'admin', 'ga'].includes(user?.role)) {
+  if (['superadmin', 'admin', 'manager', 'ga'].includes(user?.role)) {
     children.push({ label: 'Production', emoji: '🔧', href: '/production' })
     children.push({ label: 'Workload', emoji: '⚙️', href: '/workload' })
   }
@@ -113,7 +113,7 @@ const CLIENT_MANAGEMENT_GROUP = {
   emoji: '👥',
   defaultOpen: true,
   children: [
-    { label: 'Active Clients', emoji: '👥', href: '/clients', roles: ['ga', 'cx', 'admin', 'superadmin'] },
+    { label: 'Active Clients', emoji: '👥', href: '/clients', roles: ['ga', 'cx', 'admin', 'superadmin', 'manager'] },
   ],
 }
 
@@ -122,11 +122,11 @@ const TEAM_PORTAL_GROUP = {
   emoji: '🧩',
   defaultOpen: true,
   children: [
-    { label: 'CX Handoffs', emoji: '🧾', href: '/cx-handoff', roles: ['sales', 'ga', 'cx', 'admin', 'superadmin'] },
-    { label: 'Recon', emoji: '🔍', href: '/team/recon', roles: ['recon', 'admin', 'superadmin'] },
-    { label: 'Toolkit', emoji: '🔧', href: '/team/toolkit', roles: ['sales', 'ga', 'cx', 'recon', 'admin', 'superadmin'] },
-    { label: 'Presentation Library', emoji: '🎬', href: '/team/presentations', roles: ['sales', 'ga', 'cx', 'recon', 'admin', 'superadmin'] },
-    { label: 'AI Training Hub', emoji: '🤖', href: 'https://www.notion.so/growyourcenter/362ca865e19781c2b416d4e96b008c22', roles: ['sales', 'ga', 'cx', 'recon', 'admin', 'superadmin'], external: true },
+    { label: 'CX Handoffs', emoji: '🧾', href: '/cx-handoff', roles: ['sales', 'ga', 'cx', 'admin', 'superadmin', 'manager'] },
+    { label: 'Recon', emoji: '🔍', href: '/team/recon', roles: ['recon', 'admin', 'superadmin', 'manager'] },
+    { label: 'Toolkit', emoji: '🔧', href: '/team/toolkit', roles: ['sales', 'ga', 'cx', 'recon', 'admin', 'superadmin', 'manager'] },
+    { label: 'Presentation Library', emoji: '🎬', href: '/team/presentations', roles: ['sales', 'ga', 'cx', 'recon', 'admin', 'superadmin', 'manager'] },
+    { label: 'AI Training Hub', emoji: '🤖', href: 'https://www.notion.so/growyourcenter/362ca865e19781c2b416d4e96b008c22', roles: ['sales', 'ga', 'cx', 'recon', 'admin', 'superadmin', 'manager'], external: true },
   ],
 }
 

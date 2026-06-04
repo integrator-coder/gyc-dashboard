@@ -7,7 +7,7 @@ export const metadata = {
 }
 
 export default async function CalendarPage() {
-  const auth = await requireUser(['admin', 'superadmin'])
+  const auth = await requireUser(['admin', 'superadmin', 'manager'])
   if (auth?.redirect) redirect(auth.redirect)
 
   return (

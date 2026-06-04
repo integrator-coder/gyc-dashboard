@@ -26,7 +26,7 @@ function DocCard({ title, content }) {
 }
 
 export default async function OpenClawWikiPage() {
-  await requireUser(['sales', 'ga', 'cx', 'recon', 'admin', 'superadmin'])
+  await requireUser(['sales', 'ga', 'cx', 'recon', 'admin', 'superadmin', 'manager'])
 
   const [overview, agents, workflows, rules, watchlist] = await Promise.all([
     readDoc('wiki/openclaw/overview.md'),

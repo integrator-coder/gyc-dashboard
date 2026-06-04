@@ -5,6 +5,6 @@ export const dynamic = 'force-dynamic'
 
 export default async function Page({ params }) {
   const { acronym } = await params
-  const user = await requireUser(['ga', 'cx', 'admin', 'superadmin'])
+  const user = await requireUser(['ga', 'cx', 'admin', 'superadmin', 'manager'])
   return <ClientCard acronym={acronym} user={serializeUser(user)} />
 }

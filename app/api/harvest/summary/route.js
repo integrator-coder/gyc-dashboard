@@ -47,7 +47,7 @@ function getWeeksElapsedThisMonth() {
 }
 
 export async function GET() {
-  const auth = await requireApiUser(['admin', 'superadmin'])
+  const auth = await requireApiUser(['admin', 'superadmin', 'manager'])
   if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
   try {

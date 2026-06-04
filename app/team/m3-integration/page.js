@@ -18,7 +18,7 @@ async function readReport() {
 }
 
 export default async function M3IntegrationPage() {
-  await requireUser(['sales', 'ga', 'cx', 'recon', 'admin', 'superadmin'])
+  await requireUser(['sales', 'ga', 'cx', 'recon', 'admin', 'superadmin', 'manager'])
   const report = await readReport()
 
   return (

@@ -5,7 +5,7 @@ import SkunkWorksBoard from '@/components/SkunkWorksBoard'
 export const dynamic = 'force-dynamic'
 
 export default async function SkunkWorksPage() {
-  await requireUser(['sales', 'ga', 'cx', 'recon', 'admin', 'superadmin'])
+  await requireUser(['sales', 'ga', 'cx', 'recon', 'admin', 'superadmin', 'manager'])
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,#1a1030_0%,#09090c_42%,#040405_100%)] px-6 py-8 text-white">
       <div className="mx-auto mb-6 flex max-w-[1550px] justify-end">
