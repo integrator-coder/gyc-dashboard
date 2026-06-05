@@ -1,13 +1,13 @@
 // scripts/sync-stripe.js
 // Standalone Stripe sync script — fetches ALL subscriptions via autopagination
-require('dotenv').config({ path: require('path').resolve(__dirname, '../.env.local') })
+require('dotenv').config({ path: require('path').resolve(__dirname, '../.env.local'), override: true })
 
 const { PrismaClient } = require('@prisma/client')
 const Stripe = require('stripe')
 const pg = require('pg')
 
 const prisma = new PrismaClient()
-const stripe = new Stripe('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')
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 const invoicePool = new pg.Pool({
   connectionString: process.env.NEON_DATABASE_URL || process.env.DATABASE_URL,
   ssl: process.env.NEON_DATABASE_URL || process.env.DATABASE_URL ? { rejectUnauthorized: false } : undefined,

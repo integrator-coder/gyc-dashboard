@@ -93,6 +93,7 @@ function parseSEOData(rows) {
   let inSection1 = false
   let inSection2 = false
 
+  let section1Started = false
   for (const row of rows) {
     if (!row.some(c => c?.trim())) continue // skip empty rows
 
@@ -102,6 +103,12 @@ function parseSEOData(rows) {
       continue
     }
     if (isSection1Header(row)) {
+      // Only enter section 1 once — stop reading if we see a duplicate header
+      if (section1Started) {
+        inSection1 = false // stop processing section 1 entirely
+        continue
+      }
+      section1Started = true
       inSection1 = true
       inSection2 = false
       continue

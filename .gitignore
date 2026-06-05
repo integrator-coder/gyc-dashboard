@@ -6,3 +6,5 @@ prisma/dev.db-journal
 .env*.local
 *.log
 .vercel
+.cache/
+scripts/bulk-populate-progress.json

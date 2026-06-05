@@ -193,7 +193,7 @@ async function main() {
     GROUP BY "assignedGA" ORDER BY cnt DESC
   `)
   console.log('\n👤 GA distribution:')
-  gaDist.forEach(r => console.log(`   ${r.assignedga}: ${r.cnt} clients`))
+  gaDist.forEach(r => console.log(`   ${r.assignedGA || r.assignedga}: ${r.cnt} clients`))
 
   await db.end()
 }

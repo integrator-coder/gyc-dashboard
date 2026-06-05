@@ -70,6 +70,38 @@ async function runMonthlyReport(accessToken, propertyId, startDate, endDate) {
   return resp.json()
 }
 
+// AI source domains to watch
+const AI_SOURCES = [
+  'chatgpt.com', 'chat.openai.com',
+  'perplexity.ai', 'perplexity',
+  'gemini.google.com', 'gemini',
+  'claude.ai', 'anthropic.com',
+  'copilot.microsoft.com', 'bing.com/chat',
+  'you.com', 'phind.com', 'poe.com',
+  'character.ai', 'pi.ai', 'mistral.ai',
+]
+
+async function runAISourceReport(accessToken, propertyId, startDate, endDate) {
+  const resp = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      dateRanges: [{ startDate, endDate }],
+      metrics: [{ name: 'sessions' }],
+      dimensions: [{ name: 'sessionSource' }],
+      dimensionFilter: {
+        orGroup: {
+          expressions: AI_SOURCES.map(src => ({
+            filter: { fieldName: 'sessionSource', stringFilter: { matchType: 'CONTAINS', value: src, caseSensitive: false } }
+          }))
+        }
+      },
+      limit: 50,
+    })
+  })
+  return resp.json()
+}
+
 function extractAcronym(displayName) {
   const match = displayName.match(/^([A-Z0-9\-]+)\s+[-–]\s+/)
   return match ? match[1] : null
@@ -141,7 +173,25 @@ async function main() {
           else if (channelLower.includes('perplexity')) { aiPerplexity += vals[0] }
           else if (channelLower.includes('ai overview') || channelLower.includes('ai mode') || channelLower.includes('copilot') || channelLower.includes('claude')) { aiOther += vals[0] }
         }
-        const aiTotal = aiChatgpt + aiGemini + aiPerplexity + aiOther
+        // Also run source-level AI query to catch chatgpt.com, perplexity, etc.
+        let aiChatgptSrc = 0, aiGeminiSrc = 0, aiPerplexitySrc = 0, aiOtherSrc = 0
+        try {
+          const aiReport = await runAISourceReport(accessToken, propId, start, end)
+          for (const row of (aiReport.rows || [])) {
+            const src = (row.dimensionValues[0].value || '').toLowerCase()
+            const sessions = parseFloat(row.metricValues[0].value) || 0
+            if (src.includes('chatgpt') || src.includes('openai')) aiChatgptSrc += sessions
+            else if (src.includes('gemini')) aiGeminiSrc += sessions
+            else if (src.includes('perplexity')) aiPerplexitySrc += sessions
+            else aiOtherSrc += sessions
+          }
+        } catch { /* optional */ }
+        // Use source-level counts when they exceed channel-level (more precise)
+        const aiChatgptFinal = Math.max(aiChatgpt, aiChatgptSrc)
+        const aiGeminiFinal = Math.max(aiGemini, aiGeminiSrc)
+        const aiPerplexityFinal = Math.max(aiPerplexity, aiPerplexitySrc)
+        const aiOtherFinal = Math.max(aiOther, aiOtherSrc)
+        const aiTotal = aiChatgptFinal + aiGeminiFinal + aiPerplexityFinal + aiOtherFinal
 
         if (rowCount > 0) { bounceRate /= rowCount; avgDuration /= rowCount }
 
@@ -161,7 +211,7 @@ async function main() {
             Math.round(sessions), Math.round(activeUsers), Math.round(newUsers),
             Math.round(100 - bounceRate * 100), Math.round(bounceRate * 100), avgDuration.toFixed(2),
             Math.round(organic), Math.round(paid), Math.round(direct), Math.round(organicSocial), Math.round(paidSocial),
-            Math.round(referral), Math.round(aiTotal), Math.round(aiChatgpt), Math.round(aiGemini), Math.round(aiPerplexity), Math.round(aiOther)])
+            Math.round(referral), Math.round(aiTotal), Math.round(aiChatgptFinal), Math.round(aiGeminiFinal), Math.round(aiPerplexityFinal), Math.round(aiOtherFinal)])
 
         synced++
       } catch(e) {
@@ -180,3 +230,5 @@ async function main() {
 }
 
 main().catch(e => { console.error(e.message); process.exit(1) })
+
+// This will be replaced — adding AI source lookup below

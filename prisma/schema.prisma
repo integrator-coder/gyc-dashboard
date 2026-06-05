@@ -858,6 +858,34 @@ model ClientGoogleAds {
   @@index([tenantId])
 }
 
+model ClientGoogleAdsSnapshot {
+  id                  Int            @id @default(autoincrement())
+  tenantId            String         @default("gyc")
+  clientId            Int?
+  companyAcronym      String
+  customerId          String?        // Google Ads customer ID (no dashes)
+  periodMonth         String         // YYYY-MM
+  impressions         Int?
+  clicks              Int?
+  spend               Decimal?       @db.Decimal(10, 2)
+  conversions         Decimal?       @db.Decimal(8, 2)
+  costPerConversion   Decimal?       @db.Decimal(10, 2)
+  conversionRate      Decimal?       @db.Decimal(6, 4)
+  impressionShare     Decimal?       @db.Decimal(6, 4)
+  activeCampaigns     Int?
+  campaignNames       String[]       @default([])
+  topKeywords         String[]       @default([])
+  budgetUtilization   Decimal?       @db.Decimal(6, 4)
+  syncedAt            DateTime       @default(now()) @db.Timestamptz(6)
+  dataSource          String         @default("google-ads-api")
+  ClientProfile       ClientProfile? @relation(fields: [clientId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([tenantId, companyAcronym, periodMonth])
+  @@index([companyAcronym], map: "CGAS_acronym_idx")
+  @@index([periodMonth], map: "CGAS_period_idx")
+  @@index([tenantId], map: "CGAS_tenant_idx")
+}
+
 model ClientIdentityMap {
   id               BigInt   @id @default(autoincrement())
   tenantId         String   @default("gyc")
@@ -1008,8 +1036,10 @@ model ClientProfile {
   seoNotes               String?
   crmNotes               String?
   seoSheetId             String?
+  googleAdsCustomerId    String?
   ClientStripeLink       ClientStripeLink[]
   ClientStripeLinkReview ClientStripeLinkReview[]
+  ClientGoogleAdsSnapshot ClientGoogleAdsSnapshot[]
 
   @@unique([tenantId, companyName])
   @@index([acronym], map: "CP_acronym_idx")
@@ -1017,6 +1047,7 @@ model ClientProfile {
   @@index([status], map: "CP_status_idx")
   @@index([stripeCustomerId], map: "CP_stripeCustomerId_idx")
   @@index([tenantId], map: "CP_tenantId_idx")
+  @@index([googleAdsCustomerId], map: "CP_googleAdsCustomerId_idx")
 }
 
 model ClientSEOGBPMonthly {
