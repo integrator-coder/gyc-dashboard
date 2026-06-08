@@ -5721,6 +5721,17 @@ function GBPTab({ profile, acronym, user }) {
                 placeholder="ChIJ…"
                 className={INPUT_CLS}
               />
+              <p className="mt-1 text-[11px] text-emerald-400">
+                🎉 Need the Place ID?{' '}
+                <a
+                  href="https://developers.google.com/maps/documentation/javascript/examples/places-placeid-finder"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-emerald-300 transition-colors"
+                >
+                  Use the Place ID Finder tool →
+                </a>
+              </p>
             </div>
             <div className="sm:col-span-2">
               <label className="mb-1 block text-xs text-gray-400">Address</label>
