@@ -79,6 +79,7 @@ async function sync() {
   // Fetch active + past_due + trialing subscriptions
   // past_due = contracted revenue not yet collected (should count for MRR)
   // trialing = committed customers who will convert to paid
+  // NOTE: 'paused' subscriptions are intentionally excluded — paused = not charging = does NOT count toward MRR
   const statusesToSync = ['active', 'past_due', 'trialing']
   const allSubscriptions = []
 
