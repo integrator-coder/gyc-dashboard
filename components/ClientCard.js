@@ -4464,7 +4464,7 @@ function HealthArcGauge({ score, passed, total }) {
 }
 
 function GBPTab({ profile, acronym, user }) {
-  const isAdmin = ['admin', 'superadmin'].includes(user?.role)
+  const isAdmin = ['ga', 'cx', 'admin', 'superadmin'].includes(user?.role)
 
   // GBP-specific state
   const [gbpData,              setGbpData]              = useState(null)
@@ -4509,6 +4509,15 @@ function GBPTab({ profile, acronym, user }) {
   const emptyLoc = () => ({ name: '', gbpUrl: '', gbpPlaceId: '', address: '', city: '', state: '' })
   const [locForm,  setLocForm]  = useState(emptyLoc())
   const [locErr,   setLocErr]   = useState('')
+
+  // Delete modal state
+  const [deletingLocationId, setDeletingLocationId] = useState(null)
+  const [deleteConfirmName, setDeleteConfirmName] = useState('')
+
+  // Merge modal state
+  const [mergingFromId, setMergingFromId] = useState(null)
+  const [mergeIntoId, setMergeIntoId] = useState('')
+  const [mergeError, setMergeError] = useState('')
 
   async function loadGbp() {
     setGbpLoading(true)
@@ -4597,15 +4606,21 @@ function GBPTab({ profile, acronym, user }) {
     setSaving(true)
     try {
       if (!locForm.name.trim()) throw new Error('Location name is required')
-      const res = await fetch(`/api/clients/${acronym}/gbp/locations`, {
+      const res = await fetch(`/api/clients/${acronym}/gbp/locations/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(locForm),
+        body: JSON.stringify({ locationName: locForm.name, gbpUrl: locForm.gbpUrl }),
       })
-      if (!res.ok) { const j = await res.json(); throw new Error(j.error || 'Save failed') }
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Save failed')
       setShowAddLocation(false)
       setLocForm(emptyLoc())
       await loadGbp()
+      // Show success message if location was auto-linked
+      if (json.resolved && json.message) {
+        // Could show a toast here, but for now just log it
+        console.log(json.message)
+      }
     } catch (e) {
       setLocErr(e.message)
     } finally {
@@ -4661,6 +4676,69 @@ function GBPTab({ profile, acronym, user }) {
 
   function setAuditField(field, value) {
     setAuditForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  async function handleDeleteLocation(locId) {
+    const loc = gbpData?.locations?.find(l => l.id === locId)
+    if (!loc) return
+    setDeletingLocationId(locId)
+    setDeleteConfirmName('')
+  }
+
+  async function confirmDeleteLocation() {
+    const loc = gbpData?.locations?.find(l => l.id === deletingLocationId)
+    if (!loc || deleteConfirmName !== loc.locationName) return
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/clients/${acronym}/gbp/locations/${deletingLocationId}`, {
+        method: 'DELETE',
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        throw new Error(j.error || 'Failed to delete location')
+      }
+      setDeletingLocationId(null)
+      setDeleteConfirmName('')
+      await loadGbp()
+    } catch (e) {
+      alert(e.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleMergeLocation(fromId) {
+    setMergingFromId(fromId)
+    setMergeIntoId('')
+    setMergeError('')
+  }
+
+  async function confirmMerge() {
+    if (!mergingFromId || !mergeIntoId) return
+    if (mergingFromId === Number(mergeIntoId)) {
+      setMergeError('Cannot merge a location with itself')
+      return
+    }
+    setSaving(true)
+    setMergeError('')
+    try {
+      const res = await fetch(`/api/clients/${acronym}/gbp/locations/merge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keepId: Number(mergeIntoId), deleteId: mergingFromId }),
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        throw new Error(j.error || 'Failed to merge locations')
+      }
+      setMergingFromId(null)
+      setMergeIntoId('')
+      await loadGbp()
+    } catch (e) {
+      setMergeError(e.message)
+    } finally {
+      setSaving(false)
+    }
   }
 
   // Extract Place ID or CID from a Google Maps URL
@@ -5311,6 +5389,27 @@ function GBPTab({ profile, acronym, user }) {
               {autoAuditFlash.has(loc.id) && (
                 <span className="text-xs text-emerald-400 font-medium">✓ Auto-audit saved!</span>
               )}
+              {/* Management buttons for ga/cx/admin/superadmin */}
+              {isAdmin && (
+                <>
+                  {gbpData?.locations?.length >= 2 && (
+                    <button
+                      onClick={() => handleMergeLocation(loc.id)}
+                      className="ml-auto rounded-lg border border-blue-500/40 bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-300 hover:bg-blue-500/20 transition"
+                      title="Merge this location into another"
+                    >
+                      🔀 Merge
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDeleteLocation(loc.id)}
+                    className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-1.5 text-xs font-medium text-rose-300 hover:bg-rose-500/20 transition"
+                    title="Remove this location"
+                  >
+                    🗑️ Delete
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Audit form */}
@@ -5609,6 +5708,137 @@ function GBPTab({ profile, acronym, user }) {
           </div>
         </div>
       )}
+
+      {/* Delete Location Modal */}
+      {deletingLocationId && (() => {
+        const loc = gbpData?.locations?.find(l => l.id === deletingLocationId)
+        if (!loc) return null
+        const canConfirm = deleteConfirmName === loc.locationName
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="w-full max-w-md rounded-2xl border border-rose-500/30 bg-gradient-to-br from-black via-gray-900 to-black p-6 shadow-2xl">
+              <h3 className="mb-4 text-lg font-bold text-rose-400">Remove Location</h3>
+              <p className="mb-4 text-sm text-gray-300">
+                Are you sure you want to remove <strong className="text-white">{loc.locationName}</strong> from {profile.companyName || acronym}?
+              </p>
+              <p className="mb-4 text-xs text-gray-500">
+                This will soft-delete the location (set isActive = false). Audit history will be preserved.
+              </p>
+              <div className="mb-4">
+                <label className="mb-2 block text-xs font-medium text-gray-400">
+                  Type the location name to confirm:
+                </label>
+                <input
+                  autoFocus
+                  type="text"
+                  value={deleteConfirmName}
+                  onChange={e => setDeleteConfirmName(e.target.value)}
+                  placeholder={loc.locationName}
+                  className="w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-rose-400 focus:outline-none"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={confirmDeleteLocation}
+                  disabled={!canConfirm || saving}
+                  className="flex-1 rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-500 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  {saving ? 'Removing...' : 'Remove Location'}
+                </button>
+                <button
+                  onClick={() => { setDeletingLocationId(null); setDeleteConfirmName('') }}
+                  disabled={saving}
+                  className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-50 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* Merge Location Modal */}
+      {mergingFromId && (() => {
+        const fromLoc = gbpData?.locations?.find(l => l.id === mergingFromId)
+        const intoLoc = gbpData?.locations?.find(l => l.id === Number(mergeIntoId))
+        if (!fromLoc) return null
+        const otherLocs = gbpData?.locations?.filter(l => l.id !== mergingFromId) || []
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="w-full max-w-2xl rounded-2xl border border-blue-500/30 bg-gradient-to-br from-black via-gray-900 to-black p-6 shadow-2xl">
+              <h3 className="mb-4 text-lg font-bold text-blue-400">Merge Location</h3>
+              <p className="mb-4 text-sm text-gray-300">
+                Merge <strong className="text-white">{fromLoc.locationName}</strong> into another location.
+              </p>
+              <p className="mb-4 text-xs text-gray-500">
+                Non-null fields from <strong>{fromLoc.locationName}</strong> will be copied to the target location where the target has null values. Then <strong>{fromLoc.locationName}</strong> will be removed.
+              </p>
+              {mergeError && (
+                <div className="mb-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+                  {mergeError}
+                </div>
+              )}
+              <div className="mb-4">
+                <label className="mb-2 block text-xs font-medium text-gray-400">
+                  Merge into:
+                </label>
+                <select
+                  value={mergeIntoId}
+                  onChange={e => setMergeIntoId(e.target.value)}
+                  className="w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none"
+                >
+                  <option value="">-- Select a location --</option>
+                  {otherLocs.map(loc => (
+                    <option key={loc.id} value={loc.id}>
+                      {loc.locationName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {intoLoc && (
+                <div className="mb-4 rounded-lg border border-blue-500/20 bg-blue-500/5 p-4">
+                  <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Preview</h4>
+                  <div className="grid grid-cols-2 gap-4 text-xs">
+                    <div>
+                      <div className="mb-1 font-semibold text-rose-400">{fromLoc.locationName} (will be removed)</div>
+                      <div className="space-y-0.5 text-gray-400">
+                        {fromLoc.address && <div>📍 {fromLoc.address}</div>}
+                        {fromLoc.gbpUrl && <div>🔗 Google Maps link</div>}
+                        {fromLoc.placeId && <div>🎯 Place ID: {fromLoc.placeId.slice(0, 12)}...</div>}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="mb-1 font-semibold text-emerald-400">{intoLoc.locationName} (will be kept)</div>
+                      <div className="space-y-0.5 text-gray-400">
+                        {intoLoc.address && <div>📍 {intoLoc.address}</div>}
+                        {intoLoc.gbpUrl && <div>🔗 Google Maps link</div>}
+                        {intoLoc.placeId && <div>🎯 Place ID: {intoLoc.placeId.slice(0, 12)}...</div>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div className="flex gap-3">
+                <button
+                  onClick={confirmMerge}
+                  disabled={!mergeIntoId || saving}
+                  className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  {saving ? 'Merging...' : 'Merge Locations'}
+                </button>
+                <button
+                  onClick={() => { setMergingFromId(null); setMergeIntoId(''); setMergeError('') }}
+                  disabled={saving}
+                  className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-50 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
