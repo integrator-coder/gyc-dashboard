@@ -4520,6 +4520,8 @@ function GBPTab({ profile, acronym, user }) {
   const [mergingFromId, setMergingFromId] = useState(null)
   const [mergeIntoId, setMergeIntoId] = useState('')
   const [mergeError, setMergeError] = useState('')
+  const [mergeStep, setMergeStep] = useState(1) // 1=select target, 2=resolve conflicts, 3=confirm
+  const [mergeFieldChoices, setMergeFieldChoices] = useState({}) // { fieldName: 'keep' | 'delete' }
 
   async function loadGbp() {
     setGbpLoading(true)
@@ -4751,6 +4753,8 @@ function GBPTab({ profile, acronym, user }) {
     setMergingFromId(fromId)
     setMergeIntoId('')
     setMergeError('')
+    setMergeStep(1)
+    setMergeFieldChoices({})
   }
 
   async function confirmMerge() {
@@ -4765,7 +4769,11 @@ function GBPTab({ profile, acronym, user }) {
       const res = await fetch(`/api/clients/${acronym}/gbp/locations/merge`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keepId: Number(mergeIntoId), deleteId: mergingFromId }),
+        body: JSON.stringify({ 
+          keepId: Number(mergeIntoId), 
+          deleteId: mergingFromId,
+          fieldChoices: mergeFieldChoices,
+        }),
       })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
@@ -4773,6 +4781,8 @@ function GBPTab({ profile, acronym, user }) {
       }
       setMergingFromId(null)
       setMergeIntoId('')
+      setMergeStep(1)
+      setMergeFieldChoices({})
       await loadGbp()
     } catch (e) {
       setMergeError(e.message)
@@ -5856,77 +5866,237 @@ function GBPTab({ profile, acronym, user }) {
         const intoLoc = gbpData?.locations?.find(l => l.id === Number(mergeIntoId))
         if (!fromLoc) return null
         const otherLocs = gbpData?.locations?.filter(l => l.id !== mergingFromId) || []
+
+        // Determine conflicts and auto-resolve fields
+        const fields = [
+          { key: 'locationName', label: 'Location Name', getValue: (r) => r.locationName },
+          { key: 'address', label: 'Address', getValue: (r) => r.address },
+          { key: 'city', label: 'City', getValue: (r) => r.city },
+          { key: 'state', label: 'State', getValue: (r) => r.state },
+          { key: 'gbpUrl', label: 'GBP URL', getValue: (r) => r.gbpUrl, truncate: 40 },
+          { key: 'placeId', label: 'Place ID', getValue: (r) => r.placeId || r.gbpPlaceId, truncate: 20 },
+          { key: 'coordinates', label: 'Coordinates', getValue: (r) => r.latitude && r.longitude ? `${r.latitude}, ${r.longitude}` : null },
+        ]
+
+        const conflicts = []
+        const autoResolved = []
+
+        if (intoLoc) {
+          for (const field of fields) {
+            const fromVal = field.getValue(fromLoc)
+            const intoVal = field.getValue(intoLoc)
+            if (fromVal && intoVal) {
+              conflicts.push({ ...field, fromVal, intoVal })
+            } else if (fromVal || intoVal) {
+              autoResolved.push({ ...field, value: fromVal || intoVal, source: fromVal ? 'delete' : 'keep' })
+            }
+          }
+        }
+
+        const keepCount = Object.values(mergeFieldChoices).filter(v => v === 'keep').length
+        const deleteCount = Object.values(mergeFieldChoices).filter(v => v === 'delete').length
+
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="w-full max-w-2xl rounded-2xl border border-blue-500/30 bg-gradient-to-br from-black via-gray-900 to-black p-6 shadow-2xl">
-              <h3 className="mb-4 text-lg font-bold text-blue-400">Merge Location</h3>
-              <p className="mb-4 text-sm text-gray-300">
-                Merge <strong className="text-white">{fromLoc.locationName}</strong> into another location.
+            <div className="w-full max-w-3xl rounded-2xl border border-blue-500/30 bg-gradient-to-br from-black via-gray-900 to-black p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+              <h3 className="mb-2 text-lg font-bold text-blue-400">Merge Location</h3>
+              <p className="mb-4 text-xs text-gray-400">
+                Step {mergeStep} of 3
               </p>
-              <p className="mb-4 text-xs text-gray-500">
-                Non-null fields from <strong>{fromLoc.locationName}</strong> will be copied to the target location where the target has null values. Then <strong>{fromLoc.locationName}</strong> will be removed.
-              </p>
+
               {mergeError && (
                 <div className="mb-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
                   {mergeError}
                 </div>
               )}
-              <div className="mb-4">
-                <label className="mb-2 block text-xs font-medium text-gray-400">
-                  Merge into:
-                </label>
-                <select
-                  value={mergeIntoId}
-                  onChange={e => setMergeIntoId(e.target.value)}
-                  className="w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none"
-                >
-                  <option value="">-- Select a location --</option>
-                  {otherLocs.map(loc => (
-                    <option key={loc.id} value={loc.id}>
-                      {loc.locationName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {intoLoc && (
-                <div className="mb-4 rounded-lg border border-blue-500/20 bg-blue-500/5 p-4">
-                  <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Preview</h4>
-                  <div className="grid grid-cols-2 gap-4 text-xs">
-                    <div>
-                      <div className="mb-1 font-semibold text-rose-400">{fromLoc.locationName} (will be removed)</div>
-                      <div className="space-y-0.5 text-gray-400">
-                        {fromLoc.address && <div>📍 {fromLoc.address}</div>}
-                        {fromLoc.gbpUrl && <div>🔗 Google Maps link</div>}
-                        {fromLoc.placeId && <div>🎯 Place ID: {fromLoc.placeId.slice(0, 12)}...</div>}
+
+              {/* Step 1: Select Target */}
+              {mergeStep === 1 && (
+                <>
+                  <p className="mb-4 text-sm text-gray-300">
+                    Merge <strong className="text-white">{fromLoc.locationName}</strong> into another location.
+                  </p>
+                  <div className="mb-4">
+                    <label className="mb-2 block text-xs font-medium text-gray-400">
+                      Merge into:
+                    </label>
+                    <select
+                      value={mergeIntoId}
+                      onChange={e => setMergeIntoId(e.target.value)}
+                      className="w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none"
+                    >
+                      <option value="">-- Select a location --</option>
+                      {otherLocs.map(loc => (
+                        <option key={loc.id} value={loc.id}>
+                          {loc.locationName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        if (mergingFromId === Number(mergeIntoId)) {
+                          setMergeError('Cannot merge a location with itself')
+                          return
+                        }
+                        setMergeError('')
+                        setMergeStep(2)
+                      }}
+                      disabled={!mergeIntoId || saving}
+                      className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                      Compare →
+                    </button>
+                    <button
+                      onClick={() => { setMergingFromId(null); setMergeIntoId(''); setMergeError(''); setMergeStep(1); setMergeFieldChoices({}) }}
+                      disabled={saving}
+                      className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-50 transition"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* Step 2: Resolve Conflicts */}
+              {mergeStep === 2 && intoLoc && (
+                <>
+                  <p className="mb-4 text-sm text-gray-300">
+                    Choose which values to keep when both records have data.
+                  </p>
+
+                  {conflicts.length > 0 && (
+                    <div className="mb-4 space-y-2">
+                      <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Conflicting Fields</h4>
+                      {conflicts.map(field => {
+                        const choice = mergeFieldChoices[field.key] || 'keep'
+                        const displayFrom = field.truncate && field.fromVal.length > field.truncate ? field.fromVal.slice(0, field.truncate) + '...' : field.fromVal
+                        const displayInto = field.truncate && field.intoVal.length > field.truncate ? field.intoVal.slice(0, field.truncate) + '...' : field.intoVal
+                        return (
+                          <div key={field.key} className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-3">
+                            <div className="mb-2 text-xs font-semibold text-blue-300">{field.label}</div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <label className={`flex items-start gap-2 cursor-pointer p-2 rounded ${choice === 'delete' ? 'bg-blue-600/30' : 'bg-gray-800/50'}`}>
+                                <input
+                                  type="radio"
+                                  name={`field-${field.key}`}
+                                  checked={choice === 'delete'}
+                                  onChange={() => setMergeFieldChoices({ ...mergeFieldChoices, [field.key]: 'delete' })}
+                                  className="mt-0.5"
+                                />
+                                <div className="text-xs">
+                                  <div className="text-rose-400 font-medium mb-1">{fromLoc.locationName} (will be removed)</div>
+                                  <div className="text-gray-300">{displayFrom}</div>
+                                </div>
+                              </label>
+                              <label className={`flex items-start gap-2 cursor-pointer p-2 rounded ${choice === 'keep' ? 'bg-blue-600/30' : 'bg-gray-800/50'}`}>
+                                <input
+                                  type="radio"
+                                  name={`field-${field.key}`}
+                                  checked={choice === 'keep'}
+                                  onChange={() => setMergeFieldChoices({ ...mergeFieldChoices, [field.key]: 'keep' })}
+                                  className="mt-0.5"
+                                />
+                                <div className="text-xs">
+                                  <div className="text-emerald-400 font-medium mb-1">{intoLoc.locationName} (will be kept)</div>
+                                  <div className="text-gray-300">{displayInto}</div>
+                                </div>
+                              </label>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {autoResolved.length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Auto-Resolved (No Conflict)</h4>
+                      <div className="rounded-lg border border-gray-600/30 bg-gray-800/20 p-3 space-y-1 text-xs text-gray-400 italic">
+                        {autoResolved.map(field => (
+                          <div key={field.key}>
+                            <span className="text-gray-500">{field.label}:</span> {field.value} <span className="ml-2 rounded bg-gray-700 px-1.5 py-0.5 text-[10px] uppercase">auto</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                    <div>
-                      <div className="mb-1 font-semibold text-emerald-400">{intoLoc.locationName} (will be kept)</div>
-                      <div className="space-y-0.5 text-gray-400">
-                        {intoLoc.address && <div>📍 {intoLoc.address}</div>}
-                        {intoLoc.gbpUrl && <div>🔗 Google Maps link</div>}
-                        {intoLoc.placeId && <div>🎯 Place ID: {intoLoc.placeId.slice(0, 12)}...</div>}
-                      </div>
+                  )}
+
+                  {conflicts.length === 0 && (
+                    <div className="mb-4 text-sm text-gray-400 italic">
+                      No conflicting fields — all values will be auto-resolved.
+                    </div>
+                  )}
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setMergeStep(1)}
+                      disabled={saving}
+                      className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-50 transition"
+                    >
+                      ← Back
+                    </button>
+                    <button
+                      onClick={() => setMergeStep(3)}
+                      disabled={saving}
+                      className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                      Continue →
+                    </button>
+                    <button
+                      onClick={() => { setMergingFromId(null); setMergeIntoId(''); setMergeError(''); setMergeStep(1); setMergeFieldChoices({}) }}
+                      disabled={saving}
+                      className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-50 transition"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* Step 3: Confirm */}
+              {mergeStep === 3 && intoLoc && (
+                <>
+                  <p className="mb-4 text-sm text-gray-300">
+                    Confirm merge: <strong className="text-rose-400">{fromLoc.locationName}</strong> → <strong className="text-emerald-400">{intoLoc.locationName}</strong>
+                  </p>
+
+                  <div className="mb-4 rounded-lg border border-blue-500/20 bg-blue-500/5 p-4">
+                    <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Summary</h4>
+                    <div className="text-sm text-gray-300">
+                      {deleteCount > 0 && <div>• Keeping <strong className="text-blue-400">{deleteCount}</strong> value(s) from {fromLoc.locationName}</div>}
+                      {keepCount > 0 && <div>• Keeping <strong className="text-blue-400">{keepCount}</strong> value(s) from {intoLoc.locationName}</div>}
+                      {autoResolved.length > 0 && <div>• Auto-resolving <strong className="text-gray-400">{autoResolved.length}</strong> field(s) with no conflict</div>}
+                      <div className="mt-2 text-rose-400">• {fromLoc.locationName} will be removed</div>
                     </div>
                   </div>
-                </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setMergeStep(2)}
+                      disabled={saving}
+                      className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-50 transition"
+                    >
+                      ← Back
+                    </button>
+                    <button
+                      onClick={confirmMerge}
+                      disabled={saving}
+                      className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                      {saving ? 'Merging...' : 'Confirm Merge'}
+                    </button>
+                    <button
+                      onClick={() => { setMergingFromId(null); setMergeIntoId(''); setMergeError(''); setMergeStep(1); setMergeFieldChoices({}) }}
+                      disabled={saving}
+                      className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-50 transition"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
               )}
-              <div className="flex gap-3">
-                <button
-                  onClick={confirmMerge}
-                  disabled={!mergeIntoId || saving}
-                  className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                >
-                  {saving ? 'Merging...' : 'Merge Locations'}
-                </button>
-                <button
-                  onClick={() => { setMergingFromId(null); setMergeIntoId(''); setMergeError('') }}
-                  disabled={saving}
-                  className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-50 transition"
-                >
-                  Cancel
-                </button>
-              </div>
             </div>
           </div>
         )

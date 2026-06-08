@@ -3,8 +3,10 @@ export const dynamic = 'force-dynamic'
 /**
  * POST /api/clients/[acronym]/gbp/locations/merge
  *
- * Merge two GBP locations: copy non-null fields from deleteId to keepId, then soft-delete deleteId.
- * Body: { keepId, deleteId }
+ * Merge two GBP locations with field-by-field conflict resolution.
+ * Body: { keepId, deleteId, fieldChoices }
+ * fieldChoices: { fieldName: 'keep' | 'delete' } - for conflicting fields
+ * Non-conflicting fields are auto-resolved (null → non-null value)
  * Requires: ga, cx, admin, or superadmin role.
  */
 
@@ -21,7 +23,7 @@ export async function POST(req, { params }) {
 
     const { acronym } = await params
     const body = await req.json()
-    const { keepId, deleteId } = body
+    const { keepId, deleteId, fieldChoices = {} } = body
 
     if (!keepId || !deleteId) {
       return NextResponse.json({ error: 'keepId and deleteId are required' }, { status: 400 })
@@ -54,8 +56,20 @@ export async function POST(req, { params }) {
       return NextResponse.json({ error: 'Invalid location IDs' }, { status: 404 })
     }
 
-    // Fields to merge (copy from deleteRecord to keepRecord if keepRecord has null)
+    // Map field choices to database fields
+    const fieldMapping = {
+      locationName: 'locationName',
+      address: 'address',
+      city: 'city',
+      state: 'state',
+      gbpUrl: 'gbpUrl',
+      placeId: 'placeId', // Also considers gbpPlaceId
+      coordinates: ['latitude', 'longitude'], // Special case: two fields
+    }
+
+    // All mergeable fields
     const mergeableFields = [
+      'locationName',
       'gbpUrl',
       'gbpPlaceId',
       'placeId',
@@ -74,8 +88,54 @@ export async function POST(req, { params }) {
     const values = []
     let idx = 1
 
+    // Process field choices first (explicit conflicts resolved by user)
+    for (const [choiceKey, choice] of Object.entries(fieldChoices)) {
+      if (choice === 'delete') {
+        // User chose to use the value from deleteRecord
+        if (choiceKey === 'coordinates') {
+          // Special case: latitude and longitude together
+          if (deleteRecord.latitude != null) {
+            updates.push(`"latitude" = $${idx++}`)
+            values.push(deleteRecord.latitude)
+          }
+          if (deleteRecord.longitude != null) {
+            updates.push(`"longitude" = $${idx++}`)
+            values.push(deleteRecord.longitude)
+          }
+        } else if (choiceKey === 'placeId') {
+          // placeId field choice can apply to either placeId or gbpPlaceId
+          const placeIdValue = deleteRecord.placeId || deleteRecord.gbpPlaceId
+          if (placeIdValue != null) {
+            // Prefer placeId field, but update gbpPlaceId if that's what deleteRecord has
+            if (deleteRecord.placeId != null) {
+              updates.push(`"placeId" = $${idx++}`)
+              values.push(deleteRecord.placeId)
+            } else if (deleteRecord.gbpPlaceId != null) {
+              updates.push(`"gbpPlaceId" = $${idx++}`)
+              values.push(deleteRecord.gbpPlaceId)
+            }
+          }
+        } else {
+          const dbField = fieldMapping[choiceKey] || choiceKey
+          if (deleteRecord[dbField] != null) {
+            updates.push(`"${dbField}" = $${idx++}`)
+            values.push(deleteRecord[dbField])
+          }
+        }
+      }
+      // If choice === 'keep', do nothing (keep keepRecord's value)
+    }
+
+    // Auto-resolve remaining fields (where keepRecord has null and deleteRecord has value)
     for (const field of mergeableFields) {
-      if (keepRecord[field] == null && deleteRecord[field] != null) {
+      // Skip if this field was explicitly handled by fieldChoices
+      const isHandledByChoice = Object.keys(fieldChoices).some(key => {
+        if (key === 'coordinates' && (field === 'latitude' || field === 'longitude')) return true
+        if (key === 'placeId' && (field === 'placeId' || field === 'gbpPlaceId')) return true
+        return fieldMapping[key] === field || key === field
+      })
+
+      if (!isHandledByChoice && keepRecord[field] == null && deleteRecord[field] != null) {
         updates.push(`"${field}" = $${idx++}`)
         values.push(deleteRecord[field])
       }
