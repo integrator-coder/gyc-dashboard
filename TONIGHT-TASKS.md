@@ -163,7 +163,7 @@ Then start Phase 1 Tasks 3-5 (DataForSEO fix, caching, snapshot sync).
 
 ### Understand the Source Data
 
-**Google Sheet:** `1tjFrAJwR-SkWWYCX0nsfzT-7QUwGUKY5NxTiTil-oZ8`  
+**Google Sheet:** `1uZLqNTDWXZ3wbBU7ley-81gj8Kj4h06_Ftd2utE-pjY`  
 **Contains:** 113 GBP locations across 59 SEO clients
 
 **Before building bulk-populate script tomorrow, review:**
@@ -182,7 +182,7 @@ const auth = new google.auth.GoogleAuth({
 const sheets = google.sheets({ version: 'v4', auth });
 
 const res = await sheets.spreadsheets.values.get({
-  spreadsheetId: '1tjFrAJwR-SkWWYCX0nsfzT-7QUwGUKY5NxTiTil-oZ8',
+  spreadsheetId: '1uZLqNTDWXZ3wbBU7ley-81gj8Kj4h06_Ftd2utE-pjY',
   range: 'A1:Z10' // First 10 rows to see structure
 });
 

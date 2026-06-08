@@ -31,7 +31,7 @@ const prisma = new PrismaClient()
 
 // ── Config ───────────────────────────────────────────────────────────────────
 
-const SHEET_ID   = '1tjFrAJwR-SkWWYCX0nsfzT-7QUwGUKY5NxTiTil-oZ8'
+const SHEET_ID   = '1uZLqNTDWXZ3wbBU7ley-81gj8Kj4h06_Ftd2utE-pjY'
 const SA_PATH    = path.resolve(process.env.HOME || '~', '.openclaw/workspace/google-service-account.json')
 const PROGRESS_FILE = path.resolve(__dirname, 'gbp-pipeline-progress.json')
 

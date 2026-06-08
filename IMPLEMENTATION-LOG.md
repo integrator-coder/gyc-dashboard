@@ -467,7 +467,7 @@ Critical: **Don't delete old liveDataSnapshot JSON** until Phase 2 is stable and
 ## ⚠️ PRIORITY SHIFT: GBP Baseline for All 113 SEO Locations
 
 **Date:** 2026-05-11 Evening  
-**Source:** Todd clarification - the 113 locations in Google Sheet `1tjFrAJwR-SkWWYCX0nsfzT-7QUwGUKY5NxTiTil-oZ8` are the priority
+**Source:** Todd clarification - the 113 locations in Google Sheet `1uZLqNTDWXZ3wbBU7ley-81gj8Kj4h06_Ftd2utE-pjY` are the priority
 
 **New Goal:** Get all 113 SEO program locations auto-populated with map links, baseline snapshots, and first heatmaps by EOD Friday
 

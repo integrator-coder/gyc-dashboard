@@ -4,7 +4,7 @@
  * Reads GBP locations from Google Sheet and populates GBPLocation table
  * via Google Places Text Search API.
  *
- * Sheet: https://docs.google.com/spreadsheets/d/1tjFrAJwR-SkWWYCX0nsfzT-7QUwGUKY5NxTiTil-oZ8
+ * Sheet: https://docs.google.com/spreadsheets/d/1uZLqNTDWXZ3wbBU7ley-81gj8Kj4h06_Ftd2utE-pjY
  *
  * Usage:
  *   node scripts/bulk-populate-from-sheet.mjs
@@ -27,7 +27,7 @@ import { lookupPlaceId, upsertGBPLocation } from './auto-populate-gbp-location.m
 
 const prisma = new PrismaClient()
 
-const SHEET_ID = '1tjFrAJwR-SkWWYCX0nsfzT-7QUwGUKY5NxTiTil-oZ8'
+const SHEET_ID = '1uZLqNTDWXZ3wbBU7ley-81gj8Kj4h06_Ftd2utE-pjY'
 const SA_PATH = path.resolve(process.env.HOME || '~', '.openclaw/workspace/google-service-account.json')
 const PROGRESS_FILE = path.resolve(__dirname, 'bulk-populate-progress.json')
 const BATCH_SIZE = 25
@@ -49,7 +49,7 @@ function mapColumns(headers) {
     address:       ['street address', 'address', 'street'],
     city:          ['city'],
     state:         ['state'],
-    gbpUrl:        ['gbp link', 'gbp url', 'google link', 'maps link', 'gbp', 'link'],
+    gbpUrl:        ['location map link', 'gbp link', 'gbp url', 'google link', 'maps link', 'map link', 'gbp', 'link'],
     notes:         ['notes', 'note', 'comments'],
   }
 
