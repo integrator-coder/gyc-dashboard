@@ -4471,6 +4471,8 @@ function GBPTab({ profile, acronym, user }) {
   const [gbpLoading,           setGbpLoading]           = useState(true)
   const [gbpErr,               setGbpErr]               = useState('')
   const [showAddLocation,      setShowAddLocation]      = useState(false)
+  const [addLocationStep,      setAddLocationStep]      = useState(1)  // 1 = form, 2 = location type
+  const [pendingLocation,      setPendingLocation]      = useState(null)  // Saved location data for step 2
   const [activeAuditLocationId,setActiveAuditLocationId]= useState(null)
   const [expandedHistory,      setExpandedHistory]      = useState(null)
   const [saving,               setSaving]               = useState(false)
@@ -4613,16 +4615,54 @@ function GBPTab({ profile, acronym, user }) {
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Save failed')
-      setShowAddLocation(false)
-      setLocForm(emptyLoc())
-      await loadGbp()
-      // Show success message if location was auto-linked
-      if (json.resolved && json.message) {
-        // Could show a toast here, but for now just log it
-        console.log(json.message)
-      }
+      
+      // Store the saved location and move to step 2 (location type selection)
+      setPendingLocation(json.location)
+      setAddLocationStep(2)
+      
     } catch (e) {
       setLocErr(e.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleLocationTypeSelection(isNewLocation) {
+    setSaving(true)
+    setLocErr('')
+    try {
+      if (isNewLocation && pendingLocation) {
+        // Trigger the New Location workflow
+        const res = await fetch(`/api/clients/${acronym}/gbp/locations/new-location-workflow`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            locationName: pendingLocation.locationName,
+            gbpUrl: pendingLocation.gbpUrl,
+            locationId: pendingLocation.id,
+          }),
+        })
+        const json = await res.json()
+        
+        if (json.success) {
+          // Show success with Asana link
+          alert(`✅ Location added successfully!\n\n📋 New Location project created in Asana.\n\nProject: ${json.projectName}\nAssigned to: ${json.assignedTo}\n\nYou can view it here: ${json.projectUrl}`)
+        } else if (json.warning) {
+          // Partial success — location saved but Asana failed
+          alert(`⚠️ ${json.warning}\n\nError: ${json.error}`)
+        }
+      }
+      // If clerical update, just finish without workflow
+      
+      // Reset form and reload
+      setShowAddLocation(false)
+      setAddLocationStep(1)
+      setLocForm(emptyLoc())
+      setPendingLocation(null)
+      await loadGbp()
+      
+    } catch (e) {
+      setLocErr(e.message || 'Failed to complete workflow')
     } finally {
       setSaving(false)
     }
@@ -5637,10 +5677,13 @@ function GBPTab({ profile, acronym, user }) {
         </div>
       )}
 
-      {/* Add Location Form */}
-      {isAdmin && showAddLocation && (
+      {/* Add Location Form - Step 1: Basic Info */}
+      {isAdmin && showAddLocation && addLocationStep === 1 && (
         <div className="rounded-2xl border border-violet-500/30 bg-violet-500/5 px-4 py-4 space-y-4">
-          <SectionTitle>Add GBP Location</SectionTitle>
+          <div className="flex items-center justify-between">
+            <SectionTitle>Add GBP Location</SectionTitle>
+            <span className="text-xs text-gray-400">Step 1 of 2</span>
+          </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <label className="mb-1 block text-xs text-gray-400">Location Name *</label>
@@ -5700,9 +5743,58 @@ function GBPTab({ profile, acronym, user }) {
           {locErr && <div className="text-sm text-rose-400">{locErr}</div>}
           <div className="flex gap-3">
             <button onClick={saveLocation} disabled={saving} className={BTN_CLS}>
-              {saving ? 'Saving…' : 'Save Location'}
+              {saving ? 'Saving…' : 'Next: Location Type'}
             </button>
-            <button onClick={() => { setShowAddLocation(false); setLocForm(emptyLoc()); setLocErr('') }} className={BTN_SM}>
+            <button onClick={() => { setShowAddLocation(false); setAddLocationStep(1); setLocForm(emptyLoc()); setLocErr(''); setPendingLocation(null) }} className={BTN_SM}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Add Location Form - Step 2: Location Type */}
+      {isAdmin && showAddLocation && addLocationStep === 2 && pendingLocation && (
+        <div className="rounded-2xl border border-violet-500/30 bg-violet-500/5 px-4 py-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <SectionTitle>Location Type</SectionTitle>
+            <span className="text-xs text-gray-400">Step 2 of 2</span>
+          </div>
+          <p className="text-sm text-gray-300">Is this a new physical location, or a clerical update?</p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <button
+              onClick={() => handleLocationTypeSelection(true)}
+              disabled={saving}
+              className="flex flex-col items-center gap-2 rounded-xl border-2 border-violet-500/40 bg-violet-500/10 px-6 py-6 text-center transition hover:border-violet-400 hover:bg-violet-500/15 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span className="text-4xl">🏬</span>
+              <span className="text-base font-semibold text-violet-200">New Location</span>
+              <span className="text-xs text-gray-400">New address, new GBP listing, new service delivery point</span>
+            </button>
+            <button
+              onClick={() => handleLocationTypeSelection(false)}
+              disabled={saving}
+              className="flex flex-col items-center gap-2 rounded-xl border-2 border-gray-500/40 bg-gray-500/10 px-6 py-6 text-center transition hover:border-gray-400 hover:bg-gray-500/15 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span className="text-4xl">📋</span>
+              <span className="text-base font-semibold text-gray-200">Clerical Update</span>
+              <span className="text-xs text-gray-400">Fixing a duplicate, correcting data, adding a missing existing location</span>
+            </button>
+          </div>
+          {locErr && <div className="text-sm text-rose-400">{locErr}</div>}
+          {saving && <div className="text-sm text-gray-400">Processing...</div>}
+          <div className="flex gap-3">
+            <button 
+              onClick={() => { setAddLocationStep(1); setLocErr('') }} 
+              disabled={saving}
+              className={BTN_SM}
+            >
+              ← Back
+            </button>
+            <button 
+              onClick={() => { setShowAddLocation(false); setAddLocationStep(1); setLocForm(emptyLoc()); setLocErr(''); setPendingLocation(null) }} 
+              disabled={saving}
+              className={BTN_SM}
+            >
               Cancel
             </button>
           </div>
