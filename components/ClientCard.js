@@ -4824,7 +4824,10 @@ function GBPTab({ profile, acronym, user }) {
         setVerifyingLocId(null)
         setVerifyUrl('')
       } else {
-        setVerifyError('URL saved but could not confirm the business. Try a different Maps URL.')
+        // URL was saved — live data may take a moment to sync
+        setVerifyingLocId(null)
+        setVerifyUrl('')
+        await loadGbp()
       }
     } catch (e) {
       setVerifyError(e.message || 'Failed to verify')

@@ -65,18 +65,30 @@ export async function GET(_req, { params }) {
   // Try to extract Place ID from stored gbpUrl if it's a real Maps URL
   function extractPlaceIdFromUrl(url) {
     if (!url) return null
+    // Standard ChIJ place ID in path
     const placeMatch = url.match(/!1s(ChIJ[A-Za-z0-9_-]+)/)
     if (placeMatch) return placeMatch[1]
+    // place_id= query param
     const qMatch = url.match(/place_id=(ChIJ[A-Za-z0-9_-]+)/)
     if (qMatch) return qMatch[1]
+    // /g/ short-form place ID (e.g. !16s%2Fg%2F1th28x6x)
+    const gMatch = url.match(/[!/]g[!/]([A-Za-z0-9_-]{6,})/)
+    if (gMatch) return gMatch[1]  // DataForSEO accepts this
     return null
   }
 
-  // Extract CID from ?cid=... URLs (e.g. google.com/maps?cid=17676501490044768506)
+  // Extract CID from ?cid=... URLs or hex CID embedded in path
   function extractCidFromUrl(url) {
     if (!url) return null
+    // Numeric CID: ?cid=17676501490044768506
     const cidMatch = url.match(/[?&]cid=(\d+)/)
-    return cidMatch ? cidMatch[1] : null
+    if (cidMatch) return cidMatch[1]
+    // Hex CID: 0x876c84382c3edfc1:0x66018279f58420f7 — convert second part to decimal
+    const hexMatch = url.match(/0x[0-9a-f]+:(0x[0-9a-f]+)/i)
+    if (hexMatch) {
+      try { return BigInt(hexMatch[1]).toString(10) } catch { return null }
+    }
+    return null
   }
 
   const urlPlaceId = extractPlaceIdFromUrl(loc.gbpUrl)
