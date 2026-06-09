@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-09T14:57:00.000Z",
+  "updatedAt": "2026-06-09T16:00:36.000Z",
   "resources": [
     {
       "id": "notion-training-hub",
@@ -380,6 +380,163 @@
         "strategic"
       ],
       "addedDate": "2026-06-08"
+    },
+    {
+      "id": "module-7-meta-ads",
+      "module": 7,
+      "category": "training-module",
+      "title": "Module 7 \u2014 Meta Ads",
+      "description": "Meta Ads training module \u2014 how to use AI to run, optimize, and report on Meta advertising for childcare centers.",
+      "url": "https://docs.google.com/presentation/d/1mxtlFx-QMvWp6Aq0FGsh2JkGBbldruDkXuPXj7DtiP0/edit",
+      "slideCount": null,
+      "status": "live",
+      "audience": "All Staff",
+      "tags": [
+        "paid-media",
+        "meta-ads",
+        "training"
+      ]
+    },
+    {
+      "id": "module-sales-prospecting",
+      "module": null,
+      "category": "training-module",
+      "title": "AI for Sales \u2014 Researching Prospects & Building Discovery Questions",
+      "description": "How to use AI to research prospects, build targeted discovery questions, and enter every sales call better prepared than ever before.",
+      "url": "https://docs.google.com/presentation/d/1CQ3XQYrjNpcoRjpKiJm0dYcYUTjdW-cz6p-8BmlKVsg/edit",
+      "slideCount": null,
+      "status": "live",
+      "audience": "Sales Team",
+      "tags": [
+        "sales",
+        "prospecting",
+        "research"
+      ]
+    },
+    {
+      "id": "end-of-search",
+      "module": null,
+      "category": "strategy",
+      "title": "The End of Search As We Know It",
+      "description": "How AI is fundamentally changing search behavior and what that means for GYC clients' marketing strategy.",
+      "url": "https://docs.google.com/presentation/d/1LMDrnpBBmiihaDonn5sSVgQfKYGYA9C2qwSwsOjIWeA/edit",
+      "slideCount": null,
+      "status": "live",
+      "audience": "All Staff",
+      "tags": [
+        "ai-landscape",
+        "strategy",
+        "search"
+      ]
+    },
+    {
+      "id": "strategic-thinking-function-to-company",
+      "module": null,
+      "category": "strategy",
+      "title": "Strategic Thinking \u2014 From Function to Company",
+      "description": "How to think at the company level, not just your function. The mindset shift from operator to integrator.",
+      "url": "https://docs.google.com/presentation/d/1qTiKsoRG56FA8OS_F2r1Nm67ehpU9MZ5ZDSCky82ocY/edit",
+      "slideCount": null,
+      "status": "live",
+      "audience": "Leadership",
+      "tags": [
+        "strategy",
+        "leadership"
+      ]
+    },
+    {
+      "id": "clients-in-close-proximity",
+      "module": null,
+      "category": "strategy",
+      "title": "Clients in Close Proximity",
+      "description": "Analysis of GYC clients in geographic proximity \u2014 competitive density, market overlap, and strategic implications.",
+      "url": "https://docs.google.com/presentation/d/1RTRXc7NtrkdhnY3yjopI-4nUCAyZiqUINTOhDpMDoK4/edit",
+      "slideCount": null,
+      "status": "live",
+      "audience": "Leadership",
+      "tags": [
+        "research",
+        "strategy",
+        "market-intel"
+      ]
+    },
+    {
+      "id": "east-bank-masterclass",
+      "module": null,
+      "category": "sales",
+      "title": "East Bank Masterclass",
+      "description": "GYC masterclass presentation for the East Bank client cohort.",
+      "url": "https://docs.google.com/presentation/d/1_14eVjc2duCgRYysZsZS2B4y5q3uhn08xa_580GlgR8/edit",
+      "slideCount": null,
+      "status": "live",
+      "audience": "Clients",
+      "tags": [
+        "masterclass",
+        "clients"
+      ]
+    },
+    {
+      "id": "speed-childcare-inquiries",
+      "module": null,
+      "category": "sales",
+      "title": "Why Speed is Critical in Converting Childcare Inquiries",
+      "description": "The data and psychology behind speed-to-lead in childcare. Why response time is the #1 conversion lever.",
+      "url": "https://docs.google.com/presentation/d/1jeMc-Ma-A1Ehhu6-XtdrwI3qXJtl0mM9mMHi9NxQlPs/edit",
+      "slideCount": null,
+      "status": "live",
+      "audience": "All Staff / Clients",
+      "tags": [
+        "sales",
+        "speed-to-lead",
+        "childcare"
+      ]
+    },
+    {
+      "id": "gyc-2026",
+      "module": null,
+      "category": "company",
+      "title": "GYC 2026 \u2014 Company Overview",
+      "description": "GYC 2026 company overview and direction deck.",
+      "url": "https://docs.google.com/presentation/d/1Gy9Hu_16cVwZaqZkDMkTLXbsWBBV9J5XOZ_MTxND1A0/edit",
+      "slideCount": null,
+      "status": "live",
+      "audience": "All Staff",
+      "tags": [
+        "company",
+        "2026"
+      ]
+    },
+    {
+      "id": "gyc-blueprint-webinar",
+      "module": null,
+      "category": "sales",
+      "title": "GYC Blueprint Webinar",
+      "description": "GYC Blueprint service webinar deck \u2014 done-with-you marketing for childcare centers.",
+      "url": "https://docs.google.com/presentation/d/1PSm1oAw4YG0KGsMPGx6xsrL44AhfkwRBKEKv0t8X2Ik/edit",
+      "slideCount": null,
+      "status": "live",
+      "audience": "Prospects",
+      "tags": [
+        "blueprint",
+        "webinar",
+        "sales"
+      ]
+    },
+    {
+      "id": "gyc-accelerator-deck",
+      "module": null,
+      "category": "sales",
+      "title": "GYC Presentation Deck \u2014 Accelerator + Website (Live)",
+      "description": "Active GYC sales presentation covering Accelerator and Website service packages.",
+      "url": "https://docs.google.com/presentation/d/1XYUBgbWmpMn_7wJx26ELsXeJ4wxytgzUnt7Nlf7YHbE/edit",
+      "slideCount": null,
+      "status": "live",
+      "audience": "Prospects",
+      "tags": [
+        "sales",
+        "accelerator",
+        "website"
+      ]
     }
   ]
 }
