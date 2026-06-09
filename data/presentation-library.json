@@ -1,0 +1,385 @@
+{
+  "updatedAt": "2026-06-09T14:57:00.000Z",
+  "resources": [
+    {
+      "id": "notion-training-hub",
+      "type": "notion",
+      "category": "training",
+      "title": "GYC AI Training Hub",
+      "description": "Home base for all AI training. 9 modules, cheat sheet, skill library, and Wall·E command reference. Start here.",
+      "url": "https://www.notion.so/growyourcenter/362ca865e19781c2b416d4e96b008c22",
+      "status": "live",
+      "tags": [
+        "featured",
+        "notion",
+        "training"
+      ]
+    },
+    {
+      "id": "notion-cheatsheet",
+      "type": "notion",
+      "category": "training",
+      "title": "Claude Cheat Sheet — 60+ Commands & Shortcuts",
+      "description": "Complete reference: keyboard shortcuts, slash commands, workflow hacks, Skills, MCP, and GYC-specific Wall·E triggers. Bookmark it.",
+      "url": "https://www.notion.so/362ca865e19781909f17c841214d791b",
+      "status": "live",
+      "tags": [
+        "featured",
+        "notion",
+        "cheatsheet",
+        "reference"
+      ]
+    }
+  ],
+  "presentations": [
+    {
+      "id": "module-1-beginners",
+      "module": 1,
+      "category": "training",
+      "title": "Claude for Beginners: The Official Guide",
+      "description": "5-day progressive roadmap. From basic chat to fully autonomous AI assistant. Projects, context files, co-work mode, MCP, Claude Code.",
+      "url": "https://docs.google.com/presentation/d/1FC3LFzDmYpiXgYYmgD446-TIx138q8itJBbZ86q_9bU/edit",
+      "slideCount": 7,
+      "status": "live",
+      "source": "Instagram: @the.agi.guide",
+      "sourceUrl": "https://www.instagram.com/reel/DYShR-kq3Z-/",
+      "audience": "All staff",
+      "tags": [
+        "beginners",
+        "fundamentals",
+        "onboarding"
+      ]
+    },
+    {
+      "id": "module-2-personal-agent",
+      "module": 2,
+      "category": "training",
+      "title": "Setting Up Your Personal AI Agent — OpenClaw, Hermes, Claude Co-work & Claude Code",
+      "description": "WHY every team member needs their own AI agent (not shared access), WHAT the four options are, and HOW to choose and implement. Decision tree by role. 5-phase rollout plan. The infrastructure layer that makes everything else in this training program possible.",
+      "url": "https://docs.google.com/presentation/d/1d1YZKNmXQq9_PLbJvpzsw5CZPg_JVmNilDylkNd7UQs/edit",
+      "slideCount": 12,
+      "status": "live",
+      "source": "YouTube: Claude Co-work Creative Strategy",
+      "sourceUrl": "https://youtu.be/UGiN8aVy2l8",
+      "audience": "All staff",
+      "tags": [
+        "setup",
+        "personal-agent",
+        "openclaw",
+        "hermes",
+        "claude-cowork",
+        "infrastructure",
+        "onboarding"
+      ]
+    },
+    {
+      "id": "module-3-4-rules",
+      "module": 3,
+      "category": "training",
+      "title": "How Anthropic Engineers Actually Use Claude — 4 Rules for Skills",
+      "description": "The mental shift from prompts to skills. Description → Instructions → Tools. Composable, reusable, compounding. The framework behind everything Wall·E does.",
+      "url": "https://docs.google.com/presentation/d/1S87fPxyS1m3QO0IwuIk9v550rQ2QsRACHib7q37ctNM/edit",
+      "slideCount": 8,
+      "status": "live",
+      "source": "YouTube: How Anthropic Engineers Actually Prompt Claude",
+      "sourceUrl": "https://youtu.be/qOvc9IUKEIc",
+      "audience": "All staff",
+      "tags": [
+        "skills",
+        "anthropic",
+        "framework",
+        "intermediate"
+      ]
+    },
+    {
+      "id": "module-4-toprank",
+      "module": 4,
+      "category": "training",
+      "title": "toprank — Google Ads & SEO. No Dashboard. Just Claude.",
+      "description": "Free open-source Claude plugin: full read/write on Google Ads (bids, budgets, negatives, campaign builds) AND Google Search Console for SEO page rewrites. One plugin, two power tools. MCC support covers all client accounts.",
+      "url": "https://docs.google.com/presentation/d/1thCet8Nx3N0AEX2ErlX0Y5WwhqWC6grpB4vTxTWUJPc/edit",
+      "slideCount": 7,
+      "status": "live",
+      "source": "Instagram: @jesserurka",
+      "sourceUrl": "https://www.instagram.com/reel/DYC-_qBycrO/",
+      "audience": "JC, Stefen, Lisa, Kaci, Sebastian",
+      "tags": [
+        "google-ads",
+        "seo",
+        "toprank",
+        "paid-media",
+        "mcp"
+      ]
+    },
+    {
+      "id": "module-5-ai-race",
+      "module": 5,
+      "category": "training",
+      "title": "The AI Race — DeepSeek, OpenAI & Anthropic Explained",
+      "description": "Competitive moats collapsing from 12 months to 6 weeks. 70% of businesses now use 2–5 models. Why model choice matters and how to think about intelligent routing.",
+      "url": "https://docs.google.com/presentation/d/1hia_oxizRh_haGcTURe0JGfTUKg9Ysha25XrZW3SbMc/edit",
+      "slideCount": 8,
+      "status": "live",
+      "source": "Instagram: @itsmarceliina",
+      "sourceUrl": "https://www.instagram.com/reel/DYSrzHuJFhO/",
+      "audience": "All staff",
+      "tags": [
+        "ai-landscape",
+        "strategy",
+        "context"
+      ]
+    },
+    {
+      "id": "module-6-prompting",
+      "module": 6,
+      "category": "training",
+      "title": "Prompting That Actually Works — Get Better Results from Claude Every Time",
+      "description": "The 5 ingredients framework (Role, Context, Task, Format, Examples). Before/after examples for GYC roles. XML tags, think step-by-step, multiple options. Golden rule: Treat Claude like a brilliant new hire who needs context, not a search engine.",
+      "url": "https://docs.google.com/presentation/d/1WLGgv4MchallKnReOSkEJPdLNWnGVHqx1MSeKyMpIsQ/edit",
+      "slideCount": 8,
+      "status": "live",
+      "source": "Fulcrum research (Anthropic official docs + prompt engineering best practices)",
+      "sourceUrl": "",
+      "audience": "All staff",
+      "tags": [
+        "beginners",
+        "prompting",
+        "fundamentals",
+        "skills"
+      ]
+    },
+    {
+      "id": "module-7-sales",
+      "module": 7,
+      "category": "training",
+      "title": "AI for Sales — Close More, Work Less",
+      "description": "How GYC sales reps use Claude for call prep, follow-ups, objection handling, and prospecting. 5-minute pre-call workflow, 60-second follow-up emails, personal objection playbook builder.",
+      "url": "https://docs.google.com/presentation/d/18H6I8oTvN1I5P4N2pMbXl15C0IvIY39yy8xfPNw9etM/edit",
+      "slideCount": 8,
+      "status": "live",
+      "source": "Fulcrum research + GYC sales context",
+      "sourceUrl": "",
+      "audience": "Sales team and client-facing staff",
+      "tags": [
+        "sales",
+        "prompting",
+        "role-specific"
+      ]
+    },
+    {
+      "id": "module-8-implementation-layer",
+      "module": 8,
+      "category": "training",
+      "title": "The Implementation Layer — How Your Work Actually Gets Done with AI",
+      "description": "12-slide working-level guide to building complete AI workflows. 6 components, GYC examples throughout, real Wall·E workflow walkthrough, failure modes, role-based workflow recommendations.",
+      "url": "https://docs.google.com/presentation/d/1LeiCIvrj3tQp3YWR8a9B6ASKDgT3Oa4OGxNQ_uHFREo/edit",
+      "slideCount": 12,
+      "status": "live",
+      "source": "GYC strategic framework",
+      "sourceUrl": "",
+      "audience": "All staff + leadership",
+      "tags": [
+        "implementation",
+        "workflows",
+        "systems",
+        "practical"
+      ]
+    },
+    {
+      "id": "module-9-build-ai-system",
+      "module": 9,
+      "category": "training",
+      "title": "How to Build an AI Agent System",
+      "description": "Two frameworks: the AI vocabulary (Prompt → Skill → MCP → Hook → Plugin → Agent) and the 7-step build system. Practical how-to companion to Module 8. GYC application slides included.",
+      "url": "https://docs.google.com/presentation/d/10yx9NkGs4_A4eVjVo_UT1dLBdl1qeq5SRXF0rVAv1lc/edit",
+      "slideCount": 9,
+      "status": "live",
+      "source": "GYC strategic framework",
+      "sourceUrl": "",
+      "audience": "All staff",
+      "tags": [
+        "advanced",
+        "build-system",
+        "agents",
+        "implementation"
+      ]
+    },
+    {
+      "id": "module-1-howto",
+      "module": 1,
+      "category": "training",
+      "title": "Claude for Beginners — 5-Day Setup How-To Guide",
+      "description": "21-slide step-by-step guide with copy-paste templates. Day 1: Projects. Day 2: Context files. Day 3: Co-work mode. Day 4: MCP connectors. Day 5: Claude Code. Start here if you are new to Claude.",
+      "url": "https://docs.google.com/presentation/d/103QUx0lGLQjVPxhwUOPpBqIVBAFwYLgIc1sP6wNIt8w/edit",
+      "slideCount": 21,
+      "status": "live",
+      "type": "howto",
+      "relatedModule": 1,
+      "audience": "All staff",
+      "tags": [
+        "beginners",
+        "howto",
+        "templates",
+        "onboarding",
+        "step-by-step"
+      ]
+    },
+    {
+      "id": "module-5-howto-skills",
+      "module": 5,
+      "category": "training",
+      "title": "Build Your First Claude Skill — Step-by-Step Workshop",
+      "description": "15-slide hands-on workshop. Description, Instructions, Tools, Examples. Worked example: follow-up email skill. Blank template included. Takes 20 minutes to build your first skill.",
+      "url": "https://docs.google.com/presentation/d/1BxcYW78IUcdQPfPH71ejhW06N918PxkSZlHCGOuud-U/edit",
+      "slideCount": 15,
+      "status": "live",
+      "type": "howto",
+      "relatedModule": 5,
+      "audience": "All staff",
+      "tags": [
+        "skills",
+        "howto",
+        "workshop",
+        "template",
+        "anthropic",
+        "skill-building"
+      ]
+    },
+    {
+      "id": "module-8-howto",
+      "module": 8,
+      "category": "training",
+      "title": "Build a Complete GYC Workflow — Step by Step (9 Steps)",
+      "description": "10-slide hands-on companion. 9 steps from picking a workflow to owning it. Includes workflow mapping template, skill file integration, data connection options, quality check builder, iteration guide.",
+      "url": "https://docs.google.com/presentation/d/18wpyEAnUQg-cm3utVVRSmg2GrIt6qFSYdPLHMFJ7kqs/edit",
+      "slideCount": 10,
+      "status": "pending-share",
+      "type": "howto",
+      "relatedModule": 8,
+      "audience": "All staff",
+      "tags": [
+        "workflows",
+        "howto",
+        "step-by-step",
+        "implementation",
+        "build"
+      ]
+    },
+    {
+      "id": "module-10-question-method",
+      "module": 10,
+      "category": "training",
+      "title": "The Question Method — Working with AI as a Senior Partner",
+      "description": "Prompt engineering is now table stakes. This module teaches the AI Question Method for 2026: treating frontier models as senior partners. 3 principles: Flashlight Intent, Ask What Good Looks Like, Wrestling with Data. Includes the Agents vs. Agentic Pipelines distinction and a 5-question checklist.",
+      "url": "https://docs.google.com/presentation/d/19oNXZeZMvZ9fV-xN0Dj40ig6F5VphXERg99u7JLLg8g/edit",
+      "slideCount": 8,
+      "status": "live",
+      "source": "YouTube — Nate's Newsletter",
+      "sourceUrl": "https://youtu.be/ogTLWGBc3cE",
+      "audience": "All GYC team members doing knowledge work with AI",
+      "tags": [
+        "training",
+        "prompting",
+        "question-method",
+        "senior-partner",
+        "agents",
+        "agentic-pipelines",
+        "claude",
+        "ai-workflow"
+      ],
+      "addedDate": "2026-05-21"
+    },
+    {
+      "id": "ai-scaling-training",
+      "module": null,
+      "category": "training",
+      "title": "AI at Scale — The Complete GYC Implementation Guide",
+      "description": "47-slide complete guide. Section I: Production Class System (L0–L3). Section II: The Automation Stack. Section III: Agent Architecture. Section IV: Deployment & Scaling. Section V: GYC Context — Leadership, org, and how we apply this internally.",
+      "url": "https://docs.google.com/presentation/d/171k6cen_MUSKvnheO9K1fE8lx0mNXT67JtHKlFFVwJw/edit",
+      "slideCount": 47,
+      "status": "live",
+      "audience": "Leadership + All Staff",
+      "tags": [
+        "ai-scaling",
+        "implementation",
+        "advanced",
+        "leadership"
+      ],
+      "addedDate": "2026-06-09"
+    },
+    {
+      "id": "gyc-avengers-all-team",
+      "module": null,
+      "category": "company",
+      "title": "GYC Avengers — All Team Presentation",
+      "description": "41 slides. Full-team Marvel/Avengers theme. 13 content slides + team grid + 27 individual hero character slides for all 27 GYC team members.",
+      "url": "https://docs.google.com/presentation/d/1ubdGjFTvPk022BJmOnPZ362bKzE4S41TeLHwbkfL9XA/edit",
+      "slideCount": 41,
+      "status": "live",
+      "audience": "All Staff",
+      "tags": [
+        "team",
+        "company",
+        "avengers"
+      ],
+      "addedDate": "2026-06-09"
+    },
+    {
+      "id": "reputation-engine-webinar",
+      "module": null,
+      "category": "sales",
+      "title": "Reputation Engine — Webinar Deck",
+      "description": "GYC webinar presentation. Age of Ultron theme for problem/AI sections, The Marvels / Black Panther Women for solution sections. Full client-facing presentation.",
+      "url": "https://docs.google.com/presentation/d/1ERshBJu8XGjI2IJgj-hUuazpmh-LeHXRd_s_npAAZHY/edit",
+      "slideCount": null,
+      "status": "live",
+      "audience": "Prospects / Clients",
+      "tags": [
+        "webinar",
+        "sales",
+        "reputation"
+      ],
+      "addedDate": "2026-06-09"
+    },
+    {
+      "id": "interpretation-economy",
+      "module": null,
+      "category": "training",
+      "title": "The Interpretation Economy — AI Marketing for Childcare",
+      "description": "7 slides. How AI is reshaping childcare marketing and why the businesses that adapt first will dominate. Strategy framework for GYC clients.",
+      "url": "https://docs.google.com/presentation/d/1HCZyJ1zFNlMcUgS_7KGeF3w8Lzh1erbXrAFndi5ytRc/edit",
+      "slideCount": 7,
+      "status": "live",
+      "audience": "All Staff",
+      "tags": [
+        "strategy",
+        "childcare",
+        "ai-landscape"
+      ],
+      "addedDate": "2026-06-09"
+    },
+    {
+      "id": "research-ai-tribal-knowledge",
+      "module": null,
+      "category": "research",
+      "title": "Why AI Tools Fail (And It's Not the AI) — Tribal Knowledge & Implementation Gap",
+      "description": "Research deep dive on AI implementation failures. Core insight: projects fail not because the tech is bad, but because organizations never documented the processes they're trying to automate. Covers ethnography, tribal knowledge (70-90% of operational knowledge lives in people's heads), the $5.5B bet by OpenAI + Anthropic on implementation services, and GYC's M3 implication: process discovery must precede platform deployment.",
+      "url": "https://docs.google.com/presentation/d/1XPq6kC8SenDsRszJKzoyXypIoiVQezXTjzNd22PsnRU/edit",
+      "slideCount": 8,
+      "status": "live",
+      "source": "Instagram: @sierra_irl",
+      "sourceUrl": "https://www.instagram.com/reel/DZDpcXXyTiN/",
+      "audience": "Todd, leadership",
+      "tags": [
+        "research",
+        "ai-implementation",
+        "tribal-knowledge",
+        "ethnography",
+        "process-documentation",
+        "m3",
+        "strategic"
+      ],
+      "addedDate": "2026-06-08"
+    }
+  ]
+}
