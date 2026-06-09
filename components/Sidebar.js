@@ -56,21 +56,18 @@ function buildDashboardGroup(user) {
     children.push({ label: 'Leadership', emoji: '🏆', items: leadershipItems })
   }
 
-  // Finance — admin/superadmin only
-  if (canSee(user, ADMIN_ONLY)) {
-    children.push({
-      label: 'Finance',
-      emoji: '💰',
-      items: [
-        { label: 'Overview',         emoji: '💰', href: '/finance' },
-        { label: 'Churn',            emoji: '📉', href: '/churn' },
-        { label: 'Dunning',          emoji: '⚠️', href: '/dunning' },
-        { label: 'Agreements',       emoji: '📝', href: '/agreements' },
-        { label: 'Stripe Deep Dive', emoji: '💳', href: '/stripe-deep-dive' },
-        { label: 'Projections',      emoji: '📈', href: '/projections' },
-        { label: 'Linkage Review',   emoji: '🧩', href: '/finance/linkage-review' },
-      ],
-    })
+  // Finance — filter items individually so manager sees Churn
+  if (canSee(user, ADMIN_MANAGER)) {
+    const financeItems = [
+      canSee(user, ADMIN_ONLY) && { label: 'Overview',         emoji: '💰', href: '/finance' },
+      { label: 'Churn',                                         emoji: '📉', href: '/churn' },
+      canSee(user, ADMIN_ONLY) && { label: 'Dunning',          emoji: '⚠️', href: '/dunning' },
+      canSee(user, ADMIN_ONLY) && { label: 'Agreements',       emoji: '📝', href: '/agreements' },
+      canSee(user, ADMIN_ONLY) && { label: 'Stripe Deep Dive', emoji: '💳', href: '/stripe-deep-dive' },
+      canSee(user, ADMIN_ONLY) && { label: 'Projections',      emoji: '📈', href: '/projections' },
+      canSee(user, ADMIN_ONLY) && { label: 'Linkage Review',   emoji: '🧩', href: '/finance/linkage-review' },
+    ].filter(Boolean)
+    children.push({ label: 'Finance', emoji: '💰', items: financeItems })
   }
 
   // Sales — filter items individually
