@@ -5062,7 +5062,7 @@ function GBPTab({ profile, acronym, user }) {
                     />
                   </div>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => saveAddress(loc.id)} disabled={saving} className={BTN_SM}>{saving ? 'Saving…' : 'Save'}</button>
+                    <button onClick={() => saveAddress(loc.id)} disabled={saving} className="rounded-lg bg-violet-600 hover:bg-violet-500 disabled:opacity-50 px-4 py-1.5 text-xs font-semibold text-white transition">{saving ? 'Saving…' : '✓ Save Address'}</button>
                     <button onClick={() => setEditingAddress(null)} className={BTN_SM}>Cancel</button>
                   </div>
                 </div>
