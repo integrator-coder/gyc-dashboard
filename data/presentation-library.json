@@ -445,22 +445,6 @@
       ]
     },
     {
-      "id": "clients-in-close-proximity",
-      "module": null,
-      "category": "strategy",
-      "title": "Clients in Close Proximity",
-      "description": "Analysis of GYC clients in geographic proximity \u2014 competitive density, market overlap, and strategic implications.",
-      "url": "https://docs.google.com/presentation/d/1RTRXc7NtrkdhnY3yjopI-4nUCAyZiqUINTOhDpMDoK4/edit",
-      "slideCount": null,
-      "status": "live",
-      "audience": "Leadership",
-      "tags": [
-        "research",
-        "strategy",
-        "market-intel"
-      ]
-    },
-    {
       "id": "east-bank-masterclass",
       "module": null,
       "category": "sales",
