@@ -4729,7 +4729,7 @@ function GBPTab({ profile, acronym, user }) {
 
   async function confirmDeleteLocation() {
     const loc = gbpData?.locations?.find(l => l.id === deletingLocationId)
-    if (!loc || deleteConfirmName !== loc.locationName) return
+    if (!loc) return
     setSaving(true)
     try {
       const res = await fetch(`/api/clients/${acronym}/gbp/locations/${deletingLocationId}`, {
@@ -5826,7 +5826,6 @@ function GBPTab({ profile, acronym, user }) {
       {deletingLocationId && (() => {
         const loc = gbpData?.locations?.find(l => l.id === deletingLocationId)
         if (!loc) return null
-        const canConfirm = deleteConfirmName === loc.locationName
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <div className="w-full max-w-md rounded-2xl border border-rose-500/30 bg-gradient-to-br from-black via-gray-900 to-black p-6 shadow-2xl">
@@ -5835,33 +5834,20 @@ function GBPTab({ profile, acronym, user }) {
                 Are you sure you want to remove <strong className="text-white">{loc.locationName}</strong> from {profile.companyName || acronym}?
               </p>
               <p className="mb-4 text-xs text-gray-500">
-                This will soft-delete the location (set isActive = false). Audit history will be preserved.
+                This will soft-delete the location. Audit history will be preserved.
               </p>
-              <div className="mb-4">
-                <label className="mb-2 block text-xs font-medium text-gray-400">
-                  Type the location name to confirm:
-                </label>
-                <input
-                  autoFocus
-                  type="text"
-                  value={deleteConfirmName}
-                  onChange={e => setDeleteConfirmName(e.target.value)}
-                  placeholder={loc.locationName}
-                  className="w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-rose-400 focus:outline-none"
-                />
-              </div>
               <div className="flex gap-3">
                 <button
                   onClick={confirmDeleteLocation}
-                  disabled={!canConfirm || saving}
+                  disabled={saving}
                   className="flex-1 rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-500 disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
-                  {saving ? 'Removing...' : 'Remove Location'}
+                  {saving ? 'Removing...' : 'Yes, Remove'}
                 </button>
                 <button
                   onClick={() => { setDeletingLocationId(null); setDeleteConfirmName('') }}
                   disabled={saving}
-                  className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-50 transition"
+                  className="flex-1 rounded-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-50 transition"
                 >
                   Cancel
                 </button>
