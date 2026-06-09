@@ -9,7 +9,7 @@ import {
 } from '@/lib/enrollment-verification'
 
 export async function POST(request, { params }) {
-  const auth = await requireApiUser(['ga', 'cx', 'admin', 'superadmin'])
+  const auth = await requireApiUser(['ga', 'cx', 'admin', 'superadmin', 'manager'])
   if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
   const { user } = auth

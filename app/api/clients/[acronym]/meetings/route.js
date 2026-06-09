@@ -12,7 +12,7 @@ const prisma = new PrismaClient()
  */
 export async function GET(request, { params }) {
   // Check auth
-  const authResult = await requireApiUser(request, ['ga', 'cx', 'admin', 'superadmin'])
+  const authResult = await requireApiUser(request, ['ga', 'cx', 'admin', 'superadmin', 'manager'])
   if (authResult.error) {
     return NextResponse.json({ error: authResult.error }, { status: authResult.status })
   }

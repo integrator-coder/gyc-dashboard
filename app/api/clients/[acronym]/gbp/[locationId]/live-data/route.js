@@ -44,7 +44,7 @@ function parseHours(workHours) {
 }
 
 export async function GET(_req, { params }) {
-  const auth = await requireApiUser(['ga', 'cx', 'admin', 'superadmin'])
+  const auth = await requireApiUser(['ga', 'cx', 'admin', 'superadmin', 'manager'])
   if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
   const { acronym, locationId } = await params

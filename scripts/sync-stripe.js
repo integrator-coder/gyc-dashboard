@@ -195,11 +195,13 @@ async function sync() {
   console.log(`Saved daily revenue for ${Object.keys(dailyMap).length} days`)
 
   const { syncStripeInvoiceSnapshots } = await import('../lib/stripe-normalization.mjs')
+  // Daily sync uses 30-day lookback — full 365-day backfill is too slow with heavy expands (~15s/page × 48 pages)
+  // Run scripts/sync-stripe-invoices-backfill.js separately for historical data
   const invoiceSync = await syncStripeInvoiceSnapshots({
     stripe,
     queryable: invoicePool,
     tenantId: 'gyc',
-    lookbackDays: 365,
+    lookbackDays: 30,
   })
 
   // Save metrics snapshot

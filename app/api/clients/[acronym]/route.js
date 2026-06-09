@@ -6,7 +6,7 @@ import { getClientIntelForUser } from '@/lib/client-intel'
 
 export async function GET(_request, { params }) {
   try {
-    const auth = await requireApiUser(['ga', 'cx', 'admin', 'superadmin'])
+    const auth = await requireApiUser(['ga', 'cx', 'admin', 'superadmin', 'manager'])
     if (auth.error) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
