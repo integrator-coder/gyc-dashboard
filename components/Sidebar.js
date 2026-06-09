@@ -31,73 +31,75 @@ function HamburgerIcon({ isOpen }) {
   )
 }
 
-function canSeeFinance(user) {
-  return ['superadmin', 'admin'].includes(user?.role)
-}
+// Role sets — mirror actual route requireUser() calls exactly
+const ADMIN_ONLY    = ['superadmin', 'admin']
+const ADMIN_MANAGER = ['superadmin', 'admin', 'manager']
+const SALES_ROLES   = ['sales', 'ga', 'staff', 'admin', 'superadmin']
+const WIDE_ROLES    = ['sales', 'ga', 'staff', 'cx', 'admin', 'superadmin', 'manager']
+const GA_ROLES      = ['ga', 'cx', 'staff', 'admin', 'superadmin', 'manager']
 
-function isAdminPlus(user) {
-  return ['superadmin', 'admin', 'manager'].includes(user?.role)
+function canSee(user, roles) {
+  if (!roles || roles.length === 0) return true
+  return roles.includes(user?.role)
 }
 
 function buildDashboardGroup(user) {
   const children = []
 
-  if (isAdminPlus(user)) {
-    children.push({
-      label: 'Leadership',
-      emoji: '🏆',
-      items: [
-        { label: 'Overview', emoji: '🏆', href: '/leadership' },
-        { label: 'HR', emoji: '🧑‍💼', href: '/hr' },
-        { label: 'Harvest', emoji: '🕐', href: '/harvest' },
-      ],
-    })
+  // Leadership — filter items individually by actual route permissions
+  const leadershipItems = [
+    canSee(user, ADMIN_ONLY)    && { label: 'Overview', emoji: '🏆', href: '/leadership' },
+    canSee(user, ADMIN_ONLY)    && { label: 'HR',       emoji: '🧑‍💼', href: '/hr' },
+    canSee(user, ADMIN_MANAGER) && { label: 'Harvest',  emoji: '🕐', href: '/harvest' },
+  ].filter(Boolean)
+  if (leadershipItems.length) {
+    children.push({ label: 'Leadership', emoji: '🏆', items: leadershipItems })
   }
 
-  if (canSeeFinance(user)) {
+  // Finance — admin/superadmin only
+  if (canSee(user, ADMIN_ONLY)) {
     children.push({
       label: 'Finance',
       emoji: '💰',
       items: [
-        { label: 'Overview', emoji: '💰', href: '/finance' },
-        { label: 'Churn', emoji: '📉', href: '/churn' },
-        { label: 'Dunning', emoji: '⚠️', href: '/dunning' },
-        { label: 'Agreements', emoji: '📝', href: '/agreements' },
+        { label: 'Overview',         emoji: '💰', href: '/finance' },
+        { label: 'Churn',            emoji: '📉', href: '/churn' },
+        { label: 'Dunning',          emoji: '⚠️', href: '/dunning' },
+        { label: 'Agreements',       emoji: '📝', href: '/agreements' },
         { label: 'Stripe Deep Dive', emoji: '💳', href: '/stripe-deep-dive' },
-        { label: 'Projections', emoji: '📈', href: '/projections' },
-        { label: 'Linkage Review', emoji: '🧩', href: '/finance/linkage-review' },
+        { label: 'Projections',      emoji: '📈', href: '/projections' },
+        { label: 'Linkage Review',   emoji: '🧩', href: '/finance/linkage-review' },
       ],
     })
   }
 
-  children.push({
-    label: 'Sales',
-    emoji: '📞',
-    items: [
-      { label: 'Sales Activity', emoji: '📞', href: '/sales-activity' },
-      { label: 'New Business', emoji: '💵', href: '/new-business' },
-      ...(['superadmin', 'admin', 'manager', 'ga', 'sales'].includes(user?.role)
-        ? [{ label: 'Sales Analysis', emoji: '🧮', href: '/sales-analysis' }]
-        : []),
-    ],
-  })
+  // Sales — filter items individually
+  const salesItems = [
+    canSee(user, WIDE_ROLES)  && { label: 'Sales Activity', emoji: '📞', href: '/sales-activity' },
+    canSee(user, SALES_ROLES) && { label: 'New Business',   emoji: '💵', href: '/new-business' },
+    canSee(user, SALES_ROLES) && { label: 'Sales Analysis', emoji: '🧮', href: '/sales-analysis' },
+  ].filter(Boolean)
+  if (salesItems.length) {
+    children.push({ label: 'Sales', emoji: '📞', items: salesItems })
+  }
 
+  // CX
   children.push({
     label: 'CX',
     emoji: '👥',
     items: [
-      { label: 'CX Overview', emoji: '👥', href: '/cx' },
+      canSee(user, WIDE_ROLES) && { label: 'CX Overview',    emoji: '👥', href: '/cx' },
       { label: 'Client Results', emoji: '📊', href: '/client-results' },
-      { label: 'Web Analytics', emoji: '📈', href: '/web-analytics' },
-      { label: 'Helpdesk', emoji: '🌐', href: '/helpdesk' },
-    ],
+      canSee(user, WIDE_ROLES) && { label: 'Web Analytics',  emoji: '📈', href: '/web-analytics' },
+      { label: 'Helpdesk',       emoji: '🌐', href: '/helpdesk' },
+    ].filter(Boolean),
   })
 
   children.push({ label: 'Marketing', emoji: '📣', href: '/marketing' })
 
-  if (['superadmin', 'admin', 'manager', 'ga'].includes(user?.role)) {
+  if (canSee(user, GA_ROLES)) {
     children.push({ label: 'Production', emoji: '🔧', href: '/production' })
-    children.push({ label: 'Workload', emoji: '⚙️', href: '/workload' })
+    children.push({ label: 'Workload',   emoji: '⚙️', href: '/workload' })
   }
 
   return {
@@ -314,7 +316,7 @@ export default function Sidebar() {
           <CollapsibleGroup group={clientManagementGroup} pathname={pathname} />
         )}
         <CollapsibleGroup group={teamPortalGroup} pathname={pathname} />
-        {isAdminPlus(session.user) && (
+        {canSee(session.user, ADMIN_ONLY) && (
           <CollapsibleGroup group={ADMIN_GROUP} pathname={pathname} />
         )}
       </nav>
