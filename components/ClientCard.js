@@ -5093,9 +5093,9 @@ function GBPTab({ profile, acronym, user }) {
                           setVerifyError('')
                           setVerifyPreview(null)
                         }}
-                        className="text-xs text-gray-600 hover:text-violet-400 transition underline"
+                        className={`text-xs font-semibold transition px-2 py-1 rounded-lg border ${loc.gbpPlaceId ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' : 'text-amber-300 border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20'}`}
                       >
-                        {loc.gbpPlaceId ? '✓ Verified' : (loc.gbpUrl && !loc.gbpUrl.includes('share.google')) ? '⚠️ Verify URL' : '+ Verify Location'}
+                        {loc.gbpPlaceId ? '✅ Verified' : (loc.gbpUrl && !loc.gbpUrl.includes('share.google')) ? '⚠️ Re-verify URL' : '📍 Add Maps URL'}
                       </button>
                     )}
                   </div>
@@ -5214,9 +5214,13 @@ function GBPTab({ profile, acronym, user }) {
 
                   {/* Unverified location banner */}
                   {isUnverified && isAdmin && (
-                    <div className="px-4 py-2 border-b border-white/[0.06] flex items-center gap-2">
-                      <span className="text-[11px] text-amber-400">⚠️ Paste a Google Maps URL to enable live ratings & reviews</span>
-                    </div>
+                    <button
+                      onClick={() => { setVerifyingLocId(loc.id); setVerifyUrl(''); setVerifyError(''); setVerifyPreview(null) }}
+                      className="w-full px-4 py-3 border-b border-amber-500/30 bg-amber-500/8 hover:bg-amber-500/15 flex items-center justify-between gap-2 transition text-left group"
+                    >
+                      <span className="text-xs font-semibold text-amber-300">📍 Paste a Google Maps URL to enable live ratings &amp; reviews</span>
+                      <span className="text-[10px] text-amber-400/70 group-hover:text-amber-300 transition shrink-0">Click to add →</span>
+                    </button>
                   )}
 
                   {/* Health arc gauge */}
