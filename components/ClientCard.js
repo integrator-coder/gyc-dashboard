@@ -3557,6 +3557,8 @@ function SEOTab({ profile, acronym }) {
   const gbpLocations = seoData?.gbpLocations || []
   const gbpOnlyLocations = gbpLocations.filter(g => {
     const name = g.locationName || ''
+    // Only show locations that are heatmapEnabled but not on the SEO program
+    if (!g.heatmapEnabled) return false
     // If the client is on the SEO program, these locations are handled in the SEO locations section above
     if (profile.hasSEO) return false
     // If it matches an SEO snapshot location name, skip it (avoid duplicates)
