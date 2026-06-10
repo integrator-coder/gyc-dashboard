@@ -7392,7 +7392,7 @@ function MeetingsTab({ acronym, profile }) {
             const decisions = Array.isArray(m.decisions) ? m.decisions : (m.decisions ? JSON.parse(m.decisions) : [])
             const topics = Array.isArray(m.topics) ? m.topics : (m.topics ? JSON.parse(m.topics) : [])
             const issues = Array.isArray(m.outstandingIssues) ? m.outstandingIssues : (m.outstandingIssues ? JSON.parse(m.outstandingIssues) : [])
-            const [txSearch, setTxSearch] = React.useState('')
+            // transcript search removed
 
             return (
               <div key={m.id} className="rounded-2xl border border-white/8 bg-black/20 overflow-hidden">
