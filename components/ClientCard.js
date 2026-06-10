@@ -3557,10 +3557,9 @@ function SEOTab({ profile, acronym }) {
   const gbpLocations = seoData?.gbpLocations || []
   const gbpOnlyLocations = gbpLocations.filter(g => {
     const name = g.locationName || ''
-    const seoName = g.seoLocationName
-    // If seoLocationName is explicitly set (even empty string), it's already on the SEO program path
-    if (seoName !== null && seoName !== undefined) return false
-    // If it matches an SEO snapshot location name, skip it
+    // If the client is on the SEO program, these locations are handled in the SEO locations section above
+    if (profile.hasSEO) return false
+    // If it matches an SEO snapshot location name, skip it (avoid duplicates)
     if ([...seoLocNames].some(sl => sl && name.toLowerCase().includes(sl.toLowerCase()))) return false
     return true
   })
