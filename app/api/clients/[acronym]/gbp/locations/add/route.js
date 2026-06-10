@@ -227,6 +227,38 @@ export async function POST(req, { params }) {
             )
           }
         }
+
+        // 4. Run heatmap scan immediately — no waiting for Sunday cron
+        // Only runs if we have coordinates (from DataForSEO resolve above)
+        try {
+          const updatedLoc = await pool.query(
+            `SELECT latitude, longitude, "gbpPlaceId", "seoLocationName" FROM "GBPLocation" WHERE id = $1`,
+            [locationId]
+          )
+          const l = updatedLoc.rows[0]
+          if (l?.latitude && l?.longitude) {
+            const { execFile } = await import('child_process')
+            const { promisify } = await import('util')
+            const execFileAsync = promisify(execFile)
+            // Run heatmap scan for just this client+location in background
+            execFileAsync('node', [
+              'scripts/sync-seo-heatmaps.js',
+              acr,
+              '--force'
+            ], {
+              cwd: process.cwd(),
+              timeout: 300000  // 5 min max
+            }).then(() => {
+              console.log(`[add location cascade] Heatmap scan complete for ${acr}`)
+            }).catch(e => {
+              console.error('[add location cascade] Heatmap scan error:', e.message)
+            })
+            console.log(`[add location cascade] Heatmap scan triggered for ${acr} - ${l.seoLocationName}`)
+          }
+        } catch (e) {
+          console.error('[add location cascade] Heatmap trigger error:', e.message)
+        }
+
       } catch (e) {
         console.error('[add location cascade]', e.message)
       }
