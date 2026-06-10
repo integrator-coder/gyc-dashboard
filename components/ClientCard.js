@@ -7167,21 +7167,21 @@ function NotesTab({ profile, acronym }) {
         <SectionTitle>Meeting Notes <span className="normal-case font-normal text-gray-600 text-xs">(from Notion, read-only)</span></SectionTitle>
         {loading ? (
           <Card><div className="text-sm text-gray-500 py-2">Loading…</div></Card>
-        ) : notesData?.notionNotes?.error === 'not_shared' ? (
-          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm">
-            <div className="font-semibold text-amber-300 mb-1">Notes page not shared with Wall-E</div>
-            <div className="text-amber-200/70 text-xs">{notesData.notionNotes.message}</div>
-          </div>
         ) : notesData?.notionNotes?.blocks?.length > 0 ? (
           <Card>
             <NotionBlockRenderer blocks={notesData.notionNotes.blocks} />
           </Card>
         ) : profile.notes ? (
           <Card>
-            <pre className="whitespace-pre-wrap text-sm text-gray-300 leading-relaxed">{profile.notes}</pre>
+            <pre className="whitespace-pre-wrap text-sm text-gray-300 leading-relaxed font-sans">{profile.notes}</pre>
           </Card>
+        ) : notesData?.notionNotes?.error === 'not_shared' ? (
+          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm">
+            <div className="font-semibold text-amber-300 mb-1">Notion notes page not shared with Wall-E</div>
+            <div className="text-amber-200/70 text-xs">{notesData.notionNotes.message}</div>
+          </div>
         ) : (
-          <Card><div className="text-sm text-gray-500">No Notion notes available.</div></Card>
+          <Card><div className="text-sm text-gray-500">No notes available.</div></Card>
         )}
       </div>
 

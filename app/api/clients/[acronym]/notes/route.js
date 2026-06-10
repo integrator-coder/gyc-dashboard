@@ -29,6 +29,7 @@ export async function GET(_req, { params }) {
     return NextResponse.json({
       ghlNotes:    ghlNotes.status === 'fulfilled' ? ghlNotes.value : { error: ghlNotes.reason?.message },
       notionNotes: notionNotes.status === 'fulfilled' ? notionNotes.value : { error: notionNotes.reason?.message },
+      dbNotes: client.notes || null,
     })
   } catch (e) {
     console.error('[Notes API]', e)
