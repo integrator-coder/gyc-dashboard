@@ -1,55 +1,32 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 import { requireApiUser } from '@/lib/auth'
+import { pool } from '@/lib/pg'
 
-const prisma = new PrismaClient()
+export const dynamic = 'force-dynamic'
 
-export async function GET(request, { params }) {
-  const authResult = await requireApiUser(['ga', 'cx', 'admin', 'superadmin', 'manager'])
-  if (authResult.error) {
-    return NextResponse.json({ error: authResult.error }, { status: authResult.status })
-  }
+export async function GET(_req, { params }) {
+  const auth = await requireApiUser(['ga', 'cx', 'admin', 'superadmin', 'manager'])
+  if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
   const { acronym } = await params
-
-  if (!acronym) {
-    return NextResponse.json({ error: 'Missing acronym' }, { status: 400 })
-  }
+  const acr = acronym?.toUpperCase()
+  if (!acr) return NextResponse.json({ error: 'Missing acronym' }, { status: 400 })
 
   try {
-    const calls = await prisma.zoomCall.findMany({
-      where: {
-        acronym: acronym,
-        tenantId: 'gyc',
-        aiClassification: {
-          in: ['client_meeting', 'onboarding', 'blueprint']
-        }
-      },
-      select: {
-        id: true,
-        topic: true,
-        startTime: true,
-        duration: true,
-        durationSecs: true,
-        aiClassification: true,
-        aiSummary: true,
-        meetingRecap: true,
-        followUpEmailDraft: true,
-        recapGeneratedAt: true,
-        recordingUrl: true,
-        transcriptUrl: true,
-        gaName: true,
-        gaEmail: true,
-        repName: true,
-        hostEmail: true,
-        hostName: true,
-      },
-      orderBy: { startTime: 'desc' },
-      take: 30
-    })
+    const { rows } = await pool.query(
+      `SELECT id, topic, "startTime", "aiSummary", "meetingRecap", "recordingUrl",
+              "transcriptUrl", "gaName", "gaEmail", "repName", "hostEmail", "hostName",
+              "durationSecs", "aiClassification"
+       FROM "ZoomCall"
+       WHERE acronym = $1
+         AND "tenantId" = 'gyc'
+         AND "aiClassification" = ANY($2)
+       ORDER BY "startTime" DESC
+       LIMIT 50`,
+      [acr, ['client_meeting', 'onboarding', 'blueprint']]
+    )
 
-    // Map ZoomCall fields to ClientMeeting schema the component expects
-    const meetings = calls.map(c => ({
+    const meetings = rows.map(c => ({
       id: c.id,
       title: c.topic || 'Marketing Review',
       meetingDate: c.startTime,
@@ -57,20 +34,20 @@ export async function GET(request, { params }) {
       source: 'zoom',
       status: 'reviewed',
       execSummary: c.aiSummary || c.meetingRecap || null,
-      transcriptUrl: c.transcriptUrl || c.recordingUrl,
-      recordingUrl: c.recordingUrl,
-      gaName: c.gaName || c.repName || c.hostName,
-      gaEmail: c.gaEmail || c.hostEmail,
+      transcriptUrl: c.transcriptUrl || c.recordingUrl || null,
+      recordingUrl: c.recordingUrl || null,
+      gaName: c.gaName || c.repName || c.hostName || null,
+      gaEmail: c.gaEmail || c.hostEmail || null,
       tasks: [],
       decisions: [],
       topics: [],
       outstandingIssues: [],
-      recapGeneratedAt: c.recapGeneratedAt,
+      recapGeneratedAt: null,
     }))
 
-    return NextResponse.json({ acronym, meetings, count: meetings.length })
+    return NextResponse.json({ acronym: acr, meetings, count: meetings.length })
   } catch (err) {
-    console.error('[API] /api/clients/[acronym]/meetings error:', err)
-    return NextResponse.json({ error: 'Failed to fetch meetings', details: err.message }, { status: 500 })
+    console.error('[meetings API]', err.message)
+    return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
