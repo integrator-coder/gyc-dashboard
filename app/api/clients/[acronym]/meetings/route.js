@@ -4,28 +4,20 @@ import { requireApiUser } from '@/lib/auth'
 
 const prisma = new PrismaClient()
 
-/**
- * GET /api/clients/[acronym]/meetings
- * Returns meeting history for a specific client
- * 
- * Auth: ga, cx, admin, superadmin
- */
 export async function GET(request, { params }) {
-  // Check auth
   const authResult = await requireApiUser(request, ['ga', 'cx', 'admin', 'superadmin', 'manager'])
   if (authResult.error) {
     return NextResponse.json({ error: authResult.error }, { status: authResult.status })
   }
 
-  const { acronym } = params
+  const { acronym } = await params
 
   if (!acronym) {
     return NextResponse.json({ error: 'Missing acronym' }, { status: 400 })
   }
 
   try {
-    // Fetch meetings for this client
-    const meetings = await prisma.zoomCall.findMany({
+    const calls = await prisma.zoomCall.findMany({
       where: {
         acronym: acronym,
         tenantId: 'gyc',
@@ -38,6 +30,7 @@ export async function GET(request, { params }) {
         topic: true,
         startTime: true,
         duration: true,
+        durationSecs: true,
         aiClassification: true,
         aiSummary: true,
         meetingRecap: true,
@@ -46,41 +39,38 @@ export async function GET(request, { params }) {
         recordingUrl: true,
         transcriptUrl: true,
         gaName: true,
-        gaEmail: true
+        gaEmail: true,
+        repName: true,
+        hostEmail: true,
+        hostName: true,
       },
-      orderBy: {
-        startTime: 'desc'
-      },
-      take: 20
+      orderBy: { startTime: 'desc' },
+      take: 30
     })
 
-    // Transform to API format
-    const formattedMeetings = meetings.map(m => ({
-      id: m.id,
-      topic: m.topic,
-      date: m.startTime ? m.startTime.toISOString().split('T')[0] : null,
-      duration: m.duration,
-      callType: m.aiClassification,
-      aiSummary: m.aiSummary,
-      meetingRecap: m.meetingRecap,
-      followUpEmailDraft: m.followUpEmailDraft,
-      recapGeneratedAt: m.recapGeneratedAt ? m.recapGeneratedAt.toISOString() : null,
-      recordingUrl: m.recordingUrl,
-      transcriptUrl: m.transcriptUrl,
-      gaName: m.gaName,
-      gaEmail: m.gaEmail
+    // Map ZoomCall fields to ClientMeeting schema the component expects
+    const meetings = calls.map(c => ({
+      id: c.id,
+      title: c.topic || 'Marketing Review',
+      meetingDate: c.startTime,
+      meetingType: c.aiClassification,
+      source: 'zoom',
+      status: 'reviewed',
+      execSummary: c.aiSummary || c.meetingRecap || null,
+      transcriptUrl: c.transcriptUrl || c.recordingUrl,
+      recordingUrl: c.recordingUrl,
+      gaName: c.gaName || c.repName || c.hostName,
+      gaEmail: c.gaEmail || c.hostEmail,
+      tasks: [],
+      decisions: [],
+      topics: [],
+      outstandingIssues: [],
+      recapGeneratedAt: c.recapGeneratedAt,
     }))
 
-    return NextResponse.json({
-      acronym,
-      meetings: formattedMeetings,
-      count: formattedMeetings.length
-    })
+    return NextResponse.json({ acronym, meetings, count: meetings.length })
   } catch (err) {
     console.error('[API] /api/clients/[acronym]/meetings error:', err)
-    return NextResponse.json(
-      { error: 'Failed to fetch meetings', details: err.message },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to fetch meetings', details: err.message }, { status: 500 })
   }
 }
