@@ -7392,6 +7392,7 @@ function MeetingsTab({ acronym, profile }) {
             const decisions = Array.isArray(m.decisions) ? m.decisions : (m.decisions ? JSON.parse(m.decisions) : [])
             const topics = Array.isArray(m.topics) ? m.topics : (m.topics ? JSON.parse(m.topics) : [])
             const issues = Array.isArray(m.outstandingIssues) ? m.outstandingIssues : (m.outstandingIssues ? JSON.parse(m.outstandingIssues) : [])
+            const [txSearch, setTxSearch] = React.useState('')
 
             return (
               <div key={m.id} className="rounded-2xl border border-white/8 bg-black/20 overflow-hidden">
@@ -7480,8 +7481,22 @@ function MeetingsTab({ acronym, profile }) {
                         {m.durationSecs && <span>Duration: {Math.round(m.durationSecs / 60)}m</span>}
                         {m.transcriptUrl && (
                           <a href={m.transcriptUrl} target="_blank" rel="noreferrer" className="text-violet-400 hover:text-violet-300 transition">
-                            View transcript ↗
+                            View recording ↗
                           </a>
+                        )}
+                        {m.transcriptText && (
+                          <button
+                            onClick={() => {
+                              const blob = new Blob([m.transcriptText], {type:'text/plain'});
+                              const a = document.createElement('a');
+                              a.href = URL.createObjectURL(blob);
+                              a.download = `${m.title?.replace(/[^a-z0-9]/gi,'_') || 'transcript'}.txt`;
+                              a.click();
+                            }}
+                            className="text-cyan-400 hover:text-cyan-300 transition cursor-pointer"
+                          >
+                            Download transcript ↓
+                          </button>
                         )}
                         {m.notionUrl && (
                           <a href={m.notionUrl} target="_blank" rel="noreferrer" className="text-cyan-400 hover:text-cyan-300 transition">

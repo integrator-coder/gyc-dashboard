@@ -15,13 +15,13 @@ export async function GET(_req, { params }) {
   try {
     const { rows } = await pool.query(
       `SELECT id, topic, "startTime", "aiSummary", "meetingRecap", "recordingUrl",
-              "transcriptUrl", "gaName", "gaEmail", "repName", "hostEmail", "hostName",
-              "durationSecs", "aiClassification"
+              "transcriptUrl", "transcriptText", "gaName", "gaEmail", "repName",
+              "hostEmail", "hostName", "durationSecs", "aiClassification"
        FROM "ZoomCall"
        WHERE acronym = $1
          AND "tenantId" = 'gyc'
          AND "aiClassification" = ANY($2)
-       ORDER BY "startTime" DESC
+       ORDER BY "startTime" DESC NULLS LAST
        LIMIT 50`,
       [acr, ['client_meeting', 'onboarding', 'blueprint']]
     )
@@ -36,6 +36,7 @@ export async function GET(_req, { params }) {
       execSummary: c.aiSummary || c.meetingRecap || null,
       transcriptUrl: c.transcriptUrl || c.recordingUrl || null,
       recordingUrl: c.recordingUrl || null,
+      transcriptText: c.transcriptText || null,
       gaName: c.gaName || c.repName || c.hostName || null,
       gaEmail: c.gaEmail || c.hostEmail || null,
       tasks: [],
