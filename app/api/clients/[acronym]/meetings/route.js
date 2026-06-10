@@ -5,7 +5,7 @@ import { requireApiUser } from '@/lib/auth'
 const prisma = new PrismaClient()
 
 export async function GET(request, { params }) {
-  const authResult = await requireApiUser(request, ['ga', 'cx', 'admin', 'superadmin', 'manager'])
+  const authResult = await requireApiUser(['ga', 'cx', 'admin', 'superadmin', 'manager'])
   if (authResult.error) {
     return NextResponse.json({ error: authResult.error }, { status: authResult.status })
   }
