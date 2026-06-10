@@ -104,9 +104,9 @@ export async function GET(_req, { params }) {
     } catch { return null }
   }
 
-  // Build search keyword — use specific locationName first for accuracy
+  // Build search keyword — prefer seoLocationName (business name) over locationName (which can be a street address)
   const searchKeyword = [
-    loc.locationName || loc.companyName,
+    loc.seoLocationName || loc.locationName || loc.companyName,
     loc.city,
     loc.state,
   ].filter(Boolean).join(' ')
