@@ -72,7 +72,7 @@ function findRank(items, placeId, namePattern) {
   return null
 }
 
-async function scanGrid(acronym, seoLocName, centerLat, centerLng, placeId, namePattern, radiusMiles, keyword) {
+async function scanGrid(acronym, seoLocName, centerLat, centerLng, placeId, namePattern, radiusMiles, keyword, dbLocName) {
   const grid      = makeGrid(centerLat, centerLng, radiusMiles)
   const spacingKm = (radiusMiles / 2) * KM_PER_MILE
   const pts       = []
@@ -90,7 +90,7 @@ async function scanGrid(acronym, seoLocName, centerLat, centerLng, placeId, name
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
      ON CONFLICT ("clientAcronym","locationName","keyword","scanDate","radiusMiles")
      DO UPDATE SET points=$9`,
-    [acronym, seoLocName, keyword, centerLat, centerLng, GRID_SIZE, spacingKm, TODAY, JSON.stringify(pts), radiusMiles]
+    [acronym, dbLocName || seoLocName, keyword, centerLat, centerLng, GRID_SIZE, spacingKm, TODAY, JSON.stringify(pts), radiusMiles]
   )
 
   const ranked = pts.filter(p => p.rank != null)
@@ -241,7 +241,8 @@ async function main() {
           loc.acronym, seoLocName,
           loc.lat, loc.lng,
           loc.place_id, namePattern,
-          radius, kw
+          radius, kw,
+          loc.gbp_loc_name  // use actual location name as DB key to avoid conflicts
         )
         console.log(`${ranked}/${total} ranked | avg: ${avg}`)
       }
