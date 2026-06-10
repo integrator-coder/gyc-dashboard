@@ -28,7 +28,7 @@ const KEYWORDS     = ['daycare', 'preschool']
 const RADII        = [3, 5]    // miles
 const MAX_RANK     = 20
 const TODAY        = new Date().toISOString().slice(0, 10)
-const TARGET       = process.argv[2]?.toUpperCase() || null
+const TARGET = (process.argv[2] && !process.argv[2].startsWith('--')) ? process.argv[2].toUpperCase() : null
 const FORCE        = process.argv.includes('--force') // bypass skip thresholds
 
 // Skip thresholds
