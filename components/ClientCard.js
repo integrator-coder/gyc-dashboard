@@ -2044,7 +2044,7 @@ function WebsiteTab({ profile, acronym }) {
           <SectionTitle>GYC Website Details</SectionTitle>
           <Card>
             <div className="space-y-2.5">
-              <InfoRow label="Service tier" value={profile.crmType ? `Website (${profile.crmType})` : 'GYC Website'} />
+              <InfoRow label="Service tier" value="GYC Website" />
               <InfoRow label="Launch date"  value={profile.startDate ? fmtDate(profile.startDate) : null} />
               {profile.clientFolderUrl && (
                 <InfoRow label="Client folder" value="Open folder ↗" href={profile.clientFolderUrl} />
