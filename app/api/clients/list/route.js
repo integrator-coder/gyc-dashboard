@@ -93,8 +93,18 @@ export async function GET(request) {
     }
 
     if (status) {
-      params.push(status.toLowerCase())
-      conditions.push(`lower(COALESCE(cp.status,'')) = $${params.length}`)
+      if (status.toLowerCase() === 'cancelled') {
+        // Explicit cancelled filter — show only cancelled
+        params.push('cancelled')
+        conditions.push(`lower(COALESCE(cp.status,'')) = $${params.length}`)
+      } else {
+        params.push(status.toLowerCase())
+        conditions.push(`lower(COALESCE(cp.status,'')) = $${params.length}`)
+      }
+    } else {
+      // Default: exclude cancelled clients from the Active Clients List
+      // Cancelled clients are still searchable by passing ?status=cancelled
+      conditions.push(`lower(COALESCE(cp.status,'')) != 'cancelled'`)
     }
 
     if (overdue) {
