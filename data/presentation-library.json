@@ -33,6 +33,28 @@
   ],
   "presentations": [
     {
+      "id": "karpathy-3-layer-framework",
+      "module": null,
+      "category": "strategy",
+      "title": "The Robot Librarian Framework — Karpathy's 3-Layer Method",
+      "description": "12 slides. Andrej Karpathy's 3-layer framework for building AI systems that actually deliver value. Layer 1: The Spec (bridge your understanding). Layer 2: The Verifier (measure quality, not just completion). Layer 3: The Environment (persistent workspace that compounds). Includes per-layer deep dives, why it works, and implementation sequence.",
+      "url": "https://docs.google.com/presentation/d/1C9AZp_8Jig9YD_-3Gi-blclvo9nHFt8UKJfKktcysTA/edit",
+      "slideCount": 12,
+      "status": "live",
+      "source": "YouTube — Austin Marchese on Karpathy's Method",
+      "sourceUrl": "https://youtu.be/7zZy1QTvokM",
+      "audience": "All Staff + Leadership",
+      "tags": [
+        "karpathy",
+        "framework",
+        "skill-building",
+        "ai-systems",
+        "strategy",
+        "advanced"
+      ],
+      "addedDate": "2026-06-11"
+    },
+    {
       "id": "module-1-beginners",
       "module": 1,
       "category": "training-module",
