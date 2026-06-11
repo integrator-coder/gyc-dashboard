@@ -171,10 +171,35 @@ export async function POST(req, { params }) {
 
     await client.query('COMMIT')
 
+    // ── Cascade: trigger heatmap + GBP refresh for the merged (kept) location ──
+    const mergedLoc = merged[0]
+    const acr = acronym.toUpperCase()
+    setImmediate(async () => {
+      try {
+        if (mergedLoc?.latitude && mergedLoc?.longitude) {
+          const { execFile } = await import('child_process')
+          const { promisify } = await import('util')
+          const execFileAsync = promisify(execFile)
+          execFileAsync('node', ['scripts/sync-seo-heatmaps.js', acr, '--force'], {
+            cwd: process.cwd(),
+            timeout: 300000
+          }).then(() => {
+            console.log(`[merge cascade] Heatmap scan complete for ${acr}`)
+          }).catch(e => {
+            console.error('[merge cascade] Heatmap scan error:', e.message)
+          })
+          console.log(`[merge cascade] Heatmap scan triggered for ${acr} after merge`)
+        }
+      } catch (e) {
+        console.error('[merge cascade]', e.message)
+      }
+    })
+    // ─────────────────────────────────────────────────────────────────────────
+
     return NextResponse.json({
       success: true,
-      location: merged[0],
-      message: `Merged "${deleteRecord.locationName}" into "${keepRecord.locationName}"`,
+      location: mergedLoc,
+      message: `Merged "${deleteRecord.locationName}" into "${keepRecord.locationName}". Heatmap updating in background.`,
     })
   } catch (error) {
     await client.query('ROLLBACK').catch(() => null)
