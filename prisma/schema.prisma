@@ -895,6 +895,7 @@ model ClientIdentityMap {
   ghlContactId     String?
   zendeskOrgId     String?
   ga4PropertyId    String?
+  ga4IsPrimary     Boolean? @default(true)
   sheetsClientId   String?
   acronym          String?
   createdAt        DateTime @default(now()) @db.Timestamptz(6)
