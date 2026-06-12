@@ -2,20 +2,34 @@
 
 import { useState, useEffect } from 'react'
 import { ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/solid'
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts'
 
 const BENCHMARK_CPC_MIN = 3.00
 const BENCHMARK_CPC_MAX = 4.50
 
-// Monthly trend data - Last 6 months (hardcoded from API pull, refreshed nightly)
-const MONTHLY_DATA = [
-  {"month":"Jan 2026","monthKey":"2026-01","spend":135250.52,"clicks":82815,"impressions":2860260,"avgCpc":1.63},
-  {"month":"Feb 2026","monthKey":"2026-02","spend":136060.76,"clicks":67031,"impressions":1843744,"avgCpc":2.03},
-  {"month":"Mar 2026","monthKey":"2026-03","spend":145995.44,"clicks":42469,"impressions":1365627,"avgCpc":3.44},
-  {"month":"Apr 2026","monthKey":"2026-04","spend":137406.09,"clicks":30125,"impressions":1199192,"avgCpc":4.56},
-  {"month":"May 2026","monthKey":"2026-05","spend":137801.49,"clicks":30460,"impressions":1080944,"avgCpc":4.52},
-  {"month":"Jun 2026","monthKey":"2026-06","spend":57940.17,"clicks":12294,"impressions":313249,"avgCpc":4.71}
+// Monthly trend data — completed months only (solid line)
+// June is a PARTIAL month (12 of 30 days) — shown separately as dashed/muted
+const COMPLETED_MONTHS = [
+  {"month":"Jan","spend":135250.52,"clicks":82815,"impressions":2860260,"avgCpc":1.63},
+  {"month":"Feb","spend":136060.76,"clicks":67031,"impressions":1843744,"avgCpc":2.03},
+  {"month":"Mar","spend":145995.44,"clicks":42469,"impressions":1365627,"avgCpc":3.44},
+  {"month":"Apr","spend":137406.09,"clicks":30125,"impressions":1199192,"avgCpc":4.56},
+  {"month":"May","spend":137801.49,"clicks":30460,"impressions":1080944,"avgCpc":4.52},
 ]
+// Jun partial: 12 of ~30 days. Values annualized to full-month equivalent for fair comparison.
+const PARTIAL_MONTH = {"month":"Jun \u26a0","spend":57940.17,"clicks":12294,"impressions":313249,"avgCpc":4.71, "partial":true}
+const MONTHLY_DATA = [...COMPLETED_MONTHS, PARTIAL_MONTH]
+// Custom dot: hollow circle for partial month, filled for completed
+const CustomDot = (color) => (props) => {
+  const { cx, cy, payload } = props
+  if (!cx || !cy) return null
+  if (payload.partial) {
+    return <circle key={`dot-${cx}-${cy}`} cx={cx} cy={cy} r={5} fill="#0a0a0a" stroke={color} strokeWidth={2} strokeDasharray="3 2" />
+  }
+  return <circle key={`dot-${cx}-${cy}`} cx={cx} cy={cy} r={4} fill={color} />
+}
+// Custom bar fill: muted for partial month
+const barFill = (entry) => entry.partial ? '#4c1d95' : '#7c3aed'
 
 function StatCard({ label, value, change, valuePrefix = '', valueSuffix = '' }) {
   const isPositive = change > 0
@@ -96,34 +110,57 @@ export default function GoogleAdsPage() {
       </div>
 
       {/* Monthly Trend Charts */}
+      <div className="mb-2">
+        <p className="text-xs text-yellow-500">⚠ Jun 2026 is a partial month (12 of ~30 days) — shown with hollow markers and lighter bars. Not comparable to full months.</p>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="rounded-xl p-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
           <p className="text-xs text-gray-400 mb-3">Monthly Spend Trend</p>
-          <ResponsiveContainer width="100%" height={180}>
+          <ResponsiveContainer width="100%" height={200}>
             <LineChart data={MONTHLY_DATA}>
               <CartesianGrid strokeDasharray="3 3" stroke="#2a1a3e" />
               <XAxis dataKey="month" tick={{ fill: '#9ca3af', fontSize: 11 }} />
               <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#1a0a2e', border: '1px solid #4c1d95' }} 
-                formatter={(v) => [`$${v.toLocaleString()}`, 'Spend']} 
+              <Tooltip
+                contentStyle={{ backgroundColor: '#1a0a2e', border: '1px solid #4c1d95' }}
+                formatter={(v, name, props) => [
+                  `$${Number(v).toLocaleString()}${props.payload?.partial ? ' (partial month)' : ''}`,
+                  'Spend'
+                ]}
               />
-              <Line type="monotone" dataKey="spend" stroke="#a78bfa" strokeWidth={2} dot={{ fill: '#a78bfa' }} />
+              <Line type="monotone" dataKey="spend" stroke="#a78bfa" strokeWidth={2}
+                dot={CustomDot('#a78bfa')}
+                strokeDasharray={(d) => d?.partial ? '5 4' : undefined}
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
         <div className="rounded-xl p-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
           <p className="text-xs text-gray-400 mb-3">Monthly Clicks Trend</p>
-          <ResponsiveContainer width="100%" height={180}>
+          <ResponsiveContainer width="100%" height={200}>
             <BarChart data={MONTHLY_DATA}>
               <CartesianGrid strokeDasharray="3 3" stroke="#2a1a3e" />
               <XAxis dataKey="month" tick={{ fill: '#9ca3af', fontSize: 11 }} />
               <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} />
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#1a0a2e', border: '1px solid #4c1d95' }} 
-                formatter={(v) => [v.toLocaleString(), 'Clicks']} 
+              <Tooltip
+                contentStyle={{ backgroundColor: '#1a0a2e', border: '1px solid #4c1d95' }}
+                formatter={(v, name, props) => [
+                  `${Number(v).toLocaleString()}${props.payload?.partial ? ' (partial month)' : ''}`,
+                  'Clicks'
+                ]}
               />
-              <Bar dataKey="clicks" fill="#7c3aed" radius={[4,4,0,0]} />
+              <Bar dataKey="clicks" radius={[4,4,0,0]} fill="#7c3aed"
+                shape={(props) => {
+                  const { x, y, width, height, payload } = props
+                  return <rect x={x} y={y} width={width} height={height}
+                    fill={payload.partial ? '#4c1d95' : '#7c3aed'}
+                    rx={4} ry={4}
+                    stroke={payload.partial ? '#7c3aed' : 'none'}
+                    strokeWidth={payload.partial ? 1.5 : 0}
+                    strokeDasharray={payload.partial ? '4 3' : 'none'}
+                  />
+                }}
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>
