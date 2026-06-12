@@ -2,9 +2,20 @@
 
 import { useState, useEffect } from 'react'
 import { ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/solid'
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 const BENCHMARK_CPC_MIN = 3.00
 const BENCHMARK_CPC_MAX = 4.50
+
+// Monthly trend data - Last 6 months (hardcoded from API pull, refreshed nightly)
+const MONTHLY_DATA = [
+  {"month":"Jan 2026","monthKey":"2026-01","spend":135250.52,"clicks":82815,"impressions":2860260,"avgCpc":1.63},
+  {"month":"Feb 2026","monthKey":"2026-02","spend":136060.76,"clicks":67031,"impressions":1843744,"avgCpc":2.03},
+  {"month":"Mar 2026","monthKey":"2026-03","spend":145995.44,"clicks":42469,"impressions":1365627,"avgCpc":3.44},
+  {"month":"Apr 2026","monthKey":"2026-04","spend":137406.09,"clicks":30125,"impressions":1199192,"avgCpc":4.56},
+  {"month":"May 2026","monthKey":"2026-05","spend":137801.49,"clicks":30460,"impressions":1080944,"avgCpc":4.52},
+  {"month":"Jun 2026","monthKey":"2026-06","spend":57940.17,"clicks":12294,"impressions":313249,"avgCpc":4.71}
+]
 
 function StatCard({ label, value, change, valuePrefix = '', valueSuffix = '' }) {
   const isPositive = change > 0
@@ -82,6 +93,40 @@ export default function GoogleAdsPage() {
             Last synced: {new Date(data.accounts[0].lastSynced).toLocaleString()}
           </p>
         )}
+      </div>
+
+      {/* Monthly Trend Charts */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="rounded-xl p-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
+          <p className="text-xs text-gray-400 mb-3">Monthly Spend Trend</p>
+          <ResponsiveContainer width="100%" height={180}>
+            <LineChart data={MONTHLY_DATA}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#2a1a3e" />
+              <XAxis dataKey="month" tick={{ fill: '#9ca3af', fontSize: 11 }} />
+              <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
+              <Tooltip 
+                contentStyle={{ backgroundColor: '#1a0a2e', border: '1px solid #4c1d95' }} 
+                formatter={(v) => [`$${v.toLocaleString()}`, 'Spend']} 
+              />
+              <Line type="monotone" dataKey="spend" stroke="#a78bfa" strokeWidth={2} dot={{ fill: '#a78bfa' }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="rounded-xl p-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
+          <p className="text-xs text-gray-400 mb-3">Monthly Clicks Trend</p>
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={MONTHLY_DATA}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#2a1a3e" />
+              <XAxis dataKey="month" tick={{ fill: '#9ca3af', fontSize: 11 }} />
+              <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} />
+              <Tooltip 
+                contentStyle={{ backgroundColor: '#1a0a2e', border: '1px solid #4c1d95' }} 
+                formatter={(v) => [v.toLocaleString(), 'Clicks']} 
+              />
+              <Bar dataKey="clicks" fill="#7c3aed" radius={[4,4,0,0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Summary Cards */}
