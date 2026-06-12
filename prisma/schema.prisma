@@ -1502,3 +1502,29 @@ model WebAnalyticsSnapshot {
 
   @@index([asOf(sort: Desc)])
 }
+
+model GoogleAdsAccount {
+  id              String   @id @default(cuid())
+  accountId       String   @unique  // Google Ads customer ID
+  accountName     String
+  currSpend       Float    @default(0)
+  currClicks      Int      @default(0)
+  currImpressions Int      @default(0)
+  currCpc         Float    @default(0)
+  currCtr         Float    @default(0)
+  prevSpend       Float    @default(0)
+  prevClicks      Int      @default(0)
+  prevImpressions Int      @default(0)
+  prevCpc         Float    @default(0)
+  cpcChange       Float?
+  clicksChange    Float?
+  impressionsChange Float?
+  flagged         Boolean  @default(false)
+  flags           String[] // array of flag strings
+  lastSynced      DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([accountId])
+  @@index([flagged])
+}
