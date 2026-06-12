@@ -2,7 +2,6 @@ services:
   - type: web
     name: gyc-dashboard
     runtime: node
-    nodeVersion: "20"
     region: ohio
     plan: starter
     branch: main
