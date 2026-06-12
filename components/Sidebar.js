@@ -87,6 +87,7 @@ function buildDashboardGroup(user) {
     items: [
       canSee(user, WIDE_ROLES) && { label: 'CX Overview',    emoji: '👥', href: '/cx' },
       { label: 'Client Results', emoji: '📊', href: '/client-results' },
+      canSee(user, GA_ROLES) && { label: 'Google Ads', emoji: '📢', href: '/cx/google-ads' },
       canSee(user, WIDE_ROLES) && { label: 'Web Analytics',  emoji: '📈', href: '/web-analytics' },
       { label: 'Helpdesk',       emoji: '🌐', href: '/helpdesk' },
     ].filter(Boolean),
