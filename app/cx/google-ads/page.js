@@ -6,19 +6,6 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R
 
 const BENCHMARK_CPC_MIN = 3.00
 const BENCHMARK_CPC_MAX = 4.50
-
-// Monthly trend data — completed months only (solid line)
-// June is a PARTIAL month (12 of 30 days) — shown separately as dashed/muted
-const COMPLETED_MONTHS = [
-  {"month":"Jan","spend":135250.52,"clicks":82815,"impressions":2860260,"avgCpc":1.63},
-  {"month":"Feb","spend":136060.76,"clicks":67031,"impressions":1843744,"avgCpc":2.03},
-  {"month":"Mar","spend":145995.44,"clicks":42469,"impressions":1365627,"avgCpc":3.44},
-  {"month":"Apr","spend":137406.09,"clicks":30125,"impressions":1199192,"avgCpc":4.56},
-  {"month":"May","spend":137801.49,"clicks":30460,"impressions":1080944,"avgCpc":4.52},
-]
-// Jun partial: 12 of ~30 days. Values annualized to full-month equivalent for fair comparison.
-const PARTIAL_MONTH = {"month":"Jun \u26a0","spend":57940.17,"clicks":12294,"impressions":313249,"avgCpc":4.71, "partial":true}
-const MONTHLY_DATA = [...COMPLETED_MONTHS, PARTIAL_MONTH]
 // Custom dot: hollow circle for partial month, filled for completed
 const CustomDot = (color) => (props) => {
   const { cx, cy, payload } = props
@@ -61,15 +48,49 @@ function FlagBadge({ flag }) {
   )
 }
 
+function LastUpdatedBadge({ timestamp, label = 'Last synced' }) {
+  if (!timestamp) return null
+  const date = new Date(timestamp)
+  const formatted = date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  })
+  return (
+    <span className="text-gray-500 text-xs">
+      {label}: {formatted}
+    </span>
+  )
+}
+
 export default function GoogleAdsPage() {
   const [data, setData] = useState(null)
+  const [monthlyData, setMonthlyData] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAllAccounts, setShowAllAccounts] = useState(false)
 
   useEffect(() => {
-    fetch('/api/google-ads')
-      .then(r => r.json())
-      .then(d => { setData(d); setLoading(false) })
+    Promise.all([
+      fetch('/api/google-ads').then(r => r.json()),
+      fetch('/api/google-ads/monthly').then(r => r.json())
+    ])
+      .then(([adsData, monthly]) => {
+        setData(adsData)
+        // Transform monthly data for charts
+        const chartData = monthly.snapshots.map(s => ({
+          month: s.monthLabel.replace(' 2026', ''),
+          spend: s.spend,
+          clicks: s.clicks,
+          impressions: s.impressions,
+          avgCpc: s.avgCpc,
+          partial: s.isPartial
+        }))
+        setMonthlyData(chartData)
+        setLoading(false)
+      })
       .catch(e => { console.error('Google Ads fetch error:', e); setLoading(false) })
   }, [])
 
@@ -89,7 +110,7 @@ export default function GoogleAdsPage() {
     )
   }
 
-  const { accounts, aggregates } = data
+  const { accounts, aggregates, lastSynced, monthlyLastUpdated } = data
   const flaggedAccounts = accounts.filter(a => a.flagged)
   const activeAccounts = accounts.filter(a => !a.flagged)
 
@@ -100,24 +121,27 @@ export default function GoogleAdsPage() {
     <div className="min-h-screen p-6" style={{ backgroundColor: '#0a0a0a' }}>
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white">Google Ads Performance</h1>
+        <div className="flex items-baseline gap-4">
+          <h1 className="text-3xl font-bold text-white">Google Ads Performance</h1>
+          <LastUpdatedBadge timestamp={lastSynced} />
+        </div>
         <p className="text-gray-400 mt-2">Last 30 Days vs Prior 30 Days</p>
-        {data.accounts[0] && (
-          <p className="text-gray-500 text-sm mt-1">
-            Last synced: {new Date(data.accounts[0].lastSynced).toLocaleString()}
-          </p>
-        )}
       </div>
 
       {/* Monthly Trend Charts */}
-      <div className="mb-2">
-        <p className="text-xs text-yellow-500">⚠ Jun 2026 is a partial month (12 of ~30 days) — shown with hollow markers and lighter bars. Not comparable to full months.</p>
-      </div>
+      {monthlyData.some(d => d.partial) && (
+        <div className="mb-2">
+          <p className="text-xs text-yellow-500">⚠ {monthlyData.find(d => d.partial)?.month} is a partial month — shown with hollow markers and lighter bars. Not comparable to full months.</p>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="rounded-xl p-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-          <p className="text-xs text-gray-400 mb-3">Monthly Spend Trend</p>
+          <div className="flex justify-between items-center mb-3">
+            <p className="text-xs text-gray-400">Monthly Spend Trend</p>
+            <LastUpdatedBadge timestamp={monthlyLastUpdated} label="Updated" />
+          </div>
           <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={MONTHLY_DATA}>
+            <LineChart data={monthlyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#2a1a3e" />
               <XAxis dataKey="month" tick={{ fill: '#9ca3af', fontSize: 11 }} />
               <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
@@ -136,9 +160,12 @@ export default function GoogleAdsPage() {
           </ResponsiveContainer>
         </div>
         <div className="rounded-xl p-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-          <p className="text-xs text-gray-400 mb-3">Monthly Clicks Trend</p>
+          <div className="flex justify-between items-center mb-3">
+            <p className="text-xs text-gray-400">Monthly Clicks Trend</p>
+            <LastUpdatedBadge timestamp={monthlyLastUpdated} label="Updated" />
+          </div>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={MONTHLY_DATA}>
+            <BarChart data={monthlyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#2a1a3e" />
               <XAxis dataKey="month" tick={{ fill: '#9ca3af', fontSize: 11 }} />
               <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} />
@@ -208,6 +235,7 @@ export default function GoogleAdsPage() {
             <span className="bg-red-500/20 text-red-400 px-3 py-1 rounded-full text-sm font-semibold">
               {flaggedAccounts.length} accounts
             </span>
+            <LastUpdatedBadge timestamp={lastSynced} label="Data from" />
           </div>
 
           <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#111111', border: '1px solid #731494' }}>
@@ -270,6 +298,7 @@ export default function GoogleAdsPage() {
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
             <h2 className="text-2xl font-bold text-white">🏆 Top Performers</h2>
+            <LastUpdatedBadge timestamp={lastSynced} label="Data from" />
           </div>
 
           <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#111111', border: '1px solid #2a7c3e' }}>
@@ -312,7 +341,10 @@ export default function GoogleAdsPage() {
       {/* All Active Accounts Section */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-white">All Active Accounts</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-2xl font-bold text-white">All Active Accounts</h2>
+            <LastUpdatedBadge timestamp={lastSynced} label="Data from" />
+          </div>
           <button
             onClick={() => setShowAllAccounts(!showAllAccounts)}
             className="text-sm text-purple-400 hover:text-purple-300 font-medium"

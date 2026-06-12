@@ -1528,3 +1528,17 @@ model GoogleAdsAccount {
   @@index([accountId])
   @@index([flagged])
 }
+
+model GoogleAdsMonthlySnapshot {
+  id          String   @id @default(cuid())
+  monthKey    String   @unique  // "2026-01", "2026-02", etc.
+  monthLabel  String   // "Jan 2026"
+  isPartial   Boolean  @default(false)  // true = current in-progress month
+  spend       Float    @default(0)
+  clicks      Int      @default(0)
+  impressions Int      @default(0)
+  avgCpc      Float    @default(0)
+  accountCount Int     @default(0)
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+}

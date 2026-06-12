@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * sync-zoom-calls.mjs
- * Fetches Zoom recordings from last 90 days, runs AI classification,
- * cross-references GHL contacts, and upserts into ZoomCall table.
+ * sync-zoom-extended.mjs
+ * Extended date range sync: Aug 1, 2025 → today
+ * Pulls historical GKLC recordings that weren't in the 90-day window
  */
 
 import pg from 'pg'
@@ -38,6 +38,7 @@ const {
   GHL_LOCATION_ID,
   DATABASE_URL,
   NEON_DATABASE_URL,
+  OPENAI_API_KEY,
 } = process.env
 
 // ─── DB ───────────────────────────────────────────────────────────────────────
@@ -98,8 +99,7 @@ async function getRecordings(token, from, to) {
       // skip users with no recording access
     }
   }
-  const data = { meetings: allMeetings }
-  return data.meetings || []
+  return allMeetings
 }
 
 async function getMeetingParticipants(token, meetingId) {
@@ -123,10 +123,8 @@ async function getTranscriptText(token, transcriptDownloadUrl) {
 }
 
 // ─── GHL helpers ─────────────────────────────────────────────────────────────
-/**
- * Find a GHL contact by trying multiple participant emails.
- * Skips internal GYC/Bruce emails. Returns first match.
- */
+const GYC_EMAILS = ['@growyourcenter.com', 'unstoppable@brucewspurr.com']
+
 async function findGHLContact(emails) {
   for (const email of emails) {
     if (!email) continue
@@ -149,13 +147,11 @@ async function searchGhlContact(email) {
     const contacts = data.contacts || []
     if (!contacts.length) return null
     const c = contacts[0]
-    const pipeline = c.pipeline || c.opportunitySource || null
-    const stage = c.stage || null
     return {
       id: c.id,
       name: `${c.firstName || ''} ${c.lastName || ''}`.trim(),
-      pipeline,
-      stage,
+      pipeline: c.pipeline || c.opportunitySource || null,
+      stage: c.stage || null,
     }
   } catch {
     return null
@@ -192,28 +188,22 @@ async function generateCallSummary(transcript, topic, participants) {
 }
 
 // ─── AI Classification ────────────────────────────────────────────────────────
-const GYC_EMAILS = ['@growyourcenter.com', 'unstoppable@brucewspurr.com']
 const SALES_REPS = ['jesse@', 'briana@', 'pia@']
 const GAS = ['sebastian@', 'stefen@', 'jc@', 'zu@']
-const ONBOARDING_HOSTS = ['lada@', 'sebastian@', 'zu@']
 
 function classifyCall(meeting, participants, ghlMatch) {
   const topic = (meeting.topic || '').toLowerCase()
-  // Support both API format (user_email) and stored DB format (email)
   const hostEmail = (meeting.host_email || '').toLowerCase()
   const participantEmails = (participants || []).map(p => (p.user_email || p.email || '').toLowerCase())
   const allEmails = [hostEmail, ...participantEmails].filter(Boolean)
 
-  // Count GYC staff vs external
   const gycCount = allEmails.filter(e => GYC_EMAILS.some(d => e.includes(d))).length
   const externalCount = allEmails.filter(e => e && !GYC_EMAILS.some(d => e.includes(d))).length
 
-  // Rule 1: GHL pipeline match → most reliable
   if (ghlMatch?.pipeline === 'GYC Sales') return { type: 'sales', confidence: 0.90 }
   if (ghlMatch?.pipeline === 'Client Stage' && ghlMatch?.stage === 'Onboarding') return { type: 'onboarding', confidence: 0.90 }
   if (ghlMatch?.pipeline === 'Client Stage') return { type: 'client_meeting', confidence: 0.85 }
 
-  // Rule 2: Topic keywords
   if (/blueprint/i.test(topic)) return { type: 'blueprint', confidence: 0.85 }
   if (/onboard|kickoff|kick.off|vision call/i.test(topic)) return { type: 'onboarding', confidence: 0.80 }
   if (/marketing review|growth advisor|monthly meeting|client meeting/i.test(topic)) return { type: 'client_meeting', confidence: 0.80 }
@@ -224,21 +214,16 @@ function classifyCall(meeting, participants, ghlMatch) {
   if (/l10|team meeting|standup|all.team|all staff|stand up/i.test(topic)) return { type: 'internal', confidence: 0.80 }
   if (/1.1|one.on.one|check.in|check in/i.test(topic)) return { type: 'one_on_one', confidence: 0.75 }
 
-  // Rule 3: Host-based rules (with participant data)
   if (SALES_REPS.some(r => hostEmail.includes(r)) && externalCount >= 1) return { type: 'sales', confidence: 0.70 }
   if (GAS.some(r => hostEmail.includes(r)) && externalCount >= 1) return { type: 'client_meeting', confidence: 0.65 }
-
-  // Rule 4: All internal (everyone on call is GYC)
   if (externalCount === 0 && gycCount >= 2) return { type: 'internal', confidence: 0.70 }
 
-  // Rule 5: No participant data but host email known — infer from host role
   const noParticipantData = participantEmails.filter(Boolean).length === 0
   if (noParticipantData && hostEmail) {
     if (SALES_REPS.some(r => hostEmail.includes(r))) return { type: 'sales', confidence: 0.60 }
     if (GAS.some(r => hostEmail.includes(r))) return { type: 'client_meeting', confidence: 0.55 }
   }
 
-  // Rule 6: If host email is null but we have participants, infer from participant emails
   if (!hostEmail && participantEmails.length > 0) {
     const inferredHost = participantEmails.find(e => GYC_EMAILS.some(d => e.includes(d))) || ''
     if (SALES_REPS.some(r => inferredHost.includes(r)) && externalCount >= 1) return { type: 'sales', confidence: 0.65 }
@@ -247,7 +232,6 @@ function classifyCall(meeting, participants, ghlMatch) {
     if (externalCount >= 1 && gycCount >= 1) return { type: 'client_meeting', confidence: 0.55 }
   }
 
-  // Rule 7: External present + GYC host identified
   if (externalCount >= 1 && GAS.some(r => hostEmail.includes(r))) return { type: 'client_meeting', confidence: 0.60 }
   if (externalCount >= 1 && SALES_REPS.some(r => hostEmail.includes(r))) return { type: 'sales', confidence: 0.60 }
 
@@ -266,12 +250,7 @@ function buildAiSummary(meeting, participants, classification) {
   return parts.join(' ') || null
 }
 
-// ─── Upsert ───────────────────────────────────────────────────────────────────
 // ─── ClientProfile lookup ────────────────────────────────────────────────────
-/**
- * Given a GHL contact ID, find the matching ClientProfile and return
- * its acronym, id, and assignedGA.
- */
 async function lookupClientProfile(ghlContactId) {
   if (!ghlContactId) return null
   try {
@@ -344,11 +323,11 @@ async function upsertZoomCall(record) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 async function main() {
-  console.log('🔄 Zoom Call Sync starting...\n')
+  console.log('🔄 Zoom Call Sync (Extended Range) starting...\n')
 
-  // Date range: from Jan 1, 2024 (extended for CTI historical pull)
+  // EXTENDED DATE RANGE: Aug 1, 2025 → today
   const to = new Date()
-  const from = new Date('2024-01-01')
+  const from = new Date('2025-08-01')
   const fromStr = from.toISOString().slice(0, 10)
   const toStr = to.toISOString().slice(0, 10)
   console.log(`📅 Range: ${fromStr} → ${toStr}`)
@@ -359,25 +338,24 @@ async function main() {
     console.log('✅ Zoom token obtained\n')
   } catch (err) {
     console.error(`❌ ${err.message}`)
-    console.log('\n⚠️  Zoom credentials not configured. Add to .env.local:')
-    console.log('   ZOOM_ACCOUNT_ID=<your-account-id>')
-    console.log('   ZOOM_CLIENT_ID=<your-client-id>')
-    console.log('   ZOOM_CLIENT_SECRET=<your-client-secret>')
     await pool.end()
-    process.exit(0)
+    process.exit(1)
   }
 
   const meetings = await getRecordings(token, fromStr, toStr)
   console.log(`📹 Found ${meetings.length} meetings with recordings\n`)
 
-  const stats = { synced: 0, skipped: 0, ghlMatches: 0, byType: {} }
+  const stats = { synced: 0, skipped: 0, ghlMatches: 0, byType: {}, gklc: [] }
 
   for (const meeting of meetings) {
     const meetingId = String(meeting.id || meeting.uuid)
     const recordId = `zoom_${meetingId}`
-    console.log(`  Processing: "${meeting.topic || '(no topic)'}" [${meetingId}]`)
+    const topic = meeting.topic || '(no topic)'
+    console.log(`  Processing: "${topic}" [${meetingId}]`)
 
-    // Find recording URL and transcript
+    // Check if this is GKLC
+    const isGKLC = /gklc/i.test(topic)
+
     const recordingFiles = meeting.recording_files || []
     const mp4 = recordingFiles.find(f => f.file_type === 'MP4' && f.status === 'completed')
     const transcript = recordingFiles.find(f => f.file_type === 'TRANSCRIPT')
@@ -385,30 +363,24 @@ async function main() {
     const transcriptDownloadUrl = transcript?.download_url || null
     const transcriptUrl = transcript?.play_url || transcriptDownloadUrl || null
 
-    // Fetch participants
     const participants = await getMeetingParticipants(token, meetingId)
 
-    // Fetch transcript text
     let transcriptText = null
     if (transcriptDownloadUrl) {
       transcriptText = await getTranscriptText(token, transcriptDownloadUrl)
     }
 
-    // GHL cross-reference — search by unique participant emails (skip GYC staff)
-    let ghlMatch = null
     const allParticipantEmails = participants
       .map(p => p.user_email || p.email)
       .filter(Boolean)
 
-    ghlMatch = await findGHLContact(allParticipantEmails)
+    const ghlMatch = await findGHLContact(allParticipantEmails)
     if (ghlMatch) {
       stats.ghlMatches++
       console.log(`    🔗 GHL match: ${ghlMatch.name} (${ghlMatch.pipeline || 'no pipeline'})`)
     }
 
-    // AI classification
     const classification = classifyCall(meeting, participants, ghlMatch)
-    // Try OpenAI summary first, fall back to rule-based
     let aiSummary = null
     if (transcriptText) {
       console.log('    🤖 Generating AI summary...')
@@ -421,14 +393,15 @@ async function main() {
     const typeStat = classification.type
     stats.byType[typeStat] = (stats.byType[typeStat] || 0) + 1
 
-    // Upsert
+    const cpData = await lookupClientProfile(ghlMatch?.id || null)
+
     await upsertZoomCall({
       id: recordId,
       tenantId: 'gyc',
       meetingId: meetingId,
       topic: meeting.topic || null,
       hostEmail: meeting.host_email || null,
-      hostName: meeting.host_id || null, // Zoom returns host_id not name in recording list
+      hostName: meeting.host_id || null,
       startTime: meeting.start_time ? new Date(meeting.start_time) : null,
       duration: meeting.duration || null,
       participants: participants.map(p => ({
@@ -445,26 +418,40 @@ async function main() {
       ghlContactId: ghlMatch?.id || null,
       ghlContactName: ghlMatch?.name || null,
       ghlPipelineStage: ghlMatch?.stage || null,
+      acronym: cpData?.acronym || null,
+      clientProfileId: cpData?.clientProfileId || null,
       status: 'pending',
       syncedAt: new Date(),
-      // ClientProfile linkage — look up acronym + id via GHL contact
-      ...await lookupClientProfile(ghlMatch?.id || null).then(cp => ({
-        acronym:         cp?.acronym         || null,
-        clientProfileId: cp?.clientProfileId || null,
-      })),
     })
 
     stats.synced++
     console.log(`    ✅ ${classification.type} (${Math.round(classification.confidence * 100)}%)`)
+
+    if (isGKLC) {
+      stats.gklc.push({
+        meetingId,
+        topic,
+        date: meeting.start_time,
+        duration: meeting.duration,
+        hasTranscript: !!transcriptText,
+      })
+    }
   }
 
-  // Print summary
   console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
   console.log(`✅ Synced: ${stats.synced} calls`)
   console.log(`🔗 GHL matches: ${stats.ghlMatches}`)
+  console.log(`🎯 GKLC calls found: ${stats.gklc.length}`)
   console.log('\n📊 Classification breakdown:')
   for (const [type, count] of Object.entries(stats.byType)) {
     console.log(`   ${type.padEnd(16)} ${count}`)
+  }
+
+  if (stats.gklc.length > 0) {
+    console.log('\n🎯 GKLC Recordings:')
+    for (const call of stats.gklc) {
+      console.log(`   ${call.date} | ${call.meetingId} | ${call.duration}min | ${call.hasTranscript ? '✅' : '❌'} transcript`)
+    }
   }
 
   await pool.end()

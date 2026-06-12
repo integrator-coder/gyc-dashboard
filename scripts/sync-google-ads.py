@@ -134,6 +134,7 @@ def main():
     
     synced = 0
     errors = 0
+    all_account_data = []
     
     for i, account in enumerate(accounts, 1):
         print(f'[{i}/{len(accounts)}] {account["name"]} ({account["id"]})')
@@ -200,11 +201,43 @@ def main():
         # Sync to API
         if sync_account_to_api(account_data):
             synced += 1
+            all_account_data.append(account_data)
             print(f'  ✓ Synced')
         else:
             errors += 1
         
         print()
+    
+    # Update monthly snapshot for current month
+    if all_account_data:
+        print('\nUpdating monthly snapshot...')
+        month_key = today.strftime('%Y-%m')
+        month_label = today.strftime('%b %Y')
+        
+        total_spend = sum(a['currSpend'] for a in all_account_data)
+        total_clicks = sum(a['currClicks'] for a in all_account_data)
+        total_impressions = sum(a['currImpressions'] for a in all_account_data)
+        active_count = len([a for a in all_account_data if a['currClicks'] > 0])
+        avg_cpc = total_spend / total_clicks if total_clicks > 0 else 0
+        
+        monthly_data = {
+            'monthKey': month_key,
+            'monthLabel': month_label,
+            'isPartial': True,
+            'spend': total_spend,
+            'clicks': total_clicks,
+            'impressions': total_impressions,
+            'avgCpc': avg_cpc,
+            'accountCount': active_count,
+        }
+        
+        try:
+            dashboard_url = os.environ.get('DASHBOARD_URL', 'http://localhost:3000')
+            response = requests.post(f'{dashboard_url}/api/google-ads/sync-monthly', json=monthly_data, timeout=30)
+            response.raise_for_status()
+            print(f'✓ Updated monthly snapshot for {month_label}')
+        except Exception as ex:
+            print(f'⚠️  Failed to update monthly snapshot: {ex}')
     
     print(f'\n✅ Sync complete!')
     print(f'   Synced: {synced}')

@@ -30,6 +30,16 @@ export async function GET() {
       .sort((a, b) => b.currClicks - a.currClicks)
       .slice(0, 10);
 
+    // Get most recent sync time
+    const lastSynced = accounts.length > 0 
+      ? accounts.reduce((latest, acc) => acc.lastSynced > latest ? acc.lastSynced : latest, accounts[0].lastSynced)
+      : null;
+
+    // Get monthly snapshot last update
+    const latestMonthly = await prisma.googleAdsMonthlySnapshot.findFirst({
+      orderBy: { updatedAt: 'desc' }
+    });
+
     return NextResponse.json({
       accounts,
       aggregates: {
@@ -40,7 +50,9 @@ export async function GET() {
         flaggedCount,
         totalAccounts: accounts.length,
         topPerformers
-      }
+      },
+      lastSynced,
+      monthlyLastUpdated: latestMonthly?.updatedAt || null,
     });
   } catch (error: any) {
     console.error('Error fetching Google Ads data:', error);

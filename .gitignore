@@ -8,3 +8,7 @@ prisma/dev.db-journal
 .vercel
 .cache/
 scripts/bulk-populate-progress.json
+
+# Google Ads API credentials (contains OAuth secrets)
+google-ads.yaml
+GOOGLE_ADS_SETUP_INSTRUCTIONS.md

@@ -49,8 +49,7 @@ function makeGrid(centerLat, centerLng, radiusMiles) {
 
 async function queryRank(lat, lng, kw) {
   try {
-    console.log(`    [API] Querying ${kw} at ${lat.toFixed(4)},${lng.toFixed(4)}...`);
-    const fetchPromise = fetch('https://api.dataforseo.com/v3/serp/google/maps/live/advanced', {
+    const r = await fetch('https://api.dataforseo.com/v3/serp/google/maps/live/advanced', {
       method: 'POST', headers: H,
       body: JSON.stringify([{
         keyword: kw,
@@ -58,19 +57,11 @@ async function queryRank(lat, lng, kw) {
         language_code: 'en',
         depth: MAX_RANK,
       }]),
-    });
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('API timeout after 30s')), 30000)
-    );
-    const r = await Promise.race([fetchPromise, timeoutPromise]);
-    const d = await r.json();
-    const t = d.tasks?.[0];
-    console.log(`    [API] Response: ${t?.status_code}, items: ${t?.result?.[0]?.items?.length || 0}`);
-    return t?.status_code === 20000 ? (t.result?.[0]?.items || []) : [];
-  } catch (e) {
-    console.error(`    [API] Error: ${e.message}`);
-    return [];
-  }
+    })
+    const d = await r.json()
+    const t = d.tasks?.[0]
+    return t?.status_code === 20000 ? (t.result?.[0]?.items || []) : []
+  } catch { return [] }
 }
 
 function findRank(items, placeId, namePattern) {

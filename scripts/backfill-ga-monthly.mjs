@@ -136,11 +136,23 @@ async function main() {
   const { rows: activeClients } = await pool.query('SELECT acronym FROM "ClientProfile" WHERE status=\'active\'')
   const activeAcronyms = new Set(activeClients.map(r => r.acronym))
 
+  // Build lookup: ga4PropertyId -> acronym from ClientIdentityMap
+  const { rows: identityRows } = await pool.query(
+    `SELECT acronym, "ga4PropertyId" FROM "ClientIdentityMap" WHERE "ga4PropertyId" IS NOT NULL AND "tenantId" = 'gyc'`
+  )
+  const propertyIdToAcronym = {}
+  for (const row of identityRows) {
+    propertyIdToAcronym[row.ga4PropertyId] = row.acronym
+  }
+  console.log(`ClientIdentityMap lookup: ${identityRows.length} property-to-client mappings loaded`)
+
   let synced = 0, skipped = 0, failed = 0
 
   for (const prop of properties) {
     const propId = prop.name.split('/').pop()
-    const acronym = extractAcronym(prop.displayName)
+    // First: check ClientIdentityMap (covers URL-matched + manually linked clients)
+    // Fallback: parse display name for legacy ACRONYM - Name format
+    const acronym = propertyIdToAcronym[propId] || extractAcronym(prop.displayName)
     if (!acronym || !activeAcronyms.has(acronym)) { skipped++; continue }
 
     for (const { start, end, month } of monthRanges) {
