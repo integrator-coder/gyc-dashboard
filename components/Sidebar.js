@@ -65,6 +65,7 @@ function buildDashboardGroup(user) {
       canSee(user, ADMIN_ONLY) && { label: 'Agreements',       emoji: '📝', href: '/agreements' },
       canSee(user, ADMIN_ONLY) && { label: 'Stripe Deep Dive', emoji: '💳', href: '/stripe-deep-dive' },
       canSee(user, ADMIN_ONLY) && { label: 'Projections',      emoji: '📈', href: '/projections' },
+      canSee(user, ADMIN_ONLY) && { label: 'ACL Review',       emoji: '🔍', href: '/acl-review', badge: 'pending' },
       canSee(user, ADMIN_ONLY) && { label: 'Linkage Review',   emoji: '🧩', href: '/finance/linkage-review' },
     ].filter(Boolean)
     children.push({ label: 'Finance', emoji: '💰', items: financeItems })
