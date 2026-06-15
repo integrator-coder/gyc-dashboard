@@ -98,6 +98,7 @@ function buildDashboardGroup(user) {
 
   if (canSee(user, GA_ROLES)) {
     children.push({ label: 'Production', emoji: '🔧', href: '/production' })
+    children.push({ label: 'Workflow Health', emoji: '⚠️', href: '/workflow-health', badgeKey: 'workflowHealth' })
     children.push({ label: 'Workload',   emoji: '⚙️', href: '/workload' })
   }
 
@@ -158,8 +159,10 @@ function groupHasActiveChild(group, pathname) {
   )
 }
 
-function GroupLink({ item, pathname }) {
+function GroupLink({ item, pathname, badges }) {
   const isActive = itemIsActive(pathname, item.href)
+  const badgeValue = item.badgeKey && badges ? badges[item.badgeKey] : null
+  const showBadge = badgeValue !== null && badgeValue !== undefined && badgeValue > 0
 
   if (item.external) {
     return (
@@ -182,12 +185,17 @@ function GroupLink({ item, pathname }) {
       className={`nav-link flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium ${isActive ? 'nav-link-active' : ''}`}
     >
       <span className="text-sm">{item.emoji}</span>
-      <span>{item.label}</span>
+      <span className="flex-1">{item.label}</span>
+      {showBadge && (
+        <span className="ml-auto inline-flex items-center justify-center rounded-full bg-red-600 px-2 py-0.5 text-xs font-bold text-white">
+          {badgeValue}
+        </span>
+      )}
     </Link>
   )
 }
 
-function CollapsibleGroup({ group, pathname }) {
+function CollapsibleGroup({ group, pathname, badges }) {
   const isChildActive = groupHasActiveChild(group, pathname)
   const [manualOpen, setManualOpen] = useState(group.defaultOpen ?? true)
   const open = isChildActive ? true : manualOpen
@@ -210,7 +218,7 @@ function CollapsibleGroup({ group, pathname }) {
         <div className="ml-3 mt-2 space-y-3 border-l border-[var(--brand-border)] pl-4">
           {group.children.map((child) => {
             if (child.href) {
-              return <GroupLink key={child.href} item={child} pathname={pathname} />
+              return <GroupLink key={child.href} item={child} pathname={pathname} badges={badges} />
             }
 
             return (
@@ -221,7 +229,7 @@ function CollapsibleGroup({ group, pathname }) {
                 </div>
                 <div className="space-y-0.5">
                   {child.items.map((item) => (
-                    <GroupLink key={item.href} item={item} pathname={pathname} />
+                    <GroupLink key={item.href} item={item} pathname={pathname} badges={badges} />
                   ))}
                 </div>
               </div>
@@ -238,6 +246,7 @@ export default function Sidebar() {
   const router = useRouter()
   const [session, setSession] = useState({ loading: true, user: null })
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [badges, setBadges] = useState({})
 
   // Close mobile menu when pathname changes
   useEffect(() => {
@@ -252,6 +261,26 @@ export default function Sidebar() {
       .catch(() => { if (active) setSession({ loading: false, user: null }) })
     return () => { active = false }
   }, [pathname])
+
+  // Fetch workflow health badge count
+  useEffect(() => {
+    let active = true
+    async function fetchBadges() {
+      try {
+        const res = await fetch('/api/asana/workflow-health', { cache: 'no-store' })
+        if (!res.ok) return
+        const data = await res.json()
+        if (active && data.summary) {
+          setBadges({ workflowHealth: (data.summary.critical || 0) + (data.summary.high || 0) })
+        }
+      } catch (err) {
+        // Silent fail - badge just won't show
+      }
+    }
+    fetchBadges()
+    const interval = setInterval(fetchBadges, 5 * 60 * 1000) // Refresh every 5 minutes
+    return () => { active = false; clearInterval(interval) }
+  }, [])
 
   const dashboardGroup = useMemo(() => buildDashboardGroup(session.user), [session.user])
 
@@ -310,13 +339,13 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-4">
-        <CollapsibleGroup group={dashboardGroup} pathname={pathname} />
+        <CollapsibleGroup group={dashboardGroup} pathname={pathname} badges={badges} />
         {clientManagementGroup.children.length > 0 && (
-          <CollapsibleGroup group={clientManagementGroup} pathname={pathname} />
+          <CollapsibleGroup group={clientManagementGroup} pathname={pathname} badges={badges} />
         )}
-        <CollapsibleGroup group={teamPortalGroup} pathname={pathname} />
+        <CollapsibleGroup group={teamPortalGroup} pathname={pathname} badges={badges} />
         {canSee(session.user, ADMIN_ONLY) && (
-          <CollapsibleGroup group={ADMIN_GROUP} pathname={pathname} />
+          <CollapsibleGroup group={ADMIN_GROUP} pathname={pathname} badges={badges} />
         )}
       </nav>
 
