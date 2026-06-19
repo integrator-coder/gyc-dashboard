@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-09T16:00:36.000Z",
+  "updatedAt": "2026-06-19T00:00:00.000Z",
   "resources": [
     {
       "id": "notion-training-hub",
@@ -32,6 +32,28 @@
     }
   ],
   "presentations": [
+    {
+      "id": "codex-at-gyc",
+      "module": null,
+      "category": "strategy",
+      "title": "The Case for Codex at GYC — AI-Driven Sales Revolution",
+      "description": "17 slides. Part I: The case for adding Codex to GYC's AI stack — why a two-agent model (Wall·E + Codex) beats single-agent, specific GYC use cases, and what stays with Wall·E. Part II: The AI-Driven Sales Revolution — how AI is reshaping outbound sales and what 60-70% AI-driven outbound looks like by 2026. Audience: GYC Leadership (Bruce, Zac, Carmella).",
+      "url": "https://docs.google.com/presentation/d/1Av2gLsBZZnE7cccKATLu6T777dRoC8UhdaVLXaE_nEs/edit",
+      "slideCount": 17,
+      "status": "live",
+      "source": "GYC strategic framework",
+      "sourceUrl": "",
+      "audience": "Leadership (Bruce, Zac, Carmella)",
+      "tags": [
+        "codex",
+        "ai-agents",
+        "strategy",
+        "leadership",
+        "sales",
+        "automation"
+      ],
+      "addedDate": "2026-06-15"
+    },
     {
       "id": "karpathy-3-layer-framework",
       "module": null,
