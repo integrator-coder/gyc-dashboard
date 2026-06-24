@@ -71,6 +71,7 @@ export default function GoogleAdsPage() {
   const [monthlyData, setMonthlyData] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAllAccounts, setShowAllAccounts] = useState(false)
+  const [showFullHistory, setShowFullHistory] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -117,6 +118,9 @@ export default function GoogleAdsPage() {
   // Sort flagged by CPC change descending (worst first)
   flaggedAccounts.sort((a, b) => (b.cpcChange || 0) - (a.cpcChange || 0))
 
+  // Derived: what to show in charts
+  const chartData = showFullHistory ? monthlyData : monthlyData.slice(-24)
+
   return (
     <div className="min-h-screen p-6" style={{ backgroundColor: '#0a0a0a' }}>
       {/* Header */}
@@ -129,11 +133,15 @@ export default function GoogleAdsPage() {
       </div>
 
       {/* Monthly Trend Charts */}
-      {monthlyData.some(d => d.partial) && (
-        <div className="mb-2">
-          <p className="text-xs text-yellow-500">⚠ {monthlyData.find(d => d.partial)?.month} is a partial month — shown with hollow markers and lighter bars. Not comparable to full months.</p>
-        </div>
-      )}
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs text-yellow-500">⚠ Months marked with ⚠ are partial (in-progress). Not comparable to full months.</p>
+        <button 
+          onClick={() => setShowFullHistory(!showFullHistory)}
+          className="text-xs text-purple-400 hover:text-purple-300 border border-purple-800 rounded px-2 py-1"
+        >
+          {showFullHistory ? 'Show last 24 months' : 'Show full history (2022–present)'}
+        </button>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="rounded-xl p-4" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
           <div className="flex justify-between items-center mb-3">
@@ -141,7 +149,7 @@ export default function GoogleAdsPage() {
             <LastUpdatedBadge timestamp={monthlyLastUpdated} label="Updated" />
           </div>
           <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={monthlyData}>
+            <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#2a1a3e" />
               <XAxis dataKey="month" tick={{ fill: '#9ca3af', fontSize: 11 }} />
               <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
@@ -165,7 +173,7 @@ export default function GoogleAdsPage() {
             <LastUpdatedBadge timestamp={monthlyLastUpdated} label="Updated" />
           </div>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={monthlyData}>
+            <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#2a1a3e" />
               <XAxis dataKey="month" tick={{ fill: '#9ca3af', fontSize: 11 }} />
               <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} />
@@ -225,6 +233,52 @@ export default function GoogleAdsPage() {
         <p className="text-sm text-gray-400">
           <span className="font-semibold text-white">Childcare Benchmark:</span> $3.00–$4.50 CPC
         </p>
+      </div>
+
+      {/* Portfolio Performance Charts */}
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-4">
+          <h2 className="text-2xl font-bold text-white">📊 Portfolio Performance Charts</h2>
+        </div>
+        <p className="text-sm text-gray-400 mb-4">Source: GYC Google Ads MCC Report — June 2026</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: '#111111', borderColor: '#2a1a3e' }}>
+            <div className="p-4">
+              <img 
+                src="/google-ads-charts/chart-01.png" 
+                alt="Portfolio Performance Chart 1" 
+                className="w-full rounded-lg"
+              />
+            </div>
+          </div>
+          <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: '#111111', borderColor: '#2a1a3e' }}>
+            <div className="p-4">
+              <img 
+                src="/google-ads-charts/chart-02.png" 
+                alt="Portfolio Performance Chart 2" 
+                className="w-full rounded-lg"
+              />
+            </div>
+          </div>
+          <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: '#111111', borderColor: '#2a1a3e' }}>
+            <div className="p-4">
+              <img 
+                src="/google-ads-charts/chart-03.png" 
+                alt="Portfolio Performance Chart 3" 
+                className="w-full rounded-lg"
+              />
+            </div>
+          </div>
+          <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: '#111111', borderColor: '#2a1a3e' }}>
+            <div className="p-4">
+              <img 
+                src="/google-ads-charts/chart-04.png" 
+                alt="Portfolio Performance Chart 4" 
+                className="w-full rounded-lg"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Needs Attention Section */}
