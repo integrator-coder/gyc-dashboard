@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-19T00:00:00.000Z",
+  "updatedAt": "2026-06-25T16:48:29.772Z",
   "resources": [
     {
       "id": "notion-training-hub",
@@ -92,7 +92,8 @@
         "beginners",
         "fundamentals",
         "onboarding"
-      ]
+      ],
+      "addedDate": "2026-04-01"
     },
     {
       "id": "module-2-personal-agent",
@@ -114,7 +115,8 @@
         "claude-cowork",
         "infrastructure",
         "onboarding"
-      ]
+      ],
+      "addedDate": "2026-04-01"
     },
     {
       "id": "module-3-4-rules",
@@ -133,7 +135,8 @@
         "anthropic",
         "framework",
         "intermediate"
-      ]
+      ],
+      "addedDate": "2026-04-15"
     },
     {
       "id": "module-4-toprank",
@@ -153,7 +156,8 @@
         "toprank",
         "paid-media",
         "mcp"
-      ]
+      ],
+      "addedDate": "2026-04-15"
     },
     {
       "id": "module-5-ai-race",
@@ -171,7 +175,8 @@
         "ai-landscape",
         "strategy",
         "context"
-      ]
+      ],
+      "addedDate": "2026-04-15"
     },
     {
       "id": "module-6-prompting",
@@ -190,7 +195,8 @@
         "prompting",
         "fundamentals",
         "skills"
-      ]
+      ],
+      "addedDate": "2026-05-01"
     },
     {
       "id": "module-7-sales",
@@ -208,7 +214,8 @@
         "sales",
         "prompting",
         "role-specific"
-      ]
+      ],
+      "addedDate": "2026-05-01"
     },
     {
       "id": "module-8-implementation-layer",
@@ -227,7 +234,8 @@
         "workflows",
         "systems",
         "practical"
-      ]
+      ],
+      "addedDate": "2026-05-15"
     },
     {
       "id": "module-9-build-ai-system",
@@ -246,7 +254,8 @@
         "build-system",
         "agents",
         "implementation"
-      ]
+      ],
+      "addedDate": "2026-05-15"
     },
     {
       "id": "module-1-howto",
@@ -266,7 +275,8 @@
         "templates",
         "onboarding",
         "step-by-step"
-      ]
+      ],
+      "addedDate": "2026-04-01"
     },
     {
       "id": "module-5-howto-skills",
@@ -287,7 +297,8 @@
         "template",
         "anthropic",
         "skill-building"
-      ]
+      ],
+      "addedDate": "2026-04-15"
     },
     {
       "id": "module-8-howto",
@@ -307,7 +318,8 @@
         "step-by-step",
         "implementation",
         "build"
-      ]
+      ],
+      "addedDate": "2026-05-15"
     },
     {
       "id": "module-10-question-method",
@@ -439,7 +451,8 @@
         "paid-media",
         "meta-ads",
         "training"
-      ]
+      ],
+      "addedDate": "2026-05-01"
     },
     {
       "id": "module-sales-prospecting",
@@ -455,7 +468,8 @@
         "sales",
         "prospecting",
         "research"
-      ]
+      ],
+      "addedDate": "2026-05-01"
     },
     {
       "id": "end-of-search",
@@ -471,7 +485,8 @@
         "ai-landscape",
         "strategy",
         "search"
-      ]
+      ],
+      "addedDate": "2026-06-01"
     },
     {
       "id": "strategic-thinking-function-to-company",
@@ -486,7 +501,8 @@
       "tags": [
         "strategy",
         "leadership"
-      ]
+      ],
+      "addedDate": "2026-06-01"
     },
     {
       "id": "east-bank-masterclass",
@@ -501,7 +517,8 @@
       "tags": [
         "masterclass",
         "clients"
-      ]
+      ],
+      "addedDate": "2026-06-01"
     },
     {
       "id": "speed-childcare-inquiries",
@@ -517,7 +534,8 @@
         "sales",
         "speed-to-lead",
         "childcare"
-      ]
+      ],
+      "addedDate": "2026-06-01"
     },
     {
       "id": "gyc-2026",
@@ -532,7 +550,8 @@
       "tags": [
         "company",
         "2026"
-      ]
+      ],
+      "addedDate": "2026-01-01"
     },
     {
       "id": "gyc-blueprint-webinar",
@@ -548,7 +567,8 @@
         "blueprint",
         "webinar",
         "sales"
-      ]
+      ],
+      "addedDate": "2026-03-01"
     },
     {
       "id": "gyc-accelerator-deck",
@@ -564,7 +584,27 @@
         "sales",
         "accelerator",
         "website"
-      ]
+      ],
+      "addedDate": "2026-03-01"
+    },
+    {
+      "id": "reputation-engine-team-briefing",
+      "category": "training",
+      "title": "The Reputation Engine™ — Team Briefing",
+      "description": "Internal training deck covering the Reputation Engine offer, contract deliverables, Core vs Growth differences, GYC vs client role split, and key contract terms. Built for all GYC team members.",
+      "url": "https://docs.google.com/presentation/d/1KiRIpTqh8SLNDDVG0FV33HUT0nZpqqICB-fcXp8ybOg/edit",
+      "slideCount": 10,
+      "status": "live",
+      "audience": "All GYC Team",
+      "tags": [
+        "reputation-engine",
+        "training",
+        "contract",
+        "deliverables",
+        "core-growth"
+      ],
+      "addedDate": "2026-06-22",
+      "module": null
     }
   ]
 }
