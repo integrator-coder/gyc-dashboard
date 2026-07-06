@@ -356,6 +356,9 @@ export async function GET() {
     const renewalByMonth = {}
     const missingRenewal = []
 
+    // Only show current month and future (not already-passed months)
+    const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2,'0')}`
+
     for (const d of allDeals) {
       if (!d.pif) continue
       const termMonths = pifTermMonths(d.term)
@@ -373,12 +376,13 @@ export async function GET() {
         renewalByMonth[key].mrr += d.renewalAmount
         renewalByMonth[key].count++
         renewalByMonth[key].deals.push({ name: d.name, service: d.service, renewal: d.renewalAmount, rep: d.rep })
-      } else {
+      } else if (key >= todayKey) {   // only flag FUTURE missing renewals
         missingRenewal.push({ name: d.name, service: d.service, fp: d.firstPayment, date: d.date, rep: d.rep, renewalMonth: label })
       }
     }
 
     const renewalProjection = Object.entries(renewalByMonth)
+      .filter(([key]) => key >= todayKey)   // only current + future months
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([key, val]) => ({ key, ...val }))
 
@@ -402,17 +406,49 @@ export async function GET() {
     const ytdCount = deals26.length
     const ytdAvgDeal = ytdCount > 0 ? ytdFP / ytdCount : 0
 
-    // Q1 YoY (Jan–current month)
-    const q1Months = MONTH_ORDER.slice(0, now.getMonth() + 1)
-    const q1_26 = deals26.filter(d => q1Months.includes(d.month)).reduce((s, d) => s + d.firstPayment, 0)
-    const q1_25 = deals25.filter(d => q1Months.includes(d.month)).reduce((s, d) => s + d.firstPayment, 0)
-    const yoyPct = q1_25 > 0 ? ((q1_26 - q1_25) / q1_25) * 100 : null
+    // Quarter definitions (fixed)
+    const Q1_MONTHS = MONTH_ORDER.slice(0, 3)   // Jan-Mar
+    const Q2_MONTHS = MONTH_ORDER.slice(3, 6)   // Apr-Jun  
+    const Q3_MONTHS = MONTH_ORDER.slice(6, 9)   // Jul-Sep
+    const Q4_MONTHS = MONTH_ORDER.slice(9, 12)  // Oct-Dec
 
-    // Full Term YoY
+    // YTD = Jan through current month (same month count for both years for fair comparison)
+    const ytdMonths = MONTH_ORDER.slice(0, now.getMonth() + 1)
+
+    // Q1 2026 vs Q1 2025 (Jan-Mar fixed)
+    const q1Deals26 = deals26.filter(d => Q1_MONTHS.includes(d.month))
+    const q1Deals25 = deals25.filter(d => Q1_MONTHS.includes(d.month))
+    const q1FP26    = q1Deals26.reduce((s,d) => s + d.firstPayment, 0)
+    const q1FP25    = q1Deals25.reduce((s,d) => s + d.firstPayment, 0)
+    const q1FT26    = q1Deals26.reduce((s,d) => s + d.fullTerm, 0)
+    const q1FT25    = q1Deals25.reduce((s,d) => s + d.fullTerm, 0)
+    const q1Count26 = q1Deals26.length
+    const q1Count25 = q1Deals25.length
+    const q1YoYFP   = q1FP25 > 0 ? ((q1FP26 - q1FP25) / q1FP25) * 100 : null
+    const q1YoYFT   = q1FT25 > 0 ? ((q1FT26 - q1FT25) / q1FT25) * 100 : null
+
+    // Q2 2026 vs Q2 2025 (Apr-Jun fixed)
+    const q2Deals26 = deals26.filter(d => Q2_MONTHS.includes(d.month))
+    const q2Deals25 = deals25.filter(d => Q2_MONTHS.includes(d.month))
+    const q2FP26    = q2Deals26.reduce((s,d) => s + d.firstPayment, 0)
+    const q2FP25    = q2Deals25.reduce((s,d) => s + d.firstPayment, 0)
+    const q2FT26    = q2Deals26.reduce((s,d) => s + d.fullTerm, 0)
+    const q2FT25    = q2Deals25.reduce((s,d) => s + d.fullTerm, 0)
+    const q2Count26 = q2Deals26.length
+    const q2Count25 = q2Deals25.length
+    const q2YoYFP   = q2FP25 > 0 ? ((q2FP26 - q2FP25) / q2FP25) * 100 : null
+    const q2YoYFT   = q2FT25 > 0 ? ((q2FT26 - q2FT25) / q2FT25) * 100 : null
+
+    // Full Term YTD
     const ytdFullTerm = deals26.reduce((s, d) => s + d.fullTerm, 0)
-    const q1FullTerm26 = deals26.filter(d => q1Months.includes(d.month)).reduce((s, d) => s + d.fullTerm, 0)
-    const q1FullTerm25 = deals25.filter(d => q1Months.includes(d.month)).reduce((s, d) => s + d.fullTerm, 0)
-    const yoyPctFullTerm = q1FullTerm25 > 0 ? ((q1FullTerm26 - q1FullTerm25) / q1FullTerm25) * 100 : null
+
+    // YTD 2026 vs YTD 2025 (Jan through current month)
+    const ytdDeals25FairComp = deals25.filter(d => ytdMonths.includes(d.month))
+    const ytdFP25      = ytdDeals25FairComp.reduce((s,d) => s + d.firstPayment, 0)
+    const ytdFT25      = ytdDeals25FairComp.reduce((s,d) => s + d.fullTerm, 0)
+    const ytdCount25   = ytdDeals25FairComp.length
+    const ytdYoYFP     = ytdFP25 > 0 ? ((ytdFP - ytdFP25) / ytdFP25) * 100 : null
+    const ytdYoYFT     = ytdFT25 > 0 ? ((ytdFullTerm - ytdFT25) / ytdFT25) * 100 : null
 
     // This month
     const thisMonthFP = monthly26[currentMonth]?.firstPayment || 0
@@ -446,13 +482,13 @@ export async function GET() {
         thisMonthFirstPayment: thisMonthFP,
         thisMonthDeals: thisMonthCount,
         thisMonthMRR: thisMonthMRR26,
-        q1_2026: q1_26,
-        q1_2025: q1_25,
-        yoyPct,
+        // Q1
+        q1FP26, q1FP25, q1FT26, q1FT25, q1Count26, q1Count25, q1YoYFP, q1YoYFT,
+        // Q2
+        q2FP26, q2FP25, q2FT26, q2FT25, q2Count26, q2Count25, q2YoYFP, q2YoYFT,
+        // YTD
         ytdFullTerm,
-        q1FullTerm26,
-        q1FullTerm25,
-        yoyPctFullTerm,
+        ytdFP25, ytdFT25, ytdCount25, ytdYoYFP, ytdYoYFT,
         currentMonth,
         pif: {
           fp26: pifFP26, count26: pifDeals26.length, pct26: ytdFP > 0 ? pifFP26 / ytdFP * 100 : 0,

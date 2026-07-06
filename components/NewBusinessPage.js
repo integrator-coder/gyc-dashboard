@@ -129,20 +129,48 @@ export default function NewBusinessPage() {
         )}
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <KpiCard label="YTD Contract Value" value={fmt$(summary.ytdFullTerm)} sub={`${summary.ytdDeals} deals · full term normalized`} highlight />
-        <KpiCard label="Q1 YoY Growth" value={summary.yoyPctFullTerm != null ? `${summary.yoyPctFullTerm >= 0 ? '+' : ''}${Math.round(summary.yoyPctFullTerm)}%` : '—'} sub={`${fmt$(summary.q1FullTerm25 || 0)} → ${fmt$(summary.q1FullTerm26 || 0)}`} />
-        <KpiCard label="Cash at Signing (YTD)" value={fmt$(summary.ytdFirstPayment)} sub="First payments collected" />
-        <KpiCard label="Avg Deal Size" value={fmt$(summary.ytdAvgDeal)} sub="YTD avg first payment" />
-        <KpiCard label={`${summary.currentMonth} New MRR`} value={fmt$(summary.thisMonthMRR)} sub="Recurring portion only" />
+      {/* KPI Cards — 6 cards: Q1, Q2, YTD, Cash, Avg Deal, Current Month MRR */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <KpiCard
+          label="Q1 2026 Contract Value"
+          value={fmt$(summary.q1FT26 || 0)}
+          sub={`vs ${fmt$(summary.q1FT25 || 0)} in 2025 · ${summary.q1YoYFT != null ? `${summary.q1YoYFT >= 0 ? '+' : ''}${Math.round(summary.q1YoYFT)}% YoY` : '—'}`}
+          highlight={false}
+        />
+        <KpiCard
+          label="Q2 2026 Contract Value"
+          value={fmt$(summary.q2FT26 || 0)}
+          sub={`vs ${fmt$(summary.q2FT25 || 0)} in 2025 · ${summary.q2YoYFT != null ? `${summary.q2YoYFT >= 0 ? '+' : ''}${Math.round(summary.q2YoYFT)}% YoY` : '—'}`}
+          highlight={false}
+        />
+        <KpiCard
+          label="YTD 2026 Contract Value"
+          value={fmt$(summary.ytdFullTerm || 0)}
+          sub={`vs ${fmt$(summary.ytdFT25 || 0)} in 2025 · ${summary.ytdYoYFT != null ? `${summary.ytdYoYFT >= 0 ? '+' : ''}${Math.round(summary.ytdYoYFT)}% YoY` : '—'} · ${summary.ytdDeals} deals`}
+          highlight
+        />
+        <KpiCard
+          label="Cash at Signing (YTD)"
+          value={fmt$(summary.ytdFirstPayment)}
+          sub="First payments collected"
+        />
+        <KpiCard
+          label="Avg Deal Size"
+          value={fmt$(summary.ytdAvgDeal)}
+          sub="YTD avg first payment"
+        />
+        <KpiCard
+          label={`${summary.currentMonth} New MRR`}
+          value={fmt$(summary.thisMonthMRR)}
+          sub="Recurring portion only"
+        />
       </div>
 
       {/* Row 2 — YoY Contract Value + YoY Deal Count */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* YoY Contract Value Bar Chart (primary — Full Term) */}
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-          <h2 className="text-white font-semibold mb-1">Contract Value — 2026 vs 2025</h2>
+          <h2 className="text-white font-semibold mb-1">Contract Value — 2026 vs 2025 (YoY by Month)</h2>
           <p className="text-gray-300 text-xs mb-4">Full term value by month (PIF ÷ term normalized to annual)</p>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={monthlyComparison} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
