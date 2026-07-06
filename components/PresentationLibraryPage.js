@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 
 const CATEGORY_CONFIG = {
   'getting-started': {
@@ -138,7 +138,7 @@ function ResourceCard({ resource }) {
   )
 }
 
-function SequentialCard({ deck, stepNum, colorKey }) {
+function SequentialCard({ deck, stepNum, colorKey, isNew, isCompleted, onToggleComplete }) {
   const c = COLOR_STYLES[colorKey] || COLOR_STYLES.violet
   return (
     <div className={`relative rounded-2xl border bg-gradient-to-br ${c.card} p-5 flex flex-col gap-3 transition-all min-h-[280px]`}>
@@ -146,6 +146,20 @@ function SequentialCard({ deck, stepNum, colorKey }) {
       <div className={`absolute top-4 left-4 w-10 h-10 rounded-full ${c.stepBg} border-2 ${c.stepBorder} flex items-center justify-center`}>
         <span className={`text-lg font-bold ${c.stepText}`}>{stepNum}</span>
       </div>
+      
+      {/* Completed checkmark overlay - offset for step badge */}
+      {isCompleted && (
+        <div className="absolute top-16 left-4 w-7 h-7 rounded-full bg-green-500/20 border-2 border-green-500/40 flex items-center justify-center">
+          <span className="text-green-400 text-sm">✓</span>
+        </div>
+      )}
+      
+      {/* NEW badge */}
+      {isNew && (
+        <div className="absolute top-3 right-3">
+          <span className="bg-green-500/20 text-green-300 border border-green-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full">NEW</span>
+        </div>
+      )}
       
       <div className="flex items-start justify-end gap-2 pt-1">
         <span className="text-[9px] text-gray-500 uppercase tracking-widest">Sequential Step {stepNum}</span>
@@ -172,12 +186,26 @@ function SequentialCard({ deck, stepNum, colorKey }) {
         >
           ▶ Open Deck
         </a>
+        <button
+          onClick={(e) => {
+            e.preventDefault()
+            onToggleComplete(deck.id)
+          }}
+          className={`px-3 text-xs py-2 rounded-lg font-semibold border transition shrink-0 ${
+            isCompleted
+              ? 'bg-green-500/20 hover:bg-green-500/30 text-green-300 border-green-500/30'
+              : 'bg-gray-500/10 hover:bg-gray-500/20 text-gray-400 hover:text-gray-200 border-gray-500/20'
+          }`}
+          title={isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
+        >
+          {isCompleted ? '✓ Done' : '✓'}
+        </button>
         {deck.sourceUrl && (
           <a
             href={deck.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3 text-xs py-2 rounded-lg bg-gray-500/10 hover:bg-gray-500/20 text-gray-400 hover:text-gray-200 transition border border-gray-500/20"
+            className="px-3 text-xs py-2 rounded-lg bg-gray-500/10 hover:bg-gray-500/20 text-gray-400 hover:text-gray-200 transition border border-gray-500/20 shrink-0"
             title={`Source: ${deck.source}`}
           >
             Source ↗
@@ -188,10 +216,24 @@ function SequentialCard({ deck, stepNum, colorKey }) {
   )
 }
 
-function IndependentCard({ deck, colorKey }) {
+function IndependentCard({ deck, colorKey, isNew, isCompleted, onToggleComplete }) {
   const c = COLOR_STYLES[colorKey] || COLOR_STYLES.violet
   return (
-    <div className={`rounded-2xl border bg-gradient-to-br ${c.card} p-5 flex flex-col gap-3 transition-all`}>
+    <div className={`relative rounded-2xl border bg-gradient-to-br ${c.card} p-5 flex flex-col gap-3 transition-all`}>
+      {/* Completed checkmark overlay */}
+      {isCompleted && (
+        <div className="absolute top-4 left-4 w-8 h-8 rounded-full bg-green-500/20 border-2 border-green-500/40 flex items-center justify-center">
+          <span className="text-green-400 text-lg">✓</span>
+        </div>
+      )}
+      
+      {/* NEW badge */}
+      {isNew && (
+        <div className="absolute top-3 right-3">
+          <span className="bg-green-500/20 text-green-300 border border-green-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full">NEW</span>
+        </div>
+      )}
+      
       <div className="flex items-start justify-between gap-2">
         {deck.module && (
           <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold shrink-0 ${c.badge}`}>
@@ -218,6 +260,20 @@ function IndependentCard({ deck, colorKey }) {
         >
           ▶ Open Deck
         </a>
+        <button
+          onClick={(e) => {
+            e.preventDefault()
+            onToggleComplete(deck.id)
+          }}
+          className={`px-3 text-xs py-2 rounded-lg font-semibold border transition ${
+            isCompleted
+              ? 'bg-green-500/20 hover:bg-green-500/30 text-green-300 border-green-500/30'
+              : 'bg-gray-500/10 hover:bg-gray-500/20 text-gray-400 hover:text-gray-200 border-gray-500/20'
+          }`}
+          title={isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
+        >
+          {isCompleted ? '✓ Done' : '✓'}
+        </button>
         {deck.sourceUrl && (
           <a
             href={deck.sourceUrl}
@@ -229,6 +285,50 @@ function IndependentCard({ deck, colorKey }) {
             Source ↗
           </a>
         )}
+      </div>
+    </div>
+  )
+}
+
+function RecentlyAddedCard({ deck, onToggleComplete, isCompleted }) {
+  return (
+    <div className="relative flex-shrink-0 w-72 rounded-xl border border-green-500/30 bg-gradient-to-br from-green-900/10 to-emerald-900/5 p-4 hover:border-green-400/50 transition-all">
+      {/* NEW badge */}
+      <div className="absolute top-2 right-2">
+        <span className="bg-green-500/20 text-green-300 border border-green-500/30 text-[9px] font-bold px-2 py-0.5 rounded-full">NEW</span>
+      </div>
+      {/* Completed checkmark */}
+      {isCompleted && (
+        <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-green-500/20 border-2 border-green-500/40 flex items-center justify-center">
+          <span className="text-green-400 text-xs">✓</span>
+        </div>
+      )}
+      <div className="mb-2">
+        <h4 className="font-bold text-white text-sm leading-snug line-clamp-2">{deck.title}</h4>
+        {deck.audience && (
+          <p className="text-[9px] text-gray-500 mt-1">For: {deck.audience}</p>
+        )}
+      </div>
+      <p className="text-[11px] text-gray-400 leading-relaxed line-clamp-3 mb-3">{deck.description}</p>
+      <div className="flex gap-2">
+        <a
+          href={deck.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 text-center text-[11px] py-1.5 rounded-lg font-semibold border transition bg-green-500/20 hover:bg-green-500/40 text-green-300 hover:text-white border-green-500/30"
+        >
+          ▶ Open
+        </a>
+        <button
+          onClick={() => onToggleComplete(deck.id)}
+          className={`px-2 text-[11px] py-1.5 rounded-lg font-semibold border transition ${
+            isCompleted
+              ? 'bg-green-500/30 text-green-300 border-green-500/40'
+              : 'bg-gray-500/10 hover:bg-gray-500/20 text-gray-400 border-gray-500/20'
+          }`}
+        >
+          {isCompleted ? '✓' : '✓'}
+        </button>
       </div>
     </div>
   )
@@ -268,20 +368,57 @@ function SectionHero({ config, deckCount }) {
 export default function PresentationLibraryPage() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [completedDecks, setCompletedDecks] = useState({})
 
   useEffect(() => {
     fetch('/api/team/presentations')
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false) })
       .catch(() => setLoading(false))
+    
+    // Load completed state from localStorage
+    if (typeof window !== 'undefined') {
+      const saved = {}
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('gyc-library-complete-')) {
+          const deckId = key.replace('gyc-library-complete-', '')
+          saved[deckId] = localStorage.getItem(key) === 'true'
+        }
+      })
+      setCompletedDecks(saved)
+    }
   }, [])
+
+  const toggleComplete = (deckId) => {
+    if (typeof window !== 'undefined') {
+      const newState = !completedDecks[deckId]
+      localStorage.setItem(`gyc-library-complete-${deckId}`, newState.toString())
+      setCompletedDecks(prev => ({ ...prev, [deckId]: newState }))
+    }
+  }
+
+  const isNew = (deck) => {
+    if (!deck.addedDate) return false
+    const added = new Date(deck.addedDate)
+    const now = new Date()
+    const daysDiff = (now - added) / (1000 * 60 * 60 * 24)
+    return daysDiff <= 30
+  }
 
   const presentations = data?.presentations || []
   const resources = data?.resources || []
 
-  // Compute stats
+  // Recently added decks (last 30 days)
+  const recentlyAdded = useMemo(() => {
+    return presentations.filter(isNew)
+  }, [presentations])
+
+  // Compute stats (exclude internal from progress tracking)
   const totalDecks = presentations.length
   const totalSlides = presentations.reduce((sum, d) => sum + (d.slideCount || 0), 0)
+  const trackableDecks = presentations.filter(p => p.category !== 'internal')
+  const completedCount = trackableDecks.filter(d => completedDecks[d.id]).length
+  const progressPercent = trackableDecks.length > 0 ? Math.round((completedCount / trackableDecks.length) * 100) : 0
 
   // Group by category
   const grouped = CATEGORY_ORDER.reduce((acc, cat) => {
@@ -305,15 +442,54 @@ export default function PresentationLibraryPage() {
           Your self-guided AI education. Pick your starting point, follow the path, and level up at your own pace.
         </p>
         {!loading && (
-          <div className="flex items-center justify-center gap-6 text-sm text-gray-500 pt-2">
-            <span>{totalDecks} decks</span>
-            <span>·</span>
-            <span>{totalSlides} slides</span>
-            <span>·</span>
-            <span>Updated {data?.updatedAt ? new Date(data.updatedAt).toLocaleDateString() : 'recently'}</span>
-          </div>
+          <>
+            <div className="flex items-center justify-center gap-6 text-sm text-gray-500 pt-2">
+              <span>{totalDecks} decks</span>
+              <span>·</span>
+              <span>{totalSlides} slides</span>
+              <span>·</span>
+              <span>Updated {data?.updatedAt ? new Date(data.updatedAt).toLocaleDateString() : 'recently'}</span>
+            </div>
+            {/* Progress bar */}
+            <div className="max-w-md mx-auto pt-4">
+              <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
+                <span>Your Progress</span>
+                <span>{completedCount} of {trackableDecks.length} completed ({progressPercent}%)</span>
+              </div>
+              <div className="w-full bg-gray-800 rounded-full h-2.5 overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-green-500 to-emerald-500 h-2.5 rounded-full transition-all duration-500"
+                  style={{ width: `${progressPercent}%` }}
+                ></div>
+              </div>
+            </div>
+          </>
         )}
       </div>
+
+      {/* Recently Added Section */}
+      {!loading && recentlyAdded.length > 0 && (
+        <section>
+          <div className="mb-4">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              🆕 Recently Added
+            </h2>
+            <p className="text-xs text-gray-500 mt-1">New material — check these out</p>
+          </div>
+          <div className="overflow-x-auto pb-4 -mx-2 px-2">
+            <div className="flex gap-4 min-w-min">
+              {recentlyAdded.map(deck => (
+                <RecentlyAddedCard
+                  key={deck.id}
+                  deck={deck}
+                  onToggleComplete={toggleComplete}
+                  isCompleted={completedDecks[deck.id]}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Featured Resources */}
       {resources.filter(r => r.tags?.includes('featured')).length > 0 && (
@@ -348,7 +524,14 @@ export default function PresentationLibraryPage() {
                   {decks.map((deck, idx) => (
                     <div key={deck.id} className="flex items-stretch">
                       <div className="flex-1 px-2">
-                        <SequentialCard deck={deck} stepNum={idx + 1} colorKey={config.color} />
+                        <SequentialCard
+                          deck={deck}
+                          stepNum={idx + 1}
+                          colorKey={config.color}
+                          isNew={isNew(deck)}
+                          isCompleted={completedDecks[deck.id]}
+                          onToggleComplete={toggleComplete}
+                        />
                       </div>
                       {idx < decks.length - 1 && (
                         <div className="flex items-center px-2">
@@ -362,7 +545,14 @@ export default function PresentationLibraryPage() {
                 <div className="flex md:hidden flex-col gap-4">
                   {decks.map((deck, idx) => (
                     <div key={deck.id}>
-                      <SequentialCard deck={deck} stepNum={idx + 1} colorKey={config.color} />
+                      <SequentialCard
+                        deck={deck}
+                        stepNum={idx + 1}
+                        colorKey={config.color}
+                        isNew={isNew(deck)}
+                        isCompleted={completedDecks[deck.id]}
+                        onToggleComplete={toggleComplete}
+                      />
                       {idx < decks.length - 1 && (
                         <div className="text-center py-2">
                           <div className="text-2xl text-gray-600">↓</div>
@@ -376,7 +566,14 @@ export default function PresentationLibraryPage() {
               // Independent grid layout
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                 {decks.map(deck => (
-                  <IndependentCard key={deck.id} deck={deck} colorKey={config.color} />
+                  <IndependentCard
+                    key={deck.id}
+                    deck={deck}
+                    colorKey={config.color}
+                    isNew={isNew(deck)}
+                    isCompleted={completedDecks[deck.id]}
+                    onToggleComplete={toggleComplete}
+                  />
                 ))}
               </div>
             )}
