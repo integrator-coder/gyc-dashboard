@@ -4108,7 +4108,7 @@ const GBP_FIELD_LABELS = {
   isClaimed:              'Profile Claimed',
   websiteLinked:          'Website Linked',
   phoneListened:          'Phone Listed',
-  hoursComplete:          'Hours Complete (M–F)',
+  hoursComplete:          'Hours Complete (all 7 days)',
   secondaryCategoriesSet: 'Secondary Categories Set',
   has50Reviews:           '50+ Reviews',
   ratingAbove4:           'Rating 4.0+',
@@ -4127,7 +4127,7 @@ const GBP_FIELD_DESCRIPTIONS = {
   isClaimed:              'The business owner has verified ownership of this GBP listing with Google.',
   websiteLinked:          'A website URL is connected to this profile so visitors can click through.',
   phoneListened:          'A phone number is published on the profile so customers can call directly.',
-  hoursComplete:          'Business hours are set for all weekdays (Mon–Fri). Missing hours hurt search visibility.',
+  hoursComplete:          'Business hours are set for all 7 days in Google (weekdays + Sat/Sun). Even marking a day as "Closed" counts — it tells Google your hours are fully configured.',
   secondaryCategoriesSet: 'Additional relevant categories are selected beyond the primary (e.g. Preschool + Day care center). More categories = more search surfaces.',
   has50Reviews:           'Profiles with 50+ reviews rank significantly higher in local search. Below 50 is a growth opportunity.',
   ratingAbove4:           'Average star rating is 4.0 or higher. Ratings below 4.0 reduce click-through rates substantially.',
@@ -5374,8 +5374,25 @@ function GBPTab({ profile, acronym, user }) {
 
             {/* ── Failing Checks Panel ── */}
             {lastAudit && (() => {
-              const failingChecks = GBP_CHECKLIST.filter(({ field }) => lastAudit[field] === false)
-              const allPassing = CHECKLIST_FIELDS.every(f => lastAudit[f] !== false)
+              const live = liveData[loc.id]
+              const hasLive = live && live !== 'loading' && live !== 'error' && live !== 'unverified'
+              const autoChecks = hasLive ? live.autoChecks : (loc.liveDataSnapshot?.autoChecks ?? null)
+              
+              // Exclude fields that are auto-verified as passing from "Needs Attention"
+              const failingChecks = GBP_CHECKLIST.filter(({ field }) => {
+                // If the manual audit says it's failing
+                if (lastAudit[field] !== false) return false
+                // But if auto-verification shows it's actually passing, don't show as failing
+                if (autoChecks?.[field] === true) return false
+                return true
+              })
+              
+              // Also consider auto-verified passing fields when determining "all passing"
+              const allPassing = CHECKLIST_FIELDS.every(f => {
+                if (lastAudit[f] !== false) return true
+                if (autoChecks?.[f] === true) return true
+                return false
+              })
               if (allPassing) {
                 return (
                   <div className="px-4 py-2.5 border-b border-[var(--brand-border)]">

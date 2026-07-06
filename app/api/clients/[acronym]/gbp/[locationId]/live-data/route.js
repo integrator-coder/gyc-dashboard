@@ -223,7 +223,7 @@ export async function GET(_req, { params }) {
       websiteLinked: website ? true : null,
       phoneListened: phone ? true : null,
       hoursComplete: hours
-        ? ['Mon','Tue','Wed','Thu','Fri'].every(d => hours[d] && hours[d] !== 'Closed')
+        ? ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].every(d => hours[d] != null)
         : null,
       secondaryCategoriesSet: additionalCategories.length > 0 ? true : null,
       has50Reviews: reviewCount != null ? reviewCount >= 50 : null,

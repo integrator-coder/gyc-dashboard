@@ -2,34 +2,71 @@
 import { useState, useEffect } from 'react'
 
 const CATEGORY_CONFIG = {
-  'training-module': {
-    label: '📚 Training Modules',
-    description: 'The GYC AI Training Hub — numbered modules for all staff',
+  'getting-started': {
+    label: 'Start Here — AI Foundations',
+    icon: '🟢',
+    tagline: 'New to AI? Start here.',
+    description: 'These four resources take you from zero to confident with AI tools. Follow the sequence — each one builds on the last. Complete this path before moving to Level Up.',
+    audience: 'All GYC staff',
     color: 'violet',
+    gradient: 'from-violet-900/60 via-purple-900/40 to-slate-900/80',
+    sequential: true,
+    sequenceLabel: 'Follow in order',
   },
-  'how-to': {
-    label: '🔧 How-To Guides',
-    description: 'Step-by-step practical workshops',
+  'level-up': {
+    label: 'Level Up — Advanced Skills & Systems',
+    icon: '⚡',
+    tagline: 'Ready to go deeper?',
+    description: 'Build AI skills, design repeatable workflows, and create full AI systems. These modules build on each other — follow the sequence for best results.',
+    audience: 'All staff (after foundations)',
     color: 'cyan',
+    gradient: 'from-cyan-900/60 via-blue-900/40 to-slate-900/80',
+    sequential: true,
+    sequenceLabel: 'Follow in order',
   },
-  'strategy': {
-    label: '🚀 AI Strategy & Implementation',
-    description: 'Big picture frameworks and implementation guides',
-    color: 'amber',
-  },
-  'sales': {
-    label: '🎤 Sales & Client-Facing',
-    description: 'Webinars and prospect-facing decks',
+  'role-specific': {
+    label: 'For Your Role',
+    icon: '🎯',
+    tagline: 'Targeted by function.',
+    description: 'These decks are built for specific GYC roles. Find your function and go deep — they are independent of each other, pick what applies to you.',
+    audience: 'Paid Media · SEO · Sales teams',
     color: 'emerald',
+    gradient: 'from-emerald-900/60 via-teal-900/40 to-slate-900/80',
+    sequential: false,
   },
-  'company': {
-    label: '🦸 Company',
-    description: 'Internal and all-team presentations',
+  'ai-landscape': {
+    label: 'AI Landscape & Strategy',
+    icon: '🌍',
+    tagline: 'Understand the bigger picture.',
+    description: "Where is AI headed, and what does it mean for GYC's business and clients? These research decks are independent — explore in any order, in any session.",
+    audience: 'Leadership · Curious staff',
+    color: 'amber',
+    gradient: 'from-amber-900/60 via-orange-900/40 to-slate-900/80',
+    sequential: false,
+  },
+  'client-facing': {
+    label: 'Client-Facing & Sales',
+    icon: '🎤',
+    tagline: 'Built for client conversations.',
+    description: 'Decks designed for prospects and client-facing presentations. Use these when talking to childcare centers about GYC services.',
+    audience: 'Sales team · Growth Advisors',
     color: 'pink',
+    gradient: 'from-pink-900/60 via-rose-900/40 to-slate-900/80',
+    sequential: false,
+  },
+  'internal': {
+    label: 'Internal Reference',
+    icon: '🔒',
+    tagline: 'For GYC leadership.',
+    description: 'Reference documents for Todd and GYC leadership. Not for general staff distribution.',
+    audience: 'Todd · Leadership',
+    color: 'slate',
+    gradient: 'from-slate-800/60 via-gray-900/40 to-slate-900/80',
+    sequential: false,
   },
 }
 
-const CATEGORY_ORDER = ['training-module', 'how-to', 'strategy', 'sales', 'company']
+const CATEGORY_ORDER = ['getting-started', 'level-up', 'role-specific', 'ai-landscape', 'client-facing', 'internal']
 
 const COLOR_STYLES = {
   violet: {
@@ -37,12 +74,18 @@ const COLOR_STYLES = {
     badge: 'bg-violet-500/20 text-violet-300 border-violet-500/30',
     card: 'from-violet-600/15 to-purple-900/15 border-violet-500/25 hover:border-violet-400/50',
     btn: 'bg-violet-500/20 hover:bg-violet-500/40 text-violet-300 hover:text-white border-violet-500/30',
+    stepBg: 'bg-violet-500/10',
+    stepBorder: 'border-violet-500/40',
+    stepText: 'text-violet-300',
   },
   cyan: {
     header: 'text-cyan-300 border-cyan-500/30',
     badge: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
     card: 'from-cyan-600/15 to-blue-900/15 border-cyan-500/25 hover:border-cyan-400/50',
     btn: 'bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 hover:text-white border-cyan-500/30',
+    stepBg: 'bg-cyan-500/10',
+    stepBorder: 'border-cyan-500/40',
+    stepText: 'text-cyan-300',
   },
   amber: {
     header: 'text-amber-300 border-amber-500/30',
@@ -61,6 +104,12 @@ const COLOR_STYLES = {
     badge: 'bg-pink-500/20 text-pink-300 border-pink-500/30',
     card: 'from-pink-600/15 to-rose-900/15 border-pink-500/25 hover:border-pink-400/50',
     btn: 'bg-pink-500/20 hover:bg-pink-500/40 text-pink-300 hover:text-white border-pink-500/30',
+  },
+  slate: {
+    header: 'text-slate-300 border-slate-500/30',
+    badge: 'bg-slate-500/20 text-slate-300 border-slate-500/30',
+    card: 'from-slate-600/15 to-gray-900/15 border-slate-500/25 hover:border-slate-400/50',
+    btn: 'bg-slate-500/20 hover:bg-slate-500/40 text-slate-300 hover:text-white border-slate-500/30',
   },
 }
 
@@ -89,7 +138,57 @@ function ResourceCard({ resource }) {
   )
 }
 
-function PresentationCard({ deck, colorKey }) {
+function SequentialCard({ deck, stepNum, colorKey }) {
+  const c = COLOR_STYLES[colorKey] || COLOR_STYLES.violet
+  return (
+    <div className={`relative rounded-2xl border bg-gradient-to-br ${c.card} p-5 flex flex-col gap-3 transition-all min-h-[280px]`}>
+      {/* Step number badge - prominent in top-left */}
+      <div className={`absolute top-4 left-4 w-10 h-10 rounded-full ${c.stepBg} border-2 ${c.stepBorder} flex items-center justify-center`}>
+        <span className={`text-lg font-bold ${c.stepText}`}>{stepNum}</span>
+      </div>
+      
+      <div className="flex items-start justify-end gap-2 pt-1">
+        <span className="text-[9px] text-gray-500 uppercase tracking-widest">Sequential Step {stepNum}</span>
+        {deck.slideCount && (
+          <span className="text-[10px] text-gray-500">{deck.slideCount} slides</span>
+        )}
+      </div>
+      
+      <div className="mt-2">
+        <h3 className="font-bold text-white text-base leading-snug">{deck.title}</h3>
+        {deck.audience && (
+          <p className="text-[10px] text-gray-500 mt-1">For: {deck.audience}</p>
+        )}
+      </div>
+      
+      <p className="text-xs text-gray-400 leading-relaxed flex-1">{deck.description}</p>
+      
+      <div className="flex gap-2 pt-1">
+        <a
+          href={deck.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`flex-1 text-center text-xs py-2 rounded-lg font-semibold border transition ${c.btn}`}
+        >
+          ▶ Open Deck
+        </a>
+        {deck.sourceUrl && (
+          <a
+            href={deck.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 text-xs py-2 rounded-lg bg-gray-500/10 hover:bg-gray-500/20 text-gray-400 hover:text-gray-200 transition border border-gray-500/20"
+            title={`Source: ${deck.source}`}
+          >
+            Source ↗
+          </a>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function IndependentCard({ deck, colorKey }) {
   const c = COLOR_STYLES[colorKey] || COLOR_STYLES.violet
   return (
     <div className={`rounded-2xl border bg-gradient-to-br ${c.card} p-5 flex flex-col gap-3 transition-all`}>
@@ -104,7 +203,7 @@ function PresentationCard({ deck, colorKey }) {
         )}
       </div>
       <div>
-        <h3 className="font-bold text-white text-sm leading-snug">{deck.title}</h3>
+        <h3 className="font-bold text-white text-base leading-snug">{deck.title}</h3>
         {deck.audience && (
           <p className="text-[10px] text-gray-500 mt-1">For: {deck.audience}</p>
         )}
@@ -135,6 +234,37 @@ function PresentationCard({ deck, colorKey }) {
   )
 }
 
+function SectionHero({ config, deckCount }) {
+  return (
+    <div className={`relative rounded-2xl border overflow-hidden bg-gradient-to-br ${config.gradient} border-${config.color}-500/30 p-8 mb-6`}>
+      <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
+        {/* Left: Icon with glow */}
+        <div className="relative shrink-0">
+          <div className="absolute inset-0 bg-white/5 rounded-full blur-2xl"></div>
+          <div className="relative text-7xl md:text-8xl">{config.icon}</div>
+        </div>
+        
+        {/* Right: Content */}
+        <div className="flex-1">
+          <div className={`text-[10px] uppercase tracking-widest font-semibold mb-2 ${COLOR_STYLES[config.color].header.split(' ')[0]}`}>
+            {config.tagline}
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">{config.label}</h2>
+          <p className="text-sm text-gray-300 max-w-2xl leading-relaxed mb-3">{config.description}</p>
+          <span className={`inline-block text-xs px-3 py-1 rounded-full border ${COLOR_STYLES[config.color].badge}`}>
+            For: {config.audience}
+          </span>
+        </div>
+        
+        {/* Bottom right: deck count */}
+        <div className="absolute bottom-4 right-6 text-xs text-gray-500">
+          {deckCount} {deckCount === 1 ? 'deck' : 'decks'}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function PresentationLibraryPage() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -149,21 +279,40 @@ export default function PresentationLibraryPage() {
   const presentations = data?.presentations || []
   const resources = data?.resources || []
 
-  // Group by category, in defined order
+  // Compute stats
+  const totalDecks = presentations.length
+  const totalSlides = presentations.reduce((sum, d) => sum + (d.slideCount || 0), 0)
+
+  // Group by category
   const grouped = CATEGORY_ORDER.reduce((acc, cat) => {
     const items = presentations.filter(p => p.category === cat)
-    if (items.length) acc[cat] = items
+    if (items.length) {
+      // Sort by order if sequential
+      if (CATEGORY_CONFIG[cat]?.sequential) {
+        items.sort((a, b) => (a.order || 999) - (b.order || 999))
+      }
+      acc[cat] = items
+    }
     return acc
   }, {})
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-10">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-white">🎬 Presentation Library</h1>
-        <p className="mt-1 text-sm text-gray-400">
-          Every deck Wall·E and Todd have built together — organized by category.
+    <div className="p-6 max-w-7xl mx-auto space-y-10">
+      {/* Page Hero */}
+      <div className="text-center space-y-3 py-8">
+        <h1 className="text-4xl font-bold text-white">GYC AI Training Program</h1>
+        <p className="text-lg text-gray-400 max-w-3xl mx-auto">
+          Your self-guided AI education. Pick your starting point, follow the path, and level up at your own pace.
         </p>
+        {!loading && (
+          <div className="flex items-center justify-center gap-6 text-sm text-gray-500 pt-2">
+            <span>{totalDecks} decks</span>
+            <span>·</span>
+            <span>{totalSlides} slides</span>
+            <span>·</span>
+            <span>Updated {data?.updatedAt ? new Date(data.updatedAt).toLocaleDateString() : 'recently'}</span>
+          </div>
+        )}
       </div>
 
       {/* Featured Resources */}
@@ -185,22 +334,52 @@ export default function PresentationLibraryPage() {
 
       {/* Categories */}
       {!loading && Object.entries(grouped).map(([cat, decks]) => {
-        const config = CATEGORY_CONFIG[cat] || { label: cat, color: 'violet' }
-        const c = COLOR_STYLES[config.color] || COLOR_STYLES.violet
+        const config = CATEGORY_CONFIG[cat]
+        if (!config) return null
+        
         return (
           <section key={cat}>
-            <div className={`flex items-center gap-3 mb-4 pb-3 border-b ${c.header}`}>
-              <h2 className="text-base font-bold">{config.label}</h2>
-              <span className="text-[10px] text-gray-500">{decks.length} deck{decks.length !== 1 ? 's' : ''}</span>
-              {config.description && (
-                <span className="ml-auto text-xs text-gray-500 hidden md:block">{config.description}</span>
-              )}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {decks.map(deck => (
-                <PresentationCard key={deck.id} deck={deck} colorKey={config.color} />
-              ))}
-            </div>
+            <SectionHero config={config} deckCount={decks.length} />
+            
+            {config.sequential ? (
+              // Sequential layout
+              <>
+                <div className="hidden md:flex flex-row gap-0 items-stretch mb-4">
+                  {decks.map((deck, idx) => (
+                    <div key={deck.id} className="flex items-stretch">
+                      <div className="flex-1 px-2">
+                        <SequentialCard deck={deck} stepNum={idx + 1} colorKey={config.color} />
+                      </div>
+                      {idx < decks.length - 1 && (
+                        <div className="flex items-center px-2">
+                          <div className="text-2xl text-gray-600">→</div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {/* Mobile: stack vertically */}
+                <div className="flex md:hidden flex-col gap-4">
+                  {decks.map((deck, idx) => (
+                    <div key={deck.id}>
+                      <SequentialCard deck={deck} stepNum={idx + 1} colorKey={config.color} />
+                      {idx < decks.length - 1 && (
+                        <div className="text-center py-2">
+                          <div className="text-2xl text-gray-600">↓</div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              // Independent grid layout
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                {decks.map(deck => (
+                  <IndependentCard key={deck.id} deck={deck} colorKey={config.color} />
+                ))}
+              </div>
+            )}
           </section>
         )
       })}
@@ -209,11 +388,10 @@ export default function PresentationLibraryPage() {
         <div className="text-sm text-gray-500 py-8 text-center">No presentations found.</div>
       )}
 
-      {data?.updatedAt && (
-        <div className="text-xs text-gray-600 text-right">
-          Last updated: {new Date(data.updatedAt).toLocaleDateString()} — Wall·E 🤖
-        </div>
-      )}
+      {/* Footer */}
+      <div className="text-xs text-gray-600 text-center pt-6 border-t border-gray-800">
+        Last updated {data?.updatedAt ? new Date(data.updatedAt).toLocaleDateString() : 'recently'} · Built by Wall·E 🤖
+      </div>
     </div>
   )
 }

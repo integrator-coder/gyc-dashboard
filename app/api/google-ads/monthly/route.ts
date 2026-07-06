@@ -3,8 +3,8 @@ import { prisma } from '@/lib/db';
 
 export async function GET() {
   const snapshots = await prisma.googleAdsMonthlySnapshot.findMany({
-    orderBy: { monthKey: 'asc' },
-    take: 24  // last 24 months max
+    orderBy: { monthKey: 'asc' }
+    // Return ALL snapshots - frontend will handle display limits
   });
   
   // Ensure only the CURRENT month is marked partial

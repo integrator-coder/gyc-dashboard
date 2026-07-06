@@ -19,7 +19,7 @@ const { Pool } = require('pg');
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const CREDS_PATH = os.homedir() + '/.openclaw/credentials/google-console.json';
-const MAX_MONTH   = '2026-05'; // Skip any month after this
+const MAX_MONTH   = '2026-06'; // Skip any month after this
 const RATE_LIMIT_MS = 200;     // Delay between sheet fetches
 
 // ─── Google Auth ──────────────────────────────────────────────────────────────
