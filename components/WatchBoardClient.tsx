@@ -7,6 +7,7 @@ interface Variable {
   key: string;
   category: string;
   label: string;
+  description: string | null;
   value: number | null;
   previousValue: number | null;
   unit: string | null;
@@ -237,7 +238,10 @@ export default function WatchBoardClient({ variables, companies, suspicions, sna
           <div className="variables-grid">
             {variables.map(v => (
               <div key={v.id} className="variable-card panel">
-                <div className="variable-label">{v.label}</div>
+                <div className="variable-label">
+                  {v.label}
+                  {v.description && <span className="info-icon">ⓘ</span>}
+                </div>
                 <div className="variable-value-row">
                   <div 
                     className="variable-status-dot"
@@ -255,6 +259,11 @@ export default function WatchBoardClient({ variables, companies, suspicions, sna
                 <div className="variable-updated">
                   {new Date(v.lastUpdated).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </div>
+                {v.description && (
+                  <div className="variable-tooltip">
+                    {v.description}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -535,6 +544,7 @@ export default function WatchBoardClient({ variables, companies, suspicions, sna
 
         .variable-card {
           padding: 1rem;
+          position: relative;
         }
 
         .variable-label {
@@ -542,6 +552,37 @@ export default function WatchBoardClient({ variables, companies, suspicions, sna
           opacity: 0.7;
           margin-bottom: 0.5rem;
           min-height: 2.5rem;
+          display: flex;
+          align-items: flex-start;
+          gap: 0.25rem;
+        }
+
+        .info-icon {
+          font-size: 0.7rem;
+          opacity: 0.5;
+          cursor: help;
+        }
+
+        .variable-tooltip {
+          display: none;
+          position: absolute;
+          bottom: calc(100% + 0.5rem);
+          left: 0;
+          right: 0;
+          background: rgba(0, 10, 20, 0.95);
+          border: 1px solid rgba(0, 212, 255, 0.4);
+          padding: 0.75rem;
+          font-size: 0.7rem;
+          line-height: 1.5;
+          z-index: 100;
+          border-radius: 4px;
+          color: rgba(0, 212, 255, 0.8);
+          font-family: 'Courier New', monospace;
+          box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .variable-card:hover .variable-tooltip {
+          display: block;
         }
 
         .variable-value-row {

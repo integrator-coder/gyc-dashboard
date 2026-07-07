@@ -1576,6 +1576,7 @@ model AIWatchVariable {
   key           String   // e.g. "nvidia_pe_ratio", "vc_investment_quarterly"
   category      String   // "valuation" | "investment_flow" | "infrastructure" | "adoption" | "regulatory"
   label         String
+  description   String?  @db.Text
   value         Float?
   previousValue Float?
   unit          String?  // "$B", "%", "TWh", "x" (multiple), etc.
