@@ -760,6 +760,28 @@
         "onboarding"
       ],
       "addedDate": "2026-07-06"
+    },
+    {
+      "id": "gyc-dashboard-how-it-works",
+      "module": null,
+      "category": "internal",
+      "title": "GYC Dashboard — How We Built It And How It All Works Together",
+      "description": "Plain-English guide for Todd (no prior technical knowledge required). Covers the 5-piece architecture: Mac Mini, GitHub, Render, Neon, Vercel. Explains what each piece does, how data flows in from Stripe/Google Ads/DataForSEO/Zoom/Zendesk, and why the Mac Mini is the engine. Includes current known issues (Render auto-deploy broken, Vercel DNS not set up).",
+      "url": "https://docs.google.com/presentation/d/1OhoZEEsMpXhh9kRhNOIYf5MnAZQBvTRpnWi2aHnAUi8/edit",
+      "slideCount": 8,
+      "status": "live",
+      "source": "Internal",
+      "sourceUrl": null,
+      "audience": "Todd",
+      "tags": [
+        "internal",
+        "dashboard",
+        "architecture",
+        "reference",
+        "technical",
+        "how-it-works"
+      ],
+      "addedDate": "2026-07-07"
     }
   ]
 }

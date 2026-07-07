@@ -1569,3 +1569,75 @@ model AclSyncLog {
   syncType      String   // 'daily' | 'monthly'
   status        String   @default("completed")
 }
+
+model AIWatchVariable {
+  id            String   @id @default(cuid())
+  tenantId      String
+  key           String   // e.g. "nvidia_pe_ratio", "vc_investment_quarterly"
+  category      String   // "valuation" | "investment_flow" | "infrastructure" | "adoption" | "regulatory"
+  label         String
+  value         Float?
+  previousValue Float?
+  unit          String?  // "$B", "%", "TWh", "x" (multiple), etc.
+  status        String   @default("green") // "green" | "yellow" | "red"
+  trend         String?  // "up" | "down" | "stable"
+  source        String?
+  sourceUrl     String?
+  lastUpdated   DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+
+  @@index([tenantId, category])
+  @@index([tenantId, key])
+}
+
+model AIWatchSuspicion {
+  id            String   @id @default(cuid())
+  tenantId      String
+  title         String
+  description   String   @db.Text
+  severity      String   // "watch" | "suspicion" | "alert"
+  variables     String[] // array of variable keys involved
+  historicalRef String?  // which bubble pattern this echoes
+  isActive      Boolean  @default(true)
+  detectedAt    DateTime @default(now())
+  resolvedAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+
+  @@index([tenantId, isActive])
+  @@index([tenantId, severity])
+}
+
+model AIWatchCompany {
+  id            String   @id @default(cuid())
+  tenantId      String
+  ticker        String?
+  name          String
+  category      String   // "hardware" | "hyperscaler" | "ai_first_public" | "ai_first_private" | "physical_ai" | "energy_ai"
+  currentPrice  Float?
+  marketCap     Float?
+  peRatio       Float?
+  revenueMultiple Float?
+  priceChange1d Float?
+  priceChange7d Float?
+  priceChange30d Float?
+  lastUpdated   DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+
+  @@index([tenantId, category])
+  @@index([ticker])
+}
+
+model AIWatchSnapshot {
+  id              String   @id @default(cuid())
+  tenantId        String
+  bubbleScore     Float    // 0-10
+  compositeStatus String   // "green" | "yellow" | "red"
+  snapshotAt      DateTime @default(now())
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now())
+
+  @@index([tenantId, snapshotAt(sort: Desc)])
+}
