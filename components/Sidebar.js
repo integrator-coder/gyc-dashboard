@@ -129,6 +129,7 @@ const TEAM_PORTAL_GROUP = {
     { label: 'Toolkit', emoji: '🔧', href: '/team/toolkit', roles: ['sales', 'ga', 'cx', 'recon', 'admin', 'superadmin', 'manager'] },
     { label: 'Presentation Library', emoji: '🎬', href: '/team/presentations', roles: ['sales', 'ga', 'cx', 'recon', 'admin', 'superadmin', 'manager'] },
     { label: 'AI Training Hub', emoji: '🤖', href: 'https://www.notion.so/growyourcenter/362ca865e19781c2b416d4e96b008c22', roles: ['sales', 'ga', 'cx', 'recon', 'admin', 'superadmin', 'manager'], external: true },
+    { label: 'Primrose Hub 🌸', emoji: '🌸', href: '/primrose', roles: ['sales', 'ga', 'cx', 'admin', 'superadmin', 'manager'] },
   ],
 }
 
