@@ -13,11 +13,18 @@ const PrimroseJourneyClient: React.FC = () => {
 
   const timelineEvents = [
     {
-      date: 'Late 2024 / Early 2025',
-      title: 'Kate Becomes a GYC Client',
+      date: 'March 6, 2026',
+      title: 'Kate Enters GYC System',
       type: 'SALES',
-      summary: 'Kate Latham (Primrose Burlington, Woburn, Chelmsford) signs on with GYC for Local AI Visibility package. Sebastian Estrada assigned as Growth Advisor.',
-      needle: 'Kate trusted GYC enough to start with a smaller package. This was the foundation for everything that followed.',
+      summary: 'Kate Latham (Primrose Burlington, Woburn, Chelmsford) comes in via GYC Marketing Consultation. Jesse Poirier handles the initial outreach. Deal closes March 10 at $899/mo (6-month commitment, $5,394 total). Sebastian Estrada assigned as Growth Advisor.',
+      needle: 'Kate came in through a consultation and committed to a 6-month package within 4 days. Jesse made the introduction. Sebastian built everything from there. The entire corporate meeting happened within 4 months of her first contact.',
+    },
+    {
+      date: 'March–June 2026',
+      title: 'Sebastian Builds the Relationship (4 Months)',
+      type: 'ACCOUNT',
+      summary: 'Kate pays $899/mo through April, May, and June. Sebastian works the accounts across Burlington, Woburn, and Chelmsford. Kate receives heat map results showing measurable SEO/AIO progress March → June. This 4-month track record is what Bruce brings to Greg at the corporate meeting.',
+      needle: 'The corporate meeting did not happen because of a great pitch. It happened because Sebastian delivered enough real results in 4 months that Kate trusted GYC to stand in front of her franchise\'s C-suite. That is the real win.',
     },
     {
       date: 'June 23, 2026',
