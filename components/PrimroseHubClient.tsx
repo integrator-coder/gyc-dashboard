@@ -203,6 +203,7 @@ export default function PrimroseHubClient() {
   const [creativeStandardsOpen, setCreativeStandardsOpen] = useState(false);
   const [facebookTemplatesOpen, setFacebookTemplatesOpen] = useState(false);
   const [instagramTemplatesOpen, setInstagramTemplatesOpen] = useState(false);
+  const [expandedCall, setExpandedCall] = useState<number | null>(null);
 
   const totalEnrolled = locations.reduce((sum, loc) => sum + loc.enrolled, 0);
   const totalCapacity = locations.reduce((sum, loc) => sum + loc.capacity, 0);
@@ -1308,72 +1309,88 @@ export default function PrimroseHubClient() {
                 View Full Journey →
               </a>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {calls.map((call, i) => (
-                <div key={i} style={{ background: '#fff', border: '1px solid #e8eadf', borderRadius: 10, overflow: 'hidden' }}>
-                  {/* Call Header */}
-                  <div style={{ background: '#f0f3e8', borderBottom: '1px solid #e8eadf', padding: '1rem 1.5rem', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                        <span style={{ fontFamily: 'Source Serif 4, serif', fontWeight: 700, fontSize: 18, color: '#5e6738' }}>{call.type}</span>
-                        <span style={{ background: '#5e6738', color: '#fff', padding: '2px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 700 }}>{call.date}</span>
-                        {call.duration && <span style={{ fontSize: 12, color: '#374151' }}>⏱ {call.duration}</span>}
-                      </div>
-                      <div style={{ fontSize: 13, color: '#374151' }}><strong>Attendees:</strong> {call.attendees}</div>
-                    </div>
-                  </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {calls.map((call, i) => {
+                const isOpen = expandedCall === i;
+                const openItems = call.actionItems.filter((a: any) => !a.done).length;
+                return (
+                  <div key={i} style={{ background: '#fff', border: `1px solid ${isOpen ? '#5e6738' : '#e8eadf'}`, borderRadius: 10, overflow: 'hidden', transition: 'border-color 0.15s' }}>
 
-                  <div style={{ padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: 20 }}>
-                    {/* Summary */}
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: '#111827', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Summary</div>
-                      <p style={{ fontSize: 14, color: '#1f2937', margin: 0, lineHeight: 1.7 }}>{call.summary}</p>
-                    </div>
-
-                    {/* Topics Covered */}
-                    {call.topics && call.topics.length > 0 && (
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: 13, color: '#111827', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>Topics Covered</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          {call.topics.map((topic, j) => (
-                            <div key={j} style={{ borderLeft: '3px solid #5e6738', paddingLeft: 12 }}>
-                              <div style={{ fontWeight: 600, fontSize: 13, color: '#374151', marginBottom: 3 }}>{topic.heading}</div>
-                              <p style={{ fontSize: 13, color: '#374151', margin: 0, lineHeight: 1.65 }}>{topic.detail}</p>
-                            </div>
-                          ))}
+                    {/* Clickable Header */}
+                    <button
+                      onClick={() => setExpandedCall(isOpen ? null : i)}
+                      style={{ width: '100%', background: isOpen ? '#f0f3e8' : '#f8f9f5', border: 'none', cursor: 'pointer', padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, textAlign: 'left' }}
+                    >
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
+                          <span style={{ fontFamily: 'Source Serif 4, serif', fontWeight: 700, fontSize: 17, color: '#5e6738' }}>{call.type}</span>
+                          <span style={{ background: '#5e6738', color: '#fff', padding: '2px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 700 }}>{call.date}</span>
+                          {call.duration && <span style={{ fontSize: 12, color: '#374151' }}>⏱ {call.duration}</span>}
+                          {openItems > 0 && <span style={{ fontSize: 11, color: '#b45309', background: '#fef3c7', border: '1px solid #fde68a', padding: '1px 8px', borderRadius: 9999 }}>{openItems} open actions</span>}
                         </div>
+                        {!isOpen && <p style={{ fontSize: 13, color: '#374151', margin: 0, lineHeight: 1.5 }}>{call.summary.slice(0, 120)}…</p>}
+                        {isOpen && <div style={{ fontSize: 12, color: '#374151' }}><strong>Attendees:</strong> {call.attendees}</div>}
                       </div>
-                    )}
+                      <div style={{ flexShrink: 0, color: '#9ca3af', fontSize: 18 }}>{isOpen ? '▲' : '▼'}</div>
+                    </button>
 
-                    {/* Key Quotes */}
-                    {call.quotes && call.quotes.length > 0 && (
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: 13, color: '#111827', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>Key Quotes</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          {call.quotes.map((q, j) => (
-                            <div key={j} style={{ borderLeft: '3px solid #93c5fd', background: '#eff6ff', padding: '8px 12px', borderRadius: '0 6px 6px 0' }}>
-                              <p style={{ fontSize: 13, color: '#1e40af', fontStyle: 'italic', margin: 0 }}>{q}</p>
-                            </div>
-                          ))}
+                    {/* Expanded Body */}
+                    {isOpen && (
+                      <div style={{ padding: '1.25rem 1.5rem', borderTop: '1px solid #e8eadf', display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+                        {/* Summary */}
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 12, color: '#6b7280', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.8 }}>Summary</div>
+                          <p style={{ fontSize: 14, color: '#1f2937', margin: 0, lineHeight: 1.7 }}>{call.summary}</p>
                         </div>
-                      </div>
-                    )}
 
-                    {/* Action Items */}
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: '#111827', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>Action Items</div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {call.actionItems.map((item, j) => (
-                          <div key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                            <span style={{ fontSize: 15, marginTop: 1, flexShrink: 0 }}>{item.done ? '✅' : '⬜'}</span>
-                            <span style={{ fontSize: 13, color: item.done ? '#6b7280' : '#111827', textDecoration: item.done ? 'line-through' : 'none', lineHeight: 1.5 }}>{item.text}</span>
+                        {/* Topics Covered */}
+                        {call.topics && call.topics.length > 0 && (
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: 12, color: '#6b7280', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.8 }}>Topics Covered ({call.topics.length})</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                              {call.topics.map((topic: any, j: number) => (
+                                <div key={j} style={{ borderLeft: '3px solid #5e6738', paddingLeft: 12 }}>
+                                  <div style={{ fontWeight: 600, fontSize: 13, color: '#1f2937', marginBottom: 3 }}>{topic.heading}</div>
+                                  <p style={{ fontSize: 13, color: '#374151', margin: 0, lineHeight: 1.65 }}>{topic.detail}</p>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        ))}
+                        )}
+
+                        {/* Key Quotes */}
+                        {call.quotes && call.quotes.length > 0 && (
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: 12, color: '#6b7280', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.8 }}>Key Quotes</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                              {call.quotes.map((q: string, j: number) => (
+                                <div key={j} style={{ borderLeft: '3px solid #93c5fd', background: '#eff6ff', padding: '8px 12px', borderRadius: '0 6px 6px 0' }}>
+                                  <p style={{ fontSize: 13, color: '#1e40af', fontStyle: 'italic', margin: 0 }}>{q}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Action Items */}
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 12, color: '#6b7280', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.8 }}>Action Items</div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            {call.actionItems.map((item: any, j: number) => (
+                              <div key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                                <span style={{ fontSize: 15, marginTop: 1, flexShrink: 0 }}>{item.done ? '✅' : '⬜'}</span>
+                                <span style={{ fontSize: 13, color: item.done ? '#6b7280' : '#111827', textDecoration: item.done ? 'line-through' : 'none', lineHeight: 1.5 }}>{item.text}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
                       </div>
-                    </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
