@@ -2412,7 +2412,7 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
   const [open,        setOpen]        = useState(true)  // default open so trend chart is visible
   const [hmRadius,    setHmRadius]    = useState(3)
   const [hmKw,        setHmKw]        = useState('daycare')
-  const [hmScanIndex, setHmScanIndex] = useState(0)     // 0 = latest, higher = older
+  const [hmScanIndex, setHmScanIndex] = useState(0)     // 0 = latest (rightmost), higher = older (leftmost)
 
   // Group heatmaps by radius → keyword → [sorted by scanDate DESC = latest first]
   const hmByRadius = useMemo(() => {
@@ -2649,39 +2649,47 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
                 {clampedIndex > 0 && <span style={{ fontSize: 10, background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)', padding: '1px 7px', borderRadius: 9999, fontWeight: 600 }}>HISTORICAL</span>}
                 <span style={{ marginLeft: 'auto', fontSize: 11, color: '#6b7280' }}>{activeHmList.length} scans</span>
               </div>
-              {/* Slider: 0 = newest (left), length-1 = oldest (right) — display reversed */}
+              {/* Slider: left = oldest, right = newest (standard timeline convention)
+                   sliderVal 0 = oldest = array index (length-1)
+                   sliderVal max = newest = array index 0 */}
               <div style={{ position: 'relative' }}>
                 <input
                   type="range"
                   min={0}
                   max={activeHmList.length - 1}
-                  value={clampedIndex}
-                  onChange={e => setHmScanIndex(Number(e.target.value))}
+                  value={activeHmList.length - 1 - clampedIndex}
+                  onChange={e => setHmScanIndex(activeHmList.length - 1 - Number(e.target.value))}
                   style={{ width: '100%', accentColor: '#a78bfa', cursor: 'pointer' }}
                 />
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-                  <span style={{ fontSize: 10, color: '#4ade80', fontWeight: 600 }}>◀ Newest</span>
-                  {activeHmList.map((hm, i) => (
-                    <span key={i} style={{ fontSize: 10, color: clampedIndex === i ? '#e5e7eb' : '#4b5563', cursor: 'pointer', fontWeight: clampedIndex === i ? 700 : 400 }}
-                      onClick={() => setHmScanIndex(i)}>
-                      {new Date(hm.scanDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </span>
-                  ))}
-                  <span style={{ fontSize: 10, color: '#6b7280', fontWeight: 600 }}>Oldest ▶</span>
+                  {[...activeHmList].reverse().map((hm, sliderPos) => {
+                    const arrayIdx = activeHmList.length - 1 - sliderPos
+                    return (
+                      <span key={sliderPos}
+                        style={{ fontSize: 10, color: clampedIndex === arrayIdx ? '#e5e7eb' : '#4b5563', cursor: 'pointer', fontWeight: clampedIndex === arrayIdx ? 700 : 400, textAlign: 'center' }}
+                        onClick={() => setHmScanIndex(arrayIdx)}>
+                        {new Date(hm.scanDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </span>
+                    )
+                  })}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
+                  <span style={{ fontSize: 9, color: '#4b5563' }}>◄ Oldest</span>
+                  <span style={{ fontSize: 9, color: '#4ade80' }}>Newest ►</span>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 10, justifyContent: 'center' }}>
-                <button onClick={() => setHmScanIndex(Math.max(0, clampedIndex - 1))} disabled={clampedIndex === 0}
-                  style={{ padding: '4px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: clampedIndex === 0 ? 'default' : 'pointer', background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.3)', color: clampedIndex === 0 ? '#4b5563' : '#c4b5fd' }}>
-                  ← Newer
+                <button onClick={() => setHmScanIndex(Math.min(activeHmList.length - 1, clampedIndex + 1))} disabled={clampedIndex === activeHmList.length - 1}
+                  style={{ padding: '4px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: clampedIndex === activeHmList.length - 1 ? 'default' : 'pointer', background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.3)', color: clampedIndex === activeHmList.length - 1 ? '#4b5563' : '#c4b5fd' }}>
+                  ← Older
                 </button>
                 <button onClick={() => setHmScanIndex(0)} disabled={clampedIndex === 0}
                   style={{ padding: '4px 12px', borderRadius: 8, fontSize: 11, cursor: clampedIndex === 0 ? 'default' : 'pointer', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)', color: clampedIndex === 0 ? '#4b5563' : '#4ade80', fontWeight: 600 }}>
                   Jump to Latest
                 </button>
-                <button onClick={() => setHmScanIndex(Math.min(activeHmList.length - 1, clampedIndex + 1))} disabled={clampedIndex === activeHmList.length - 1}
-                  style={{ padding: '4px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: clampedIndex === activeHmList.length - 1 ? 'default' : 'pointer', background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.3)', color: clampedIndex === activeHmList.length - 1 ? '#4b5563' : '#c4b5fd' }}>
-                  Older →
+                <button onClick={() => setHmScanIndex(Math.max(0, clampedIndex - 1))} disabled={clampedIndex === 0}
+                  style={{ padding: '4px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: clampedIndex === 0 ? 'default' : 'pointer', background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.3)', color: clampedIndex === 0 ? '#4b5563' : '#c4b5fd' }}>
+                  Newer →
                 </button>
               </div>
             </div>
