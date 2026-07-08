@@ -204,6 +204,7 @@ export default function PrimroseHubClient() {
   const [facebookTemplatesOpen, setFacebookTemplatesOpen] = useState(false);
   const [instagramTemplatesOpen, setInstagramTemplatesOpen] = useState(false);
   const [expandedCall, setExpandedCall] = useState<number | null>(null);
+  const [clientOpsOpen, setClientOpsOpen] = useState(false);
 
   const totalEnrolled = locations.reduce((sum, loc) => sum + loc.enrolled, 0);
   const totalCapacity = locations.reduce((sum, loc) => sum + loc.capacity, 0);
@@ -1239,9 +1240,15 @@ export default function PrimroseHubClient() {
           </div>
 
           {/* Client Operations Intelligence */}
-          <div style={{background:'#fff',border:'1px solid #e8eadf',borderRadius:10,padding:'1.5rem',marginBottom:0}}>
-            <div style={{fontFamily:'Source Serif 4, serif',fontWeight:700,fontSize:20,color:'#5e6738',marginBottom:16}}>Client Operations &amp; Key Intelligence</div>
-
+          <div style={{background:'#fff',border:'1px solid #e8eadf',borderRadius:10,overflow:'hidden'}}>
+            <button
+              onClick={() => setClientOpsOpen(!clientOpsOpen)}
+              style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'1.25rem 1.5rem',background:clientOpsOpen ? '#f0f3e8' : '#fff',border:'none',cursor:'pointer',textAlign:'left'}}
+            >
+              <h2 style={{fontFamily:'Source Serif 4, serif',fontWeight:700,fontSize:20,color:'#5e6738',margin:0}}>Client Operations &amp; Key Intelligence</h2>
+              <span style={{color:'#9ca3af',fontSize:18,flexShrink:0}}>{clientOpsOpen ? '▲' : '▼'}</span>
+            </button>
+            {clientOpsOpen && <div style={{padding:'0 1.5rem 1.5rem'}}>
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:16}}>
 
               {/* Rachel Profile */}
@@ -1326,6 +1333,7 @@ export default function PrimroseHubClient() {
               </div>
 
             </div>
+            </div>}
           </div>
 
           {/* Call History */}
