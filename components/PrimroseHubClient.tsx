@@ -101,31 +101,93 @@ const locations = [
 
 const calls = [
   {
-    date: '2026-07-07',
-    type: 'Blueprint Onboarding',
-    attendees: 'Zu, Sebastian, Kate, Rachel',
-    outcomes: 'Enrollment intel captured (99/131/136). Meta access setup started. Geographic targeting mapped. Referral program flagged. Pixel status unknown.',
+    date: 'June 23, 2026',
+    type: 'Corporate C-Suite Pitch',
+    attendees: 'Sebastian Estrada (GYC), Bruce Spurr (GYC CEO), Kate Latham, Rachel Van Emon, Greg Foglesong (CCO, Primrose Corporate), Andrea Freeman (VP Marketing, Primrose Corporate)',
+    duration: '114 minutes',
+    summary: 'The pivotal meeting. Kate organized this introduction between GYC and Primrose corporate executives. Functioned as a full pitch without being framed as one. Bruce walked through the Reputation Engine thesis, market math, AI/SEO strategy, and paid ads. Kate shared Drive agency benchmarks that GYC used to destroy the competition in real time.',
+    topics: [
+      { heading: 'Reputation Engine Thesis (40+ minutes)', detail: 'Bruce walked Greg and Andrea through the full GYC playbook: 45+ reviews is game-changing (market avg is 28-29). 100+ reviews lets clients cut media spend in half or eliminate it. Below 4.2 stars, ChatGPT ignores you. Tour conversion: 30-40% for logistical tours vs. 90% for relationship-based campus visits. Market math: 25,000 people = 1,400 kids aged 0-4, with 4-6% actively looking at any given time.' },
+      { heading: 'Competitive Benchmark Revealed', detail: 'Kate shared Drive agency results: 25 million impressions, 489 clicks across 31 schools at $2,100/month average. That is $107/click. Bruce: "That\'s insane. You might have gotten 5 leads at $10,000 per lead." This single data point destroyed Drive and Eulerity\'s credibility in front of Primrose\'s own CCO. Kate confirmed GYC\'s stats "far exceeded" both pilot agencies.' },
+      { heading: 'AI & SEO Strategy', detail: 'Greg asked pointed questions about AI optimization. Bruce explained: what ranked on Google Maps overlaps 60-80% with what AI platforms look for. AI emphasizes trust signals over keywords. First-mover advantage is significant and hard to displace. Key AI platforms: ChatGPT (dominant), Google Summaries/Gemini, Perplexity, Claude. 8 key directories still matter (Yellow Pages included). Schema markup, Apple Maps citations, and review velocity are critical.' },
+      { heading: 'Paid Ads Pivot', detail: 'Meta ad costs have surged (GYC average: $1/click to $14/click industry-wide). Google Search ads being phased out. GYC pivoting to Google Local Service Ads (pay-per-lead, phone-heavy) and Meta for engagement. $10-15/day Meta budget for influence; $50-80/day for conversion campaigns. AI-generated creative discussed (including AI children imagery).' },
+      { heading: 'Corporate Access Constraints', detail: 'Kate and Rachel have no direct GBP access (goes through Yext or corporate contact Katie). No website backend access. Google Ads managed by Primrose corporate (soon to be outsourced). Facebook/Instagram access is page-level only. Corporate controls brand, copy, and platforms across 590 locations.' },
+      { heading: 'Brand Exclusivity Question', detail: 'Andrea (VP Marketing) raised concern: "We don\'t like agencies working with competitors." Bruce positioned GYC as brand-compliant and franchisee-focused. GYC has worked with Goddard, Kiddie Academy, Lightbridge, and other national brands — experience handling brand standards.' },
+      { heading: "Sebastian's Technical Close", detail: 'At the end, Sebastian gave Greg exactly what he needed for the Friday dinner with Kate/Rachel: (1) Manager access to Google Business Profile for daily posting, review responses, and local connections. (2) Admin access to Google Ads accounts or permission to create new ones funded by franchisees. (3) Permission to add schema code to location websites for AI optimization.' },
+    ],
+    quotes: [
+      '"The stats you shared today far exceed what they saw from the two pilots they just finished." — Kate Latham',
+      '"I am hook, line, and sinker interested now in seeing what else we can do." — Rachel Van Emon',
+      '"Every client we\'ve ever had that\'s gotten to 100+ reviews has been able to cut their media cost in half or more." — Bruce Spurr',
+      '"$107 a click. That\'s insane! That\'s terrible. You might have gotten 5 leads at $10,000 per lead." — Bruce Spurr',
+    ],
     actionItems: [
-      { text: 'Complete Woburn/Chelmsford FB access', done: false },
-      { text: 'Investigate FB Pixel', done: false },
-      { text: 'Share Bruce\'s referral program presentation', done: false },
-      { text: 'Walk Kate through M3 workspace features module', done: false },
-      { text: 'Kate to provide "what parents value" list per location', done: false }
+      { text: 'Kate/Rachel: Friday June 27 dinner with Greg to discuss the 3 access asks', done: true },
+      { text: 'Sebastian: Send reviews generation + response playbooks to Kate', done: false },
+      { text: 'Follow-up meeting week of July 10 to discuss expanded services and bundled pricing', done: true },
     ]
   },
   {
-    date: '2026-06-30',
-    type: 'Sales/Upgrade',
-    attendees: 'Bruce, Sebastian, Kate, Rachel',
-    outcomes: 'Core package upgrade confirmed ($2,398/mo, July 1 start). Primrose corporate pilot opportunity identified. Bruce to contact Greg.',
+    date: 'June 29/30, 2026',
+    type: 'Core Package Upgrade + Corporate Pilot',
+    attendees: 'Bruce Spurr (GYC CEO), Sebastian Estrada (GYC), Kate Latham, Rachel Van Emon',
+    duration: '53 minutes',
+    summary: 'The upgrade call. Kate and Rachel committed to Core package for all 3 locations ($2,398/mo, 6-month commitment, July 1 start). Kate volunteered her locations as the Primrose corporate pilot — unprompted. Bruce committed to contact Greg that day. Co-op deadline (July 1) created the urgency GYC needed.',
+    topics: [
+      { heading: 'Core Package Details Confirmed', detail: 'Includes: SEO/AIO, heat maps, GBP optimization, Meta ad campaign management (GYC creates templates, Kate approves, GYC runs), M3 platform (automated tasks, brand studio, competitive analysis, weekly heat maps, teammate access), Blueprint training (ad creative, monthly workshops, tour sales training, GBP management, email campaigns), daily GBP posting (pending access), photo optimization and auto-tagging, Facebook/Instagram posting automation (mid-August), Meta ad automation (mid-late September), email campaign templates to activate 3,500+ lead database. Does NOT include media budgets (Kate pays Meta directly). Recommended Meta: $450/mo per location.' },
+      { heading: 'Primrose Co-Op Shutdown (Key Timing)', detail: 'Primrose\'s market-level business co-op ends July 1. Franchisees must choose from two approved agencies (Drive and Eulerity) — both of which Kate/Rachel are dissatisfied with based on their terrible results. Kate does not want to wait for Primrose corporate to approve a third option and is moving with GYC regardless.' },
+      { heading: 'Kate Volunteers the Pilot', detail: 'Kate: "Let us be the pilot. Give them some management access, and then you can see what it does for us." Kate volunteered her 3 locations as GYC\'s pilot with Primrose corporate (590 schools). GYC did not have to ask. She did it herself. This is the result of trust built over ~18 months.' },
+      { heading: 'GBP Access Strategy', detail: 'No direct GBP access. Workaround: manual posting via Katie (Primrose corporate contact) until corporate grants manager access. Plan is to make this annoying enough that Kate makes the direct ask to corporate. Kate willing to say: "Here\'s what we need, here\'s why, here\'s the value." Bruce to contact Greg directly with heat map results.' },
+      { heading: 'Kate\'s Advice to Bruce on Approaching Greg', detail: '"I wouldn\'t come at them with the ask. Just be an offer of help. Here\'s what we can do for you guys. Here\'s what we\'ve already done for us. You guys have the results." Don\'t lead with GBP access request. Lead with value, heat maps, results, pilot offer.' },
+      { heading: 'Budget Concern Flagged', detail: 'Kate concerned about Meta budget: current $450/mo total across all locations vs. recommended $450/mo per location. Resolved by agreeing to start at current budget and scale as results come in. Realistic projection: 3-12 enrollments per month from paid ads.' },
+      { heading: 'Other Platform Access', detail: 'Yext: Kate granted Sebastian access (pushes to all directories except Manta). Bing and Apple Maps controlled by corporate. Bruce wants Kate to claim Bing directly (important for ChatGPT search). Facebook/Instagram: page-level access only, Kate runs ads via personal account.' },
+    ],
+    quotes: [
+      '"Let us be the pilot. Give them some management access, and then you can see what it does for us." — Kate Latham',
+      '"I wouldn\'t come at them with the ask. Just be an offer of help." — Kate Latham (advising Bruce on Greg)',
+      '"I don\'t care if I can track it. I need to fill my schools, and one of them isn\'t, and that\'s the one we\'re working with you on." — Rachel Van Emon',
+    ],
     actionItems: [
-      { text: 'Bruce contact Greg TODAY', done: false },
-      { text: 'Core package agreement sent', done: true },
-      { text: 'Check Yext capabilities', done: true }
+      { text: 'Bruce contact Greg (Primrose corporate) TODAY', done: true },
+      { text: 'Core package agreement sent to Kate/Rachel (all 3 locations, July 1 start)', done: true },
+      { text: 'Check Yext capabilities now that Sebastian has access', done: true },
+      { text: 'Kate/Rachel: Review budgets and decide on Meta spend per location', done: true },
+      { text: 'Kate: Make direct ask to Primrose corporate for GBP manager access', done: false },
     ]
-  }
+  },
+  {
+    date: 'July 7, 2026',
+    type: 'Blueprint Onboarding',
+    attendees: 'Zu Vuong (GYC Blueprint), Sebastian Estrada (GYC Web/SEO), Kate Latham, Rachel Van Emon',
+    duration: '50+ minutes',
+    summary: 'First formal Blueprint onboarding session post-upgrade. Zu ran the Done With You kickoff while Sebastian simultaneously set up Facebook/Instagram access. Full enrollment mapping, geographic targeting, demographic strategy. Referral program and email gaps identified.',
+    topics: [
+      { heading: 'Enrollment Numbers (Current)', detail: 'Burlington: 99/177 (56% — #1 priority, largest gap). Woburn: 131/177 (74%). Chelmsford: 136/177 (77%). All 3 targeting 160 students (90% capacity). Total gap: 114 students across 531 total capacity. Note: July numbers slightly inflated — kids leaving end of August not yet counted. September numbers will be lower.' },
+      { heading: 'Burlington Context', detail: 'Had a bad principal 2-3 years ago who damaged culture. Has since been replaced. New principal in place, happy teachers, happy families — culture has fully recovered. BUT word-of-mouth never recovered. Previously, word of mouth was what kept Burlington full. Families stopped recommending during bad principal era. That trust has not been rebuilt enough to fill the school. Lexington parents (10 min away) perceive Burlington as too far — a geography/awareness problem.' },
+      { heading: 'Geographic Targeting by Location', detail: 'Burlington targets: Bedford and Lexington (wealthy, white-collar, education-focused, heavy Asian/Indian demographics). Woburn targets: Winchester primarily (wealthier neighbor, majority of current students), plus Lexington and Woburn. Winchester families motivated by social status/prestige rather than academic outcomes — "elite" framing. Chelmsford targets: Chelmsford itself (blue-collar base fills school), expanding into Westford (wealthier neighbor). Also markets to Billerica and Lowell.' },
+      { heading: 'Demographics & Target Audience', detail: 'Large Asian and Indian population across all 3 schools. Lexington school system now 40% Asian — families moving in specifically for school quality. Winchester also heavily Asian. Rachel example: Indian family visited 8+ centers, came with notebook of questions, chose Primrose at $3,488/month. Win factors: cleanliness, quality, reliability. No scholarships, no sliding scale. Primrose targets families who can afford full tuition. Typically most expensive childcare in their markets.' },
+      { heading: 'Why Families Choose Primrose', detail: 'Academic/character development outcomes (primary). Reliability — never closes last minute (competitors do). On-site chef, all meals provided. Uniforms (zero parent mental load). Large, bright, clean classrooms (increasingly cited in tours). Prestige/status (Winchester). Higher education values (Asian/Indian families). High-demand working parents (surgeons, executives) who need certainty.' },
+      { heading: 'Meta Ads Setup (In Progress)', detail: 'Each location has its own Facebook page and ad account. Kate manages all ad accounts personally — corporate does national ads only. Pages claimed by Primrose corporate portfolio. Kate uses personal account to run ads. Sebastian successfully added to Burlington Facebook assets. Zu accepted Burlington page invite. Production team lead not yet added. Woburn and Chelmsford access still in progress. Facebook Pixel status: UNKNOWN — Kate does not know if one is installed.' },
+      { heading: 'Email & Lead Nurture', detail: 'Using ProCare for both existing families and leads. Sending to leads minimum 1x/week. Content mix: developmental/educational content (potty training tips, parenting resources) alternating with enrollment CTAs (open houses, event invitations). Zu recommendation: always include a soft enrollment CTA even in educational emails. No campaigns currently going to existing families — opportunity to activate.' },
+      { heading: 'Referral Program', detail: 'Exists on paper but has never been launched or marketed. Rachel: "I will give away a thousand bucks." Zu to share Bruce\'s referral program presentation as starting framework. Best timing: back-to-school season when families are settling into routines.' },
+      { heading: 'Promotions Strategy', detail: 'No widespread discounts or limited-time offers. Partner group perk: registration fee waived for members of certain parent groups. Zu suggestion: referral program launch as the first formal promotion — easy win for fall.' },
+    ],
+    quotes: [
+      '"Burlington had a bad principal a couple years ago — damaged culture, killed word-of-mouth. Culture recovered, but referrals never bounced back." — Kate Latham',
+      '"Lexington school system is now 40% Asian — families moving in specifically for school quality." — Rachel Van Emon',
+      '"I\'ll give away a thousand bucks." — Rachel Van Emon on launching referral program',
+      '"Coming from a Vietnamese background, that was for us too — quality over everything. It\'s an investment." — Zu Vuong',
+    ],
+    actionItems: [
+      { text: 'Complete Woburn + Chelmsford Facebook page/ad account access', done: false },
+      { text: 'Investigate whether Facebook Pixel is installed on any location', done: false },
+      { text: 'Zu: Share Bruce\'s referral program presentation with Kate/Rachel', done: false },
+      { text: 'Zu: Walk Kate through M3 workspace features module (next session)', done: false },
+      { text: 'Kate: Provide "what parents value" list per location for creative', done: false },
+      { text: 'Zu: Email campaign review + add persistent enrollment CTA', done: false },
+    ]
+  },
 ];
-
 export default function PrimroseHubClient() {
   const [opportunityOpen, setOpportunityOpen] = useState(false);
   const [brandGuideOpen, setBrandGuideOpen] = useState(true);
@@ -1028,40 +1090,68 @@ export default function PrimroseHubClient() {
                 View Full Journey →
               </a>
             </div>
-            <div className="space-y-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {calls.map((call, i) => (
-                <div key={i} className="bg-white border border-[#e8eadf] rounded-lg p-6">
-                  <div className="flex items-start justify-between mb-4">
+                <div key={i} style={{ background: '#fff', border: '1px solid #e8eadf', borderRadius: 10, overflow: 'hidden' }}>
+                  {/* Call Header */}
+                  <div style={{ background: '#f0f3e8', borderBottom: '1px solid #e8eadf', padding: '1rem 1.5rem', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                     <div>
-                      <div className="flex items-center gap-3">
-                        <Calendar className="w-5 h-5 text-[#5e6738]" />
-                        <h3 className="text-lg font-bold text-[#5e6738]">{call.type}</h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                        <span style={{ fontFamily: 'Source Serif 4, serif', fontWeight: 700, fontSize: 18, color: '#5e6738' }}>{call.type}</span>
+                        <span style={{ background: '#5e6738', color: '#fff', padding: '2px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 700 }}>{call.date}</span>
+                        {call.duration && <span style={{ fontSize: 12, color: '#374151' }}>⏱ {call.duration}</span>}
                       </div>
-                      <div className="text-sm text-gray-600 mt-1">{call.date}</div>
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {call.attendees}
+                      <div style={{ fontSize: 13, color: '#374151' }}><strong>Attendees:</strong> {call.attendees}</div>
                     </div>
                   </div>
-                  <div className="mb-4">
-                    <h4 className="font-semibold text-sm mb-2">Key Outcomes</h4>
-                    <p className="text-sm text-gray-700">{call.outcomes}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-sm mb-2">Action Items</h4>
-                    <div className="space-y-1">
-                      {call.actionItems.map((item, j) => (
-                        <div key={j} className="flex items-center gap-2 text-sm">
-                          {item.done ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
-                          ) : (
-                            <Circle className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                          )}
-                          <span className={item.done ? 'text-gray-500 line-through' : 'text-gray-700'}>
-                            {item.text}
-                          </span>
+
+                  <div style={{ padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: 20 }}>
+                    {/* Summary */}
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: '#111827', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Summary</div>
+                      <p style={{ fontSize: 14, color: '#1f2937', margin: 0, lineHeight: 1.7 }}>{call.summary}</p>
+                    </div>
+
+                    {/* Topics Covered */}
+                    {call.topics && call.topics.length > 0 && (
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 13, color: '#111827', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>Topics Covered</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {call.topics.map((topic, j) => (
+                            <div key={j} style={{ borderLeft: '3px solid #5e6738', paddingLeft: 12 }}>
+                              <div style={{ fontWeight: 600, fontSize: 13, color: '#374151', marginBottom: 3 }}>{topic.heading}</div>
+                              <p style={{ fontSize: 13, color: '#374151', margin: 0, lineHeight: 1.65 }}>{topic.detail}</p>
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      </div>
+                    )}
+
+                    {/* Key Quotes */}
+                    {call.quotes && call.quotes.length > 0 && (
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 13, color: '#111827', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>Key Quotes</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {call.quotes.map((q, j) => (
+                            <div key={j} style={{ borderLeft: '3px solid #93c5fd', background: '#eff6ff', padding: '8px 12px', borderRadius: '0 6px 6px 0' }}>
+                              <p style={{ fontSize: 13, color: '#1e40af', fontStyle: 'italic', margin: 0 }}>{q}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Action Items */}
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: '#111827', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>Action Items</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {call.actionItems.map((item, j) => (
+                          <div key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                            <span style={{ fontSize: 15, marginTop: 1, flexShrink: 0 }}>{item.done ? '✅' : '⬜'}</span>
+                            <span style={{ fontSize: 13, color: item.done ? '#6b7280' : '#111827', textDecoration: item.done ? 'line-through' : 'none', lineHeight: 1.5 }}>{item.text}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
