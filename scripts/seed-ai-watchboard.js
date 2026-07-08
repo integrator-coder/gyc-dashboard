@@ -2,9 +2,10 @@
 
 /**
  * Seed script for AI WatchBoard
- * Seeds 20 core variables + 40 AI companies
+ * Seeds 29 core variables + 40 AI companies
  */
 
+require('dotenv').config({ path: '.env.local' });
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
@@ -220,6 +221,109 @@ const variables = [
     status: 'yellow',
     source: 'BIS / Trade News',
     sourceUrl: null
+  },
+
+  // Category 6: Dot-Com Lessons (1999–2002)
+  {
+    key: 'ai_ipo_health_index',
+    category: 'dot_com_lessons',
+    label: 'AI IPO Health Index',
+    value: -8.0,
+    unit: '%',
+    status: 'red',
+    source: 'CoreWeave IPO Data',
+    sourceUrl: null,
+    description: 'Tracks CoreWeave + upcoming AI IPOs vs. post-IPO 90-day performance. In dot-com, 90-day returns went negative by late 1999. WATCHING FOR: Negative post-IPO performance = market losing appetite for AI valuations. 🟢 >20% | 🟡 0–20% | 🔴 <0%'
+  },
+  {
+    key: 'analyst_consensus_score',
+    category: 'dot_com_lessons',
+    label: 'Analyst Consensus Score',
+    value: 87.0,
+    unit: '%',
+    status: 'red',
+    source: 'Analyst Ratings Aggregator',
+    sourceUrl: null,
+    description: '% of major AI companies with "buy" ratings. Dot-com peak was ~98% buy — a contrarian warning. WATCHING FOR: Analyst unanimity = herd thinking, not due diligence. 🟢 <75% | 🟡 75–85% | 🔴 >85%'
+  },
+  {
+    key: 'ai_mandate_roi_gap',
+    category: 'dot_com_lessons',
+    label: 'Corporate AI Mandate vs. ROI Gap',
+    value: 8.0,
+    unit: ':1',
+    status: 'red',
+    source: 'Corporate AI Spending Reports',
+    sourceUrl: null,
+    description: 'Ratio of corporate AI spending announced vs. ROI reported. The dot-com "eyeballs" metric — companies were valued on clicks, not revenue. WATCHING FOR: Spending 8x what\'s being earned back — exactly what eyeballs metrics did in 1999. 🟢 <3:1 | 🟡 3–5:1 | 🔴 >5:1'
+  },
+  {
+    key: 'nvidia_correction_risk',
+    category: 'dot_com_lessons',
+    label: 'Nvidia Correction Risk Index',
+    value: 55.0,
+    unit: 'x P/E',
+    status: 'yellow',
+    source: 'Yahoo Finance',
+    sourceUrl: null,
+    description: 'Nvidia\'s forward P/E ratio as a proxy for Cisco 2000 risk. In dot-com, Cisco dropped 86% from peak when the sector repriced. WATCHING FOR: If Nvidia reprices, the entire AI sector reprices with it. 🟢 <40x | 🟡 40–70x | 🔴 >70x'
+  },
+
+  // Category 7: Telecom Lessons (2000–2002)
+  {
+    key: 'hyperscaler_capex_revenue_ratio',
+    category: 'telecom_lessons',
+    label: 'Hyperscaler CAPEX-to-AI-Revenue Ratio',
+    value: 4.2,
+    unit: ':1',
+    status: 'yellow',
+    source: 'Hyperscaler Earnings Reports',
+    sourceUrl: null,
+    description: 'Capital spend by hyperscalers (Microsoft, Google, Amazon, Meta) relative to AI-specific revenue. The "dark fiber" metric — in telecom, fiber was laid far ahead of demand, then sat unused. WATCHING FOR: Capacity being built years ahead of monetization. 🟢 <3:1 | 🟡 3–5:1 | 🔴 >5:1'
+  },
+  {
+    key: 'datacenter_utilization_rate',
+    category: 'telecom_lessons',
+    label: 'Data Center Utilization Rate',
+    value: 65.0,
+    unit: '%',
+    status: 'yellow',
+    source: 'Data Center Industry Reports',
+    sourceUrl: null,
+    description: '% of existing data center capacity in active use before new capacity comes online. Low utilization = dark fiber analog. WATCHING FOR: New builds opening before old builds fill — oversupply spiral. 🟢 >75% | 🟡 50–75% | 🔴 <50%'
+  },
+  {
+    key: 'nvidia_order_backlog_trend',
+    category: 'telecom_lessons',
+    label: 'Nvidia Order Backlog Trend',
+    value: 15.0,
+    unit: '% QoQ',
+    status: 'green',
+    source: 'Nvidia Earnings',
+    sourceUrl: null,
+    description: 'Quarter-over-quarter change in Nvidia\'s order backlog. Cancellations were the first signal of the telecom collapse (Nortel orders dried up before earnings reflected it). WATCHING FOR: First cancellations = canary in the coal mine. 🟢 >5% growth | 🟡 0–5% | 🔴 any decline'
+  },
+  {
+    key: 'datacenter_geographic_concentration',
+    category: 'telecom_lessons',
+    label: 'Geographic Data Center Concentration',
+    value: 7.0,
+    unit: 'builds/grid',
+    status: 'red',
+    source: 'Regional Grid Analysis',
+    sourceUrl: null,
+    description: 'Average number of competing data center builds in the same power grid zones (Northern Virginia, Phoenix, etc.). High concentration = systemic risk if one market oversupplies. WATCHING FOR: Same-grid competition → price war → margin collapse → debt defaults. 🟢 <3 | 🟡 3–5 | 🔴 >5'
+  },
+  {
+    key: 'ai_infrastructure_debt_load',
+    category: 'telecom_lessons',
+    label: 'AI Infrastructure Debt Load',
+    value: 5.8,
+    unit: 'x D/EBITDA',
+    status: 'yellow',
+    source: 'Corporate Debt Filings',
+    sourceUrl: null,
+    description: 'Average Debt-to-EBITDA ratio for major AI infrastructure players. Telecom bubble: WorldCom\'s D/EBITDA hit 12x before collapse. Current AI infra players already at concerning levels. WATCHING FOR: Debt servicing becomes impossible when revenue growth slows. 🟢 <4x | 🟡 4–7x | 🔴 >7x'
   }
 ];
 
@@ -285,7 +389,7 @@ async function main() {
   console.log('=============================\n');
 
   // Seed variables
-  console.log('📊 Seeding 20 core variables...');
+  console.log('📊 Seeding 29 core variables (20 original + 9 bubble lessons)...');
   for (const v of variables) {
     await prisma.aIWatchVariable.upsert({
       where: {

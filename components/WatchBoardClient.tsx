@@ -88,7 +88,9 @@ export default function WatchBoardClient({ variables, companies, suspicions, sna
     investment_flow: 'INVESTMENT FLOW',
     infrastructure: 'INFRASTRUCTURE',
     adoption: 'ADOPTION',
-    regulatory: 'REGULATORY'
+    regulatory: 'REGULATORY',
+    dot_com_lessons: 'DOT-COM LESSONS',
+    telecom_lessons: 'TELECOM LESSONS'
   };
 
   const statusColor = (status: string) => {
@@ -214,7 +216,7 @@ export default function WatchBoardClient({ variables, companies, suspicions, sna
 
         {/* Category Status Panels */}
         <div className="category-grid">
-          {['valuation', 'investment_flow', 'infrastructure', 'adoption', 'regulatory'].map(cat => {
+          {['valuation', 'investment_flow', 'infrastructure', 'adoption', 'regulatory', 'dot_com_lessons', 'telecom_lessons'].map(cat => {
             const summary = categorySummary(cat);
             return (
               <div key={cat} className="category-panel panel">
@@ -235,38 +237,87 @@ export default function WatchBoardClient({ variables, companies, suspicions, sna
         {/* Variable Grid */}
         <div className="variables-section">
           <div className="section-title">MARKET VARIABLES</div>
-          <div className="variables-grid">
-            {variables.map(v => (
-              <div key={v.id} className="variable-card panel">
-                <div className="variable-label">
-                  {v.label}
-                  {v.description && <span className="info-icon">ⓘ</span>}
-                </div>
-                <div className="variable-value-row">
-                  <div 
-                    className="variable-status-dot"
-                    style={{ 
-                      backgroundColor: statusColor(v.status),
-                      boxShadow: `0 0 10px ${statusColor(v.status)}`
-                    }}
-                  />
-                  <div className="variable-value">
-                    {v.value !== null ? v.value.toFixed(1) : '—'}
-                    <span className="variable-unit">{v.unit || ''}</span>
-                  </div>
-                  <div className="variable-trend">{trendIcon(v.trend)}</div>
-                </div>
-                <div className="variable-updated">
-                  {new Date(v.lastUpdated).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                </div>
-                {v.description && (
-                  <div className="variable-tooltip">
-                    {v.description}
+          
+          {/* Group variables by category */}
+          {['valuation', 'investment_flow', 'infrastructure', 'adoption', 'regulatory', 'dot_com_lessons', 'telecom_lessons'].map(cat => {
+            const catVars = variables.filter(v => v.category === cat);
+            if (catVars.length === 0) return null;
+            
+            return (
+              <div key={cat} className="category-section">
+                <div className="category-section-header">{categoryNames[cat]}</div>
+                
+                {/* Historical context banners */}
+                {cat === 'dot_com_lessons' && (
+                  <div className="historical-banner dot-com-banner">
+                    ⚠️ DERIVED FROM DOT-COM COLLAPSE ANALYSIS (1999–2002) — These variables track the same market dynamics that preceded the dot-com crash
                   </div>
                 )}
+                {cat === 'telecom_lessons' && (
+                  <div className="historical-banner telecom-banner">
+                    ⚠️ DERIVED FROM TELECOM BUBBLE ANALYSIS (2000–2002) — These variables mirror the infrastructure over-build dynamics that preceded the telecom collapse
+                  </div>
+                )}
+                
+                <div className="variables-grid">
+                  {catVars.map(v => {
+                    // Extract threshold legend and watching text from description
+                    const thresholdMatch = v.description?.match(/🟢[^|]+\|[^|]+\|[^|]+/);
+                    const watchingMatch = v.description?.match(/WATCHING FOR: ([^.]+\.?)/);
+                    const thresholdText = thresholdMatch ? thresholdMatch[0] : '';
+                    const watchingText = watchingMatch ? watchingMatch[1] : '';
+                    const watchingTruncated = watchingText.length > 80 ? watchingText.substring(0, 80) + '...' : watchingText;
+                    
+                    return (
+                      <div key={v.id} className="variable-card panel">
+                        <div className="variable-label">
+                          {v.label}
+                          {v.description && <span className="info-icon">ⓘ</span>}
+                        </div>
+                        <div className="variable-value-row">
+                          <div 
+                            className="variable-status-dot"
+                            style={{ 
+                              backgroundColor: statusColor(v.status),
+                              boxShadow: `0 0 10px ${statusColor(v.status)}`
+                            }}
+                          />
+                          <div className="variable-value">
+                            {v.value !== null ? v.value.toFixed(1) : '—'}
+                            <span className="variable-unit">{v.unit || ''}</span>
+                          </div>
+                          <div className="variable-trend">{trendIcon(v.trend)}</div>
+                        </div>
+                        
+                        {/* Threshold legend - always visible */}
+                        {thresholdText && (
+                          <div className="threshold-legend">
+                            {thresholdText}
+                          </div>
+                        )}
+                        
+                        {/* Watching for text - always visible */}
+                        {watchingText && (
+                          <div className="watching-text" title={watchingText}>
+                            WATCHING FOR: {watchingTruncated}
+                          </div>
+                        )}
+                        
+                        <div className="variable-updated">
+                          {new Date(v.lastUpdated).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </div>
+                        {v.description && (
+                          <div className="variable-tooltip">
+                            {v.description}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
 
         {/* Company Portfolio */}
@@ -535,6 +586,43 @@ export default function WatchBoardClient({ variables, companies, suspicions, sna
         .variables-section {
           margin-bottom: 3rem;
         }
+        
+        .category-section {
+          margin-bottom: 3rem;
+        }
+        
+        .category-section-header {
+          font-size: 1.2rem;
+          font-weight: 700;
+          letter-spacing: 0.2rem;
+          margin-bottom: 1rem;
+          color: #00D4FF;
+          text-shadow: 0 0 10px rgba(0, 212, 255, 0.4);
+        }
+        
+        .historical-banner {
+          padding: 0.75rem 1rem;
+          margin-bottom: 1rem;
+          border-radius: 6px;
+          font-size: 0.75rem;
+          line-height: 1.5;
+          letter-spacing: 0.05rem;
+          border: 2px solid;
+        }
+        
+        .dot-com-banner {
+          background: rgba(255, 191, 0, 0.1);
+          border-color: rgba(255, 191, 0, 0.4);
+          color: #FFD700;
+          box-shadow: 0 0 15px rgba(255, 191, 0, 0.2);
+        }
+        
+        .telecom-banner {
+          background: rgba(138, 43, 226, 0.1);
+          border-color: rgba(138, 43, 226, 0.4);
+          color: #DA70D6;
+          box-shadow: 0 0 15px rgba(138, 43, 226, 0.2);
+        }
 
         .variables-grid {
           display: grid;
@@ -616,6 +704,24 @@ export default function WatchBoardClient({ variables, companies, suspicions, sna
           margin-left: auto;
         }
 
+        .threshold-legend {
+          font-size: 0.65rem;
+          margin-top: 0.5rem;
+          margin-bottom: 0.25rem;
+          opacity: 0.7;
+          line-height: 1.3;
+          color: rgba(0, 212, 255, 0.8);
+        }
+        
+        .watching-text {
+          font-size: 0.7rem;
+          margin-top: 0.5rem;
+          margin-bottom: 0.5rem;
+          line-height: 1.4;
+          color: rgba(0, 212, 255, 0.75);
+          font-style: italic;
+        }
+        
         .variable-updated {
           font-size: 0.65rem;
           opacity: 0.5;
