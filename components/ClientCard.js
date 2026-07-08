@@ -630,6 +630,23 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount,
 
   return (
     <div className="space-y-6">
+      {/* Primrose Brand Intelligence Hub link */}
+      {acronym === 'PSB' && (
+        <div style={{ background: 'linear-gradient(135deg, #5e6738 0%, #4a5229 100%)', borderRadius: 12, padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 20 }}>🌸</span>
+            <div>
+              <div style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>Primrose Schools — Brand Intelligence Hub</div>
+              <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12 }}>3 locations · Corporate pilot · Full call history, brand guide &amp; strategic intel</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <a href="/primrose" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', padding: '6px 12px', borderRadius: 6, textDecoration: 'none', fontSize: 12, fontWeight: 600, border: '1px solid rgba(255,255,255,0.3)', whiteSpace: 'nowrap' }}>Hub ↗</a>
+            <a href="/primrose/journey" style={{ background: 'rgba(255,158,27,0.4)', color: '#fff', padding: '6px 12px', borderRadius: 6, textDecoration: 'none', fontSize: 12, fontWeight: 600, border: '1px solid rgba(255,158,27,0.5)', whiteSpace: 'nowrap' }}>Journey ↗</a>
+          </div>
+        </div>
+      )}
+
       {/* Alerts strip */}
       {alerts.length > 0 && (
         <div className="space-y-2">
