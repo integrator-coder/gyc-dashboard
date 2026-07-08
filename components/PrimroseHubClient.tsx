@@ -205,6 +205,7 @@ export default function PrimroseHubClient() {
   const [instagramTemplatesOpen, setInstagramTemplatesOpen] = useState(false);
   const [expandedCall, setExpandedCall] = useState<number | null>(null);
   const [clientOpsOpen, setClientOpsOpen] = useState(false);
+  const [locationsOpen, setLocationsOpen] = useState(true);
 
   const totalEnrolled = locations.reduce((sum, loc) => sum + loc.enrolled, 0);
   const totalCapacity = locations.reduce((sum, loc) => sum + loc.capacity, 0);
@@ -1116,10 +1117,18 @@ export default function PrimroseHubClient() {
           </div>
 
           {/* Location Cards */}
-          <div id="locations">
-            <h2 className="text-2xl font-bold text-[#5e6738] mb-6 px-2" style={{ fontFamily: 'Source Serif 4, serif' }}>
-              Locations
-            </h2>
+          <div id="locations" className="border border-[#e8eadf] rounded-lg overflow-hidden">
+            <button
+              onClick={() => setLocationsOpen(!locationsOpen)}
+              className="w-full flex items-center justify-between p-6 bg-white hover:bg-gray-50 transition-colors"
+              style={{ border: 'none', cursor: 'pointer', textAlign: 'left' }}
+            >
+              <h2 className="text-2xl font-bold text-[#5e6738]" style={{ fontFamily: 'Source Serif 4, serif', margin: 0 }}>
+                Locations
+              </h2>
+              <span style={{ color: '#9ca3af', fontSize: 18, flexShrink: 0 }}>{locationsOpen ? '▲' : '▼'}</span>
+            </button>
+            {locationsOpen && <div className="p-6 pt-0">
             <div className="grid md:grid-cols-3 gap-6">
               {locations.map((loc) => {
                 const pct = Math.round((loc.enrolled / loc.capacity) * 100);
@@ -1237,6 +1246,7 @@ export default function PrimroseHubClient() {
                 );
               })}
             </div>
+            </div>}
           </div>
 
           {/* Client Operations Intelligence */}
