@@ -6,6 +6,24 @@ import { ChevronDown, ChevronUp, MapPin, Phone, Star, Users, Target, TrendingUp,
 // Import Google Fonts
 const fontImport = `
 @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,200;0,400;0,600;0,700&family=Poppins:wght@300;400;500;600&display=swap');
+
+/* Force strong contrast within Primrose hub — overrides inherited text-white from dark app shell */
+.primrose-hub-root { color: #111827; }
+.primrose-hub-root p,
+.primrose-hub-root li,
+.primrose-hub-root span,
+.primrose-hub-root td,
+.primrose-hub-root th,
+.primrose-hub-root label { color: inherit; }
+.primrose-hub-root .text-gray-400 { color: #4b5563 !important; }
+.primrose-hub-root .text-gray-500 { color: #374151 !important; }
+.primrose-hub-root .text-gray-600 { color: #1f2937 !important; }
+.primrose-hub-root .text-gray-700 { color: #111827 !important; }
+.primrose-hub-root .text-gray-800 { color: #0f172a !important; }
+.primrose-hub-root .text-gray-900 { color: #030712 !important; }
+.primrose-hub-root .text-white { color: #ffffff !important; }
+.primrose-hub-root .text-sm { font-size: 0.875rem; }
+.primrose-hub-root .text-xs { font-size: 0.75rem; }
 `;
 
 const locations = [
@@ -111,6 +129,9 @@ const calls = [
 export default function PrimroseHubClient() {
   const [opportunityOpen, setOpportunityOpen] = useState(false);
   const [brandGuideOpen, setBrandGuideOpen] = useState(true);
+  const [creativeStandardsOpen, setCreativeStandardsOpen] = useState(false);
+  const [facebookTemplatesOpen, setFacebookTemplatesOpen] = useState(false);
+  const [instagramTemplatesOpen, setInstagramTemplatesOpen] = useState(false);
 
   const totalEnrolled = locations.reduce((sum, loc) => sum + loc.enrolled, 0);
   const totalCapacity = locations.reduce((sum, loc) => sum + loc.capacity, 0);
@@ -133,7 +154,7 @@ export default function PrimroseHubClient() {
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: fontImport }} />
-      <div className="min-h-screen bg-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
+      <div className="primrose-hub-root min-h-screen bg-white" style={{ fontFamily: 'Poppins, sans-serif', color: '#111827' }}>
         {/* Header */}
         <div className="bg-[#5e6738] text-white py-8 px-6">
           <div className="max-w-7xl mx-auto">
@@ -512,6 +533,361 @@ export default function PrimroseHubClient() {
             )}
           </div>
 
+          {/* Creative Standards */}
+          <div className="border border-[#e8eadf] rounded-lg overflow-hidden">
+            <button
+              onClick={() => setCreativeStandardsOpen(!creativeStandardsOpen)}
+              className="w-full flex items-center justify-between p-6 bg-white hover:bg-gray-50 transition-colors"
+            >
+              <h2 className="text-2xl font-bold text-[#5e6738]" style={{ fontFamily: 'Source Serif 4, serif' }}>
+                CREATIVE STANDARDS — AD TEMPLATES
+              </h2>
+              {creativeStandardsOpen ? <ChevronUp className="w-6 h-6" /> : <ChevronDown className="w-6 h-6" />}
+            </button>
+            {creativeStandardsOpen && (
+              <div className="p-6 pt-0 space-y-6">
+                {/* Hill Holliday Credit */}
+                <div className="bg-amber-50 border-l-4 border-amber-500 p-4">
+                  <p className="text-sm font-semibold text-amber-900 mb-1">🏆 Hill Holliday Partnership</p>
+                  <p className="text-sm text-amber-800">
+                    These templates were developed with guidance from an SVP at Hill Holliday (Boston) who is a Primrose parent. 
+                    They represent agency-level strategic architecture — GYC should extend this system, not replace it.
+                  </p>
+                </div>
+
+                {/* Facebook Template System */}
+                <div className="border border-[#e8eadf] rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => setFacebookTemplatesOpen(!facebookTemplatesOpen)}
+                    className="w-full flex items-center justify-between p-4 bg-[#f8f9f5] hover:bg-gray-50 transition-colors"
+                  >
+                    <h3 className="text-lg font-bold text-[#5e6738]" style={{ fontFamily: 'Source Serif 4, serif' }}>
+                      Facebook Template System
+                    </h3>
+                    {facebookTemplatesOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  </button>
+                  {facebookTemplatesOpen && (
+                    <div className="p-6 pt-4 space-y-6">
+                      {/* Design Spec */}
+                      <div className="bg-white border border-[#e8eadf] p-4 rounded">
+                        <h4 className="font-semibold mb-3 text-[#5e6738]">Template Design Spec</h4>
+                        <ul className="space-y-2 text-sm">
+                          <li><strong>Layout:</strong> Split-screen — left half authentic classroom photo, right half solid Primrose Green panel</li>
+                          <li><strong>Typography:</strong> White elegant serif headlines (Sagona/Source Serif Pro) + smaller sans-serif body (Poppins)</li>
+                          <li><strong>Logo:</strong> Circular white Primrose Schools rooster logo, bottom-right of green panel — every template</li>
+                          <li><strong>Photography:</strong> Real classrooms, real children, real staff — no stock. Child-level shots, warm authentic moments</li>
+                          <li><strong>Format:</strong> Landscape ~1200x628 (Facebook feed optimized)</li>
+                          <li><strong>Color:</strong> Primrose Green (#5e6738) — exact match required</li>
+                        </ul>
+                      </div>
+
+                      {/* Strategic Angles */}
+                      <div className="bg-white border border-[#e8eadf] p-4 rounded">
+                        <h4 className="font-semibold mb-3 text-[#5e6738]">6 Strategic Angles (Message Ladder)</h4>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-gray-200">
+                                <th className="text-left py-2 px-2 font-semibold">Angle</th>
+                                <th className="text-left py-2 px-2 font-semibold">Hook</th>
+                                <th className="text-left py-2 px-2 font-semibold">Example Copy</th>
+                                <th className="text-left py-2 px-2 font-semibold">When to Use</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                              <tr>
+                                <td className="py-2 px-2 font-semibold">Academic Proof</td>
+                                <td className="py-2 px-2">Hard statistics, measurable outcomes</td>
+                                <td className="py-2 px-2 text-xs">"100% of pre-k students test at or above grade level"</td>
+                                <td className="py-2 px-2 text-xs">Cold audiences, high-education demographics</td>
+                              </tr>
+                              <tr>
+                                <td className="py-2 px-2 font-semibold">Community/Hyper-Local</td>
+                                <td className="py-2 px-2">Local identity, belonging</td>
+                                <td className="py-2 px-2 text-xs">"Lexington Parents Wanted a School — That's what we built."</td>
+                                <td className="py-2 px-2 text-xs">Re-targeting, community building, warm audiences</td>
+                              </tr>
+                              <tr>
+                                <td className="py-2 px-2 font-semibold">Premium Infant</td>
+                                <td className="py-2 px-2">Luxury positioning, aspirational language</td>
+                                <td className="py-2 px-2 text-xs">"Your Infant's Elevated Beginning — Where excellence begins."</td>
+                                <td className="py-2 px-2 text-xs">Parents of infants 0-12 months, highest-income demos</td>
+                              </tr>
+                              <tr>
+                                <td className="py-2 px-2 font-semibold">Urgency/Scarcity</td>
+                                <td className="py-2 px-2">FOMO + social proof</td>
+                                <td className="py-2 px-2 text-xs">"Secure your child's place... Limited spots remain"</td>
+                                <td className="py-2 px-2 text-xs">Bottom-funnel, re-targeting, enrollment season push</td>
+                              </tr>
+                              <tr>
+                                <td className="py-2 px-2 font-semibold">Diversity/Inclusion</td>
+                                <td className="py-2 px-2">Cultural representation + superlative claim</td>
+                                <td className="py-2 px-2 text-xs">"Diverse Minds, Bright Futures — diverse perspectives enrich..."</td>
+                                <td className="py-2 px-2 text-xs">Indian-American and Asian-American segments, Lexington/Winchester/Chelmsford</td>
+                              </tr>
+                              <tr>
+                                <td className="py-2 px-2 font-semibold">Seasonal/Convenience</td>
+                                <td className="py-2 px-2">Pain point relief</td>
+                                <td className="py-2 px-2 text-xs">"Skip the Battle for Summer Camp Sign Up"</td>
+                                <td className="py-2 px-2 text-xs">Late winter/early spring (Jan–March)</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Template Inventory */}
+                      <div className="bg-white border border-[#e8eadf] p-4 rounded">
+                        <h4 className="font-semibold mb-3 text-[#5e6738]">Template Inventory (18 Total)</h4>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="border-b border-gray-200 bg-gray-50">
+                                <th className="text-left py-2 px-2 font-semibold">File</th>
+                                <th className="text-left py-2 px-2 font-semibold">Location</th>
+                                <th className="text-left py-2 px-2 font-semibold">Angle</th>
+                                <th className="text-left py-2 px-2 font-semibold">Key Copy</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                              <tr><td className="py-1 px-2">1.png</td><td className="py-1 px-2">General</td><td className="py-1 px-2">Academic outcomes</td><td className="py-1 px-2">"100% of pre-k students test at or above grade level"</td></tr>
+                              <tr><td className="py-1 px-2">Lexington General.png</td><td className="py-1 px-2">Lexington</td><td className="py-1 px-2">Community/belonging</td><td className="py-1 px-2">"Lexington Parents Wanted a School"</td></tr>
+                              <tr><td className="py-1 px-2">Lexington General (2).png</td><td className="py-1 px-2">Lexington</td><td className="py-1 px-2">Academic variant</td><td className="py-1 px-2">100% stat variation</td></tr>
+                              <tr><td className="py-1 px-2">Lexington Infant.png</td><td className="py-1 px-2">Lexington</td><td className="py-1 px-2">Infant premium</td><td className="py-1 px-2">Infant-focused</td></tr>
+                              <tr><td className="py-1 px-2">Winchester general.png</td><td className="py-1 px-2">Winchester</td><td className="py-1 px-2">Structure/routine</td><td className="py-1 px-2">"Winchester's Structured Start"</td></tr>
+                              <tr><td className="py-1 px-2">Winchester Infant.png</td><td className="py-1 px-2">Winchester</td><td className="py-1 px-2">Infant premium</td><td className="py-1 px-2">"Your Infant's Elevated Beginning"</td></tr>
+                              <tr><td className="py-1 px-2">Winchester Infant (2).png</td><td className="py-1 px-2">Winchester</td><td className="py-1 px-2">Infant variant</td><td className="py-1 px-2">Infant variation</td></tr>
+                              <tr><td className="py-1 px-2">Winchester and Lexington.png</td><td className="py-1 px-2">Winchester+Lex</td><td className="py-1 px-2">Combined geo</td><td className="py-1 px-2">Dual-market targeting</td></tr>
+                              <tr><td className="py-1 px-2">Winchester Community.png</td><td className="py-1 px-2">Winchester</td><td className="py-1 px-2">Diversity/community</td><td className="py-1 px-2">"Diverse Minds, Bright Futures"</td></tr>
+                              <tr><td className="py-1 px-2">Bedford general.png</td><td className="py-1 px-2">Bedford</td><td className="py-1 px-2">General awareness</td><td className="py-1 px-2">Bedford geo-targeted</td></tr>
+                              <tr><td className="py-1 px-2">Burlington Summer.png</td><td className="py-1 px-2">Burlington</td><td className="py-1 px-2">Seasonal/convenience</td><td className="py-1 px-2">"Skip the Battle for Summer Camp"</td></tr>
+                              <tr><td className="py-1 px-2">Woburn Scarcity.png</td><td className="py-1 px-2">Woburn</td><td className="py-1 px-2">Urgency/scarcity</td><td className="py-1 px-2">"Limited spots remain"</td></tr>
+                              <tr><td className="py-1 px-2">Chelmsford.png</td><td className="py-1 px-2">Chelmsford</td><td className="py-1 px-2">Diversity/community</td><td className="py-1 px-2">"Diverse Minds" (Holi imagery)</td></tr>
+                              <tr><td className="py-1 px-2">Westford Infants.png</td><td className="py-1 px-2">Westford</td><td className="py-1 px-2">Infant premium</td><td className="py-1 px-2">Westford infant-focused</td></tr>
+                              <tr><td className="py-1 px-2">Westford Infants (2).png</td><td className="py-1 px-2">Westford</td><td className="py-1 px-2">Infant variant</td><td className="py-1 px-2">Variation</td></tr>
+                              <tr><td className="py-1 px-2">Billerica.png</td><td className="py-1 px-2">Billerica</td><td className="py-1 px-2">General</td><td className="py-1 px-2">Billerica geo-targeted</td></tr>
+                              <tr><td className="py-1 px-2">Billerica Infants.png</td><td className="py-1 px-2">Billerica</td><td className="py-1 px-2">Infant</td><td className="py-1 px-2">Billerica infant-focused</td></tr>
+                              <tr><td className="py-1 px-2">STAR Results.png</td><td className="py-1 px-2">General</td><td className="py-1 px-2">Social proof/outcomes</td><td className="py-1 px-2">100% stat + QR code (print/flyer)</td></tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* GYC Rules for Zac */}
+                      <div className="bg-amber-50 border-l-4 border-amber-500 p-4">
+                        <h4 className="font-semibold mb-3 text-amber-900">🎨 GYC Rules for Zac/Production (8 Rules)</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex items-start gap-2">
+                            <input type="checkbox" className="mt-1" />
+                            <span>✅ Always split-screen — left photo, right green panel. Do not deviate.</span>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <input type="checkbox" className="mt-1" />
+                            <span>✅ Only authentic classroom photos — never stock</span>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <input type="checkbox" className="mt-1" />
+                            <span>✅ Primrose Green (#5e6738) on the right panel — not a guess, not a close color</span>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <input type="checkbox" className="mt-1" />
+                            <span>✅ White circular Primrose logo bottom-right on every ad</span>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <input type="checkbox" className="mt-1" />
+                            <span>✅ Serif headline, sans-serif body — per brand guide</span>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <input type="checkbox" className="mt-1" />
+                            <span>✅ No ALL CAPS in any headline</span>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <input type="checkbox" className="mt-1" />
+                            <span>✅ Always name the town in copy — hyper-local is the strategy</span>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <input type="checkbox" className="mt-1" />
+                            <span>✅ Match the angle to the audience — don't use scarcity on cold audiences; don't use academic outcomes on infant parents</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Missing Templates */}
+                      <div className="bg-red-50 border-l-4 border-red-500 p-4">
+                        <h4 className="font-semibold mb-2 text-red-900">⚠️ Missing Templates (Opportunity)</h4>
+                        <ul className="space-y-1 text-sm text-red-800">
+                          <li>• <strong>Woburn:</strong> Only has Scarcity — needs General + Infant variations</li>
+                          <li>• <strong>Chelmsford:</strong> Only has Diversity — needs General + Infant variations</li>
+                          <li>• <strong>Bedford:</strong> Has General — needs Infant</li>
+                          <li>• <strong>Westford:</strong> Has Infants — needs General</li>
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Instagram Template System */}
+                <div className="border border-[#e8eadf] rounded-lg overflow-hidden mt-6">
+                  <button
+                    onClick={() => setInstagramTemplatesOpen(!instagramTemplatesOpen)}
+                    className="w-full flex items-center justify-between p-4 bg-[#f8f9f5] hover:bg-gray-50 transition-colors"
+                  >
+                    <h3 className="text-lg font-bold text-[#5e6738]" style={{ fontFamily: 'Source Serif 4, serif' }}>
+                      Instagram Template System
+                    </h3>
+                    {instagramTemplatesOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  </button>
+                  {instagramTemplatesOpen && (
+                    <div className="p-6 pt-4 space-y-6">
+                      {/* Philosophy */}
+                      <div className="bg-white border border-[#e8eadf] p-4 rounded">
+                        <h4 className="font-semibold mb-3 text-[#5e6738]">Fundamentally Different Philosophy</h4>
+                        <p className="text-sm mb-3">
+                          Instagram is <strong>editorial and emotional</strong>; Facebook is informational and direct-response.
+                        </p>
+                        <ul className="space-y-2 text-sm">
+                          <li><strong>Orientation:</strong> 4:5 portrait (1080x1350) — maximum vertical real estate</li>
+                          <li><strong>Layout:</strong> Full-bleed photograph, white serif headline overlaid (bottom-left or right)</li>
+                          <li><strong>Copy:</strong> Headline carries the entire message — no body copy</li>
+                          <li><strong>Privacy:</strong> White heart icon overlaid on children's faces where required</li>
+                          <li><strong>No colored panels</strong> — Instagram native aesthetic</li>
+                        </ul>
+                      </div>
+
+                      {/* Template Descriptions */}
+                      <div className="bg-white border border-[#e8eadf] p-4 rounded">
+                        <h4 className="font-semibold mb-3 text-[#5e6738]">6 Templates</h4>
+                        <div className="space-y-3 text-sm">
+                          <div className="border-l-4 border-[#5e6738] pl-3">
+                            <div className="font-semibold">1. "Before Davis, There is Primrose."</div>
+                            <div className="text-xs text-gray-600 mt-1">
+                              Legacy/Pipeline angle. Two children in graduation caps, shot from behind. 
+                              "Davis" = Davis Academy (local feeder/private school). Positions Primrose as the prerequisite to prestigious K-12.
+                              <strong className="block mt-1">This is Hill Holliday-level work.</strong>
+                            </div>
+                          </div>
+                          <div className="border-l-4 border-gray-300 pl-3">
+                            <div className="font-semibold">2. UGC Template (no headline)</div>
+                            <div className="text-xs text-gray-600 mt-1">
+                              Infant with "Make a Difference" board book (Wangari Maathai — culturally intentional). Looks like staff-shot organic content.
+                            </div>
+                          </div>
+                          <div className="border-l-4 border-gray-300 pl-3">
+                            <div className="font-semibold">3. UGC Template (no headline)</div>
+                            <div className="text-xs text-gray-600 mt-1">
+                              Boy reading dinosaur book on floor. Authentic classroom moment, independent engagement.
+                            </div>
+                          </div>
+                          <div className="border-l-4 border-[#ff9e1b] pl-3">
+                            <div className="font-semibold">4. "The Right Foundation for the Future"</div>
+                            <div className="text-xs text-gray-600 mt-1">
+                              Aspirational/awareness angle. Toddler with turquoise scarf, white heart privacy overlay.
+                            </div>
+                          </div>
+                          <div className="border-l-4 border-[#ff9e1b] pl-3">
+                            <div className="font-semibold">5. "Your Infant's Elevated Beginning"</div>
+                            <div className="text-xs text-gray-600 mt-1">
+                              Infant premium angle. <strong>Same image as template 4, swapped headline</strong> — intentional A/B copy test.
+                            </div>
+                          </div>
+                          <div className="border-l-4 border-[#5e6738] pl-3">
+                            <div className="font-semibold">6. "100% of students test at or above grade level"</div>
+                            <div className="text-xs text-gray-600 mt-1">
+                              Academic proof angle. Girl with sensory bin, colorful rug. Stat alone converts — stripped of all supporting copy.
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Facebook vs Instagram Table */}
+                      <div className="bg-white border border-[#e8eadf] p-4 rounded">
+                        <h4 className="font-semibold mb-3 text-[#5e6738]">Key Differences: Facebook vs Instagram</h4>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-gray-200">
+                                <th className="text-left py-2 px-2 font-semibold">Element</th>
+                                <th className="text-left py-2 px-2 font-semibold">Facebook</th>
+                                <th className="text-left py-2 px-2 font-semibold">Instagram</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                              <tr><td className="py-2 px-2">Layout</td><td className="py-2 px-2">Split-screen (photo + green panel)</td><td className="py-2 px-2">Full-bleed photo only</td></tr>
+                              <tr><td className="py-2 px-2">Copy density</td><td className="py-2 px-2">Headline + body copy</td><td className="py-2 px-2">Headline only (or none)</td></tr>
+                              <tr><td className="py-2 px-2">CTA</td><td className="py-2 px-2">Often baked-in</td><td className="py-2 px-2">Platform button only</td></tr>
+                              <tr><td className="py-2 px-2">Tone</td><td className="py-2 px-2">Informational + aspirational</td><td className="py-2 px-2">Emotional + editorial</td></tr>
+                              <tr><td className="py-2 px-2">Geo-targeting</td><td className="py-2 px-2">Town name in copy</td><td className="py-2 px-2">Broad aspirational — audience handles geo</td></tr>
+                              <tr><td className="py-2 px-2">Brand chrome</td><td className="py-2 px-2">Green panel + logo always present</td><td className="py-2 px-2">Minimal (logo sometimes absent)</td></tr>
+                              <tr><td className="py-2 px-2">Testing method</td><td className="py-2 px-2">Different geo/message ads</td><td className="py-2 px-2">A/B copy test on same image</td></tr>
+                            </tbody>
+                          </table>
+                        </div>
+                        <div className="mt-3 text-sm text-gray-700">
+                          <strong>Strategic Job Split:</strong><br />
+                          Facebook = Reach the right parents with the right local message (geotargeting, information, proof)<br />
+                          Instagram = Create desire and emotional connection before the rational decision (aspirational, editorial, identity-based)
+                        </div>
+                      </div>
+
+                      {/* The Davis Ad Callout */}
+                      <div className="bg-[#5e6738] text-white p-5 rounded">
+                        <h4 className="font-semibold mb-2 text-white">🏆 "Before Davis, There is Primrose" — Why This Is Hill Holliday Level Work</h4>
+                        <ul className="space-y-2 text-sm">
+                          <li>• Boldest, most sophisticated ad in either set (Facebook or Instagram)</li>
+                          <li>• "Davis" = Davis Academy or similar local feeder/private school known to MA parents</li>
+                          <li>• Positions Primrose as the prerequisite to the prestigious K-12 pipeline</li>
+                          <li>• Targets parents already thinking 5, 10, 15 years ahead (long-term decision makers)</li>
+                          <li>• Two children in graduation regalia, shot from behind — aspirational, journey-forward imagery</li>
+                          <li>• Completely clean — no logo visible. The brand confidence is striking.</li>
+                          <li>• <strong>Hill Holliday fingerprint:</strong> Only someone who knows the local market deeply would know "Davis" is the name that makes Boston-area parents pay attention</li>
+                        </ul>
+                      </div>
+
+                      {/* A/B Copy Test */}
+                      <div className="bg-white border border-[#e8eadf] p-4 rounded">
+                        <h4 className="font-semibold mb-3 text-[#5e6738]">The A/B Copy Test Structure (Templates 4 + 5)</h4>
+                        <p className="text-sm mb-2">
+                          Templates 4 and 5 use <strong>identical photography, different headlines</strong>. This is intentional media testing:
+                        </p>
+                        <ul className="space-y-1 text-sm">
+                          <li>• Hold visual constant, isolate copy performance</li>
+                          <li>• Broad aspirational ("Foundation for the Future") vs. age-segment specific ("Your Infant's Elevated Beginning")</li>
+                          <li>• Tests whether general awareness or targeted premium positioning converts better</li>
+                        </ul>
+                      </div>
+
+                      {/* UGC Templates */}
+                      <div className="bg-white border border-[#e8eadf] p-4 rounded">
+                        <h4 className="font-semibold mb-3 text-[#5e6738]">UGC Templates (2 + 3) — How and Why They Work</h4>
+                        <p className="text-sm mb-2">
+                          No headline, no logo — designed to look like staff-shot Instagram content.
+                        </p>
+                        <ul className="space-y-1 text-sm">
+                          <li>• Blend into organic feed (reduces "ad blindness")</li>
+                          <li>• Template 2 has culturally intentional touch: board book is about Wangari Maathai (Kenyan environmental activist) — signals curriculum depth and diversity values</li>
+                          <li>• Template 3: boy deep in dinosaur book — showcases independent engagement with learning</li>
+                          <li>• White heart privacy overlay is Instagram-native (mimics Instagram's own tools)</li>
+                        </ul>
+                      </div>
+
+                      {/* GYC Implications */}
+                      <div className="bg-amber-50 border-l-4 border-amber-500 p-4">
+                        <h4 className="font-semibold mb-3 text-amber-900">🎨 GYC Implications for Zac</h4>
+                        <ul className="space-y-2 text-sm">
+                          <li>• <strong>Instagram ≠ Facebook with a different crop.</strong> These are different creative philosophies.</li>
+                          <li>• Full-bleed photography only — no green panel, no copy blocks</li>
+                          <li>• Headline is the ad. Make it earn its place. If it's not arresting, cut it.</li>
+                          <li>• White serif on photo — must be legible against the image (choose photo backgrounds carefully)</li>
+                          <li>• "Before Davis, There is Primrose" is the template for market-specific copy — know the local feeder schools. What's the "Davis" for Woburn? Chelmsford?</li>
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Location Cards */}
           <div>
             <h2 className="text-2xl font-bold text-[#5e6738] mb-6 px-2" style={{ fontFamily: 'Source Serif 4, serif' }}>
@@ -626,9 +1002,17 @@ export default function PrimroseHubClient() {
 
           {/* Call History */}
           <div>
-            <h2 className="text-2xl font-bold text-[#5e6738] mb-6 px-2" style={{ fontFamily: 'Source Serif 4, serif' }}>
-              Call History
-            </h2>
+            <div className="flex items-center justify-between mb-6 px-2">
+              <h2 className="text-2xl font-bold text-[#5e6738]" style={{ fontFamily: 'Source Serif 4, serif' }}>
+                Call History
+              </h2>
+              <a 
+                href="/primrose/journey"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-[#5e6738] text-white rounded-lg hover:bg-[#4a5229] transition-colors text-sm font-medium"
+              >
+                View Full Journey →
+              </a>
+            </div>
             <div className="space-y-4">
               {calls.map((call, i) => (
                 <div key={i} className="bg-white border border-[#e8eadf] rounded-lg p-6">
