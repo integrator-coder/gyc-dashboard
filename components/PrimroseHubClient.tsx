@@ -310,20 +310,52 @@ export default function PrimroseHubClient() {
                 </div>
 
                 {/* Stat Cards */}
+                <style>{`
+                  .stat-card { position: relative; cursor: default; }
+                  .stat-card .stat-tip {
+                    display: none;
+                    position: absolute;
+                    bottom: calc(100% + 8px);
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: #1f2937;
+                    color: #f9fafb;
+                    font-size: 12px;
+                    line-height: 1.5;
+                    padding: 8px 12px;
+                    border-radius: 6px;
+                    width: 220px;
+                    z-index: 50;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                    pointer-events: none;
+                  }
+                  .stat-card .stat-tip::after {
+                    content: '';
+                    position: absolute;
+                    top: 100%;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    border: 6px solid transparent;
+                    border-top-color: #1f2937;
+                  }
+                  .stat-card:hover .stat-tip { display: block; }
+                `}</style>
                 <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:12}}>
                   {[
-                    ['558', 'Franchised Schools'],
-                    ['34 States + DC', 'Geographic Reach'],
-                    ['100,000+', 'Children Enrolled'],
-                    ['$1.4–1.6B', 'System Revenue (est.)'],
-                    ['$2B+', '2024 Valuation Explored'],
-                    ['#1 × 6', 'Entrepreneur Franchise 500'],
-                    ['$2.65M', 'Avg Unit Revenue'],
-                    ['200+', 'Schools in Pipeline'],
-                  ].map(([v, l]) => (
-                    <div key={l} style={{background:'#fff',border:'1px solid #e8eadf',borderRadius:8,padding:'12px 14px',textAlign:'center'}}>
+                    ['558', 'Franchised Schools', 'Individual Primrose locations currently open under active franchise agreements. Each is independently owned and operated by a franchisee who pays royalties and fees to corporate Primrose.'],
+                    ['34 States + DC', 'Geographic Reach', 'Number of U.S. states where at least one Primrose school is currently operating. Concentration is highest in Southeast and Mid-Atlantic, with expansion into Midwest and West.'],
+                    ['100,000+', 'Children Enrolled', 'Estimated total number of children currently attending Primrose schools across all 558 locations. This is across infants through kindergarten and after-schoolers.'],
+                    ['$1.4–1.6B', 'System Revenue (est.)', 'Total annual revenue generated across ALL 558 Primrose locations combined. This is franchisee tuition revenue — not corporate revenue. Corporate earns 7% royalty + 4–5% marketing fees on top of this.'],
+                    ['$2B+', '2024 Valuation Explored', 'In 2024, owner Roark Capital explored selling Primrose at an estimated $2B+ enterprise valuation. This reflects the value of the brand, franchise agreements, and royalty stream — not individual school assets.'],
+                    ['#1 × 6', 'Entrepreneur Franchise 500', 'Primrose has been ranked #1 in the childcare category of Entrepreneur Magazine’s Franchise 500 for 6 consecutive years, and has appeared on the overall list for 18 consecutive years. One of the most prestigious franchise rankings in the industry.'],
+                    ['$2.65M', 'Avg Unit Revenue', 'Average annual gross revenue earned by a single Primrose school location, per the 2025 Franchise Disclosure Document (FDD). Median is $2.4M. Top quartile schools earn $3.6M+. Kate’s Burlington location is likely in the $2M–3M range.'],
+                    ['200+', 'Schools in Pipeline', 'Signed franchise agreements for new Primrose schools currently in development — being designed, permitted, built, or staffed — but not yet open. Represents near-term network growth. Different from the 558 that are already operating.'],
+                  ].map(([v, l, tip]) => (
+                    <div key={l} className="stat-card" style={{background:'#fff',border:'1px solid #e8eadf',borderRadius:8,padding:'12px 14px',textAlign:'center'}}>
+                      <div className="stat-tip">{tip}</div>
                       <div style={{fontWeight:700,fontSize:20,color:'#5e6738'}}>{v}</div>
                       <div style={{fontSize:11,color:'#374151',marginTop:2}}>{l}</div>
+                      <div style={{fontSize:10,color:'#9ca3af',marginTop:3}}>hover for definition</div>
                     </div>
                   ))}
                 </div>
