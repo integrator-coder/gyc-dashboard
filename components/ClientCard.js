@@ -3646,16 +3646,16 @@ function SEOTab({ profile, acronym }) {
                 ) || null}
               />
             ))}
-            {/* GBP-only locations (heatmapEnabled=true but not on SEO program) */}
+            {/* GBP-only locations (heatmapEnabled=true, no snapshot data yet) */}
             {gbpOnlyLocations.map(g => (
               <SEOLocationBlock
                 key={`gbp-${g.id}`}
                 acronym={acronym}
                 loc={g.locationName || 'Location'}
-                snapshots={[]}
+                snapshots={seoData.snapshots.filter(s => s.locationName === (g.locationName || ''))}
                 gbpRows={(seoData.gbpByLocation?.[g.locationName]) || []}
-                isMultiLoc={gbpOnlyLocations.length > 1}
-                isOnProgram={false}
+                isMultiLoc={locations.length + gbpOnlyLocations.length > 1}
+                isOnProgram={!!profile.hasSEO}
                 heatmaps={(seoData.heatmaps || []).filter(h => h.locationName === g.locationName)}
                 gbpInfo={g}
               />
