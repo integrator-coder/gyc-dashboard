@@ -62,7 +62,7 @@ const locations = [
     address: '168 Lexington St, Woburn, MA 01801',
     phone: '(781) 497-8388',
     website: 'https://www.primroseschools.com/schools/woburn',
-    aclUrl: '/clients/PSW',
+    aclUrl: '/clients/PSB',  // All 3 locations consolidated under PSB
     gbpMapUrl: 'https://maps.google.com/?cid=ChIJIdEq_A5144kRIaz6fS1gIrQ',
     notionUrl: null,
     gbpRating: 5.0,
@@ -88,7 +88,7 @@ const locations = [
     address: '205 North Rd, Chelmsford, MA 01824',
     phone: '(978) 710-6123',
     website: 'https://www.primroseschools.com/schools/chelmsford',
-    aclUrl: '/clients/PSC',
+    aclUrl: '/clients/PSB',  // All 3 locations consolidated under PSB
     gbpMapUrl: 'https://maps.google.com/?cid=ChIJv_ITEUGj44kR-63MQdAwZ-Y',
     notionUrl: null,
     gbpRating: 4.5,
