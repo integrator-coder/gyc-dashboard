@@ -2409,7 +2409,7 @@ function ArpBadge({ label, value }) {
 }
 
 function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatmaps = [], gbpInfo = null, isOnProgram = true }) {
-  const [open,     setOpen]     = useState(false)
+  const [open,     setOpen]     = useState(true)  // default open so trend chart is visible
   const [hmRadius, setHmRadius] = useState(3)
   const [hmKw,     setHmKw]     = useState('daycare')
 
@@ -2511,6 +2511,27 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
         {gbpInfo?.reviewCount != null && (
           <span style={{ fontSize: 12, color: '#9ca3af' }}>({gbpInfo.reviewCount.toLocaleString()} reviews)</span>
         )}
+        {/* SOLV snapshot in header — shows latest + delta vs previous */}
+        {chartData.length >= 1 && (() => {
+          const latest = chartData[chartData.length - 1]
+          const prev   = chartData.length >= 2 ? chartData[chartData.length - 2] : null
+          const dayDelta = prev && latest.daycare != null && prev.daycare != null ? (latest.daycare - prev.daycare) : null
+          const preDelta = prev && latest.preschool != null && prev.preschool != null ? (latest.preschool - prev.preschool) : null
+          const fmt = v => v != null ? v.toFixed(1) + '%' : '—'
+          const fmtD = d => d == null ? null : (d > 0 ? '+' : '') + d.toFixed(1)
+          const dColor = d => d == null ? '#9ca3af' : d > 0 ? '#4ade80' : d < 0 ? '#f87171' : '#9ca3af'
+          return (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 8 }}>
+              <span style={{ fontSize: 11, color: '#9ca3af' }}>SOLV</span>
+              <span style={{ fontSize: 12, color: '#c4b5fd', fontWeight: 600 }}>{fmt(latest.daycare)}</span>
+              {dayDelta != null && <span style={{ fontSize: 11, color: dColor(dayDelta) }}>({fmtD(dayDelta)})</span>}
+              <span style={{ fontSize: 11, color: '#6b7280' }}>/</span>
+              <span style={{ fontSize: 12, color: '#a78bfa', fontWeight: 600 }}>{fmt(latest.preschool)}</span>
+              {preDelta != null && <span style={{ fontSize: 11, color: dColor(preDelta) }}>({fmtD(preDelta)})</span>}
+              <span style={{ fontSize: 10, color: '#6b7280' }}>daycare/preschool</span>
+            </span>
+          )
+        })()}
         <span style={{ marginLeft: 'auto', fontSize: 13, color: '#6b7280', paddingRight: 4 }}>
           {open ? '▾' : '▸'}
         </span>
