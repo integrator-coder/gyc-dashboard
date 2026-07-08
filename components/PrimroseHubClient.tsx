@@ -691,9 +691,11 @@ export default function PrimroseHubClient() {
                       <ul className="space-y-2 text-sm">
                         <li>• &quot;early education and care school&quot; (not daycare)</li>
                         <li>• &quot;children&quot; or &quot;child&quot; (not &quot;kids&quot;)</li>
+                        <li>• &quot;campus visit&quot; (not &quot;tour&quot;) — Rachel’s specific correction</li>
                         <li>• &quot;Balanced Learning®&quot; with trademark</li>
                         <li>• Gender-neutral pronouns: they/them/their</li>
                         <li>• Title Case OR Sentence case</li>
+                        <li>• Active, specific CTAs: &quot;Book your campus visit&quot;, &quot;Come learn more&quot;, &quot;Reach out to learn more&quot;, &quot;Schedule your campus visit&quot;</li>
                       </ul>
                     </div>
                     <div>
@@ -701,13 +703,32 @@ export default function PrimroseHubClient() {
                       <ul className="space-y-2 text-sm">
                         <li>• &quot;daycare&quot; — always &quot;early education and care&quot;</li>
                         <li>• &quot;kids&quot; — always &quot;children&quot;</li>
+                        <li>• <strong>&quot;Enroll Now&quot;</strong> — weak passive CTA. Rachel flagged it, Bruce confirmed it on June 23 call.</li>
+                        <li>• &quot;tours&quot; — always &quot;campus visits&quot;</li>
                         <li>• ALL CAPS headlines</li>
                         <li>• Ampersands in sentences (OK in titles/bullets)</li>
                       </ul>
                     </div>
                   </div>
-                  <div className="mt-4 bg-orange-50 border-l-4 border-[#ff9e1b] p-4 text-sm">
-                    <strong>Most Critical:</strong> NEVER say &quot;daycare&quot; in any Primrose ad copy, emails, or social posts — this is a brand violation
+                  <div className="mt-4 space-y-3">
+                    <div className="bg-orange-50 border-l-4 border-[#ff9e1b] p-4 text-sm">
+                      <strong>Most Critical:</strong> NEVER say &quot;daycare&quot; in any Primrose ad copy, emails, or social posts — this is a brand violation
+                    </div>
+                    <div style={{background:'#fff7ed',borderLeft:'4px solid #ea580c',padding:'12px 16px',fontSize:13}}>
+                      <strong style={{color:'#9a3412'}}>No &quot;Enroll Now&quot; (or any variation)</strong>
+                      <p style={{margin:'6px 0 0',color:'#7c2d12',lineHeight:1.6}}>
+                        From the June 23 call — Bruce: &quot;<em>We don’t invite to just ‘enroll now.’ It’s passive language — a weak CTA. We’re always looking for an active call to action that directs the next thing to do.</em>&quot;
+                        Rachel was the one who first flagged it. Use specific, active CTAs instead:
+                      </p>
+                      <ul style={{margin:'8px 0 0',paddingLeft:20,color:'#7c2d12',fontSize:12,lineHeight:1.8}}>
+                        <li>✅ &quot;Book your campus visit&quot;</li>
+                        <li>✅ &quot;Schedule your campus visit&quot;</li>
+                        <li>✅ &quot;Come learn more&quot;</li>
+                        <li>✅ &quot;Reach out to learn more&quot;</li>
+                        <li>✅ &quot;Join us at our open house&quot; (event-specific)</li>
+                        <li>❌ &quot;Enroll Now&quot; / &quot;Sign Up&quot; / &quot;Register Today&quot; — all passive</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
 
@@ -741,6 +762,14 @@ export default function PrimroseHubClient() {
                     <div className="flex items-start gap-2">
                       <input type="checkbox" className="mt-1" />
                       <span>Source Serif Pro for headlines (min 18pt), Poppins for body</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <input type="checkbox" className="mt-1" />
+                      <span>NO &quot;Enroll Now&quot; or any variation — use active CTAs: &quot;Book your campus visit&quot;, &quot;Come learn more&quot;, &quot;Schedule your campus visit&quot;</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <input type="checkbox" className="mt-1" />
+                      <span>NO &quot;tours&quot; — always &quot;campus visits&quot; (Rachel’s specific correction)</span>
                     </div>
                     <div className="flex items-start gap-2">
                       <input type="checkbox" className="mt-1" />
