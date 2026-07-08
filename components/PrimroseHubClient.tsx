@@ -240,7 +240,17 @@ export default function PrimroseHubClient() {
                 PILOT — HIGH PRIORITY
               </span>
             </div>
-            <p className="text-lg mb-6">Brand Intelligence Hub</p>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.5rem',flexWrap:'wrap',gap:10}}>
+              <p className="text-lg" style={{margin:0}}>Brand Intelligence Hub</p>
+              <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                <a href="/clients/PSB" style={{display:'inline-flex',alignItems:'center',gap:6,background:'rgba(255,255,255,0.2)',color:'#fff',padding:'6px 14px',borderRadius:8,textDecoration:'none',fontSize:13,fontWeight:600,border:'1px solid rgba(255,255,255,0.3)'}}>
+                  📋 Full Client Card (PSB)
+                </a>
+                <a href="/primrose/journey" style={{display:'inline-flex',alignItems:'center',gap:6,background:'rgba(255,158,27,0.3)',color:'#fff',padding:'6px 14px',borderRadius:8,textDecoration:'none',fontSize:13,fontWeight:600,border:'1px solid rgba(255,158,27,0.5)'}}>
+                  📖 Journey Page
+                </a>
+              </div>
+            </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
               <div>
                 <div className="text-white/70">Contact</div>
@@ -274,6 +284,7 @@ export default function PrimroseHubClient() {
         <div style={{ background: '#f0f3e8', borderBottom: '1px solid #d4d9c4', padding: '0.75rem 1.5rem' }}>
           <div className="max-w-7xl mx-auto" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: '#5e6738' }}>QUICK LINKS:</span>
+            <a href="/clients/PSB" style={{fontSize:13,fontWeight:700,color:'#fff',background:'#374151',padding:'4px 14px',borderRadius:6,textDecoration:'none',display:'flex',alignItems:'center',gap:6}}>📋 Client Card</a>
             <a href="#opportunity" style={{ fontSize: 13, color: '#374151', textDecoration: 'none', padding: '4px 12px', background: '#fff', border: '1px solid #d4d9c4', borderRadius: 6 }}>The Opportunity</a>
             <a href="#brand-guide" style={{ fontSize: 13, color: '#374151', textDecoration: 'none', padding: '4px 12px', background: '#fff', border: '1px solid #d4d9c4', borderRadius: 6 }}>Brand Guide</a>
             <a href="#creative" style={{ fontSize: 13, color: '#374151', textDecoration: 'none', padding: '4px 12px', background: '#fff', border: '1px solid #d4d9c4', borderRadius: 6 }}>Creative Standards</a>
