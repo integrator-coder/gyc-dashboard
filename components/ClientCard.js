@@ -2409,9 +2409,10 @@ function ArpBadge({ label, value }) {
 }
 
 function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatmaps = [], gbpInfo = null, isOnProgram = true }) {
-  const [open,     setOpen]     = useState(true)  // default open so trend chart is visible
-  const [hmRadius, setHmRadius] = useState(3)
-  const [hmKw,     setHmKw]     = useState('daycare')
+  const [open,        setOpen]        = useState(true)  // default open so trend chart is visible
+  const [hmRadius,    setHmRadius]    = useState(3)
+  const [hmKw,        setHmKw]        = useState('daycare')
+  const [hmScanIndex, setHmScanIndex] = useState(0)     // 0 = latest, higher = older
 
   // Group heatmaps by radius → keyword → [sorted by scanDate DESC = latest first]
   const hmByRadius = useMemo(() => {
@@ -2430,9 +2431,11 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
   }, [heatmaps])
   const hmRadii    = Object.keys(hmByRadius).map(Number).sort((a, b) => a - b)
   const hmKeywords = [...new Set(heatmaps.map(h => h.keyword))].sort()
-  // Latest scan for current selection
-  const activeHmList = hmByRadius[hmRadius]?.[hmKw] || []
-  const activeHm     = activeHmList[0] || null
+  // All scans for current selection; active scan driven by slider index
+  const activeHmList  = hmByRadius[hmRadius]?.[hmKw] || []
+  const clampedIndex  = Math.min(hmScanIndex, Math.max(0, activeHmList.length - 1))
+  const activeHm      = activeHmList[clampedIndex] || null
+  const prevHmForDiff = activeHmList[clampedIndex + 1] || null  // one scan older for delta
 
   // Historical trend: avgRank per scan date for active radius+keyword
   const hmTrendData = useMemo(() => {
@@ -2594,7 +2597,7 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
               <InfoTip text="The geographic area covered by the heatmap grid. 3 mi = the grid extends 3 miles from the business in every direction. Use 3 mi for urban/dense markets, 5 mi for suburban." />
             </span>
             {hmRadii.length > 1 && hmRadii.map(r => (
-              <button key={r} onClick={() => setHmRadius(r)} style={{
+              <button key={r} onClick={() => { setHmRadius(r); setHmScanIndex(0); }} style={{
                 padding: '3px 10px', borderRadius: 16, fontSize: 11, fontWeight: 600, cursor: 'pointer',
                 border: hmRadius === r ? '1px solid #a78bfa' : '1px solid rgba(255,255,255,0.1)',
                 background: hmRadius === r ? 'rgba(167,139,250,0.15)' : 'rgba(0,0,0,0.3)',
@@ -2603,7 +2606,7 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
             ))}
             {hmKeywords.length > 1 && <span style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.07em', marginLeft: 4 }}>Keyword <InfoTip text="The search term used to test how this business ranks in Google Maps. Daycare and Preschool are the most common terms parents use when searching for childcare." /></span>}
             {hmKeywords.length > 1 && hmKeywords.map(kw => (
-              <button key={kw} onClick={() => setHmKw(kw)} style={{
+              <button key={kw} onClick={() => { setHmKw(kw); setHmScanIndex(0); }} style={{
                 padding: '3px 10px', borderRadius: 16, fontSize: 11, fontWeight: 600, cursor: 'pointer',
                 textTransform: 'capitalize',
                 border: hmKw === kw ? '1px solid #a78bfa' : '1px solid rgba(255,255,255,0.1)',
@@ -2615,7 +2618,7 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
               const pts     = activeHm.points || []
               const ranked  = pts.filter(p => p.rank != null).length
               const avg     = ranked ? (pts.filter(p=>p.rank!=null).reduce((s,p)=>s+p.rank,0)/ranked).toFixed(1) : null
-              const prevHm  = activeHmList[1]
+              const prevHm  = prevHmForDiff
               const prevRk  = prevHm?.points?.filter(p => p.rank != null) || []
               const prevAvg = prevRk.length ? prevRk.reduce((s,p)=>s+p.rank,0)/prevRk.length : null
               const delta   = (avg && prevAvg) ? (parseFloat(avg) - prevAvg).toFixed(1) : null
@@ -2634,6 +2637,56 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
               )
             })()}
           </div>
+          {/* Timeline scrubber — only shown when >1 scan available */}
+          {activeHmList.length > 1 && (
+            <div style={{ marginBottom: 14, background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: '10px 16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.07em', flexShrink: 0 }}>Timeline</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#e5e7eb' }}>
+                  {new Date(activeHmList[clampedIndex].scanDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
+                {clampedIndex === 0 && <span style={{ fontSize: 10, background: 'rgba(34,197,94,0.15)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.3)', padding: '1px 7px', borderRadius: 9999, fontWeight: 600 }}>LATEST</span>}
+                {clampedIndex > 0 && <span style={{ fontSize: 10, background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)', padding: '1px 7px', borderRadius: 9999, fontWeight: 600 }}>HISTORICAL</span>}
+                <span style={{ marginLeft: 'auto', fontSize: 11, color: '#6b7280' }}>{activeHmList.length} scans</span>
+              </div>
+              {/* Slider: 0 = newest (left), length-1 = oldest (right) — display reversed */}
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="range"
+                  min={0}
+                  max={activeHmList.length - 1}
+                  value={clampedIndex}
+                  onChange={e => setHmScanIndex(Number(e.target.value))}
+                  style={{ width: '100%', accentColor: '#a78bfa', cursor: 'pointer' }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                  <span style={{ fontSize: 10, color: '#4ade80', fontWeight: 600 }}>◀ Newest</span>
+                  {activeHmList.map((hm, i) => (
+                    <span key={i} style={{ fontSize: 10, color: clampedIndex === i ? '#e5e7eb' : '#4b5563', cursor: 'pointer', fontWeight: clampedIndex === i ? 700 : 400 }}
+                      onClick={() => setHmScanIndex(i)}>
+                      {new Date(hm.scanDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </span>
+                  ))}
+                  <span style={{ fontSize: 10, color: '#6b7280', fontWeight: 600 }}>Oldest ▶</span>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 10, justifyContent: 'center' }}>
+                <button onClick={() => setHmScanIndex(Math.max(0, clampedIndex - 1))} disabled={clampedIndex === 0}
+                  style={{ padding: '4px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: clampedIndex === 0 ? 'default' : 'pointer', background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.3)', color: clampedIndex === 0 ? '#4b5563' : '#c4b5fd' }}>
+                  ← Newer
+                </button>
+                <button onClick={() => setHmScanIndex(0)} disabled={clampedIndex === 0}
+                  style={{ padding: '4px 12px', borderRadius: 8, fontSize: 11, cursor: clampedIndex === 0 ? 'default' : 'pointer', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)', color: clampedIndex === 0 ? '#4b5563' : '#4ade80', fontWeight: 600 }}>
+                  Jump to Latest
+                </button>
+                <button onClick={() => setHmScanIndex(Math.min(activeHmList.length - 1, clampedIndex + 1))} disabled={clampedIndex === activeHmList.length - 1}
+                  style={{ padding: '4px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: clampedIndex === activeHmList.length - 1 ? 'default' : 'pointer', background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.3)', color: clampedIndex === activeHmList.length - 1 ? '#4b5563' : '#c4b5fd' }}>
+                  Older →
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Map + grid row */}
           {!activeHm ? (
             <div style={{color:'#6b7280',fontSize:12}}>No {hmRadius}-mile scan available yet</div>
