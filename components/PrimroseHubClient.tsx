@@ -196,9 +196,24 @@ export default function PrimroseHubClient() {
           </div>
         </div>
 
+        {/* Quick Nav Bar */}
+        <div style={{ background: '#f0f3e8', borderBottom: '1px solid #d4d9c4', padding: '0.75rem 1.5rem' }}>
+          <div className="max-w-7xl mx-auto" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#5e6738' }}>QUICK LINKS:</span>
+            <a href="#opportunity" style={{ fontSize: 13, color: '#374151', textDecoration: 'none', padding: '4px 12px', background: '#fff', border: '1px solid #d4d9c4', borderRadius: 6 }}>The Opportunity</a>
+            <a href="#brand-guide" style={{ fontSize: 13, color: '#374151', textDecoration: 'none', padding: '4px 12px', background: '#fff', border: '1px solid #d4d9c4', borderRadius: 6 }}>Brand Guide</a>
+            <a href="#creative" style={{ fontSize: 13, color: '#374151', textDecoration: 'none', padding: '4px 12px', background: '#fff', border: '1px solid #d4d9c4', borderRadius: 6 }}>Creative Standards</a>
+            <a href="#locations" style={{ fontSize: 13, color: '#374151', textDecoration: 'none', padding: '4px 12px', background: '#fff', border: '1px solid #d4d9c4', borderRadius: 6 }}>Locations</a>
+            <a href="#calls" style={{ fontSize: 13, color: '#374151', textDecoration: 'none', padding: '4px 12px', background: '#fff', border: '1px solid #d4d9c4', borderRadius: 6 }}>Call History</a>
+            <a href="/primrose/journey" style={{ fontSize: 13, fontWeight: 700, color: '#fff', textDecoration: 'none', padding: '4px 14px', background: '#5e6738', border: '1px solid #5e6738', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+              📖 Full Journey →
+            </a>
+          </div>
+        </div>
+
         <div className="max-w-7xl mx-auto p-6 space-y-6">
           {/* The Opportunity */}
-          <div className="border border-[#e8eadf] rounded-lg overflow-hidden">
+          <div id="opportunity" className="border border-[#e8eadf] rounded-lg overflow-hidden">
             <button
               onClick={() => setOpportunityOpen(!opportunityOpen)}
               className="w-full flex items-center justify-between p-6 bg-white hover:bg-gray-50 transition-colors"
@@ -245,7 +260,7 @@ export default function PrimroseHubClient() {
           </div>
 
           {/* Brand Guide */}
-          <div className="border border-[#e8eadf] rounded-lg overflow-hidden">
+          <div id="brand-guide" className="border border-[#e8eadf] rounded-lg overflow-hidden">
             <button
               onClick={() => setBrandGuideOpen(!brandGuideOpen)}
               className="w-full flex items-center justify-between p-6 bg-white hover:bg-gray-50 transition-colors"
@@ -534,7 +549,7 @@ export default function PrimroseHubClient() {
           </div>
 
           {/* Creative Standards */}
-          <div className="border border-[#e8eadf] rounded-lg overflow-hidden">
+          <div id="creative" className="border border-[#e8eadf] rounded-lg overflow-hidden">
             <button
               onClick={() => setCreativeStandardsOpen(!creativeStandardsOpen)}
               className="w-full flex items-center justify-between p-6 bg-white hover:bg-gray-50 transition-colors"
@@ -889,7 +904,7 @@ export default function PrimroseHubClient() {
           </div>
 
           {/* Location Cards */}
-          <div>
+          <div id="locations">
             <h2 className="text-2xl font-bold text-[#5e6738] mb-6 px-2" style={{ fontFamily: 'Source Serif 4, serif' }}>
               Locations
             </h2>
@@ -1001,7 +1016,7 @@ export default function PrimroseHubClient() {
           </div>
 
           {/* Call History */}
-          <div>
+          <div id="calls">
             <div className="flex items-center justify-between mb-6 px-2">
               <h2 className="text-2xl font-bold text-[#5e6738]" style={{ fontFamily: 'Source Serif 4, serif' }}>
                 Call History
