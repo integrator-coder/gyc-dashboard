@@ -1205,6 +1205,96 @@ export default function PrimroseHubClient() {
             </div>
           </div>
 
+          {/* Client Operations Intelligence */}
+          <div style={{background:'#fff',border:'1px solid #e8eadf',borderRadius:10,padding:'1.5rem',marginBottom:0}}>
+            <div style={{fontFamily:'Source Serif 4, serif',fontWeight:700,fontSize:20,color:'#5e6738',marginBottom:16}}>Client Operations &amp; Key Intelligence</div>
+
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:16}}>
+
+              {/* Rachel Profile */}
+              <div style={{background:'#f8f9f5',border:'1px solid #e8eadf',borderRadius:8,padding:'1rem'}}>
+                <div style={{fontWeight:700,fontSize:14,color:'#111827',marginBottom:8}}>Rachel Van Emon — The Owner</div>
+                <div style={{fontSize:13,color:'#374151',lineHeight:1.65}}>
+                  <p style={{margin:'0 0 8px'}}>Rachel is the <strong>economic buyer</strong> — Kate is the day-to-day contact. Critical distinction for relationship management. Both need to be won, but differently.</p>
+                  <ul style={{margin:0,paddingLeft:16,lineHeight:1.8}}>
+                    <li>Previously head of <strong>Primrose National Advisory Council</strong></li>
+                    <li>Husband ran sales organizations for 30 years</li>
+                    <li>Charges <strong>$3,488/mo for infant care</strong> — among highest in the Primrose system</li>
+                    <li>Very hands-on: &ldquo;I&apos;ll stand out front with a QR code asking for reviews&rdquo;</li>
+                    <li>Ready to fund $1K/referral immediately — just needs the structure</li>
+                    <li>On June 23, meeting Bruce for the first time: &ldquo;hook, line, and sinker interested&rdquo;</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Platform Access Status */}
+              <div style={{background:'#f8f9f5',border:'1px solid #e8eadf',borderRadius:8,padding:'1rem'}}>
+                <div style={{fontWeight:700,fontSize:14,color:'#111827',marginBottom:8}}>Platform Access Status</div>
+                <div style={{display:'flex',flexDirection:'column',gap:6,fontSize:13}}>
+                  {[
+                    ['✅','Yext','Sebastian has access — pushes to all directories except Manta'],
+                    ['🔄','Facebook/Instagram','Page-level access. Burlington done. Woburn/Chelmsford in progress.'],
+                    ['❌','GBP Manager Access','Blocked by corporate. Kate making direct ask. Workaround: manual posting via Katie (corporate).'],
+                    ['❌','Bing + Apple Maps','Corporate-controlled. Bruce wants Kate to claim Bing directly — critical for ChatGPT search.'],
+                    ['❌','Google Ads Admin','Blocked. GYC positioning LSAs as workaround — "map ads" (pay-per-lead), different from Search/PMax.'],
+                    ['❌','Website Backend','No access. Corporate controls all location websites.'],
+                    ['✅','Facebook Pixel','Status UNKNOWN — Kate does not know if installed. Priority investigation.'],
+                  ].map(([icon, name, detail]) => (
+                    <div key={name} style={{display:'flex',alignItems:'flex-start',gap:8}}>
+                      <span style={{fontSize:14,flexShrink:0,marginTop:1}}>{icon}</span>
+                      <div>
+                        <span style={{fontWeight:600,color:'#111827'}}>{name}: </span>
+                        <span style={{color:'#374151'}}>{detail}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3,500 Lead List */}
+              <div style={{background:'#fffbeb',border:'1px solid #fde68a',borderRadius:8,padding:'1rem'}}>
+                <div style={{fontWeight:700,fontSize:14,color:'#92400e',marginBottom:8}}>⚡ 3,500+ Lead Email List — DORMANT</div>
+                <div style={{fontSize:13,color:'#78350f',lineHeight:1.65}}>
+                  <p style={{margin:'0 0 8px'}}>Kate has a <strong>3,500+ person lead database</strong> sitting largely unused. Currently sends 1x/week minimum via ProCare — mix of educational content and event invitations. No structured enrollment-focused sequences.</p>
+                  <p style={{margin:'0 0 8px'}}><strong>GYC&apos;s job:</strong> Build email campaign templates that activate this list. Estimated 3-12 enrollments/month from a properly activated sequence.</p>
+                  <p style={{margin:0}}>Recently started segmenting by tour status — positive signal that Kate is thinking more strategically about the funnel.</p>
+                </div>
+              </div>
+
+              {/* Campus Visit Philosophy */}
+              <div style={{background:'#f8f9f5',border:'1px solid #e8eadf',borderRadius:8,padding:'1rem'}}>
+                <div style={{fontWeight:700,fontSize:14,color:'#111827',marginBottom:8}}>Campus Visit vs. Logistical Tour</div>
+                <div style={{fontSize:13,color:'#374151',lineHeight:1.65}}>
+                  <p style={{margin:'0 0 8px'}}>Rachel runs <strong>&ldquo;campus visits&rdquo;</strong> — relationship-based, full experience. Bruce flagged the distinction on the June 23 call:</p>
+                  <div style={{background:'#fff',border:'1px solid #e8eadf',borderRadius:6,padding:'8px 10px',margin:'0 0 8px'}}>
+                    <div style={{fontSize:12,fontWeight:600,color:'#5e6738',marginBottom:4}}>CLOSE RATES</div>
+                    <div style={{display:'flex',gap:12}}>
+                      <div><div style={{fontWeight:700,fontSize:18,color:'#e03c31'}}>30–40%</div><div style={{fontSize:11,color:'#374151'}}>Logistical tours</div></div>
+                      <div style={{display:'flex',alignItems:'center',color:'#9ca3af'}}>→</div>
+                      <div><div style={{fontWeight:700,fontSize:18,color:'#166534'}}>90%</div><div style={{fontSize:11,color:'#374151'}}>Relationship-based campus visits</div></div>
+                    </div>
+                  </div>
+                  <p style={{margin:0}}>Opportunity: GYC tour training can lift close rates from the 30-40% range to 90%. Blueprint includes tour sales training workshops.</p>
+                </div>
+              </div>
+
+              {/* CRM & Photo Workflow */}
+              <div style={{background:'#f8f9f5',border:'1px solid #e8eadf',borderRadius:8,padding:'1rem'}}>
+                <div style={{fontWeight:700,fontSize:14,color:'#111827',marginBottom:8}}>CRM &amp; Content Workflow</div>
+                <div style={{fontSize:13,color:'#374151',lineHeight:1.65}}>
+                  <ul style={{margin:0,paddingLeft:16,lineHeight:1.9}}>
+                    <li><strong>CRM:</strong> ProCare — used for both existing families and leads. Basic but staying.</li>
+                    <li><strong>Email:</strong> 1x/week minimum to leads via ProCare. Educational content + event CTAs. Needs persistent enrollment CTA added.</li>
+                    <li><strong>Photography:</strong> All from real classrooms — no stock photos. Stored in Apple Photos.</li>
+                    <li><strong>M3 will:</strong> Auto-tag photos, create searchable database, pull for automated posts.</li>
+                    <li><strong>Competitor alert:</strong> Goddard School recently opened nearby — first time Primrose has had direct premium competition in market.</li>
+                  </ul>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
           {/* Call History */}
           <div id="calls">
             <div className="flex items-center justify-between mb-6 px-2">
