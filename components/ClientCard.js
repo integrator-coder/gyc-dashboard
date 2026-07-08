@@ -2852,6 +2852,50 @@ function SEOLocationBlock({ acronym, loc, snapshots, gbpRows, isMultiLoc, heatma
         </div>
       )}
 
+      {/* Local Falcon Report History — all scans with links */}
+      {(() => {
+        // Collect ALL snapshots with at least one report URL, sorted by date DESC
+        const allReports = snapshots
+          .filter(s => s.locationName === loc && (s.reportUrlDaycare || s.reportUrlPreschool))
+          .sort((a, b) => new Date(b.scanDate) - new Date(a.scanDate))
+        if (allReports.length === 0) return null
+        return (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+              Local Falcon Report History
+              <InfoTip text="Every Local Falcon grid scan run for this location. Each report shows a snapshot of the ranking grid at that point in time. Use the timeline slider above to see how rankings changed visually." />
+              <span style={{ fontWeight: 400, color: '#4b5563', textTransform: 'none', letterSpacing: 0 }}>· {allReports.length} scan{allReports.length !== 1 ? 's' : ''}</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {allReports.map((s, i) => {
+                const date = new Date(s.scanDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                const isLatest = i === 0
+                return (
+                  <div key={`${s.scanDate}-${s.keywordGroup}`} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', background: 'rgba(0,0,0,0.2)', borderRadius: 8, padding: '7px 12px' }}>
+                    <span style={{ fontSize: 12, color: '#9ca3af', minWidth: 90 }}>{date}</span>
+                    <span style={{ fontSize: 10, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, minWidth: 50 }}>{s.keywordGroup}</span>
+                    {isLatest && <span style={{ fontSize: 9, background: 'rgba(34,197,94,0.15)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.3)', padding: '1px 6px', borderRadius: 9999, fontWeight: 700 }}>LATEST</span>}
+                    {s.solvDaycare != null && <span style={{ fontSize: 11, color: '#9ca3af' }}>SOLV: <strong style={{ color: '#e5e7eb' }}>{s.solvDaycare?.toFixed(1)}%</strong> day / <strong style={{ color: '#e5e7eb' }}>{s.solvPreschool?.toFixed(1)}%</strong> pre</span>}
+                    <div style={{ display: 'flex', gap: 6, marginLeft: 'auto', flexWrap: 'wrap' }}>
+                      {s.reportUrlDaycare && (
+                        <a href={s.reportUrlDaycare} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#a78bfa', textDecoration: 'none', padding: '3px 8px', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 6, background: 'rgba(167,139,250,0.08)', whiteSpace: 'nowrap' }}>
+                          🔗 Daycare Grid
+                        </a>
+                      )}
+                      {s.reportUrlPreschool && (
+                        <a href={s.reportUrlPreschool} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#a78bfa', textDecoration: 'none', padding: '3px 8px', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 6, background: 'rgba(167,139,250,0.08)', whiteSpace: 'nowrap' }}>
+                          🔗 Preschool Grid
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })()}
+
       {/* GBP Performance */}
       {gbpRows.length > 0 && (
         <div style={{ marginBottom: 8 }}>
