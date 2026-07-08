@@ -35,6 +35,9 @@ const locations = [
     address: '10 Greenleaf Way, Burlington, MA 01803',
     phone: '(781) 265-4400',
     website: 'https://www.primroseschools.com/schools/burlington',
+    aclUrl: '/clients/PSB',
+    gbpMapUrl: 'https://maps.google.com/?cid=ChIJj1tbJayf44kRNLCHGndhtP4',
+    notionUrl: 'https://notion.so/329ca865-e197-813f-83cf-f7186db7525b',
     gbpRating: 4.8,
     gbpReviews: 37,
     enrolled: 99,
@@ -42,9 +45,9 @@ const locations = [
     target: 160,
     tuitionTier: 'high',
     targetMarkets: [
-      { name: 'Burlington', income: 146436, asian: 14.5, degree: 58.2 },
-      { name: 'Lexington', income: 219402, asian: 33.0, degree: 85.0 },
-      { name: 'Bedford', income: 172400, asian: 18.0, degree: 69.0 }
+      { name: 'Burlington', income: 146436, asian: 14.5, degree: 58.2, censusUrl: 'https://www.census.gov/quickfacts/burlingtontownmassachusetts' },
+      { name: 'Lexington', income: 219402, asian: 33.0, degree: 85.0, censusUrl: 'https://www.census.gov/quickfacts/lexingtontownmassachusetts' },
+      { name: 'Bedford', income: 172400, asian: 18.0, degree: 69.0, censusUrl: 'https://www.census.gov/quickfacts/bedfordtownmassachusetts' }
     ],
     messagingAngle: 'Reputation recovery + academic excellence positioning. Target Lexington/Bedford families (wealthy, education-focused, heavy Asian/Indian demographics). Overcome "too far" perception.',
     primaryChallenge: 'Word-of-mouth broke down under bad principal era. Culture recovered, enrollment hasn\'t.',
@@ -59,6 +62,9 @@ const locations = [
     address: '168 Lexington St, Woburn, MA 01801',
     phone: '(781) 497-8388',
     website: 'https://www.primroseschools.com/schools/woburn',
+    aclUrl: '/clients/PSW',
+    gbpMapUrl: 'https://maps.google.com/?cid=ChIJIdEq_A5144kRIaz6fS1gIrQ',
+    notionUrl: null,
     gbpRating: 5.0,
     gbpReviews: 19,
     enrolled: 131,
@@ -66,8 +72,8 @@ const locations = [
     target: 160,
     tuitionTier: 'high',
     targetMarkets: [
-      { name: 'Woburn', income: 111185, asian: 8.5, degree: 45.4 },
-      { name: 'Winchester', income: 218176, asian: 15.7, degree: 78.4 }
+      { name: 'Woburn', income: 111185, asian: 8.5, degree: 45.4, censusUrl: 'https://www.census.gov/quickfacts/woburnmassachusetts' },
+      { name: 'Winchester', income: 218176, asian: 15.7, degree: 78.4, censusUrl: 'https://www.census.gov/quickfacts/winchestertownmassachusetts' }
     ],
     messagingAngle: 'Elite/status framing for Winchester families (social prestige motivation, not academic). Quality + safety + reliability for Woburn base.',
     primaryChallenge: 'Opened during COVID. Building awareness in a blue-collar town while targeting affluent Winchester.',
@@ -82,6 +88,9 @@ const locations = [
     address: '205 North Rd, Chelmsford, MA 01824',
     phone: '(978) 710-6123',
     website: 'https://www.primroseschools.com/schools/chelmsford',
+    aclUrl: '/clients/PSC',
+    gbpMapUrl: 'https://maps.google.com/?cid=ChIJv_ITEUGj44kR-63MQdAwZ-Y',
+    notionUrl: null,
     gbpRating: 4.5,
     gbpReviews: 37,
     enrolled: 136,
@@ -89,8 +98,8 @@ const locations = [
     target: 160,
     tuitionTier: 'lower',
     targetMarkets: [
-      { name: 'Chelmsford', income: 140519, asian: 9.1, degree: 54.6 },
-      { name: 'Westford', income: 187198, asian: 21.7, degree: 72.0 }
+      { name: 'Chelmsford', income: 140519, asian: 9.1, degree: 54.6, censusUrl: 'https://www.census.gov/quickfacts/chelmsfordtownmassachusetts' },
+      { name: 'Westford', income: 187198, asian: 21.7, degree: 72.0, censusUrl: 'https://www.census.gov/quickfacts/westfordtownmassachusetts' }
     ],
     messagingAngle: 'Value + quality balance. Price-conscious messaging for Chelmsford base. Premium academic framing for Westford expansion.',
     primaryChallenge: 'Maintaining momentum under new ownership (acquired 2.5yr ago). Different community culture. Price-sensitive market.',
@@ -286,37 +295,144 @@ export default function PrimroseHubClient() {
               {opportunityOpen ? <ChevronUp className="w-6 h-6" /> : <ChevronDown className="w-6 h-6" />}
             </button>
             {opportunityOpen && (
-              <div className="p-6 pt-0 space-y-4">
-                <div className="bg-[#f8f9f5] border-l-4 border-[#5e6738] p-4">
-                  <h3 className="font-semibold text-lg mb-2">Primrose Corporate Partnership</h3>
-                  <ul className="space-y-2 text-sm">
-                    <li><strong>590+ schools nationwide</strong> — Primrose School Franchising Company</li>
-                    <li><strong>Kate Latham&apos;s 3 locations</strong> = the corporate pilot for GYC&apos;s SEO/AIO services</li>
-                    <li><strong>Greg (Primrose corporate contact)</strong> — Bruce&apos;s target outreach</li>
-                    <li><strong>Stakes:</strong> Approved partner status = massive long-term revenue opportunity</li>
-                    <li><strong>Kate&apos;s advice:</strong> &quot;Lead with value, not the ask&quot; — show heat maps + results</li>
-                  </ul>
+              <div className="p-6 pt-0" style={{display:'flex',flexDirection:'column',gap:20}}>
+
+                {/* Who They Are */}
+                <div style={{background:'#f0f3e8',borderLeft:'4px solid #5e6738',padding:'1rem 1.25rem',borderRadius:'0 8px 8px 0'}}>
+                  <div style={{fontFamily:'Source Serif 4, serif',fontWeight:700,fontSize:18,color:'#5e6738',marginBottom:8}}>Who Primrose Schools Is</div>
+                  <p style={{fontSize:14,color:'#1f2937',lineHeight:1.7,margin:'0 0 10px'}}>
+                    Primrose School Franchising Company is the <strong>#1 ranked childcare franchise in America</strong> — Entrepreneur Franchise 500 for 18 consecutive years, including 6 straight years at #1 in the childcare category. They operate <strong>558 franchised schools</strong> across 34 states and Washington DC, with 40+ new schools opening in 2025 alone and 200+ in the development pipeline. Total enrollment exceeds <strong>100,000 children</strong>.
+                  </p>
+                  <p style={{fontSize:14,color:'#1f2937',lineHeight:1.7,margin:0}}>
+                    Primrose is <strong>owned by Roark Capital</strong> (the PE firm behind Arby's, Buffalo Wild Wings, and Sonic) since 2008. In 2024, Roark explored a sale at a <strong>$2B+ valuation</strong> — a signal of just how valuable and defensible this brand is. System-wide revenue runs approximately <strong>$1.4–1.6 billion annually</strong>.
+                  </p>
                 </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="bg-white border border-[#e8eadf] p-4 rounded">
-                    <h4 className="font-semibold mb-2">Why This Matters</h4>
-                    <ul className="text-sm space-y-1 text-gray-700">
-                      <li>• Corporate already piloting with Digital Spice (50 schools)</li>
-                      <li>• Greg is a data/heat map nerd (Bruce speaks his language)</li>
-                      <li>• Kate willing to be the proof-of-concept</li>
-                      <li>• M3 platform daily posting = key differentiator</li>
-                    </ul>
-                  </div>
-                  <div className="bg-white border border-[#e8eadf] p-4 rounded">
-                    <h4 className="font-semibold mb-2">Next Steps</h4>
-                    <ul className="text-sm space-y-1 text-gray-700">
-                      <li>• Bruce to contact Greg (flagged June 30 as urgent)</li>
-                      <li>• Show Kate&apos;s heat map progress (March → June)</li>
-                      <li>• Position M3 automated posting as primary value-add</li>
-                      <li>• Lead with results, not with GBP access request</li>
-                    </ul>
+
+                {/* Stat Cards */}
+                <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:12}}>
+                  {[
+                    ['558', 'Franchised Schools'],
+                    ['34 States + DC', 'Geographic Reach'],
+                    ['100,000+', 'Children Enrolled'],
+                    ['$1.4–1.6B', 'System Revenue (est.)'],
+                    ['$2B+', '2024 Valuation Explored'],
+                    ['#1 × 6', 'Entrepreneur Franchise 500'],
+                    ['$2.65M', 'Avg Unit Revenue'],
+                    ['200+', 'Schools in Pipeline'],
+                  ].map(([v, l]) => (
+                    <div key={l} style={{background:'#fff',border:'1px solid #e8eadf',borderRadius:8,padding:'12px 14px',textAlign:'center'}}>
+                      <div style={{fontWeight:700,fontSize:20,color:'#5e6738'}}>{v}</div>
+                      <div style={{fontSize:11,color:'#374151',marginTop:2}}>{l}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Leadership */}
+                <div style={{background:'#fff',border:'1px solid #e8eadf',borderRadius:8,padding:'1rem 1.25rem'}}>
+                  <div style={{fontWeight:700,fontSize:14,color:'#111827',marginBottom:10}}>CORPORATE LEADERSHIP</div>
+                  <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))',gap:10}}>
+                    {[
+                      ['David P. Berg', 'CEO', 'Joined 2019'],
+                      ['Greg Foglesong', 'Chief Commercial Officer', 'Joined Feb 2026 — our contact. Retail/e-commerce background. Digital-forward.'],
+                      ['Andrea Freeman', 'VP of Marketing', 'Our contact. On the June 23 call. Controls approved vendor decisions.'],
+                    ].map(([name, title, note]) => (
+                      <div key={name} style={{background:'#f8f9f5',borderRadius:6,padding:'10px 12px'}}>
+                        <div style={{fontWeight:700,fontSize:13,color:'#111827'}}>{name}</div>
+                        <div style={{fontSize:12,color:'#5e6738',fontWeight:600,marginBottom:4}}>{title}</div>
+                        <div style={{fontSize:11,color:'#374151'}}>{note}</div>
+                      </div>
+                    ))}
                   </div>
                 </div>
+
+                {/* Market Position */}
+                <div style={{background:'#fff',border:'1px solid #e8eadf',borderRadius:8,padding:'1rem 1.25rem'}}>
+                  <div style={{fontWeight:700,fontSize:14,color:'#111827',marginBottom:10}}>MARKET POSITION</div>
+                  <p style={{fontSize:13,color:'#374151',lineHeight:1.65,margin:'0 0 10px'}}>
+                    Primrose plays in the <strong>premium tier only</strong> — competing with Goddard School and Bright Horizons, not KinderCare or La Petite. Tuition ranges from <strong>$1,850–$2,950/month nationally</strong> vs. $1,200–$1,650 national average. Target family profile: <strong>median household income $150K+</strong>, suburban, dual-income, education-focused. Kate's Burlington location charges up to $3,488/month for infant care — among the highest in their portfolio.
+                  </p>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+                    <div style={{background:'#f0fdf4',border:'1px solid #bbf7d0',borderRadius:6,padding:'8px 12px'}}>
+                      <div style={{fontWeight:600,fontSize:12,color:'#166534',marginBottom:4}}>BRAND PRESTIGE</div>
+                      <ul style={{margin:0,paddingLeft:16,fontSize:12,color:'#15803d',lineHeight:1.8}}>
+                        <li>Entrepreneur Franchise 500 — 18 consecutive years</li>
+                        <li>FRANdata FUND Score: 930 (elite tier)</li>
+                        <li>Newsweek #1 — Child Care Customer Service</li>
+                        <li>Cognia-accredited system-wide</li>
+                      </ul>
+                    </div>
+                    <div style={{background:'#eff6ff',border:'1px solid #bfdbfe',borderRadius:6,padding:'8px 12px'}}>
+                      <div style={{fontWeight:600,fontSize:12,color:'#1e40af',marginBottom:4}}>UNIT ECONOMICS (2025 FDD)</div>
+                      <ul style={{margin:0,paddingLeft:16,fontSize:12,color:'#1d4ed8',lineHeight:1.8}}>
+                        <li>Avg revenue: $2.65M | Median: $2.4M</li>
+                        <li>EBITDA: $265K–$475K (top quartile: $769K)</li>
+                        <li>7% royalty + 4–5% marketing fees</li>
+                        <li>Investment: $742K–$8.6M per school</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Digital Marketing Landscape */}
+                <div style={{background:'#fff',border:'1px solid #e8eadf',borderRadius:8,padding:'1rem 1.25rem'}}>
+                  <div style={{fontWeight:700,fontSize:14,color:'#111827',marginBottom:10}}>WHO'S CURRENTLY DOING THEIR MARKETING</div>
+                  <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                    {[
+                      {
+                        name: 'Digital Spice',
+                        type: 'SEO — PILOT (~50 schools)',
+                        color: '#166534', bg: '#f0fdf4', border: '#bbf7d0',
+                        detail: 'Franchise-focused SEO agency. Currently piloting with approximately 50 Primrose schools on metro-level SEO architecture. Case study: 18 childcare centers achieving top-of-pack performance. Estimated $1,500–$2,500/month per location. GYC is positioned to compete directly against this as a pilot expands.'
+                      },
+                      {
+                        name: 'Drive Social Media',
+                        type: 'APPROVED VENDOR — Paid Social, Search, Video, Email',
+                        color: '#92400e', bg: '#fffbeb', border: '#fde68a',
+                        detail: 'One of two approved franchise vendors for paid advertising. 1,000+ franchise partners. IFA-listed supplier. On the June 23 call, Kate revealed their Primrose results: 25M impressions, 489 clicks across 31 schools at $2,100/month = $107/click. Bruce called it insane. Kate confirmed GYC stats far exceeded them.'
+                      },
+                      {
+                        name: 'Eulerity',
+                        type: 'APPROVED VENDOR — AI-Powered Marketing Automation',
+                        color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe',
+                        detail: 'AI-powered digital marketing platform. Omni-channel: search, social, display, video, OTT/CTV. Strong childcare results elsewhere (My Gym: 2.2x ROI, $0.77 CPC). But Kate and Rachel are dissatisfied with both Drive and Eulerity for Primrose. The co-op shutting July 1 forced franchisees to choose between them — which is exactly why Kate moved to GYC instead.'
+                      },
+                    ].map((vendor) => (
+                      <div key={vendor.name} style={{background:vendor.bg,border:`1px solid ${vendor.border}`,borderRadius:8,padding:'10px 14px'}}>
+                        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                          <span style={{fontWeight:700,fontSize:14,color:vendor.color}}>{vendor.name}</span>
+                          <span style={{fontSize:11,fontWeight:600,color:vendor.color,background:'rgba(0,0,0,0.06)',padding:'2px 8px',borderRadius:9999}}>{vendor.type}</span>
+                        </div>
+                        <p style={{fontSize:13,color:'#374151',margin:0,lineHeight:1.6}}>{vendor.detail}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* The GYC Opportunity */}
+                <div style={{background:'#fff',border:'2px solid #5e6738',borderRadius:8,padding:'1rem 1.25rem'}}>
+                  <div style={{fontWeight:700,fontSize:14,color:'#5e6738',marginBottom:10}}>THE GYC OPPORTUNITY — BY THE NUMBERS</div>
+                  <p style={{fontSize:13,color:'#374151',lineHeight:1.65,margin:'0 0 12px'}}>
+                    If GYC becomes an approved vendor and achieves even modest penetration across the Primrose network, the revenue opportunity is transformational for the company.
+                  </p>
+                  <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:10,marginBottom:12}}>
+                    {[
+                      ['30% penetration', '177 locations', '$424K/mo', '$5.09M/yr'],
+                      ['20% penetration', '118 locations', '$283K/mo', '$3.44M/yr'],
+                      ['Conservative 15%', '88 locations', '$211K/mo', '$2.53M/yr'],
+                    ].map(([label, locs, mo, yr]) => (
+                      <div key={label} style={{background:'#f0f3e8',borderRadius:6,padding:'10px 12px'}}>
+                        <div style={{fontWeight:600,fontSize:12,color:'#5e6738',marginBottom:4}}>{label}</div>
+                        <div style={{fontSize:13,color:'#111827'}}>{locs} • {mo}</div>
+                        <div style={{fontWeight:700,fontSize:15,color:'#166534'}}>{yr}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{background:'#fffbeb',border:'1px solid #fde68a',borderRadius:6,padding:'8px 12px'}}>
+                    <div style={{fontWeight:600,fontSize:12,color:'#92400e',marginBottom:4}}>WHERE WE ARE NOW</div>
+                    <p style={{fontSize:13,color:'#78350f',margin:0}}>Kate Latham’s 3 locations are the live pilot at $2,398/mo each = $7,194/mo. If results prove out, Bruce brings heat maps + data to Greg (CCO). Kate’s advice: “Lead with value, not the ask.” Greg joined Primrose in February 2026 from a retail/e-commerce background — he thinks digitally and responds to data.</p>
+                  </div>
+                </div>
+
               </div>
             )}
           </div>
@@ -976,18 +1092,27 @@ export default function PrimroseHubClient() {
                 const gap = loc.target - loc.enrolled;
                 return (
                   <div key={loc.id} className="bg-white border border-[#e8eadf] rounded-lg p-6 hover:shadow-lg transition-shadow">
-                    <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-start justify-between mb-3">
                       <div>
                         <h3 className="text-xl font-bold text-[#5e6738]">{loc.name}</h3>
-                        <div className="flex items-center gap-1 text-sm text-gray-600 mt-1">
+                        <a href={loc.gbpMapUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm mt-1 hover:opacity-80" style={{textDecoration:'none'}}>
                           <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                          <span className="font-semibold">{loc.gbpRating}</span>
-                          <span className="text-gray-400">({loc.gbpReviews} reviews)</span>
-                        </div>
+                          <span className="font-semibold" style={{color:'#1f2937'}}>{loc.gbpRating}</span>
+                          <span style={{color:'#4b5563'}}>({loc.gbpReviews} reviews)</span>
+                          <span style={{color:'#6b7280',fontSize:11}}>↗ GBP</span>
+                        </a>
                       </div>
                       <span className={`px-3 py-1 rounded text-xs font-semibold text-white ${getEnrollmentColor(pct)}`}>
                         {pct}%
                       </span>
+                    </div>
+
+                    {/* Quick Links Row */}
+                    <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:16}}>
+                      <a href={loc.aclUrl} style={{fontSize:12,fontWeight:600,color:'#fff',background:'#5e6738',padding:'4px 10px',borderRadius:6,textDecoration:'none'}}>📋 ACL Card</a>
+                      <a href={loc.gbpMapUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:12,fontWeight:600,color:'#374151',background:'#f3f4f6',padding:'4px 10px',borderRadius:6,textDecoration:'none',border:'1px solid #e5e7eb'}}>🗺 Google Maps</a>
+                      <a href={loc.website} target="_blank" rel="noopener noreferrer" style={{fontSize:12,fontWeight:600,color:'#374151',background:'#f3f4f6',padding:'4px 10px',borderRadius:6,textDecoration:'none',border:'1px solid #e5e7eb'}}>🌐 Website</a>
+                      {loc.notionUrl && <a href={loc.notionUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:12,fontWeight:600,color:'#374151',background:'#f3f4f6',padding:'4px 10px',borderRadius:6,textDecoration:'none',border:'1px solid #e5e7eb'}}>📝 Notion</a>}
                     </div>
 
                     {/* Enrollment Bar */}
@@ -1032,12 +1157,15 @@ export default function PrimroseHubClient() {
                       <h4 className="font-semibold text-sm mb-2 text-[#5e6738]">Target Markets</h4>
                       <div className="space-y-2">
                         {loc.targetMarkets.map((market, i) => (
-                          <div key={i} className="text-xs bg-[#f8f9f5] p-2 rounded">
-                            <div className="font-semibold">{market.name}</div>
-                            <div className="text-gray-600">
-                              ${(market.income / 1000).toFixed(0)}K income • {market.asian}% Asian • {market.degree}% degree
+                          <a key={i} href={market.censusUrl} target="_blank" rel="noopener noreferrer" style={{display:'block',textDecoration:'none',background:'#f8f9f5',padding:'8px 10px',borderRadius:6,border:'1px solid #e8eadf'}}>
+                            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                              <span style={{fontWeight:600,fontSize:13,color:'#1f2937'}}>{market.name}</span>
+                              <span style={{fontSize:10,color:'#6b7280'}}>Census ↗</span>
                             </div>
-                          </div>
+                            <div style={{fontSize:12,color:'#374151',marginTop:2}}>
+                              <span style={{fontWeight:600,color:'#166534'}}>${(market.income / 1000).toFixed(0)}K</span> income &bull; <span style={{fontWeight:600,color:'#1d4ed8'}}>{market.asian}%</span> Asian &bull; <span style={{fontWeight:600}}>{market.degree}%</span> college degree
+                            </div>
+                          </a>
                         ))}
                       </div>
                     </div>
