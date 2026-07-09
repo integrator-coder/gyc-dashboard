@@ -345,6 +345,52 @@ const checks = {
   },
   10: {
     name: "StripeCustomer Acronym Mismatch",
+  11: {
+    name: "Broken / Concatenated gbpUrl",
+    sql: `
+      SELECT gl.id, gl."clientAcronym", gl."locationName", gl."gbpUrl"
+      FROM "GBPLocation" gl
+      JOIN "ClientProfile" cp ON cp.acronym = gl."clientAcronym"
+      WHERE cp.status = 'active'
+        AND gl."isActive" = TRUE
+        AND gl."gbpUrl" IS NOT NULL
+        AND (
+          gl."gbpUrl" LIKE '% -%'           -- two URLs pasted with " -" separator
+          OR gl."gbpUrl" LIKE '% https://%'  -- space before second URL
+          OR gl."gbpUrl" LIKE '%share.google%' -- unresolved share.google shortlinks
+        )
+      ORDER BY gl."clientAcronym"
+    `,
+    autofix: false
+  },
+  12: {
+    name: "locationCount Mismatch vs Active GBP",
+    sql: `
+      SELECT cp.acronym, cp."companyName",
+             cp."locationCount" AS profile_count,
+             COUNT(gl.id) AS actual_count
+      FROM "ClientProfile" cp
+      LEFT JOIN "GBPLocation" gl
+        ON gl."clientAcronym" = cp.acronym AND gl."isActive" = TRUE
+      WHERE cp.status = 'active'
+      GROUP BY cp.acronym, cp."companyName", cp."locationCount"
+      HAVING cp."locationCount" IS DISTINCT FROM COUNT(gl.id)::int
+         AND COUNT(gl.id) > 0
+      ORDER BY cp.acronym
+    `,
+    autofix: true,
+    fixFn: async (rows) => {
+      let fixed = 0;
+      for (const row of rows) {
+        await pool.query(
+          `UPDATE "ClientProfile" SET "locationCount" = $1 WHERE acronym = $2`,
+          [row.actual_count, row.acronym]
+        );
+        fixed++;
+      }
+      return fixed;
+    }
+  },
     sql: `
       SELECT sc.id, sc.acronym AS stripe_acronym, cp.acronym AS profile_acronym, sc.name, sc.email
       FROM "StripeCustomer" sc
