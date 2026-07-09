@@ -672,7 +672,7 @@ function OverviewTab({ profile, funnelHistory, allCalls, potentialUnlinkedCount,
         <SectionTitle>Client Health</SectionTitle>
         <Card>
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-gray-300 flex items-center gap-1">Health Score <InfoTip text="A 1–10 score that flags client risk at a glance. Starts at 10 and deducts points for: overdue invoice (−3), more than one overdue invoice (−1), funnel trend declining (−2), Stripe payment past due (−2). 8–10 = healthy, 5–7 = watch, below 5 = needs immediate attention." /></span>
+            <span className="text-sm font-medium text-gray-300 flex items-center gap-1">Health Score <InfoTip text="A 1–10 score that flags client risk at a glance. Starts at 10 and deducts for: overdue invoice (−3), Stripe past due (−2), funnel trend declining (−2), multiple overdues (−1). GBP signals: unclaimed profile (−2), missing Place ID (−1), rating below 4.0 (−1), fewer than 10 reviews (−1), missing hours or phone (−1), zero photos (−1). 8–10 = healthy, 5–7 = watch, below 5 = needs attention." /></span>
             <span className={`text-2xl font-black ${
               profile.healthScore >= 8 ? 'text-emerald-400' :
               profile.healthScore >= 5 ? 'text-amber-400' : 'text-rose-400'

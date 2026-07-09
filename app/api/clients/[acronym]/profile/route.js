@@ -29,13 +29,42 @@ function computeHealthScore(row, gbpLocations = []) {
   // GBP signals
   const activeGbp = gbpLocations.filter(l => l.isActive !== false)
   if (activeGbp.length > 0) {
-    const anyUnclaimed = activeGbp.some(l => {
-      const snap = l.liveDataSnapshot
-      return snap && snap.isClaimed === false
-    })
+    // −2: any location unclaimed
+    const anyUnclaimed = activeGbp.some(l => l.liveDataSnapshot?.isClaimed === false)
     if (anyUnclaimed)                         score -= 2
+
+    // −1: any location missing a verified placeId (not properly linked)
     const anyMissingPlaceId = activeGbp.some(l => !l.gbpPlaceId && !l.placeId)
     if (anyMissingPlaceId)                    score -= 1
+
+    // −1: any location rating below 4.0
+    const anyLowRating = activeGbp.some(l => {
+      const r = l.liveDataSnapshot?.rating
+      return r != null && Number(r) < 4.0
+    })
+    if (anyLowRating)                         score -= 1
+
+    // −1: any location with fewer than 10 reviews
+    const anyLowReviews = activeGbp.some(l => {
+      const rc = l.liveDataSnapshot?.reviewCount
+      return rc != null && Number(rc) < 10
+    })
+    if (anyLowReviews)                        score -= 1
+
+    // −1: any location missing hours or phone on GBP
+    const anyMissingContactInfo = activeGbp.some(l => {
+      const ac = l.liveDataSnapshot?.autoChecks
+      if (!ac) return false
+      return ac.hoursComplete === false || ac.phoneListened === false
+    })
+    if (anyMissingContactInfo)                score -= 1
+
+    // −1: any location with zero photos
+    const anyNoPhotos = activeGbp.some(l => {
+      const tp = l.liveDataSnapshot?.totalPhotos
+      return tp != null && Number(tp) === 0
+    })
+    if (anyNoPhotos)                          score -= 1
   }
 
   return Math.max(1, Math.min(10, score))
