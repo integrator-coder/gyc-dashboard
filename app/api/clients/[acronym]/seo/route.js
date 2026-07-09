@@ -49,7 +49,7 @@ export async function GET(req, { params }) {
                 ("liveDataSnapshot"->>'reviewCount')::int AS "reviewCount",
                 "liveDataSnapshot"->>'address'            AS address
          FROM "GBPLocation"
-         WHERE "clientAcronym" = $1
+         WHERE "clientAcronym" = $1 AND "isActive" = TRUE
          ORDER BY "locationName" ASC`,
         [acr]
       ),

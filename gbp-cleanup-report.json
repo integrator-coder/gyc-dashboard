@@ -1,0 +1,14 @@
+{
+  "duplicatesDeactivated": 0,
+  "autoVerified": 29,
+  "verifiedViaPlacesAPI": 0,
+  "needsManualReview": [
+    {
+      "id": 264,
+      "name": "Alvarado",
+      "acronym": "CPC",
+      "reason": "No Places API results"
+    }
+  ],
+  "errors": []
+}

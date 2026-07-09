@@ -19,12 +19,25 @@ import {
   upsertClientEnrollmentVerification,
 } from '@/lib/enrollment-verification'
 
-function computeHealthScore(row) {
+function computeHealthScore(row, gbpLocations = []) {
   let score = 10
   if (row.isOverdue)                          score -= 3
   if (row.funnelTrend === 'down')             score -= 2
   if (Number(row.overdueCount || 0) > 1)      score -= 1
   if (row.stripeStatus === 'past_due')        score -= 2
+
+  // GBP signals
+  const activeGbp = gbpLocations.filter(l => l.isActive !== false)
+  if (activeGbp.length > 0) {
+    const anyUnclaimed = activeGbp.some(l => {
+      const snap = l.liveDataSnapshot
+      return snap && snap.isClaimed === false
+    })
+    if (anyUnclaimed)                         score -= 2
+    const anyMissingPlaceId = activeGbp.some(l => !l.gbpPlaceId && !l.placeId)
+    if (anyMissingPlaceId)                    score -= 1
+  }
+
   return Math.max(1, Math.min(10, score))
 }
 
@@ -272,7 +285,7 @@ export async function GET(_request, { params }) {
       avgMonthlyRegistered: profileRow.avgMonthlyRegistered != null ? Number(profileRow.avgMonthlyRegistered) : null,
       leadToTourRate:       profileRow.leadToTourRate       != null ? Number(profileRow.leadToTourRate)       : null,
       tourToRegRate:        profileRow.tourToRegRate        != null ? Number(profileRow.tourToRegRate)        : null,
-      healthScore:          computeHealthScore(profileRow),
+      healthScore:          0, // recalculated below once GBP data is loaded
     }
 
     const recentPayments = (paymentsRes.rows || []).map((r) => ({
@@ -306,6 +319,15 @@ export async function GET(_request, { params }) {
 
     const activeGbpLocations = gbpLocations.filter((row) => row.isActive !== false)
     const enrollmentRollupActive = activeGbpLocations.length > 0
+
+    // Override locationCount with live GBP record count when data exists
+    // (master sheet sync is the source but can lag behind actual GBP records)
+    if (activeGbpLocations.length > 0) {
+      profile.locationCount = activeGbpLocations.length
+    }
+
+    // Recompute health score now that GBP data is available
+    profile.healthScore = computeHealthScore(profileRow, gbpLocations)
 
     if (enrollmentRollupActive) {
       const rollup = computeEnrollmentRollup(activeGbpLocations)
