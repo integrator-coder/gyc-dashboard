@@ -1,15 +1,6 @@
 #!/usr/bin/env node
 /**
- * monthly-mrr-nrr-update.js
- *
- * Runs on the 1st of each month. Updates:
- *   1. MRRHistory — powers the 3-Year MRR Trend graph on Finance Overview tab
- *   2. MonthlyChurnMetrics — powers the NRR Over Time graph on Finance Churn tab
- *
- * Both tables fill in months that the Google Sheet doesn't cover (sheet stops at Apr-26).
- * The dashboard API routes fall back to these tables for any month past the sheet's range.
- *
- * Cron: 1st of every month at 6:00 AM ET
+ * Backfill May 2026 with PIF/Monthly split
  */
 
 require('dotenv').config({ path: require('path').resolve(__dirname, '../.env.local'), override: true });
@@ -37,10 +28,9 @@ function calcSubMRR(sub) {
 }
 
 function monthBounds(monthStr) {
-  // monthStr = 'YYYY-MM'
   const [year, month] = monthStr.split('-').map(Number);
   const start = new Date(Date.UTC(year, month - 1, 1));
-  const end = new Date(Date.UTC(year, month, 1)); // exclusive upper bound
+  const end = new Date(Date.UTC(year, month, 1));
   return { start, end, startUnix: Math.floor(start / 1000), endUnix: Math.floor(end / 1000) - 1 };
 }
 
@@ -63,25 +53,22 @@ function computeMonthMetrics(subs, monthStr) {
   let mrr = 0, newMrr = 0, churnedMrr = 0, activeCount = 0;
   let clientsAdded = 0, clientsLost = 0;
   
-  // Split by interval type
   let monthlyMRR = 0, pifMRR = 0;
   let monthlyClients = 0, pifClients = 0;
   let monthlyNewMRR = 0, pifNewMRR = 0;
   let monthlyChurnedMRR = 0, pifChurnedMRR = 0;
 
   for (const sub of subs) {
-    const created = sub.created; // unix
-    const canceledAt = sub.canceled_at; // unix or null
+    const created = sub.created;
+    const canceledAt = sub.canceled_at;
     const subMrr = calcSubMRR(sub);
     if (subMrr <= 0) continue;
     
-    // Determine interval type from first item
     const items = sub.items?.data || [];
     const firstInterval = items[0]?.price?.recurring?.interval;
     const isMonthly = firstInterval === 'month';
     const isPIF = firstInterval === 'year';
 
-    // Active during this month: started before month end AND not canceled before month start
     const activeInMonth = created <= endUnix && (canceledAt == null || canceledAt > startUnix);
     if (activeInMonth) {
       mrr += subMrr;
@@ -96,7 +83,6 @@ function computeMonthMetrics(subs, monthStr) {
       }
     }
 
-    // New this month
     if (created >= startUnix && created <= endUnix) {
       newMrr += subMrr;
       clientsAdded++;
@@ -108,7 +94,6 @@ function computeMonthMetrics(subs, monthStr) {
       }
     }
 
-    // Churned this month
     if (canceledAt != null && canceledAt >= startUnix && canceledAt <= endUnix) {
       churnedMrr += subMrr;
       clientsLost++;
@@ -139,23 +124,6 @@ function computeMonthMetrics(subs, monthStr) {
   };
 }
 
-// Which months to update: previous month + current month (first-of-month run finalizes last month)
-function getTargetMonths() {
-  const now = new Date();
-  const months = [];
-
-  // Previous month (finalized)
-  const prev = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
-  months.push(`${prev.getUTCFullYear()}-${String(prev.getUTCMonth() + 1).padStart(2, '0')}`);
-
-  // Current month (partial, will be re-run next month)
-  const curr = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  months.push(`${curr.getUTCFullYear()}-${String(curr.getUTCMonth() + 1).padStart(2, '0')}`);
-
-  // Only return months after Apr-26 (sheet covers through then)
-  return months.filter(m => m > '2026-04');
-}
-
 async function upsertMRRHistory(client, monthStr, metrics) {
   await client.query(
     `INSERT INTO "MRRHistory"
@@ -177,10 +145,8 @@ async function upsertChurnMetrics(client, monthStr, metrics, prevMetrics) {
   const netMRR = metrics.newMrr - metrics.churnedMrr;
   const prevMRR = prevMetrics?.mrr || 0;
   const nrr = prevMRR > 0 ? Math.round(((totalMRR - metrics.churnedMrr) / prevMRR) * 1000) / 10 : null;
-  // GRR = (totalMRR - churnedMRR) / totalMRR × 100  — self-contained, matches dashboard formula
   const grr = totalMRR > 0 ? Math.round(Math.min(100, Math.max(0, (totalMRR - metrics.churnedMrr) / totalMRR * 100)) * 10) / 10 : null;
 
-  // Compute split NRR
   const prevMonthlyMRR = prevMetrics?.monthlyMRR || 0;
   const prevPifMRR = prevMetrics?.pifMRR || 0;
   
@@ -230,87 +196,33 @@ async function upsertChurnMetrics(client, monthStr, metrics, prevMetrics) {
   );
 }
 
-async function ensureTables(client) {
-  // MRRHistory should already exist; create MonthlyChurnMetrics if not
-  await client.query(`
-    CREATE TABLE IF NOT EXISTS "MonthlyChurnMetrics" (
-      "id"           SERIAL PRIMARY KEY,
-      "tenantId"     TEXT NOT NULL DEFAULT 'gyc',
-      "month"        TEXT NOT NULL,
-      "totalMRR"     NUMERIC(12,2),
-      "clientCount"  INT,
-      "clientsAdded" INT,
-      "clientsLost"  INT,
-      "newMRR"       NUMERIC(12,2),
-      "churnedMRR"   NUMERIC(12,2),
-      "netMRR"       NUMERIC(12,2),
-      "churnPct"     NUMERIC(6,2),
-      "nrr"          NUMERIC(6,2),
-      "grr"          NUMERIC(6,2),
-      "monthlyMRR"   NUMERIC(12,2),
-      "pifMRR"       NUMERIC(12,2),
-      "monthlyClients" INT,
-      "pifClients"   INT,
-      "monthlyChurnedMRR" NUMERIC(12,2),
-      "pifChurnedMRR" NUMERIC(12,2),
-      "monthlyNewMRR" NUMERIC(12,2),
-      "pifNewMRR"    NUMERIC(12,2),
-      "monthlyNRR"   NUMERIC(6,2),
-      "pifNRR"       NUMERIC(6,2),
-      "syncedAt"     TIMESTAMPTZ DEFAULT NOW(),
-      UNIQUE ("tenantId", "month")
-    )
-  `);
-}
-
 async function main() {
-  console.log(`\n🗓  Monthly MRR + NRR Update — ${new Date().toISOString()}`);
-  const targets = getTargetMonths();
-  if (targets.length === 0) {
-    console.log('No months to update (all covered by Google Sheet).');
-    process.exit(0);
-  }
-  console.log('Target months:', targets.join(', '));
-
+  console.log('\n📅 Backfilling May 2026 with PIF/Monthly split');
+  
   const subs = await fetchAllSubscriptions();
   const client = await pool.connect();
 
   try {
-    await ensureTables(client);
+    // Compute April 2026 (for baseline)
+    const aprilMetrics = computeMonthMetrics(subs, '2026-04');
+    console.log('\n📅 2026-04 (baseline)');
+    console.log(`   Monthly MRR: $${aprilMetrics.monthlyMRR.toLocaleString()} | PIF MRR: $${aprilMetrics.pifMRR.toLocaleString()}`);
+    console.log(`   Monthly Clients: ${aprilMetrics.monthlyClients} | PIF Clients: ${aprilMetrics.pifClients}`);
+    
+    // Compute May 2026
+    const mayMetrics = computeMonthMetrics(subs, '2026-05');
+    console.log('\n📅 2026-05');
+    console.log(`   MRR: $${mayMetrics.mrr.toLocaleString()} | Active: ${mayMetrics.activeSubscriptions}`);
+    console.log(`   Monthly MRR: $${mayMetrics.monthlyMRR.toLocaleString()} | PIF MRR: $${mayMetrics.pifMRR.toLocaleString()}`);
+    console.log(`   Monthly Clients: ${mayMetrics.monthlyClients} | PIF Clients: ${mayMetrics.pifClients}`);
+    console.log(`   New MRR: $${mayMetrics.newMrr.toLocaleString()} | Churned MRR: $${mayMetrics.churnedMrr.toLocaleString()}`);
+    console.log(`   Clients Added: ${mayMetrics.clientsAdded} | Lost: ${mayMetrics.clientsLost}`);
 
-    // Build metrics for each target month + the month before (for NRR prev-month reference)
-    const allMonths = [targets[0]]; // we need month before first target for NRR
-    // Add the month before first target for prevMetrics reference
-    const [y, m] = targets[0].split('-').map(Number);
-    const prevMonth = new Date(Date.UTC(y, m - 2, 1));
-    const prevMonthStr = `${prevMonth.getUTCFullYear()}-${String(prevMonth.getUTCMonth() + 1).padStart(2, '0')}`;
+    await upsertMRRHistory(client, '2026-05', mayMetrics);
+    await upsertChurnMetrics(client, '2026-05', mayMetrics, aprilMetrics);
+    console.log('   ✅ MRRHistory + MonthlyChurnMetrics updated');
 
-    const metricsMap = {};
-    // Compute prev month metrics for NRR baseline
-    metricsMap[prevMonthStr] = computeMonthMetrics(subs, prevMonthStr);
-
-    for (const month of targets) {
-      metricsMap[month] = computeMonthMetrics(subs, month);
-    }
-
-    for (const month of targets) {
-      const metrics = metricsMap[month];
-      const [my, mm] = month.split('-').map(Number);
-      const pmDate = new Date(Date.UTC(my, mm - 2, 1));
-      const pmStr = `${pmDate.getUTCFullYear()}-${String(pmDate.getUTCMonth() + 1).padStart(2, '0')}`;
-      const prevMetrics = metricsMap[pmStr] || null;
-
-      console.log(`\n📅 ${month}`);
-      console.log(`   MRR: $${metrics.mrr.toLocaleString()} | Active: ${metrics.activeSubscriptions}`);
-      console.log(`   New MRR: $${metrics.newMrr.toLocaleString()} | Churned MRR: $${metrics.churnedMrr.toLocaleString()}`);
-      console.log(`   Clients Added: ${metrics.clientsAdded} | Lost: ${metrics.clientsLost}`);
-
-      await upsertMRRHistory(client, month, metrics);
-      await upsertChurnMetrics(client, month, metrics, prevMetrics);
-      console.log(`   ✅ MRRHistory + MonthlyChurnMetrics updated`);
-    }
-
-    console.log('\n✅ Monthly update complete.');
+    console.log('\n✅ Backfill complete');
   } finally {
     client.release();
     await pool.end();

@@ -209,6 +209,8 @@ function computeGRRAndAvgDays(monthly) {
  */
 function computeNRR(monthly) {
   const result = []
+  const monthlyNRRSeries = []
+  const pifNRRSeries = []
 
   for (let i = 1; i < monthly.length; i++) {
     const prev = monthly[i - 1]
@@ -221,14 +223,32 @@ function computeNRR(monthly) {
     // Filter extreme outliers
     if (nrrVal < 0 || nrrVal > 200) continue
 
-    result.push({
+    const dataPoint = {
       month:         curr.month,
       nrr:           Math.round(nrrVal * 10) / 10,
       startMRR:      prevMRR,
       upsells:       curr.upsells       || 0,
       reductions:    curr.reductions    || 0,
       cancellations: curr.mrrLost       || 0,
-    })
+    }
+    
+    // Add split NRR from DB rows if available
+    if (curr.monthlyNRR !== undefined) {
+      dataPoint.monthlyNRR = curr.monthlyNRR
+    }
+    if (curr.pifNRR !== undefined) {
+      dataPoint.pifNRR = curr.pifNRR
+    }
+    
+    result.push(dataPoint)
+    
+    // Build separate series for chart
+    if (curr.monthlyNRR != null) {
+      monthlyNRRSeries.push({ month: curr.month, nrr: curr.monthlyNRR })
+    }
+    if (curr.pifNRR != null) {
+      pifNRRSeries.push({ month: curr.month, nrr: curr.pifNRR })
+    }
   }
 
   const avg = (arr) => arr.length
@@ -240,6 +260,8 @@ function computeNRR(monthly) {
     trailing3mo:  avg(result.slice(-3)),
     trailing12mo: avg(result.slice(-12)),
     currentMonth: result.length ? result[result.length - 1].nrr : null,
+    monthlyCurrentMonth: monthlyNRRSeries.length ? monthlyNRRSeries[monthlyNRRSeries.length - 1].nrr : null,
+    pifCurrentMonth: pifNRRSeries.length ? pifNRRSeries[pifNRRSeries.length - 1].nrr : null,
   }
 }
 
@@ -250,7 +272,8 @@ async function fetchDBChurnMetrics(sheetMonths) {
   try {
     const { rows } = await dbClient.query(`
       SELECT month, "totalMRR", "clientCount", "clientsAdded", "clientsLost",
-             "newMRR", "churnedMRR", "netMRR", "churnPct", "nrr", "grr"
+             "newMRR", "churnedMRR", "netMRR", "churnPct", "nrr", "grr",
+             "monthlyMRR", "pifMRR", "monthlyNRR", "pifNRR"
       FROM "MonthlyChurnMetrics"
       WHERE "tenantId" = 'gyc'
       ORDER BY month ASC
@@ -284,6 +307,10 @@ function dbRowToMonthly(row) {
     lostMRR:      parseFloat(row.churnedmrr) || 0,
     newMRR:       parseFloat(row.newmrr) || 0,
     netMRR:       parseFloat(row.netmrr) || 0,
+    monthlyMRR:   parseFloat(row.monthlymrr) || 0,
+    pifMRR:       parseFloat(row.pifmrr) || 0,
+    monthlyNRR:   parseFloat(row.monthlynrr) || null,
+    pifNRR:       parseFloat(row.pifnrr) || null,
   }
 }
 

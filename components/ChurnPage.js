@@ -373,6 +373,37 @@ export default function ChurnPage() {
                 </div>
               </div>
 
+              {/* NRR Split KPI cards — Monthly vs PIF */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Monthly Subscribers NRR */}
+                <div className={`rounded-xl border p-4 flex flex-col gap-1 ${nrrBg(nrr.monthlyCurrentMonth)}`}>
+                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wide leading-tight flex items-center">
+                    Current Month — Monthly Sub NRR
+                    <MetricTooltip text="Net Revenue Retention for monthly subscription clients only. Shows how well monthly recurring revenue is being retained and expanded." />
+                  </p>
+                  <p className={`text-2xl font-bold leading-snug ${nrrColor(nrr.monthlyCurrentMonth)}`}>
+                    {nrr.monthlyCurrentMonth != null ? nrr.monthlyCurrentMonth.toFixed(1) + '%' : '—'}
+                  </p>
+                  <p className="text-gray-300 text-xs leading-snug">
+                    Monthly subscribers only
+                  </p>
+                </div>
+
+                {/* PIF (Annual) NRR */}
+                <div className={`rounded-xl border p-4 flex flex-col gap-1 ${nrrBg(nrr.pifCurrentMonth)}`}>
+                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wide leading-tight flex items-center">
+                    Current Month — PIF NRR
+                    <MetricTooltip text="Net Revenue Retention for Pay-in-Full (annual) clients. Shows how well annual subscription revenue is being retained and expanded." />
+                  </p>
+                  <p className={`text-2xl font-bold leading-snug ${nrrColor(nrr.pifCurrentMonth)}`}>
+                    {nrr.pifCurrentMonth != null ? nrr.pifCurrentMonth.toFixed(1) + '%' : '—'}
+                  </p>
+                  <p className="text-gray-300 text-xs leading-snug">
+                    Annual (PIF) subscribers only
+                  </p>
+                </div>
+              </div>
+
               {/* NRR line chart */}
               {nrr.monthly?.length > 0 && (
                 <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
@@ -438,7 +469,7 @@ export default function ChurnPage() {
                       <Line
                         type="monotone"
                         dataKey="nrr"
-                        name="NRR"
+                        name="Combined NRR"
                         stroke={
                           nrr.currentMonth != null && nrr.currentMonth >= 100
                             ? TEAL
@@ -449,6 +480,26 @@ export default function ChurnPage() {
                         strokeWidth={2.5}
                         dot={false}
                         connectNulls
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="monthlyNRR"
+                        name="Monthly NRR"
+                        stroke="#10B981"
+                        strokeWidth={2}
+                        dot={false}
+                        connectNulls
+                        strokeDasharray="6 2"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="pifNRR"
+                        name="PIF NRR"
+                        stroke="#F59E0B"
+                        strokeWidth={2}
+                        dot={false}
+                        connectNulls
+                        strokeDasharray="6 2"
                       />
                     </LineChart>
                   </ResponsiveContainer>
