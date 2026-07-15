@@ -4,10 +4,17 @@ export const dynamic = 'force-dynamic'
 import { createGoogleAuth, SHEETS_READONLY } from '@/lib/google-auth'
 import { NextResponse } from 'next/server'
 import { google } from 'googleapis'
+import pkg from 'pg'
+const { Pool } = pkg
 
 const SHEET_ID = '1kLm6VWX_nlpUsFioKq6JEWLGka5Z3WCTgPUKY2C0Z6A'
 
 const auth = createGoogleAuth(['https://www.googleapis.com/auth/spreadsheets.readonly'])
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+})
 
 async function readTab(sheets, tab, range) {
   const res = await sheets.spreadsheets.values.get({
@@ -236,6 +243,57 @@ function computeNRR(monthly) {
   }
 }
 
+// Fetch MonthlyChurnMetrics rows from DB for months past the Google Sheet's range
+async function fetchDBChurnMetrics(sheetMonths) {
+  const sheetSet = new Set(sheetMonths)
+  const dbClient = await pool.connect()
+  try {
+    const { rows } = await dbClient.query(`
+      SELECT month, "totalMRR", "clientCount", "clientsAdded", "clientsLost",
+             "newMRR", "churnedMRR", "netMRR", "churnPct", "nrr", "grr"
+      FROM "MonthlyChurnMetrics"
+      WHERE "tenantId" = 'gyc'
+      ORDER BY month ASC
+    `)
+    // Only return months NOT already covered by the sheet
+    return rows.filter(r => !sheetSet.has(r.month))
+  } catch (e) {
+    console.error('MonthlyChurnMetrics fetch error:', e.message)
+    return []
+  } finally {
+    dbClient.release()
+  }
+}
+
+// Convert a MonthlyChurnMetrics DB row into the same shape parseTabData returns
+function dbRowToMonthly(row) {
+  return {
+    month:        row.month,
+    clientCount:  row.clientcount || 0,
+    avgMRR:       row.clientcount > 0 ? Math.round(row.totalmrr / row.clientcount) : 0,
+    totalMRR:     parseFloat(row.totalmrr) || 0,
+    clientsLost:  row.clientslost || 0,
+    mrrLost:      parseFloat(row.churnedmrr) || 0,
+    clientsAdded: row.clientsadded || 0,
+    mrrAdded:     parseFloat(row.newmrr) || 0,
+    churnPct:     parseFloat(row.churnpct) || 0,
+    churnRevPct:  parseFloat(row.churnpct) || 0,
+    reductions:   0,
+    upsells:      0,
+    netUpsells:   0,
+    lostMRR:      parseFloat(row.churnedmrr) || 0,
+    newMRR:       parseFloat(row.newmrr) || 0,
+    netMRR:       parseFloat(row.netmrr) || 0,
+  }
+}
+
+// Convert a month string 'YYYY-MM' to display label 'MMM-YY'
+function monthToLabel(m) {
+  const [y, mo] = m.split('-')
+  const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  return `${names[parseInt(mo,10)-1]}-${y.slice(2)}`
+}
+
 export async function GET() {
   try {
     const client = await auth.getClient()
@@ -251,14 +309,30 @@ export async function GET() {
     const recruitingMonthly = parseTabData(recruitingRows)
     const { camRevenue, camChurnPct } = parseCAMData(camRows)
 
-    const { augmented: marketingAugmented, grr, avgDaysToChurn } = computeGRRAndAvgDays(marketingMonthly)
+    // ── Stitch in DB data for months past the sheet's range ──────────────────
+    const sheetMonths = marketingMonthly.map(m => {
+      // Convert display labels like 'May-26' back to 'YYYY-MM' for dedup
+      const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+      const match = m.month.match(/^([A-Za-z]{3})-(\d{2})$/)
+      if (!match) return null
+      const mo = names.findIndex(n => n.toLowerCase() === match[1].toLowerCase())
+      if (mo === -1) return null
+      const yr = parseInt(match[2], 10)
+      return `${yr >= 23 ? 2000 + yr : 2100 + yr}-${String(mo + 1).padStart(2, '0')}`
+    }).filter(Boolean)
+
+    const dbRows = await fetchDBChurnMetrics(sheetMonths)
+    const dbMonthly = dbRows.map(r => ({ ...dbRowToMonthly(r), month: monthToLabel(r.month) }))
+    const combinedMonthly = [...marketingMonthly, ...dbMonthly]
+
+    const { augmented: marketingAugmented, grr, avgDaysToChurn } = computeGRRAndAvgDays(combinedMonthly)
 
     return NextResponse.json({
       marketing: {
         monthly: marketingAugmented,
         camRevenue,
         camChurnPct,
-        nrr: computeNRR(marketingMonthly),
+        nrr: computeNRR(combinedMonthly),
         grr,
         avgDaysToChurn,
       },
