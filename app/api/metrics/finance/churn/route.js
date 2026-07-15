@@ -1,9 +1,15 @@
 export const dynamic = 'force-dynamic'
 
-
 import { NextResponse } from 'next/server'
 import { google } from 'googleapis'
 import { createGoogleAuth } from '@/lib/google-auth'
+import pkg from 'pg'
+const { Pool } = pkg
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+})
 
 const SHEET_ID = '1kLm6VWX_nlpUsFioKq6JEWLGka5Z3WCTgPUKY2C0Z6A'
 
@@ -160,7 +166,98 @@ export async function GET() {
       })
     }
 
-    return NextResponse.json({ months, chartData })
+    // ── Stitch in DB rows for months after the sheet's last column ──────────
+    const sheetLastKey = colToMonthKey(lastDataCol) // e.g. '2026-04'
+    let dbRows = []
+    try {
+      const dbClient = await pool.connect()
+      try {
+        const { rows: dbData } = await dbClient.query(`
+          SELECT month, "totalMRR", "clientCount", "clientsAdded", "clientsLost",
+                 "newMRR", "churnedMRR", "netMRR", "churnPct"
+          FROM "MonthlyChurnMetrics"
+          WHERE "tenantId" = 'gyc' AND month > $1
+          ORDER BY month ASC
+        `, [sheetLastKey])
+        dbRows = dbData
+      } finally {
+        dbClient.release()
+      }
+    } catch (e) {
+      console.error('finance/churn DB error:', e.message)
+    }
+
+    // Convert DB rows to the same shape used by months[] and chartData[]
+    const dbMonths = dbRows.map(r => {
+      const [y, m] = r.month.split('-')
+      const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December']
+      const shortNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+      const mi = parseInt(m, 10) - 1
+      const totalMrr = parseFloat(r.totalMRR) || 0
+      const clientCount = r.clientcount || 0
+      const avgMrrPerClient = clientCount > 0 ? Math.round(totalMrr / clientCount) : 0
+      const churnedMRR = parseFloat(r.churnedMRR) || 0
+      const newMRR = parseFloat(r.newMRR) || 0
+      const churnPct = parseFloat(r.churnPct) || 0
+      return {
+        key: r.month,
+        month: `${monthNames[mi]} ${y}`,
+        monthShort: `${shortNames[mi]} ${y.slice(2)}`,
+        clientCount,
+        avgMrrPerClient,
+        totalMrr,
+        clientsLost: r.clientslost || 0,
+        mrrLost: churnedMRR,
+        clientsAdded: r.clientsadded || 0,
+        mrrAdded: newMRR,
+        churnRateCount: churnPct,
+        churnRateRevenue: churnPct,
+        reductions: 0,
+        upsells: 0,
+        netUpsells: 0,
+        lostMrr: churnedMRR,
+        newMrr: newMRR,
+      }
+    })
+
+    // Merge: sheet months (newest first) + DB months (newest first), take last 3
+    const allMonths = [...months, ...dbMonths].sort((a, b) => b.key.localeCompare(a.key))
+    const finalMonths = allMonths.slice(0, 3)
+
+    // Merge chart data: all sheet chart points + DB points, take last 6
+    const dbChartPoints = dbRows.map(r => {
+      const [y, m] = r.month.split('-')
+      const shortNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+      const mi = parseInt(m, 10) - 1
+      return {
+        month: `${shortNames[mi]} ${y.slice(2)}`,
+        key: r.month,
+        churnRateCount: parseFloat(r.churnPct) || 0,
+        mrrLost: Math.abs(parseFloat(r.churnedMRR) || 0),
+        mrrAdded: parseFloat(r.newMRR) || 0,
+      }
+    })
+
+    // Build full chart history: existing chartData (last 6 from sheet) + DB points
+    // Re-derive last 6 from all available data chronologically
+    const allChartKeyed = {}
+    // Sheet contributions (up to lastDataCol)
+    for (let i = Math.max(4, lastDataCol - 11); i <= lastDataCol; i++) {
+      const k = colToMonthKey(i)
+      allChartKeyed[k] = {
+        month: colToMonthShort(i),
+        key: k,
+        churnRateCount: parsePercent(getCell(rows, 12, i)),
+        mrrLost: Math.abs(parseCurrency(getCell(rows, 8, i))),
+        mrrAdded: parseCurrency(getCell(rows, 10, i)),
+      }
+    }
+    // DB contributions
+    for (const pt of dbChartPoints) allChartKeyed[pt.key] = pt
+    const allChartSorted = Object.values(allChartKeyed).sort((a, b) => a.key.localeCompare(b.key))
+    const finalChartData = allChartSorted.slice(-6)
+
+    return NextResponse.json({ months: finalMonths, chartData: finalChartData })
   } catch (error) {
     console.error('Churn sheet error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
