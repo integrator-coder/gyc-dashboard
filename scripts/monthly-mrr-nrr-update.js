@@ -137,7 +137,8 @@ async function upsertChurnMetrics(client, monthStr, metrics, prevMetrics) {
   const netMRR = metrics.newMrr - metrics.churnedMrr;
   const prevMRR = prevMetrics?.mrr || 0;
   const nrr = prevMRR > 0 ? Math.round(((totalMRR - metrics.churnedMrr) / prevMRR) * 1000) / 10 : null;
-  const grr = prevMRR > 0 ? Math.round(((prevMRR - metrics.churnedMrr) / prevMRR) * 1000) / 10 : null;
+  // GRR = (totalMRR - churnedMRR) / totalMRR × 100  — self-contained, matches dashboard formula
+  const grr = totalMRR > 0 ? Math.round(Math.min(100, Math.max(0, (totalMRR - metrics.churnedMrr) / totalMRR * 100)) * 10) / 10 : null;
 
   await client.query(
     `INSERT INTO "MonthlyChurnMetrics"
