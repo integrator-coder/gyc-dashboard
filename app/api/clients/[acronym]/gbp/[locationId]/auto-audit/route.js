@@ -69,7 +69,9 @@ export async function POST(req, { params }) {
     ...Object.fromEntries(AUTO_CHECK_FIELDS.map((f) => [f, autoChecks[f] ?? null])),
     ...Object.fromEntries(HUMAN_CHECK_FIELDS.map((f) => [f, null])),
     reviewCount: snapshot.reviewCount ?? null,
-    avgRating: snapshot.rating ?? null,
+    avgRating: (snapshot.rating !== null && typeof snapshot.rating === 'object')
+      ? (snapshot.rating.value ?? null)
+      : (snapshot.rating ?? null),
     photoCount: snapshot.totalPhotos ?? null,
   }
 
