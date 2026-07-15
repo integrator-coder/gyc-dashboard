@@ -32,7 +32,7 @@ const TARGET = (process.argv[2] && !process.argv[2].startsWith('--')) ? process.
 const FORCE        = process.argv.includes('--force') // bypass skip thresholds
 
 // Skip thresholds
-const SEO_SKIP_DAYS      = 6   // skip SEO locations scanned within 6 days
+const SEO_SKIP_DAYS      = 13  // skip SEO locations scanned within 13 days (bi-weekly cadence)
 const PROSPECT_SKIP_DAYS = 28  // skip prospect locations scanned within 28 days
 
 function makeGrid(centerLat, centerLng, radiusMiles) {
@@ -219,8 +219,11 @@ async function main() {
 
     const seoLocName    = matchSEOName(loc)
     const skipThreshold = loc.is_seo ? SEO_SKIP_DAYS : PROSPECT_SKIP_DAYS
-    const scanKey       = `${loc.acronym}::${seoLocName}`
-    const lastScan      = lastScanMap[scanKey]
+    // Use gbp_loc_name as the stable skip key (seoLocName can change as seoLocationName is populated,
+    // causing false cache misses. gbp_loc_name is stable and what older records were stored under.)
+    const scanKey       = `${loc.acronym}::${loc.gbp_loc_name}`
+    const seoScanKey    = `${loc.acronym}::${seoLocName}`
+    const lastScan      = lastScanMap[scanKey] || lastScanMap[seoScanKey]
     const age           = daysSince(lastScan)
     const typeLabel     = loc.is_seo ? 'SEO' : 'Prospect'
 
