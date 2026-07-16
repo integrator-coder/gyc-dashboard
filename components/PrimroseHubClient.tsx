@@ -196,6 +196,41 @@ const calls = [
       { text: 'Zu: Email campaign review + add persistent enrollment CTA', done: false },
     ]
   },
+  {
+    date: 'July 15, 2026',
+    type: 'Paid Media Onboarding',
+    attendees: 'Zu Vuong (GYC), Zac Alcampo (GYC Creative Director), Sebastian Estrada (GYC Web/SEO), Kate Latham',
+    duration: '~23 minutes',
+    summary: 'Focused paid media onboarding. Sebastian walked Kate through the Meta Planner/content calendar — ads scheduled for Monday the 20th. Zac presented two advanced ad concepts (POV walkthrough + Google Earth zoom-in). Budget finalized across all three locations. Retargeting and lookalike audience strategy outlined. Lead list export request confirmed. Teacher of the Year press release flagged as a major amplification opportunity.',
+    topics: [
+      { heading: 'Content Calendar Walkthrough (Sebastian)', detail: 'Sebastian showed Kate the Meta Planner/content calendar. Ads for the 20th (Monday) are scheduled. Kate will inform in-school social media coordinators not to touch content they did not add — if they have questions, submit to GYC via Sebastian or Zu.' },
+      { heading: 'Current Creative — Status', detail: 'One updated video creative reviewed. Going out as an organic post first on Monday, then converted to an ad. Each location gets a slightly different version. Kate\'s feedback: the AI classrooms aren\'t exactly what the real rooms look like, but "no parent looking at them is going to know that." Zac committed to getting it 1-to-1 but Kate confirmed it does the job.' },
+      { heading: 'Advanced Ad Concepts (Zac)', detail: 'Zac presented two new formats: (1) POV/behind-the-scenes "runaround" ad — first-person walkthrough with voiceover script: "Looking for a childcare center that truly fuels your child\'s potential? At our center, we are completely screen-free. Every single day is packed with hands-on, brain-building activities that spark lifelong curiosity. Spaces are filling fast! Contact us today and book your personal tour!" — Requires specific room footage from Kate. (2) Google Earth zoom-in "hangout" ad — pulls Google Earth footage zooming out from the school. Needs: exterior building photo + walk-through video from entrance.' },
+      { heading: 'Real Content vs. AI Content', detail: 'Kate has photo/video releases for real students and faculty (many staff have their own kids enrolled). She has a large library of real classroom photos and video — committed to uploading to Google Drive. Preferred order: real footage first; AI to fill gaps. Zac: "Please throw it all up there." AI kids were being used because most clients don\'t have releases — Primrose is an exception.' },
+      { heading: 'Budget Finalized', detail: 'Burlington (56% occupancy, top priority): $25–30/day. Woburn: ~$10/day. Chelmsford: ~$10/day. Total in line with Rachel\'s $4,500/month cap. Organic posts go live Monday; ads follow a few days later once organic data is collected.' },
+      { heading: 'Retargeting & Audience Strategy', detail: 'Phase 1: Broad data collection — let the algorithm learn from the accounts, ad sets, and content. Phase 2: Retargeting — last 90–120 days of leads that did NOT enroll. Phase 3: Lookalike audiences built from actual customer data (not Facebook\'s pre-built interest categories). Sebastian: "We let the system learn on what we have, and have it find more users like it."' },
+      { heading: 'Lead List Request', detail: 'Kate has thousands of leads (not the ~600 Sebastian initially estimated). Sebastian wants: (1) Full lifetime lead list for broad audience data, (2) Last 120-day segment filtered by non-enrollment status, per location. Zu to add as M3 task items for Kate.' },
+      { heading: 'Teacher of the Year — Amplification Opportunity', detail: 'A teacher at the Woburn location was just selected National Teacher of the Year. Primrose corporate is preparing the press release. Plan: share to Facebook + Instagram as organic posts when it drops; potentially amplify as an ad for community awareness. GYC to request a backlink from the corporate press release page back to the Woburn school website — a free SEO boost.' },
+      { heading: 'Blueprint Drop + GBP Backlink', detail: 'Kate saw the latest Blueprint training drop and is working with head of sales Mackenzie (already on her Friday calendar) to record it — will submit via Google Form. On GBP: no direct access yet. When the Teacher of the Year press release goes live on the Primrose corporate site, the plan is to ask Primrose to add a backlink to the Woburn school page — this creates a high-authority backlink from the corporate domain.' },
+    ],
+    quotes: [
+      '"They\'re not exactly spot-on for what the classrooms look like, but no parent looking at them is going to know that." — Kate Latham on AI creatives',
+      '"If we have the imagery or footage that you need to produce the creative, fantastic. Would love for you to use our faculty, our students." — Kate Latham',
+      '"A teacher at Woburn was just recently selected Teacher of the Year for the country." — Kate Latham',
+      '"We let the system learn on what we have, and have it find more users like it." — Sebastian Estrada on lookalike strategy',
+    ],
+    actionItems: [
+      { text: 'Kate: Upload Burlington building entrance + walk-through footage to Google Drive — notify Zac when done', done: false },
+      { text: 'Kate: Upload real classroom photos and video to Google Drive — notify Zac when done', done: false },
+      { text: 'Kate: Export lead lists per location — (1) lifetime list + (2) last 120 days, no-enrollment segment', done: false },
+      { text: 'Kate: Inform in-school social media coordinators not to touch GYC-scheduled content', done: false },
+      { text: 'Kate: Record Blueprint drop with Mackenzie (head of sales) — already on Friday calendar', done: false },
+      { text: 'Zu: Add lead list export + building photo tasks to Kate\'s M3 workspace (per location)', done: true },
+      { text: 'Sebastian/Zu: Complete Woburn + Chelmsford Facebook page and ad account access', done: false },
+      { text: 'GYC Team: Monitor for Woburn Teacher of the Year press release — amplify with ads + social when it drops', done: false },
+      { text: 'Sebastian: Confirm whether Facebook Pixel is installed on any Primrose location website', done: false },
+    ]
+  },
 ];
 export default function PrimroseHubClient() {
   const [opportunityOpen, setOpportunityOpen] = useState(false);
@@ -205,6 +240,7 @@ export default function PrimroseHubClient() {
   const [instagramTemplatesOpen, setInstagramTemplatesOpen] = useState(false);
   const [expandedCall, setExpandedCall] = useState<number | null>(null);
   const [clientOpsOpen, setClientOpsOpen] = useState(false);
+  const [transcriptsOpen, setTranscriptsOpen] = useState(false);
   const [locationsOpen, setLocationsOpen] = useState(true);
 
   const totalEnrolled = locations.reduce((sum, loc) => sum + loc.enrolled, 0);
@@ -290,6 +326,7 @@ export default function PrimroseHubClient() {
             <a href="#creative" style={{ fontSize: 13, color: '#374151', textDecoration: 'none', padding: '4px 12px', background: '#fff', border: '1px solid #d4d9c4', borderRadius: 6 }}>Creative Standards</a>
             <a href="#locations" style={{ fontSize: 13, color: '#374151', textDecoration: 'none', padding: '4px 12px', background: '#fff', border: '1px solid #d4d9c4', borderRadius: 6 }}>Locations</a>
             <a href="#calls" style={{ fontSize: 13, color: '#374151', textDecoration: 'none', padding: '4px 12px', background: '#fff', border: '1px solid #d4d9c4', borderRadius: 6 }}>Call History</a>
+            <a href="#transcripts" style={{ fontSize: 13, color: '#374151', textDecoration: 'none', padding: '4px 12px', background: '#fff', border: '1px solid #d4d9c4', borderRadius: 6 }}>Transcripts</a>
             <a href="/primrose/journey" style={{ fontSize: 13, fontWeight: 700, color: '#fff', textDecoration: 'none', padding: '4px 14px', background: '#5e6738', border: '1px solid #5e6738', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
               📖 Full Journey →
             </a>
@@ -1482,6 +1519,154 @@ export default function PrimroseHubClient() {
                 );
               })}
             </div>
+          </div>
+
+          {/* Meeting Transcripts */}
+          <div id="transcripts" className="border border-[#e8eadf] rounded-lg overflow-hidden">
+            <button
+              onClick={() => setTranscriptsOpen(!transcriptsOpen)}
+              className="w-full flex items-center justify-between p-6 bg-white hover:bg-gray-50 transition-colors"
+            >
+              <h2 className="text-2xl font-bold text-[#5e6738]" style={{ fontFamily: 'Source Serif 4, serif' }}>
+                Meeting Transcripts
+              </h2>
+              {transcriptsOpen ? <ChevronUp className="w-6 h-6" /> : <ChevronDown className="w-6 h-6" />}
+            </button>
+            {transcriptsOpen && (
+              <div className="p-6 pt-0 space-y-6">
+
+                {/* July 15, 2026 — Paid Media Onboarding */}
+                <div style={{background:'#fff',border:'1px solid #e8eadf',borderRadius:8,overflow:'hidden'}}>
+                  <div style={{background:'#f0f3e8',padding:'12px 16px',borderBottom:'1px solid #e8eadf'}}>
+                    <div style={{fontWeight:700,fontSize:14,color:'#5e6738'}}>July 15, 2026 — Paid Media Onboarding</div>
+                    <div style={{fontSize:12,color:'#374151',marginTop:2}}>Zu Vuong, Zac Alcampo, Sebastian Estrada (GYC) · Kate Latham (Primrose)</div>
+                  </div>
+                  <pre style={{fontFamily:'Poppins, sans-serif',fontSize:12,color:'#1f2937',lineHeight:1.8,padding:'16px',whiteSpace:'pre-wrap',wordBreak:'break-word',background:'#fafafa',margin:0}}>{`[Pre-call — Internal]
+Zu: I just tried to have a little snack between meetings.
+Zac: I haven't eaten yet today. It's great.
+Zu: Kate is here. I need Sebastian here.
+[Zac steps outside briefly. Sebastian joins.]
+Zu: I'm gonna resume recording and let her in. Okay.
+
+[Kate joins — 2:05]
+Zu: Hi Kate, how are ya?
+Kate: I'm doing well, how are you?
+Zu: Good. I've got the team here today.
+Zac: Hi Kate.
+Kate: Hi, nice to meet you, Zach.
+Zu: Okay, so today we're really... I mean, this was booked as your Paid Media Onboarding, but we talked about how to set up your ads already — we already conceptualized that. So I've shortened the call today, and Sam will show you where we're going to be putting your ads. We already have that one ad creative that we've updated — we're gonna post it as an organic post first, and then run it as an ad. That's what we'll be doing for any of your ads going forward. So Zach had some questions because he's working on the next set of creatives for you guys.
+Kate: Okay. Awesome.
+Zu: Where shall we jump in first? Seb — do you want to show Kate?
+
+[Sebastian — Content Calendar Walkthrough]
+Sebastian: Yeah. Kate, I remember you're pretty familiar with Planner, right?
+Kate: Yep.
+Sebastian: Let me share my screen and show you this data. [shares screen — Meta Planner/content calendar]
+Zu: Kate, you already kind of saw the ad creatives — yeah. And then we added the website link at the end, put some feedback in terms of demographics — so we made the kids Asian, Indian, try to be that represented demographic.
+Kate: Okay.
+Sebastian: We're also going to be building custom audiences. A big one was — we have your service areas based from our SEO — but one of the big ones I wanted to test was the last 3 to 4 months worth of leads, specifically the ones that didn't enroll. We want to retarget them back into an interested phase.
+Kate: Mmm.
+Sebastian: All we really need is addresses — we don't need names. If we wanted to get specific, even emails, and have Facebook track them down if they use the same email — that's another idea too. But at the very beginning, we're going to be generating data.
+Sebastian: We're going to be in data mode in the next couple of weeks.
+Sebastian: In Planner — these are for the 20th, Monday. Today's the 15th.
+Zu: It's 11:45 AM. I think that's based on your Meta setup.
+Sebastian: Is that how we're setting it up — early in the morning? Okay. Um, so yeah, in here you'll be able to just click, listen to it, have a look at the content.
+Sebastian: The team has been briefed about the "now enrolling" that Rachel hates so much.
+Kate: Okay. Yep.
+Sebastian: But yeah — just have a look. We want to schedule them out. When we get new content, give it a few days for you guys to have a look. That also allows the algorithm to generate some organic awareness and engagement — which helps the campaign start from some data rather than zero, and then get turned into an ad.
+Kate: Okay.
+Sebastian: Do you have any questions around that?
+Kate: I don't think so. I will let my in-school social media coordinators know not to mess with anything they see in there that they did not do.
+Sebastian: Okay. If they have questions, they can always reach Austin at Grow Your Center.
+Kate: Yeah.
+Zu: If they see something they're not familiar with, they can probably submit to us.
+Kate: Yeah, okay.
+Zu: We have this scheduled for each location too — so you might just have to go to each. And it'll be a slightly different video creative for each.
+Kate: Okay.
+Zu: Pretty straightforward on that set. So yeah, you can review that and let us know. But otherwise, it'll be scheduled up Monday. And if not, let us know if you want it to go sooner.
+Kate: Yeah, I think Monday is fine.
+Zu: Okay. And then Zach, you had questions for Kate?
+
+[Zac — Creative Direction]
+Zac: Thanks for paying attention. Hey Kate. So glad you like the ads. And we'd like to do more elaborate ones with you if you would like, but it would take a little bit of different footage. From our side or from your side — first of all, how do you like those new ones?
+Kate: I think they look pretty good. I was — I saw them the other day, actually, in the Google Drive. And I think at first glance they look pretty good. They're not exactly spot-on for what the classrooms look like, but no parent looking at them is going to know that.
+Zu: Would know, yeah.
+Zac: Okay, well that's good feedback, because for me I'm super particular about getting it like 1-to-1. I appreciate the feedback, but it's cool to know you guys don't really care that much. But it is my mission to get it as exact as possible. But if it does the job — the idea is just to give them a feeling and a sense of the size and the vibe — if that's what it's doing, that is great. [shares screen] Let me show you what these other ads look like.
+Zac: This is a runaround ad — a point-of-view ad, first-person shooter, we call it behind-the-scenes. It's a little bit more involved. We need... [reads script]:
+     "Looking for a childcare center that truly fuels your child's potential? At our center, we are completely screen-free. Every single day is packed with hands-on, brain-building activities that spark lifelong curiosity. Spaces are filling fast! Contact us today and book your personal tour!"
+     Something like that — if you would like it. We just need more shots of the specific rooms you'd like to show.
+Kate: Yeah. Okay.
+Zac: And then there's this one we have in our back pockets. [reads script]:
+     "If there was one place on Earth your kids could hang out — make it Let Them Be Kids and The Hangout. Book a tour today."
+     Those ones are pretty schnazzy. All we do is take Google Earth footage and zoom out from your center to get that exact location. But if you'd like one of these, I just need to see the front of the school — the entrance — and what's immediately behind the door. Pictures, plus if you just grab your phone and do a wide shot of the building or the entrance, then walk through it — that would be great for us to construct it.
+Kate: I'll add to the Google Drive. We have these weird sort of double entrances, so I'll add it and you can see what makes the most sense. I can probably get something up there at least for Burlington this weekend.
+Zac: No rush. Additionally — if there are specific activities or a feature of a room you really want to show off, just dump it in the drive and let us know, and we can build something personalized for you around that. We can change the kids' ethnicities and age, have them doing whatever — playing, painting, cleaning up. Anything.
+Kate: Okay. One thing we've really focused on in our marketing is using our students. We have releases. Many of us also have our own kids. I have a ton of images of kids with their teachers, kids engaged in activities — and we could definitely also do video footage. We have releases and we're definitely able to use that.
+Zac: Sure. Throw it all up there. The reason we do AI kids is because a lot of people don't have that system in place and they're worried about using real kids. But if you guys have the footage, that's all the better. Do you prefer using the real-life kids and teachers, or are you okay with the AI stuff?
+Kate: I think if we have the imagery, obviously you guys have a lot of data on what type of content and creative does well. If we have the imagery or footage you need to produce the creative — fantastic. Would love for you to use our faculty and students. If we don't, totally fine with AI.
+Zac: Cool. Please just put it all in there. Based on your USPs and features of your centers, matching that to actual in-real-life footage is all the better. That's it for me, Zu.
+Sebastian: Nice. We had to bring in the big guns, Kate. Zach is our creative director — he's overseeing your entire project.
+Kate: Cool. Love that. Thank you.
+
+[Sebastian — Budget Discussion]
+Sebastian: Kate, one of the things I know we talked about on our last call — budgets.
+Kate: Yeah.
+Sebastian: I know that Burlington is in need of the biggest push. And I know the budgets you've used in the past have been around the $5 mark — per day, right?
+Kate: Per day, yeah, yeah.
+Sebastian: So with Burlington hovering around 56%, being the one that needs the most push... and Rachel would like the cap per school to be around $4,500 per month, but I think we can manage that.
+Kate: Yeah, yeah — if I need to tell her we need to be more flexible than that, I can work on that.
+Zu: So that's $15 a day per school.
+Sebastian: Yeah, per school. I think if we were able to — I want to say $10 on Woburn, so like $20 split between Woburn and Chelmsford, and then maybe $25 to $30 for Burlington. I think that'll be a nice split, especially because we're going to be focusing on data right now and building that data — but also start working toward retargeting campaigns. Having that split, I think that will be a nice mix.
+Kate: Yep.
+Sebastian: I think that would kind of put you maybe around the range Rachel's talking about — if we do $30 on Burlington and $10 on the other two.
+Kate: Okay.
+Sebastian: We'll take note of that and get the production team to run with it.
+Kate: Awesome.
+
+[Wrap-up — 17:38]
+Zu: Yeah, so I think at this point for the ad side of things — expect the organic to go out Monday. We'll give it a few days to get some data, and then we'll run the ads. So it'll basically both start next week.
+Kate: Sounds good.
+Zu: Unless you want to start sooner — that's also an option.
+Kate: No, yeah, I think Monday is fine.
+Zu: Okay, cool. And then Zach — when you drop content in the drive, Kate, we don't always get notified, so maybe just send a little note — "I've dropped some images" or "they're for Zach."
+Kate: Yeah, I can do that. Yes, definitely.
+Zac: Perfect. Yeah, that would be great. And if there are events or something like that, let us know and we can craft something around that.
+Kate: Okay, yeah. We will be — the press release hasn't happened yet, but there will be a pretty significant one. A teacher at Woburn was just recently selected Teacher of the Year for the country. Primrose is working on that press release.
+Zu: Oh wow.
+Zac: Oh!
+Kate: So that will be coming. And that'll probably be a good one to market, obviously.
+Zac: Yeah. Beauty.
+Sebastian: Yeah. Okay.
+Zu: Are you guys gonna do socials for it?
+Kate: We will, yeah.
+Zu: Okay — we can certainly take that and add it to the ads if we want to promote that, just to create some awareness. We can put that into the ad campaign.
+Kate: Okay, perfect. Yep. Awesome.
+Zu: Um... I'm gonna add the tasks into your M3, Kate, for you — for getting us a list of your leads, your cold leads, for the last 120 days or so. Or did you want more?
+Kate: Yes.
+Sebastian: I think you mentioned you had about 600 in total, like lifetime. What was that number?
+Kate: Oh, leads? No, we have thousands.
+Sebastian: Thousands, yeah, yeah, yeah. If we can get that, because that's just data for us. But then I also want to filter a segment — last 120 days — and if you can segment that by no enrollments, that would be better.
+Kate: Okay. Okay.
+Sebastian: That would be better if we could do that.
+Zu: I'll break that down for you into the task paper. And you want this per location, Seb?
+Sebastian: Yes — the way I'm going to build the funnel is: I want data first, allowing the algorithm to learn. And then from there, I want to create branches — past 120 days of people that did not enroll, so we can re-engage them with content, get them back to the website. And from that, I want to start creating lookalike branches — having the algorithm find us more users that have the same behaviors, same interests — but all from the data. Not from the pre-built interests in Facebook, but from the data on its own. We let the system learn on what we have, and have it find more users like it.
+Zu: I'll grab that information and put it into the M3 task for you, Kate — per each location — and also ping you for the front-of-buildings photos that Zach needs.
+Kate: Yes. Yep.
+Zu: Yeah. I think that's it. Just let us know when you guys add more photos too.
+Kate: Okay, yes, yeah, I'll do that.
+Zu: Any questions on your end for us right now?
+Kate: I don't think so. I feel good and we'll get on it.
+Zu: Perfect. Oh — actually, there is the new latest Blueprint drop that I think we did this week. Did you see it?
+Kate: Yes. I'm going to work with our head of sales, Mackenzie. I think I put it in her calendar on Friday.
+Zu: To record that, yeah. Perfect. You can put it into that Google Form, and then we'll be able to add that into the campaign as well.
+Kate: Awesome. Yeah, that'll be great.
+Zu: Cool. All right. I think that's it. We'll keep it short and sweet.
+Kate: Perfect. Thank you, guys.
+Zu: You're welcome. Thank you, everybody.`}</pre>
+                </div>
+
+              </div>
+            )}
           </div>
         </div>
       </div>
