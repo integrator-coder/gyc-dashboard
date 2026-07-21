@@ -35,7 +35,7 @@ const AGENT_META = {
   'BB-8':      { img: '/agents/bb8.svg',       glow: '#d97706', border: '#d97706', bg: '#1f1005' },
   'Fulcrum':   { img: '/agents/fulcrum.svg',   glow: '#db2777', border: '#db2777', bg: '#200820' },
   'Friday':    { img: '/agents/friday.svg',    glow: '#4f46e5', border: '#4f46e5', bg: '#0d0b2e' },
-  'Chopper':   { img: '/agents/chopper.svg',   glow: '#0d9488', border: '#0d9488', bg: '#04191a' },
+  'Chopper':  { img: '/agents/chopper.svg',  glow: '#f59e0b', border: '#f59e0b', bg: '#1a1000' },
   'Echo':     { img: '', glow: '#16a34a', border: '#16a34a', bg: '#031507' },
   'C3PO': { img: '', glow: '#ca8a04', border: '#ca8a04', bg: '#1a1202' },
   'Ratchet':  { img: '', glow: '#dc2626', border: '#dc2626', bg: '#1f0505' },
@@ -48,6 +48,9 @@ const AGENT_META = {
   'Scribe':    { img: '', glow: '#c2410c', border: '#c2410c', bg: '#1c0800' },
   'Arbiter':   { img: '', glow: '#7c3aed', border: '#7c3aed', bg: '#1e0b40' },
   'Mouse':    { img: '/agents/mouse.svg',    glow: '#10b981', border: '#10b981', bg: '#052015' },
+  'Cassian':  { img: '/agents/cassian.svg',  glow: '#3b82f6', border: '#3b82f6', bg: '#050d20' },
+  'Coulson':  { img: '/agents/coulson.svg',  glow: '#6366f1', border: '#6366f1', bg: '#08071e' },
+  'Pepper':   { img: '/agents/pepper.svg',   glow: '#ef4444', border: '#ef4444', bg: '#1a0505' },
 }
 
 function statusDot(status) {
@@ -85,11 +88,14 @@ const AGENT_MODEL = {
   'Fulcrum': 'Claude Haiku',
   'Vision':  'Claude Haiku',
   'Friday':  'TBD',
-  'Chopper': 'TBD',
+  'Chopper': 'Claude Sonnet 4.5',
   'Monday':  'Claude Haiku',
   'Scribe':  'Claude Haiku',
   'Arbiter': 'Claude Haiku',
   'Mouse':  'Claude Sonnet 4.5',
+  'Cassian':  'Claude Sonnet 4.5',
+  'Coulson':  'Claude Sonnet 4.5',
+  'Pepper':   'Claude Sonnet 4.5',
 }
 
 const AGENT_MODEL_ACCESS = {
@@ -106,11 +112,14 @@ const AGENT_MODEL_ACCESS = {
   'Fulcrum':   { default: 'Claude Haiku', escalate: 'Sonnet (via Wall·E)' },
   'Vision':    { default: 'Claude Haiku', escalate: null },
   'Friday':    { default: 'TBD', escalate: null },
-  'Chopper':   { default: 'TBD', escalate: null },
+  'Chopper':   { default: 'Claude Sonnet 4.5', escalate: 'Sonnet 4.6 (via Mouse)' },
   'Monday':    { default: 'Claude Haiku', escalate: null },
   'Scribe':    { default: 'Claude Haiku', escalate: null },
   'Arbiter':   { default: 'Claude Haiku', escalate: null },
   'Mouse':   { default: 'Claude Sonnet 4.5', escalate: 'Sonnet 4.6 (via Wall·E)' },
+  'Cassian':  { default: 'Claude Sonnet 4.5', escalate: 'Sonnet 4.6 (via Mouse)' },
+  'Coulson':  { default: 'Claude Sonnet 4.5', escalate: 'Sonnet 4.6 (via Mouse)' },
+  'Pepper':   { default: 'Claude Sonnet 4.5', escalate: 'Sonnet 4.6 (via Mouse)' },
 }
 
 const AGENT_RESPONSIBILITIES = {
@@ -128,11 +137,14 @@ const AGENT_RESPONSIBILITIES = {
   'Fulcrum': ['Researches the external landscape: competitors, industry trends, best practices', 'Produces structured research memos with evidence and GYC-specific implications', 'Covers: childcare marketing, AI tooling, sales benchmarks, growth playbooks', 'Rotates through topic library on a defined cadence — no topic goes stale', 'The strategic antenna — keeps GYC\'s knowledge current with what\'s happening outside'],
   'Vision':  ['Runs scheduled security posture audits on both Mac Mini and Mac Studio', 'Validates snapshot freshness — ensures no dashboard is ever showing stale data', 'Monitors for anomalous processes, failed auth attempts, or unexpected changes', 'Detects data integrity issues: mismatched counts, broken syncs, schema drift', 'The security and data quality enforcer — silent until something is wrong'],
   'Friday':  ['Laptop-based orchestrator for remote and travel operations (planned)', 'Manages a lightweight agent cluster when Todd is away from base nodes', 'Handles mobile-first interactions and time-sensitive routing decisions', 'Coordinates handoff with Wall·E when returning to base', 'Ensures GYC operations continue uninterrupted regardless of Todd\'s location'],
-  'Chopper': ['Friday\'s execution worker running on the laptop node (planned)', 'Handles lightweight task execution in remote and travel contexts', 'Runs scripts, lookups, and quick responses under Friday\'s direction', 'Built lean and fast for laptop hardware constraints', 'The mobile utility agent — reliable and low-resource on the go'],
+  'Chopper':  ['Mouse\'s worker agent — heavy lifting, no complaints', 'Executes tasks dispatched by Mouse on GYC-Growth-Claw', 'Runs scripts, builds, and automation jobs', 'C1-10P energy: grumpy but reliable — always gets it done', 'Reports completion back to Mouse'],
   'Monday':  ['Serves all client-facing M3 dashboard reads for external tenants (planned)', 'Handles per-client data requests filtered strictly by tenant ID', 'Isolates client-portal query load completely from internal GYC ops', 'Manages M3 caching, refresh cycles, and client-specific data views', 'Eve writes the data in — Monday serves it out to GYC\'s paying clients'],
   'Scribe':  ['Generates client-facing monthly performance reports and GA summaries (planned)', 'Writes structured proposals, meeting prep documents, and deliverables on demand', 'Transforms raw Neon data into readable, branded client-facing language', 'Runs Growth Advisor meeting briefs and post-meeting follow-up summaries', 'Turns the AI network\'s intelligence into polished human-readable output'],
   'Arbiter': ['Manages inter-agent routing and task escalation at scale (planned)', 'Dispatches incoming tasks to the correct agent based on routing rules', 'Handles escalation chains when agents flag unresolved or blocked issues', 'Maintains and updates the routing rules table under Wall·E\'s direction', 'As the fleet grows to serve external M3 clients, Arbiter becomes the load balancer'],
   'Mouse':  ['Second Mac Mini agent — role being defined', 'Running on GYC-Growth-Claw node (10.0.0.171)', 'Memory architecture fully initialized as of July 6, 2026', 'Scope and specialization to be assigned by Todd', 'Currently registered and operational — awaiting first mission'],
+  'Cassian':  ['Research and intelligence agent under Mouse', 'Goes deep on competitive research, prospect intel, and market scans', 'Structures findings into clear memos for Mouse to act on', 'Cassian Andor energy: methodical, thorough, mission-focused', 'Rebellions — and businesses — are built on hope and good intel'],
+  'Coulson':  ['Onboarding Overseer under Mouse', 'Tracks every new client through the onboarding pipeline', 'Ensures no step gets missed — website, SEO, CRM, ads onboarding', 'Agent Coulson energy: quiet, detail-obsessed, never drops a thread', 'Reports onboarding health to Mouse; escalates blockers to Wall·E'],
+  'Pepper':   ['Billing Agent — Lex\'s right hand', 'Monitors Stripe subscriptions, MRR movements, and billing anomalies', 'Surfaces dunning cases, failed payments, and renewal risks', 'Pepper Potts energy: runs the business side with precision and calm', 'Reports directly to Lex; escalates critical billing issues to Wall·E'],
 }
 
 const COMMAND_MODES = [
@@ -512,7 +524,7 @@ function AgentOrgChart({ agents }) {
             'Scribe':  { role: 'Report + Document Generation',              node: 'Mac Mini #2 (planned)' },
             'Arbiter': { role: 'Escalation + Inter-Agent Routing',          node: 'Mac Mini #2 (planned)' },
             'Friday':  { role: 'Laptop Orchestrator',                       node: 'Laptop (pending)' },
-            'Chopper': { role: 'Friday Worker',                             node: 'Laptop (pending)' },
+            'Chopper': { role: 'Mouse Worker Agent',                        node: 'GYC-Growth-Claw (live)' },
           }
           const pm = PLANNED_META[name] || { role: p.note || '—', node: '—' }
           const agent = agentByName[name] || { name, role: pm.role, node: pm.node, status: 'planned', category: 'planned', currentTask: null }
@@ -1069,8 +1081,8 @@ export default function MissionControlPage() {
               {[
                 { name: 'GYC-Integrator-Claw', type: 'Mac Mini (2024)', status: 'live', agents: 'Wall·E, Yoda, R2, Thrawn, Soundwave, Echo, C3PO, Ratchet, Morpheus (all reporting to Wall·E)', color: '#7c3aed' },
                 { name: 'GYC-Data-Claw', type: 'Mac Studio (M2 Max)', status: 'live', agents: 'Eve, BB-8, Fulcrum, Vision', color: '#0891b2' },
-                { name: 'Laptop', type: 'Portable Node', status: 'pending', agents: 'Friday, Chopper', color: '#374151' },
-                { name: 'GYC-Growth-Claw', type: 'Mac Mini #2', status: 'live', agents: 'Mouse', color: '#10b981' },
+                { name: 'Laptop', type: 'Portable Node', status: 'pending', agents: 'Friday', color: '#374151' },
+                { name: 'GYC-Growth-Claw', type: 'Mac Mini #2', status: 'live', agents: 'Mouse, Chopper, Cassian, Coulson, Pepper', color: '#10b981' },
               ].map(({ name, type, status, agents, color }) => (
                 <div key={name} className="rounded-lg border border-[var(--brand-border)] bg-black/20 p-3"
                   style={{ borderLeftWidth: 3, borderLeftColor: color, borderLeftStyle: 'solid' }}>
