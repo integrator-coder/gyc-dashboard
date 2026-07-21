@@ -387,13 +387,13 @@ function AgentOrgChart({ agents }) {
   const R5 = R4 + SH + GAP    // 1165
   const R6 = R5 + SH + GAP    // 1430
 
-  const COL = { A: 100, B: 360, C: 640, D: 920, E: 1210 }
-  const CANVAS_W = 1300
+  const COL = { A: 100, B: 360, C: 640, D: 920, E: 1210, F: 1490 }
+  const CANVAS_W = 1620
   const TODD_CX = COL.C
 
   const pos = {
     'Todd':      { cx: TODD_CX, cy: R0, size: null },
-    'Mini-2':    { cx: COL.A,   cy: R1, size: 'sm', planned: true },
+    'Mouse':     { cx: COL.F,   cy: R1, size: 'lg' },
     'Yoda':      { cx: COL.B,   cy: R1, size: 'sm' },
     'Wall·E':    { cx: COL.C,   cy: R1, size: 'xl' },
     'Eve':       { cx: COL.D,   cy: R1, size: 'xl' },
@@ -402,7 +402,10 @@ function AgentOrgChart({ agents }) {
     'R2':        { cx: COL.B,   cy: R2, size: 'md' },
     'Echo':      { cx: COL.C,   cy: R2, size: 'sm' },
     'BB-8':      { cx: COL.D,   cy: R2, size: 'sm' },
-    'Chopper':   { cx: COL.E,   cy: R2, size: 'sm', planned: true },
+    'Chopper':   { cx: COL.F,   cy: R2, size: 'sm' },
+    'Cassian':   { cx: COL.F,   cy: R3, size: 'sm' },
+    'Coulson':   { cx: COL.F,   cy: R4, size: 'sm' },
+    'Pepper':    { cx: COL.F,   cy: R5, size: 'sm' },
     'Soundwave':      { cx: COL.A,   cy: R3, size: 'sm' },
     'Ratchet':   { cx: COL.B,   cy: R3, size: 'sm' },
     'C3PO':      { cx: COL.C,   cy: R3, size: 'sm' },
@@ -417,7 +420,7 @@ function AgentOrgChart({ agents }) {
   const connections = [
     // Todd → Wall·E (primary), Todd → Eve (secondary direct), Todd → peers
     ['Todd',    'Wall·E',    { color: '#7c3aed' }],
-    ['Todd',    'Mini-2',    { color: '#374151', dashed: true }],
+    ['Todd',    'Mouse',     { color: '#10b981' }],
     ['Todd',    'Friday',    { color: '#4f46e5', dashed: true }],
     // Wall·E orchestrates
     ['Wall·E',  'Eve',       { color: '#0891b2' }],
@@ -427,12 +430,16 @@ function AgentOrgChart({ agents }) {
     ['Wall·E',  'Ratchet',  { color: '#dc2626' }],
     ['Wall·E',  'C3PO', { color: '#ca8a04' }],
     ['Wall·E',  'Friday',    { color: '#6d28d9', dashed: true }],
+    ['Wall·E',  'Mouse',     { color: '#10b981', dashed: true }],
     // Eve workers
     ['Eve',     'BB-8',      { color: '#d97706' }],
     ['Eve',     'Fulcrum',   { color: '#db2777' }],
     ['Eve',     'Vision',  { color: '#7e22ce' }],
     // Friday worker
-    ['Friday',  'Chopper',   { color: '#4f46e5', dashed: true }],
+    ['Mouse',   'Chopper',   { color: '#10b981' }],
+    ['Mouse',   'Cassian',   { color: '#3b82f6' }],
+    ['Mouse',   'Coulson',   { color: '#6366f1' }],
+    ['Mouse',   'Pepper',    { color: '#ef4444' }],
     // Mini-2 planned cluster
     ['Wall·E',  'Thrawn',     { color: '#0d9488' }],
     ['Wall·E',  'Soundwave',      { color: '#f59e0b' }],
@@ -515,7 +522,7 @@ function AgentOrgChart({ agents }) {
         {/* Agent cards */}
         {Object.entries(pos).filter(([name]) => name !== 'Todd').map(([name, p]) => {
           const PLANNED_META = {
-            'Mini-2':  { role: 'GYC-Growth-Claw · M3 Client Engine',       node: 'Mac Mini #2 (planned)' },
+            'Mouse':   { role: 'Second Orchestrator — Role TBD',            node: 'GYC-Growth-Claw (10.0.0.171)' },
             'Yoda':    { role: 'Division Lead — Analysis & Architecture',   node: 'Mac Mini (live)' },
             'Thrawn':   { role: 'Division Lead — Business Intelligence',     node: 'Mac Mini (live)' },
             'Echo':    { role: 'Division Lead — Operations & Delivery',     node: 'Mac Mini (live)' },
@@ -524,7 +531,10 @@ function AgentOrgChart({ agents }) {
             'Scribe':  { role: 'Report + Document Generation',              node: 'Mac Mini #2 (planned)' },
             'Arbiter': { role: 'Escalation + Inter-Agent Routing',          node: 'Mac Mini #2 (planned)' },
             'Friday':  { role: 'Laptop Orchestrator',                       node: 'Laptop (pending)' },
-            'Chopper': { role: 'Mouse Worker Agent',                        node: 'GYC-Growth-Claw (live)' },
+            'Chopper': { role: 'Mouse Worker Agent',                        node: 'GYC-Growth-Claw (10.0.0.171)' },
+            'Cassian': { role: 'Research + Intel Agent',                    node: 'GYC-Growth-Claw (10.0.0.171)' },
+            'Coulson': { role: 'Onboarding Overseer',                       node: 'GYC-Growth-Claw (10.0.0.171)' },
+            'Pepper':  { role: 'Billing Agent',                             node: 'GYC-Growth-Claw (10.0.0.171)' },
           }
           const pm = PLANNED_META[name] || { role: p.note || '—', node: '—' }
           const agent = agentByName[name] || { name, role: pm.role, node: pm.node, status: 'planned', category: 'planned', currentTask: null }
