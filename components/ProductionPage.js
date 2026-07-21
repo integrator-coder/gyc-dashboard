@@ -6,6 +6,9 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Line,
+  LineChart,
+  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -101,6 +104,8 @@ export default function ProductionPage() {
   const [historyData, setHistoryData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [asanaHistory, setAsanaHistory] = useState(null)
+  const [asanaDays, setAsanaDays] = useState(30)
 
   const fetchData = useCallback(async () => {
     try {
@@ -137,6 +142,13 @@ export default function ProductionPage() {
     const interval = setInterval(fetchData, 5 * 60 * 1000)
     return () => clearInterval(interval)
   }, [fetchData])
+
+  useEffect(() => {
+    fetch(`/api/metrics/asana-workload-history?days=${asanaDays}`)
+      .then(r => r.json())
+      .then(d => setAsanaHistory(d))
+      .catch(() => {})
+  }, [asanaDays])
 
   if (loading) {
     return (
@@ -226,6 +238,107 @@ export default function ProductionPage() {
           ↻ Refresh
         </button>
       </div>
+
+      {/* ── Asana Workload Trends ──────────────────────────────────────── */}
+      <section className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-white text-lg font-semibold">Asana Workload Trends</h2>
+            <p className="text-gray-400 text-xs mt-0.5">Daily snapshots across 40 staff members</p>
+          </div>
+          <div className="flex gap-2">
+            {[14, 30, 60, 90].map(d => (
+              <button
+                key={d}
+                onClick={() => setAsanaDays(d)}
+                className="text-xs px-3 py-1 rounded-full border transition-colors"
+                style={{
+                  borderColor: asanaDays === d ? '#AE2BCF' : '#2a1a3e',
+                  background: asanaDays === d ? '#2d0a3e' : 'transparent',
+                  color: asanaDays === d ? '#e879f9' : '#9ca3af',
+                }}
+              >{d}d</button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Chart 1: Task Health — Open, Overdue, Due Soon */}
+          <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
+            <p className="text-gray-300 text-xs font-semibold uppercase tracking-wider mb-4">Task Health</p>
+            {!asanaHistory ? (
+              <div className="h-48 flex items-center justify-center text-gray-600 text-xs">Loading…</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={asanaHistory.data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1f1f2e" />
+                  <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 10 }} tickLine={false} />
+                  <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{ background: '#18102a', border: '1px solid #3b2060', borderRadius: 8, fontSize: 11 }}
+                    labelStyle={{ color: '#c4b5fd' }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 11, color: '#9ca3af' }} />
+                  <Line type="monotone" dataKey="totalOpen" name="Open" stroke="#7c3aed" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="totalOverdue" name="Overdue" stroke="#ef4444" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="dueSoon" name="Due Soon" stroke="#f59e0b" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+
+          {/* Chart 2: Throughput — Completed This Week */}
+          <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
+            <p className="text-gray-300 text-xs font-semibold uppercase tracking-wider mb-4">Weekly Throughput</p>
+            {!asanaHistory ? (
+              <div className="h-48 flex items-center justify-center text-gray-600 text-xs">Loading…</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={asanaHistory.data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1f1f2e" />
+                  <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 10 }} tickLine={false} />
+                  <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{ background: '#18102a', border: '1px solid #3b2060', borderRadius: 8, fontSize: 11 }}
+                    labelStyle={{ color: '#c4b5fd' }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 11, color: '#9ca3af' }} />
+                  <Bar dataKey="completedThisWeek" name="Completed This Week" fill="#10b981" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="dueSoon" name="Due Soon" fill="#f59e0b" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        {/* Summary stat row */}
+        {asanaHistory?.data?.length > 0 && (() => {
+          const latest = asanaHistory.data[asanaHistory.data.length - 1]
+          const first = asanaHistory.data[0]
+          const overdueChange = latest.totalOverdue - first.totalOverdue
+          const openChange = latest.totalOpen - first.totalOpen
+          return (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+              {[
+                { label: 'Open Tasks', value: latest.totalOpen, change: openChange, suffix: '' },
+                { label: 'Overdue', value: latest.totalOverdue, change: overdueChange, suffix: '', danger: true },
+                { label: 'Due Soon', value: latest.dueSoon, change: null, suffix: '' },
+                { label: 'Completed / Week', value: latest.completedThisWeek, change: null, suffix: '' },
+              ].map(({ label, value, change, suffix, danger }) => (
+                <div key={label} className="rounded-lg px-4 py-3" style={{ backgroundColor: '#0a0a0a', border: '1px solid #1f1535' }}>
+                  <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">{label}</p>
+                  <p className="text-white text-xl font-bold">{value}{suffix}</p>
+                  {change !== null && (
+                    <p className={`text-xs mt-0.5 ${change > 0 ? (danger ? 'text-red-400' : 'text-purple-400') : 'text-green-400'}`}>
+                      {change > 0 ? `▲ +${change}` : `▼ ${change}`} vs {asanaDays}d ago
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )
+        })()}
+      </section>
 
       <SectionShell title="WEB Builds" subtitle="Active web builds — delivery health and project pipeline." divider={false}>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
