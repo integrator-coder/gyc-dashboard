@@ -47,6 +47,7 @@ const AGENT_META = {
   'Monday':    { img: '', glow: '#2563eb', border: '#2563eb', bg: '#04102a' },
   'Scribe':    { img: '', glow: '#c2410c', border: '#c2410c', bg: '#1c0800' },
   'Arbiter':   { img: '', glow: '#7c3aed', border: '#7c3aed', bg: '#1e0b40' },
+  'Mouse':    { img: '/agents/mouse.svg',    glow: '#10b981', border: '#10b981', bg: '#052015' },
 }
 
 function statusDot(status) {
@@ -71,7 +72,7 @@ const STATUS_LABEL = {
 }
 
 const AGENT_MODEL = {
-  'Wall·E':  'Claude Sonnet',
+  'Wall·E':  'Claude Sonnet 4.6',
   'Eve':     'GPT-5.3-Codex',
   'R2':      'GPT-5.4',
   'Yoda':  'Claude Opus',
@@ -88,10 +89,11 @@ const AGENT_MODEL = {
   'Monday':  'Claude Haiku',
   'Scribe':  'Claude Haiku',
   'Arbiter': 'Claude Haiku',
+  'Mouse':  'Claude Sonnet 4.5',
 }
 
 const AGENT_MODEL_ACCESS = {
-  'Wall·E':    { default: 'Claude Sonnet', escalate: 'Opus (via Yoda)' },
+  'Wall·E':    { default: 'Claude Sonnet 4.6', escalate: 'Opus (via Yoda)' },
   'Eve':       { default: 'GPT-5.3-Codex', escalate: null },
   'R2':        { default: 'GPT-5.4', escalate: null },
   'Yoda':      { default: 'Claude Opus', escalate: null },
@@ -108,6 +110,7 @@ const AGENT_MODEL_ACCESS = {
   'Monday':    { default: 'Claude Haiku', escalate: null },
   'Scribe':    { default: 'Claude Haiku', escalate: null },
   'Arbiter':   { default: 'Claude Haiku', escalate: null },
+  'Mouse':   { default: 'Claude Sonnet 4.5', escalate: 'Sonnet 4.6 (via Wall·E)' },
 }
 
 const AGENT_RESPONSIBILITIES = {
@@ -129,6 +132,7 @@ const AGENT_RESPONSIBILITIES = {
   'Monday':  ['Serves all client-facing M3 dashboard reads for external tenants (planned)', 'Handles per-client data requests filtered strictly by tenant ID', 'Isolates client-portal query load completely from internal GYC ops', 'Manages M3 caching, refresh cycles, and client-specific data views', 'Eve writes the data in — Monday serves it out to GYC\'s paying clients'],
   'Scribe':  ['Generates client-facing monthly performance reports and GA summaries (planned)', 'Writes structured proposals, meeting prep documents, and deliverables on demand', 'Transforms raw Neon data into readable, branded client-facing language', 'Runs Growth Advisor meeting briefs and post-meeting follow-up summaries', 'Turns the AI network\'s intelligence into polished human-readable output'],
   'Arbiter': ['Manages inter-agent routing and task escalation at scale (planned)', 'Dispatches incoming tasks to the correct agent based on routing rules', 'Handles escalation chains when agents flag unresolved or blocked issues', 'Maintains and updates the routing rules table under Wall·E\'s direction', 'As the fleet grows to serve external M3 clients, Arbiter becomes the load balancer'],
+  'Mouse':  ['Second Mac Mini agent — role being defined', 'Running on GYC-Growth-Claw node (10.0.0.171)', 'Memory architecture fully initialized as of July 6, 2026', 'Scope and specialization to be assigned by Todd', 'Currently registered and operational — awaiting first mission'],
 }
 
 const COMMAND_MODES = [
@@ -1066,7 +1070,7 @@ export default function MissionControlPage() {
                 { name: 'GYC-Integrator-Claw', type: 'Mac Mini (2024)', status: 'live', agents: 'Wall·E, Yoda, R2, Thrawn, Soundwave, Echo, C3PO, Ratchet, Morpheus (all reporting to Wall·E)', color: '#7c3aed' },
                 { name: 'GYC-Data-Claw', type: 'Mac Studio (M2 Max)', status: 'live', agents: 'Eve, BB-8, Fulcrum, Vision', color: '#0891b2' },
                 { name: 'Laptop', type: 'Portable Node', status: 'pending', agents: 'Friday, Chopper', color: '#374151' },
-                { name: 'GYC-Growth-Claw', type: 'Mac Mini #2 (planned)', status: 'planned', agents: 'Monday, Scribe, Arbiter', color: '#374151' },
+                { name: 'GYC-Growth-Claw', type: 'Mac Mini #2', status: 'live', agents: 'Mouse', color: '#10b981' },
               ].map(({ name, type, status, agents, color }) => (
                 <div key={name} className="rounded-lg border border-[var(--brand-border)] bg-black/20 p-3"
                   style={{ borderLeftWidth: 3, borderLeftColor: color, borderLeftStyle: 'solid' }}>

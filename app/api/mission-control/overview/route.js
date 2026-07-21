@@ -556,6 +556,17 @@ export async function GET() {
       reportsTo: 'Eve',
       children: [],
     },
+    {
+      name: 'Mouse',
+      role: 'Second Orchestrator — Role TBD',
+      category: 'main',
+      node: 'GYC-Growth-Claw (10.0.0.171)',
+      status: 'idle',
+      currentTask: 'Awaiting first mission',
+      lastActivity: nowIso,
+      reportsTo: 'Wall·E',
+      children: [],
+    },
   ]
 
   return NextResponse.json({
