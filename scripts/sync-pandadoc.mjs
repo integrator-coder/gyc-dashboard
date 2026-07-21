@@ -38,7 +38,8 @@ const PANDADOC_API_KEY = process.env.PANDADOC_API_KEY
 if (!DB_URL) { console.error('No DATABASE_URL'); process.exit(1) }
 if (!PANDADOC_API_KEY) { console.error('No PANDADOC_API_KEY'); process.exit(1) }
 
-const MAX_DOCS_PER_RUN = parseInt(process.env.MAX_DOCS_PER_RUN || '50', 10)
+const MAX_DOCS_PER_RUN = parseInt(process.env.MAX_DOCS_PER_RUN || '100', 10)
+const RUN_BUDGET_MS = parseInt(process.env.RUN_BUDGET_MS || String(8 * 60 * 1000), 10) // exit before SIGTERM
 const CHECKPOINT_FILE = '/tmp/pandadoc-sync-checkpoint.json'
 
 const pool = new pg.Pool({ connectionString: DB_URL, ssl: { rejectUnauthorized: false } })
@@ -99,7 +100,7 @@ process.on('SIGINT', () => handleShutdown('SIGINT'))
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
 
-const BACKOFF_DELAYS = [5000, 15000, 30000, 60000] // 4 retry attempts
+const BACKOFF_DELAYS = [3000, 8000, 20000, 45000] // 4 retry attempts — trimmed to avoid timeout
 
 async function fetchWithBackoff(url, maxRetries = 4) {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -363,7 +364,13 @@ async function run() {
       }
 
       // Small delay between docs to avoid WAF blocks
-      if (i + 1 < thisBatch.length && !shuttingDown) await sleep(2000)
+      if (i + 1 < thisBatch.length && !shuttingDown) await sleep(500)
+
+      // Time budget guard — exit cleanly before SIGTERM
+      if (Date.now() - startTime > RUN_BUDGET_MS) {
+        console.log(`\n[sync-pandadoc] Time budget reached (${(RUN_BUDGET_MS/60000).toFixed(1)}min) — saving checkpoint and exiting cleanly`)
+        break
+      }
     }
 
     console.log(`\n[sync-pandadoc] Done: ${upserted} upserted, ${skipped} skipped in ${((Date.now() - startTime) / 1000).toFixed(1)}s`)
