@@ -75,6 +75,7 @@ function buildDashboardGroup(user) {
   const salesItems = [
     canSee(user, WIDE_ROLES)  && { label: 'Sales Activity', emoji: '📞', href: '/sales-activity' },
     canSee(user, SALES_ROLES) && { label: 'New Business',   emoji: '💵', href: '/new-business' },
+    canSee(user, SALES_ROLES) && { label: 'Closed Deals',   emoji: '🎉', href: '/deals' },
     canSee(user, SALES_ROLES) && { label: 'Sales Analysis', emoji: '🧮', href: '/sales-analysis' },
   ].filter(Boolean)
   if (salesItems.length) {
