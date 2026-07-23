@@ -6,6 +6,7 @@ import MetricTooltip from '@/components/MetricTooltip'
 import {
   ResponsiveContainer,
   BarChart, Bar,
+  LineChart, Line, ReferenceLine,
   CartesianGrid, XAxis, YAxis, Tooltip, Legend,
 } from 'recharts'
 
@@ -62,6 +63,8 @@ export default function LeadershipPage() {
   const [newMoneyMetric, setNewMoneyMetric] = useState('contractValue')
   const [serviceTimeframe, setServiceTimeframe] = useState('all')
   const [now] = useState(() => new Date())
+  const [yoyData, setYoyData] = useState(null)
+  const [yoyMetric, setYoyMetric] = useState('deals')
 
   useEffect(() => {
     let active = true
@@ -76,6 +79,13 @@ export default function LeadershipPage() {
       .finally(() => active && setLoading(false))
 
     return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/metrics/sales-yoy')
+      .then((r) => r.json())
+      .then((d) => { if (!d.error) setYoyData(d) })
+      .catch(() => {})
   }, [])
 
   const derived = useMemo(() => {
@@ -152,6 +162,7 @@ export default function LeadershipPage() {
   const daysElapsed = Math.max(1, Math.floor((now.getTime() - startOfYear.getTime()) / 86400000) + 1)
   const estAnnualRevenue = ytdCash > 0 ? (ytdCash / daysElapsed) * 365 : Number(metrics?.totalRevenue || 0) * 12
 
+  const currentMonthShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][now.getMonth()]
   const dailyCashChart = (finance?.dailyRevenue || []).map((d) => ({ label: new Date(d.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), amount: d.amount }))
   const newMoneyChart = (newBusiness?.monthlyComparison || []).map((m) => ({
     month: m.month,
@@ -308,6 +319,94 @@ export default function LeadershipPage() {
           </ResponsiveContainer>
         </Panel>
       </div>
+
+      {yoyData && (
+        <Panel
+          title="Sales by Month — Year-over-Year"
+          sub={`${(yoyData.years || []).join(' vs ')} · ${yoyMetric === 'deals' ? 'Deal Count' : yoyMetric === 'mrr' ? 'New MRR' : 'Cash Collected'} by Month`}
+        >
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {[['deals', 'Deal Count'], ['cash', 'Cash Collected'], ['mrr', 'New MRR']].map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setYoyMetric(key)}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                  yoyMetric === key
+                    ? 'border-[var(--brand-border-accent)] bg-[rgba(166,111,205,0.14)] text-white'
+                    : 'border-[var(--brand-border)] text-[var(--brand-text-muted)] hover:border-[var(--brand-border-strong)] hover:text-white'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <ResponsiveContainer width="100%" height={260}>
+            <LineChart data={yoyData.monthly || []} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />
+              <XAxis dataKey="month" tick={{ fill: chartAxis, fontSize: 11 }} />
+              <YAxis
+                tickFormatter={yoyMetric !== 'deals' ? (v) => `$${Math.round(v / 1000)}k` : undefined}
+                tick={{ fill: chartAxis, fontSize: 11 }}
+              />
+              <Tooltip
+                formatter={(v, name) => yoyMetric !== 'deals' ? [fmt$(v), name] : [v + ' deals', name]}
+                contentStyle={{ background: 'var(--brand-surface-2)', border: '1px solid var(--brand-border-strong)', borderRadius: 12 }}
+              />
+              <Legend />
+              <ReferenceLine
+                x={currentMonthShort}
+                stroke="#fbbf24"
+                strokeDasharray="4 4"
+                label={{ value: 'Now', fill: '#fbbf24', fontSize: 10, position: 'insideTopRight' }}
+              />
+              {(yoyData.years || []).map((year) => {
+                const yearColors = { '2024': '#A66FCD', '2025': '#6B7280', '2026': '#14B8A6' }
+                return (
+                  <Line
+                    key={year}
+                    type="monotone"
+                    dataKey={`${yoyMetric}_${year}`}
+                    name={year}
+                    stroke={yearColors[year] || '#94a3b8'}
+                    strokeWidth={year === yoyData.latestYear ? 2.5 : 1.5}
+                    dot={{ r: 3 }}
+                    activeDot={{ r: 5 }}
+                    connectNulls={false}
+                  />
+                )
+              })}
+            </LineChart>
+          </ResponsiveContainer>
+
+          {(() => {
+            const curMonth = now.getMonth() + 1
+            const change = yoyData.yoyChanges?.[curMonth]
+            if (!change) return null
+            const dealsChg = change.deals !== null ? Number(change.deals) : null
+            const cashChg = change.cash !== null ? Number(change.cash) : null
+            const monthName = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][curMonth - 1]
+            return (
+              <div className="mt-3 flex flex-wrap gap-3 text-xs">
+                {dealsChg !== null && (
+                  <div className={`rounded-lg px-3 py-1.5 ${
+                    dealsChg >= 0 ? 'bg-emerald-500/10 text-emerald-300' : 'bg-rose-500/10 text-rose-300'
+                  }`}>
+                    Deals YoY ({monthName}): {dealsChg >= 0 ? '+' : ''}{change.deals}%
+                  </div>
+                )}
+                {cashChg !== null && (
+                  <div className={`rounded-lg px-3 py-1.5 ${
+                    cashChg >= 0 ? 'bg-emerald-500/10 text-emerald-300' : 'bg-rose-500/10 text-rose-300'
+                  }`}>
+                    Cash YoY ({monthName}): {cashChg >= 0 ? '+' : ''}{change.cash}%
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+        </Panel>
+      )}
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
         <Card label="Client Churn Rate" value={`${(latestChurn?.churnPct || 0).toFixed(1)}%`} tone={(latestChurn?.churnPct || 0) > 3 ? 'bad' : 'warn'} tooltip="Percentage of active clients who cancelled in the most recent tracked month. Formula: Clients Lost ÷ Start-of-Month Active Clients × 100. Source: GYC Churn Tracker Google Sheet." />
