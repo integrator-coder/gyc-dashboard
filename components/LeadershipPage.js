@@ -368,7 +368,7 @@ export default function LeadershipPage() {
 
       {yoyData && (
         <Panel
-          title="Sales by Month — Year-over-Year"
+          title="Monthly Sales — Year over Year"
           sub={`${(yoyData.years || []).join(' vs ')} · ${yoyMetric === 'deals' ? 'Deal Count' : yoyMetric === 'mrr' ? 'New MRR' : 'Cash Collected'} by Month`}
         >
           <div className="mb-3 flex flex-wrap gap-1.5">
@@ -408,11 +408,13 @@ export default function LeadershipPage() {
               />
               {(yoyData.years || []).map((year) => {
                 const yearColors = { '2024': '#A66FCD', '2025': '#6B7280', '2026': '#14B8A6' }
+                // Cash view uses DailyRevenue keys (revenue_YEAR) which includes 2024 data
+                const metricKey = yoyMetric === 'cash' ? `revenue_${year}` : `${yoyMetric}_${year}`
                 return (
                   <Line
                     key={year}
                     type="monotone"
-                    dataKey={`${yoyMetric}_${year}`}
+                    dataKey={metricKey}
                     name={year}
                     stroke={yearColors[year] || '#94a3b8'}
                     strokeWidth={year === yoyData.latestYear ? 2.5 : 1.5}
