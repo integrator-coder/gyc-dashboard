@@ -59,9 +59,17 @@ async function fetchLiveBundle(origin) {
   }
 
   const entries = await Promise.all(Object.entries(endpoints).map(async ([k, p]) => {
-    const res = await fetch(`${origin}${p}`, { cache: 'no-store' })
-    const json = await res.json()
-    return [k, json]
+    try {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 20000) // 20s per endpoint
+      const res = await fetch(`${origin}${p}`, { cache: 'no-store', signal: controller.signal })
+      clearTimeout(timeout)
+      const json = await res.json()
+      return [k, json]
+    } catch (err) {
+      console.error(`[leadership] endpoint ${p} failed:`, err?.message)
+      return [k, { error: err?.message || 'fetch failed', partial: true }]
+    }
   }))
 
   const payload = Object.fromEntries(entries)
