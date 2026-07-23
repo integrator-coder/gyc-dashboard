@@ -320,6 +320,52 @@ export default function LeadershipPage() {
         </Panel>
       </div>
 
+      {yoyData?.ytdSummary && (() => {
+        const ytd = yoyData.ytdSummary
+        const curY = ytd.currentYear
+        const preY = ytd.priorYear
+        const pctTone = (p) => p === null ? 'default' : Number(p) >= 0 ? 'good' : 'bad'
+        const pctLabel = (p) => p === null ? '' : ` · ${Number(p) >= 0 ? '+' : ''}${p}% YoY`
+        return (
+          <Panel
+            title="YTD Sales Comparison — Year-over-Year"
+            sub={`${curY} YTD vs ${preY} same period · revenue, deals, cash at signing, new MRR`}
+            href="/sales-analysis"
+          >
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+              <Card
+                label={`Cash Revenue YTD`}
+                value={`${curY}: ${fmt$(ytd.revenue.current)}`}
+                sub={`${preY}: ${fmt$(ytd.revenue.prior)}${pctLabel(ytd.revenue.pctChange)}`}
+                tone={pctTone(ytd.revenue.pctChange)}
+                tooltip={`Total cash collected year-to-date in ${curY} vs the same calendar period in ${preY}. Source: DailyRevenue (Stripe).`}
+              />
+              <Card
+                label={`Deals Closed YTD`}
+                value={`${curY}: ${fmtN(ytd.deals.current)}`}
+                sub={`${preY}: ${fmtN(ytd.deals.prior)}${pctLabel(ytd.deals.pctChange)}`}
+                tone={pctTone(ytd.deals.pctChange)}
+                tooltip={`Count of closed-won deals year-to-date in ${curY} vs the same period in ${preY}. Source: SalesDeal.`}
+              />
+              <Card
+                label={`Cash at Signing YTD`}
+                value={`${curY}: ${fmt$(ytd.cashAtSigning.current)}`}
+                sub={`${preY}: ${fmt$(ytd.cashAtSigning.prior)}${pctLabel(ytd.cashAtSigning.pctChange)}`}
+                tone={pctTone(ytd.cashAtSigning.pctChange)}
+                tooltip={`First payments collected at close year-to-date in ${curY} vs ${preY}. Source: SalesDeal.`}
+              />
+              <Card
+                label={`New MRR Added YTD`}
+                value={`${curY}: ${fmt$(ytd.mrr.current)}/mo`}
+                sub={`${preY}: ${fmt$(ytd.mrr.prior)}/mo${pctLabel(ytd.mrr.pctChange)}`}
+                tone={pctTone(ytd.mrr.pctChange)}
+                tooltip={`New monthly recurring revenue added from deals closed year-to-date in ${curY} vs same period ${preY}. Monthly deals only (PIF excluded). Source: SalesDeal.`}
+              />
+            </div>
+          </Panel>
+        )
+      })()}
+
       {yoyData && (
         <Panel
           title="Sales by Month — Year-over-Year"

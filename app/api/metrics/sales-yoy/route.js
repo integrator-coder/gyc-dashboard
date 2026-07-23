@@ -13,6 +13,7 @@ const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'S
 
 export async function GET() {
   try {
+    // ── Monthly breakdown from SalesDeal ──────────────────────────────────
     const { rows } = await pool.query(`
       SELECT
         "yearLabel" AS year,
@@ -75,7 +76,102 @@ export async function GET() {
       }
     }
 
-    return NextResponse.json({ years, monthly, yoyChanges, latestYear, prevYear })
+    // ── YTD Summary (through today's calendar date, both years) ──────────
+    // Revenue from DailyRevenue table
+    const { rows: revenueYtdRows } = await pool.query(`
+      SELECT
+        EXTRACT(year FROM date::date)::int AS year,
+        COALESCE(SUM(amount), 0) AS revenue
+      FROM "DailyRevenue"
+      WHERE
+        EXTRACT(year FROM date::date) IN (
+          EXTRACT(year FROM CURRENT_DATE)::int,
+          EXTRACT(year FROM CURRENT_DATE)::int - 1
+        )
+        AND (
+          EXTRACT(month FROM date::date) * 100 + EXTRACT(day FROM date::date)
+        ) <= (
+          EXTRACT(month FROM CURRENT_DATE) * 100 + EXTRACT(day FROM CURRENT_DATE)
+        )
+      GROUP BY year
+      ORDER BY year
+    `)
+
+    // Deal metrics from SalesDeal table (YTD same period)
+    const { rows: dealYtdRows } = await pool.query(`
+      SELECT
+        EXTRACT(year FROM "dealDate"::timestamp)::int AS year,
+        COUNT(*) AS deal_count,
+        COALESCE(SUM("firstPayment"), 0) AS first_payment,
+        COALESCE(SUM(CASE WHEN pif = false THEN mrr ELSE 0 END), 0) AS new_mrr
+      FROM "SalesDeal"
+      WHERE
+        "tenantId" = 'gyc'
+        AND "dealDate" IS NOT NULL
+        AND EXTRACT(year FROM "dealDate"::timestamp) IN (
+          EXTRACT(year FROM CURRENT_DATE)::int,
+          EXTRACT(year FROM CURRENT_DATE)::int - 1
+        )
+        AND (
+          EXTRACT(month FROM "dealDate"::timestamp) * 100 + EXTRACT(day FROM "dealDate"::timestamp)
+        ) <= (
+          EXTRACT(month FROM CURRENT_DATE) * 100 + EXTRACT(day FROM CURRENT_DATE)
+        )
+      GROUP BY year
+      ORDER BY year
+    `)
+
+    // Assemble ytdSummary keyed by year
+    const ytdRevByYear = {}
+    for (const r of revenueYtdRows) {
+      ytdRevByYear[r.year] = Number(r.revenue || 0)
+    }
+
+    const ytdDealsByYear = {}
+    for (const r of dealYtdRows) {
+      ytdDealsByYear[r.year] = {
+        deals: Number(r.deal_count || 0),
+        firstPayment: Number(r.first_payment || 0),
+        mrr: Number(r.new_mrr || 0),
+      }
+    }
+
+    const currentYear = new Date().getFullYear()
+    const priorYear = currentYear - 1
+
+    const ytdSummary = {
+      currentYear,
+      priorYear,
+      revenue: {
+        current: ytdRevByYear[currentYear] || 0,
+        prior: ytdRevByYear[priorYear] || 0,
+      },
+      deals: {
+        current: ytdDealsByYear[currentYear]?.deals || 0,
+        prior: ytdDealsByYear[priorYear]?.deals || 0,
+      },
+      cashAtSigning: {
+        current: ytdDealsByYear[currentYear]?.firstPayment || 0,
+        prior: ytdDealsByYear[priorYear]?.firstPayment || 0,
+      },
+      mrr: {
+        current: ytdDealsByYear[currentYear]?.mrr || 0,
+        prior: ytdDealsByYear[priorYear]?.mrr || 0,
+      },
+    }
+
+    // Compute YOY % changes
+    function pct(cur, prior) {
+      if (!prior) return null
+      return ((cur - prior) / prior * 100).toFixed(1)
+    }
+
+    ytdSummary.revenue.pctChange = pct(ytdSummary.revenue.current, ytdSummary.revenue.prior)
+    ytdSummary.deals.pctChange = pct(ytdSummary.deals.current, ytdSummary.deals.prior)
+    ytdSummary.cashAtSigning.pctChange = pct(ytdSummary.cashAtSigning.current, ytdSummary.cashAtSigning.prior)
+    ytdSummary.mrr.pctChange = pct(ytdSummary.mrr.current, ytdSummary.mrr.prior)
+
+    return NextResponse.json({ years, monthly, yoyChanges, latestYear, prevYear, ytdSummary })
   } catch (err) {
     console.error('[sales-yoy] error:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })
