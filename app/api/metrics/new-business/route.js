@@ -4,6 +4,13 @@ export const dynamic = 'force-dynamic'
 import { createGoogleAuth, SHEETS_READONLY } from '@/lib/google-auth'
 import { NextResponse } from 'next/server'
 import { google } from 'googleapis'
+import pkg from 'pg'
+const { Pool } = pkg
+
+const pool = new Pool({
+  connectionString: process.env.NEON_DATABASE_URL || process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+})
 
 const SHEET_ID = '1858s3B0oQ8YC4KEBDefJMc0WuD5nyjNIFxiQrqsuO-A'
 
@@ -349,35 +356,83 @@ export async function GET() {
     const repPifYTD = summariseByRep(pifDeals26YTD)
     const repPifMonth = summariseByRep(pifDeals26Month)
 
-    // Renewal projections — PIF deals with term + renewalAmount
-    // term=1 for PIF = 1 year (12 months); term=6/12 = months as stated
-    const pifTermMonths = (term) => term === 1 ? 12 : term
-    const allDeals = [...deals25, ...deals26]
+    // Renewal projections — sourced from SalesDeal DB (uses corrected terms, not raw sheet data)
+    // term=1 in DB = 12 months (PIF annual); term=6 or 12 = months as stated
+    const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2,'0')}`
     const renewalByMonth = {}
     const missingRenewal = []
 
-    // Only show current month and future (not already-passed months)
-    const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2,'0')}`
+    // Query DB for PIF deals with renewalAmount set (the projection data)
+    const [renewalRes, missingRes] = await Promise.all([
+      pool.query(`
+        SELECT
+          to_char("dealDate"::date + (
+            CASE WHEN term::numeric = 1 THEN 12 ELSE term::numeric END
+          ) * INTERVAL '1 month', 'YYYY-MM') AS renewal_month,
+          to_char("dealDate"::date + (
+            CASE WHEN term::numeric = 1 THEN 12 ELSE term::numeric END
+          ) * INTERVAL '1 month', 'FMMonth YYYY') AS renewal_label,
+          SUM("renewalAmount"::numeric) AS renewal_mrr,
+          COUNT(*) AS deal_count,
+          json_agg(json_build_object(
+            'name', "clientName",
+            'renewal', "renewalAmount"::numeric,
+            'rep', rep
+          )) AS deals
+        FROM "SalesDeal"
+        WHERE "tenantId" = 'gyc'
+          AND pif = true
+          AND "renewalAmount" IS NOT NULL
+          AND "renewalAmount"::numeric > 0
+          AND "dealDate" IS NOT NULL
+          AND term IS NOT NULL
+          AND term::numeric > 0
+        GROUP BY 1, 2
+        ORDER BY 1
+      `),
+      pool.query(`
+        SELECT
+          "clientName" AS name,
+          service,
+          "firstPayment"::numeric AS fp,
+          "dealDate"::text AS date,
+          rep,
+          to_char("dealDate"::date + (
+            CASE WHEN term::numeric = 1 THEN 12 ELSE term::numeric END
+          ) * INTERVAL '1 month', 'YYYY-MM') AS renewal_month_key,
+          to_char("dealDate"::date + (
+            CASE WHEN term::numeric = 1 THEN 12 ELSE term::numeric END
+          ) * INTERVAL '1 month', 'FMMonth YYYY') AS renewal_month_label
+        FROM "SalesDeal"
+        WHERE "tenantId" = 'gyc'
+          AND pif = true
+          AND ("renewalAmount" IS NULL OR "renewalAmount"::numeric = 0)
+          AND "dealDate" IS NOT NULL
+          AND term IS NOT NULL
+          AND term::numeric > 0
+        ORDER BY renewal_month_key
+      `),
+    ])
 
-    for (const d of allDeals) {
-      if (!d.pif) continue
-      const termMonths = pifTermMonths(d.term)
-      if (!termMonths || !d.date) continue
+    for (const row of renewalRes.rows) {
+      renewalByMonth[row.renewal_month] = {
+        label: row.renewal_label,
+        mrr: parseFloat(row.renewal_mrr),
+        count: parseInt(row.deal_count),
+        deals: row.deals || [],
+      }
+    }
 
-      const saleDate = new Date(d.date)
-      if (isNaN(saleDate)) continue
-
-      saleDate.setMonth(saleDate.getMonth() + termMonths)
-      const key = `${saleDate.getFullYear()}-${String(saleDate.getMonth() + 1).padStart(2, '0')}`
-      const label = saleDate.toLocaleString('default', { month: 'long', year: 'numeric' })
-
-      if (d.renewalAmount > 0) {
-        if (!renewalByMonth[key]) renewalByMonth[key] = { label, mrr: 0, count: 0, deals: [] }
-        renewalByMonth[key].mrr += d.renewalAmount
-        renewalByMonth[key].count++
-        renewalByMonth[key].deals.push({ name: d.name, service: d.service, renewal: d.renewalAmount, rep: d.rep })
-      } else if (key >= todayKey) {   // only flag FUTURE missing renewals
-        missingRenewal.push({ name: d.name, service: d.service, fp: d.firstPayment, date: d.date, rep: d.rep, renewalMonth: label })
+    for (const row of missingRes.rows) {
+      if (row.renewal_month_key >= todayKey) {
+        missingRenewal.push({
+          name: row.name,
+          service: row.service,
+          fp: parseFloat(row.fp || 0),
+          date: row.date,
+          rep: row.rep,
+          renewalMonth: row.renewal_month_label,
+        })
       }
     }
 
