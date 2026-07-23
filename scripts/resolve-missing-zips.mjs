@@ -55,7 +55,7 @@ function isUSCoords(lat, lng) {
 }
 
 async function dfseoResolve(keyword, locationCode = 2840) {
-  const res = await fetch('https://api.dataforseo.com/v3/serp/google/maps/live/regular', {
+  const res = await fetch('https://api.dataforseo.com/v3/serp/google/maps/live/advanced', {
     method: 'POST',
     headers: { 'Authorization': `Basic ${DFS_AUTH}`, 'Content-Type': 'application/json' },
     body: JSON.stringify([{ keyword, location_code: locationCode, language_code: 'en', depth: 3 }])
@@ -191,14 +191,12 @@ async function main() {
             longitude             = COALESCE(longitude, $3),
             city                  = COALESCE(city, $4),
             state                 = COALESCE(state, $5),
-            "placeId"             = COALESCE("placeId", $6),
             "updatedAt"           = NOW()
-          WHERE id = $7
+          WHERE id = $6
         `, [
           JSON.stringify(updatedSnap),
           matchLat, matchLng,
           matchCity, matchState,
-          matchPid,
           row.id
         ])
       }

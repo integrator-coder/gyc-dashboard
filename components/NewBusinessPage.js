@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import CommissionTierTracker from '@/components/CommissionTierTracker'
+import MrrGrowthProjectionChart from '@/components/MrrGrowthProjectionChart'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line
@@ -73,7 +74,7 @@ export default function NewBusinessPage() {
     <div className="text-red-400 p-6">Error: {error || data.error}</div>
   )
 
-  const { summary, monthlyComparison, repYTD, repThisMonth, repPifYTD, repPifMonth, recentDeals, renewalProjection, missingRenewal, commissionTracker, salesVsUpsells } = data
+  const { summary, monthlyComparison, repYTD, repThisMonth, repPifYTD, repPifMonth, recentDeals, renewalProjection, missingRenewal, commissionTracker, salesVsUpsells, mrrProjection } = data
   const { pif, mrr } = summary
 
   // Rep leaderboard
@@ -381,6 +382,9 @@ export default function NewBusinessPage() {
           )
         })()}
       </div>
+
+      {/* MRR Growth Projection — Stacked Chart */}
+      <MrrGrowthProjectionChart mrrProjection={mrrProjection} />
 
       {/* Commission Tier Tracker */}
       <CommissionTierTracker

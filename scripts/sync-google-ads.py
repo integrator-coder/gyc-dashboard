@@ -45,8 +45,11 @@ def get_enabled_accounts(client, mcc_id):
         response = ga_service.search(customer_id=mcc_id, query=query)
         accounts = []
         for row in response:
+            account_id = str(row.customer_client.id)
+            if account_id == mcc_id:  # Skip the MCC account itself
+                continue
             accounts.append({
-                'id': str(row.customer_client.id),
+                'id': account_id,
                 'name': row.customer_client.descriptive_name
             })
         return accounts
