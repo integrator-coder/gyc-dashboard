@@ -28,6 +28,15 @@ export async function GET() {
       ORDER BY mrr DESC
     `)
 
+    // Compute collected MRR (active + past_due) vs contracted MRR (includes unpaid)
+    const mrrCollected = customers
+      .filter(c => ['active', 'past_due'].includes(c.status))
+      .reduce((sum, c) => sum + Number(c.mrr || 0), 0)
+    const mrrContracted = customers
+      .reduce((sum, c) => sum + Number(c.mrr || 0), 0)
+    const mrrAtRisk = mrrContracted - mrrCollected
+    const unpaidCount = customers.filter(c => c.status === 'unpaid').length
+
     // Last sync log for stripe
     const { rows: syncRows } = await client.query(`
       SELECT * FROM "SyncLog"
@@ -90,8 +99,19 @@ export async function GET() {
     `, [startOfYear])
     const ytdCash = Number(ytdRows[0]?.ytd_cash || 0)
 
+    // Inject computed dual-MRR fields into metrics object
+    const enrichedMetrics = latest ? {
+      ...latest,
+      mrrCollected: Math.round(mrrCollected * 100) / 100,
+      mrrContracted: Math.round(mrrContracted * 100) / 100,
+      mrrAtRisk: Math.round(mrrAtRisk * 100) / 100,
+      arrCollected: Math.round(mrrCollected * 12 * 100) / 100,
+      arrContracted: Math.round(mrrContracted * 12 * 100) / 100,
+      unpaidCount,
+    } : null
+
     return NextResponse.json({
-      metrics: latest,
+      metrics: enrichedMetrics,
       previous,
       customers,
       lastSync,

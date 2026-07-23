@@ -38,6 +38,28 @@ function Card({ label, value, sub, tone = 'default', tooltip }) {
   )
 }
 
+function DualMetricCard({ label, primaryValue, primarySub, secondaryValue, secondarySub, atRisk, tooltip }) {
+  return (
+    <div className="surface-card rounded-2xl p-4">
+      <div className="flex items-center text-[11px] font-semibold uppercase tracking-[0.18em] executive-muted">
+        {label}
+        {tooltip && <MetricTooltip text={tooltip} />}
+      </div>
+      <div className="mt-2 text-2xl font-semibold text-white">{primaryValue}</div>
+      {primarySub && <div className="mt-0.5 text-[11px] executive-muted">{primarySub}</div>}
+      <div className="mt-2 pt-2 border-t border-white/10">
+        <div className="text-base font-semibold text-white/50">{secondaryValue}</div>
+        {secondarySub && (
+          <div className="mt-0.5 text-[11px] executive-muted">
+            {secondarySub}
+            {atRisk && <span className="ml-1.5 inline-flex items-center rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-300 border border-amber-500/20">{atRisk} at risk</span>}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function Panel({ title, sub, children, href, tone = 'neutral' }) {
   const rail = tone === 'good' ? '#34d399' : tone === 'warn' ? '#fbbf24' : tone === 'bad' ? '#fb7185' : 'var(--brand-primary-4)'
   return (
@@ -256,9 +278,24 @@ export default function LeadershipPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-        <Card label="MRR" value={fmt$(metrics?.mrr)} tooltip="Monthly Recurring Revenue: total contracted monthly subscription revenue from all active clients. Source: Stripe. Updated every 8h via snapshot cache." />
+        <DualMetricCard
+          label="MRR"
+          primaryValue={fmt$(metrics?.mrrCollected || metrics?.mrr)}
+          primarySub="Active + past-due subs"
+          secondaryValue={fmt$(metrics?.mrrContracted)}
+          secondarySub={`Contracted incl. ${metrics?.unpaidCount || 17} unpaid subs`}
+          atRisk={metrics?.mrrAtRisk ? fmt$(metrics.mrrAtRisk) : null}
+          tooltip="Two MRR views: Active MRR counts active + past-due subscriptions (money being collected now). Contracted MRR also includes unpaid subscriptions that have failed payments but haven't yet cancelled. The at-risk amount is the gap between the two."
+        />
         <Card label="Revenue (30d)" value={fmt$(metrics?.totalRevenue)} tooltip="Total cash collected in the last 30 days across all Stripe payments. Includes one-time fees, signing payments, and recurring charges. Source: Stripe." />
-        <Card label="ARR" value={fmt$(Number(metrics?.mrr || 0) * 12)} tooltip="Annualized Recurring Revenue: MRR × 12. A forward-looking measure of annual subscription run-rate. Assumes current MRR holds flat. Source: Stripe MRR." />
+        <DualMetricCard
+          label="ARR"
+          primaryValue={fmt$(metrics?.arrCollected || Number(metrics?.mrrCollected || metrics?.mrr || 0) * 12)}
+          primarySub="Active ARR (collected)"
+          secondaryValue={fmt$(metrics?.arrContracted || Number(metrics?.mrrContracted || 0) * 12)}
+          secondarySub="Contracted ARR (incl. at-risk)"
+          tooltip="Two ARR views: Active ARR = Active MRR × 12 (conservative, what we're actually collecting). Contracted ARR = Contracted MRR × 12 (includes at-risk unpaid subs that haven't yet cancelled)."
+        />
         <Card label="Cash Collected, YTD" value={fmt$(ytdCash)} tooltip="Total cash actually collected year-to-date from all Stripe payments. Raw sum of daily revenue from January 1 to today. Source: Stripe DailyRevenue." />
         <Card label="YTD Annualized Revenue" value={fmt$(estAnnualRevenue)} tooltip={`Year-to-date cash collected, annualized using actual elapsed days: YTD cash ÷ ${daysElapsed} days elapsed × 365. Includes recurring and one-time cash collected. Source: Stripe YTD.`} />
         <Card label="Active Clients" value={fmtN(metrics?.activeCustomers)} tooltip="Number of clients with at least one active Stripe subscription. Source: Stripe." />

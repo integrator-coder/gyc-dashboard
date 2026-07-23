@@ -38,7 +38,7 @@ const PANDADOC_API_KEY = process.env.PANDADOC_API_KEY
 if (!DB_URL) { console.error('No DATABASE_URL'); process.exit(1) }
 if (!PANDADOC_API_KEY) { console.error('No PANDADOC_API_KEY'); process.exit(1) }
 
-const MAX_DOCS_PER_RUN = parseInt(process.env.MAX_DOCS_PER_RUN || '100', 10)
+const MAX_DOCS_PER_RUN = parseInt(process.env.MAX_DOCS_PER_RUN || '25', 10)
 const RUN_BUDGET_MS = parseInt(process.env.RUN_BUDGET_MS || String(8 * 60 * 1000), 10) // exit before SIGTERM
 const CHECKPOINT_FILE = '/tmp/pandadoc-sync-checkpoint.json'
 
