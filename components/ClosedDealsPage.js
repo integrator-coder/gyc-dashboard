@@ -353,6 +353,90 @@ function SummaryBar({ deals, total }) {
   )
 }
 
+// ── Month Grouping ─────────────────────────────────────────────────────────────
+const MONTH_NAMES = [
+  'January','February','March','April','May','June',
+  'July','August','September','October','November','December',
+]
+
+function dealMonthKey(deal) {
+  if (deal.dealDate) {
+    // ISO date → "YYYY-MM"
+    return deal.dealDate.slice(0, 7)
+  }
+  // Fallback: month string + yearLabel (e.g. "July" + "2026")
+  if (deal.month && deal.yearLabel) {
+    const idx = MONTH_NAMES.findIndex(
+      m => m.toLowerCase() === deal.month.toLowerCase()
+    )
+    if (idx >= 0) return `${deal.yearLabel}-${String(idx + 1).padStart(2, '0')}`
+  }
+  return 'unknown'
+}
+
+function monthKeyToLabel(key) {
+  if (key === 'unknown') return 'Unknown Date'
+  const [year, month] = key.split('-')
+  return `${MONTH_NAMES[parseInt(month, 10) - 1]} ${year}`
+}
+
+function groupDealsByMonth(deals) {
+  const map = {}
+  for (const deal of deals) {
+    const key = dealMonthKey(deal)
+    if (!map[key]) map[key] = []
+    map[key].push(deal)
+  }
+  // Sort keys descending (most recent month first)
+  const sortedKeys = Object.keys(map).sort((a, b) => b.localeCompare(a))
+  return sortedKeys.map(key => ({ key, label: monthKeyToLabel(key), deals: map[key] }))
+}
+
+// ── Month Section Header ────────────────────────────────────────────────────────
+function MonthSectionHeader({ label, count, deals }) {
+  const totalTCV = deals.reduce((s, d) => s + (d.tcv || d.fullTerm || 0), 0)
+  const totalMRR = deals.filter(d => !d.pif).reduce((s, d) => s + (d.mrr || 0), 0)
+  const pifDeals = deals.filter(d => d.pif)
+
+  return (
+    <div
+      style={{ position: 'sticky', top: 0, zIndex: 10 }}
+      className="-mx-1 flex items-center gap-3 px-1 py-2 backdrop-blur-sm bg-[rgba(10,10,18,0.85)]"
+    >
+      {/* Left rule */}
+      <div className="h-px w-4 shrink-0 bg-gradient-to-r from-transparent to-violet-800/60" />
+
+      {/* Label + stats */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 min-w-0">
+        <span className="text-sm font-bold tracking-wide text-violet-300 whitespace-nowrap">
+          {label}
+        </span>
+        <span className="text-xs text-gray-500 whitespace-nowrap">
+          {count} deal{count !== 1 ? 's' : ''}
+        </span>
+        {totalTCV > 0 && (
+          <span className="text-xs text-emerald-500 font-mono whitespace-nowrap">
+            {fmt$(totalTCV)} TCV
+          </span>
+        )}
+        {totalMRR > 0 && (
+          <span className="text-xs text-blue-400 font-mono whitespace-nowrap">
+            +{fmt$(totalMRR)}/mo MRR
+          </span>
+        )}
+        {pifDeals.length > 0 && (
+          <span className="text-xs text-emerald-600 whitespace-nowrap">
+            {pifDeals.length} PIF
+          </span>
+        )}
+      </div>
+
+      {/* Right rule */}
+      <div className="h-px flex-1 bg-gradient-to-r from-violet-800/60 via-gray-700/40 to-transparent" />
+    </div>
+  )
+}
+
 // ── Main Page ───────────────────────────────────────────────────────────────────
 export default function ClosedDealsPage() {
   const [filters, setFilters] = useState({
@@ -432,13 +516,18 @@ export default function ClosedDealsPage() {
         </div>
       )}
 
-      {/* Deal feed */}
-      <div className="space-y-3">
-        {deals.map((deal, i) => (
-          <DealCard
-            key={`${deal.acronym}-${deal.dealDate || deal.month}-${deal.yearLabel}-${deal.rep}-${i}`}
-            deal={deal}
-          />
+      {/* Deal feed — grouped by month */}
+      <div className="space-y-1">
+        {groupDealsByMonth(deals).map(({ key, label, deals: monthDeals }) => (
+          <div key={key} className="space-y-3">
+            <MonthSectionHeader label={label} count={monthDeals.length} deals={monthDeals} />
+            {monthDeals.map((deal, i) => (
+              <DealCard
+                key={`${deal.acronym}-${deal.dealDate || deal.month}-${deal.yearLabel}-${deal.rep}-${i}`}
+                deal={deal}
+              />
+            ))}
+          </div>
         ))}
       </div>
 
