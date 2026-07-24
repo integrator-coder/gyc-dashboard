@@ -145,6 +145,7 @@ export default function FinancePage() {
   const mrrHistory = data?.mrrHistory || []
   const dailyRevenue = data?.dailyRevenue || []
   const ytdCash = data?.ytdCash ?? 0
+  const cashByMonth = data?.cashByMonth || []
 
   const todayStr = new Date().toISOString().split('T')[0]
   const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0]
@@ -154,6 +155,18 @@ export default function FinancePage() {
   const sevenDayAvg = last7Days.length > 0
     ? last7Days.reduce((s, d) => s + d.amount, 0) / last7Days.length
     : 0
+
+  const now2 = new Date()
+  const currentYear = now2.getFullYear()
+  const ytdByMonth = cashByMonth
+    .filter((m) => m.month.startsWith(String(currentYear)))
+    .reduce((sum, m) => sum + m.total, 0)
+
+  const cashByMonthChartData = cashByMonth.map((m) => ({
+    name: m.label.replace(' 20', ' '),   // "Jan 2025" → "Jan 25"
+    total: m.total,
+    month: m.month,
+  }))
 
   const dailyChartData = dailyRevenue.map((d) => ({
     name: new Date(d.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
@@ -558,6 +571,49 @@ export default function FinancePage() {
             </ResponsiveContainer>
             <p className="mt-2 text-center text-xs executive-faint">Today is highlighted in gold</p>
           </div>
+        </div>
+      )}
+
+      {cashByMonthChartData.length > 0 && (
+        <div className="surface-card rounded-2xl p-5">
+          <div className="mb-4 flex items-start justify-between">
+            <div>
+              <h3 className="mb-1 border-l-[3px] border-[var(--brand-primary-4)] pl-3 font-semibold text-white">
+                Cash Collected — Monthly
+              </h3>
+              <p className="text-xs executive-muted">Monthly cash from paid Stripe invoices (Jan 2025–present)</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] executive-muted">{currentYear} YTD</p>
+              <p className="text-xl font-semibold text-white">{formatCurrency(ytdByMonth)}</p>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={cashByMonthChartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+              <XAxis
+                dataKey="name"
+                tick={{ fill: B.muted, fontSize: 10 }}
+                axisLine={{ stroke: B.border }}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fill: B.muted, fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+              />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(166, 111, 205, 0.08)' }} />
+              <Bar dataKey="total" radius={[4, 4, 0, 0]}>
+                {cashByMonthChartData.map((entry) => {
+                  const isCurrentMonth = entry.month === `${now2.getFullYear()}-${String(now2.getMonth() + 1).padStart(2, '0')}`
+                  return (
+                    <Cell key={`cell-month-${entry.month}`} fill={isCurrentMonth ? B.accent : B.p2} />
+                  )
+                })}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+          <p className="mt-2 text-center text-xs executive-faint">Current month highlighted in gold</p>
         </div>
       )}
     </div>

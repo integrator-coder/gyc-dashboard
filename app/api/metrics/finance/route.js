@@ -99,6 +99,23 @@ export async function GET() {
     `, [startOfYear])
     const ytdCash = Number(ytdRows[0]?.ytd_cash || 0)
 
+    // Cash collected by month (Jan 2025 onwards)
+    const { rows: cashByMonthRows } = await client.query(`
+      SELECT
+        LEFT(date, 7) AS month,
+        to_char(MIN(date::date), 'Mon YYYY') AS label,
+        SUM(amount) AS total
+      FROM "DailyRevenue"
+      WHERE date >= '2025-01-01'
+      GROUP BY 1
+      ORDER BY 1
+    `)
+    const cashByMonth = cashByMonthRows.map((r) => ({
+      month: r.month,
+      label: r.label,
+      total: Number(r.total || 0),
+    }))
+
     // Inject computed dual-MRR fields into metrics object
     const enrichedMetrics = latest ? {
       ...latest,
@@ -119,6 +136,7 @@ export async function GET() {
       mrrHistory,
       dailyRevenue,
       ytdCash,
+      cashByMonth,
     })
   } catch (error) {
     console.error('Finance metrics error:', error)
