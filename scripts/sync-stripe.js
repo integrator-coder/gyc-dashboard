@@ -32,22 +32,25 @@ function calcSubMrr(sub) {
   )
 
   if (hasTiered) {
-    // Use the latest invoice amount_due as the source of truth for MRR.
-    // amount_due reflects the actual contracted amount regardless of billing scheme.
+    // Use the latest invoice as source of truth for MRR.
+    // Prefer amount_paid (already collected) over amount_due (outstanding balance).
+    // amount_due = 0 on paid invoices, which incorrectly zeroes out MRR for healthy tiered subs.
     const invoice = sub.latest_invoice
-    if (invoice && typeof invoice === 'object' && invoice.amount_due > 0) {
-      const amountDue = invoice.amount_due / 100
+    if (invoice && typeof invoice === 'object') {
+      const invoiceAmount = (invoice.amount_paid > 0 ? invoice.amount_paid : invoice.amount_due) || 0
+      const amountDue = invoiceAmount / 100
+      if (amountDue > 0) {
+        // Determine billing interval from the first item with a recurring price
+        const firstItem = items.find(i => i.price.recurring?.interval)
+        const interval = firstItem?.price.recurring?.interval || 'month'
+        const intervalCount = firstItem?.price.recurring?.interval_count || 1
 
-      // Determine billing interval from the first item with a recurring price
-      const firstItem = items.find(i => i.price.recurring?.interval)
-      const interval = firstItem?.price.recurring?.interval || 'month'
-      const intervalCount = firstItem?.price.recurring?.interval_count || 1
-
-      if (interval === 'month') return amountDue / intervalCount
-      if (interval === 'year') return amountDue / (12 * intervalCount)
-      if (interval === 'week') return (amountDue / intervalCount) * (52 / 12)
-      if (interval === 'day') return (amountDue / intervalCount) * (365 / 12)
-      return amountDue
+        if (interval === 'month') return amountDue / intervalCount
+        if (interval === 'year') return amountDue / (12 * intervalCount)
+        if (interval === 'week') return (amountDue / intervalCount) * (52 / 12)
+        if (interval === 'day') return (amountDue / intervalCount) * (365 / 12)
+        return amountDue
+      }
     }
     // No invoice yet (e.g. brand new trial) — return 0
     return 0

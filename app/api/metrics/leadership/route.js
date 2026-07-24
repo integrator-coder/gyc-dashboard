@@ -102,6 +102,24 @@ export async function GET(req) {
     const origin = `${url.protocol}//${url.host}`
     const payload = await fetchLiveBundle(origin)
 
+    // Guard: refuse to save if too many sources failed
+    const errorCount = Object.values(payload.meta?.sourceHealth || {}).filter(s => !s.ok).length
+    const totalSources = Object.keys(payload.meta?.sourceHealth || {}).length
+    if (errorCount >= 3) {
+      console.warn(`[leadership] Refresh blocked — ${errorCount}/${totalSources} sources failed. Returning last good snapshot.`)
+      if (latest?.payload) {
+        return NextResponse.json({
+          ...latest.payload,
+          snapshot: {
+            source: 'db-cache-protected',
+            asOf: latest.asOf,
+            id: latest.id,
+            warning: `Refresh blocked: ${errorCount}/${totalSources} sources failed. Serving last good snapshot.`,
+          },
+        })
+      }
+    }
+
     const insert = await pool.query(
       `INSERT INTO "LeadershipSnapshot" (payload) VALUES ($1::jsonb) RETURNING id, "asOf"`,
       [JSON.stringify(payload)]
