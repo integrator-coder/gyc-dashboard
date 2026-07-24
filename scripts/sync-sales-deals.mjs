@@ -118,7 +118,7 @@ async function upsertDeals(client, deals) {
 
   for (const d of deals) {
     // Parse dealDate — may be a formatted string like "1/15/2025" or a serial number
-    let dealDate = null
+    let dealDate = '1900-01-01' // sentinel: date missing in source sheet
     if (d.date) {
       const parsed = new Date(d.date)
       if (!isNaN(parsed)) {
