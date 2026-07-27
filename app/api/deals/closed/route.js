@@ -74,10 +74,14 @@ export async function GET(request) {
           MAX("syncedAt")                                               AS "syncedAt",
           SUM("firstPayment")                                           AS "firstPayment",
           SUM("mrr")                                                    AS "mrr",
-          MAX("term")                                                   AS "term",
+          MAX(COALESCE("termOverride", "term"))                         AS "term",
           MAX("fullTerm")                                               AS "fullTerm",
           MAX("firstYear")                                              AS "firstYear",
-          BOOL_OR("pif")                                                AS "pif",
+          BOOL_OR(CASE WHEN "pifOverride" IS NOT NULL THEN "pifOverride" ELSE "pif" END) AS "pif",
+          MAX("dealOutcome")                                             AS "dealOutcome",
+          MAX("pifOverride"::int)::boolean                              AS "pifOverride",
+          MAX("termOverride")                                           AS "termOverride",
+          BOOL_OR("pifOverride" IS NOT NULL OR "termOverride" IS NOT NULL OR "dealOutcome" IS NOT NULL) AS "hasManualEdit",
           SUM("renewalAmount")                                          AS "renewalAmount",
           STRING_AGG(DISTINCT "service", ' · ' ORDER BY "service")     AS "services",
           COUNT(*)                                                       AS "serviceCount",
@@ -113,6 +117,10 @@ export async function GET(request) {
         d."renewalAmount",
         d."services",
         d."serviceCount",
+        d."dealOutcome",
+        d."pifOverride",
+        d."termOverride",
+        d."hasManualEdit",
         -- Client profile
         cp."companyName",
         cp."ownerName",
@@ -271,6 +279,12 @@ export async function GET(request) {
         // Flags for UI
         hasRecon:      Boolean(row.reconDraftId),
         hasPandaDoc:   Boolean(row.pandaDocId),
+        // Override / edit metadata
+        clientName:    row.acronym,
+        dealOutcome:   row.dealOutcome || null,
+        pifOverride:   row.pifOverride !== null && row.pifOverride !== undefined ? Boolean(row.pifOverride) : null,
+        termOverride:  row.termOverride != null ? parseFloat(row.termOverride) : null,
+        hasManualEdit: Boolean(row.hasManualEdit),
       }
     })
 

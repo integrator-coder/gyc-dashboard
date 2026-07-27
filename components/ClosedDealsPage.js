@@ -57,6 +57,21 @@ function DealTypeBadge({ type }) {
   )
 }
 
+function DealOutcomeBadge({ outcome }) {
+  const config = {
+    'New Deal':  { bg: 'bg-teal-900',   border: 'border-teal-700',   text: 'text-teal-300',   label: '🆕 New Deal'  },
+    'Lateral':   { bg: 'bg-amber-900',  border: 'border-amber-700',  text: 'text-amber-300',  label: '↔️ Lateral'   },
+    'Down Sell': { bg: 'bg-red-900',    border: 'border-red-700',    text: 'text-red-300',    label: '↘️ Down Sell' },
+  }
+  const c = config[outcome]
+  if (!c) return null
+  return (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border ${c.bg} ${c.border} ${c.text}`}>
+      {c.label}
+    </span>
+  )
+}
+
 // ── External Link Button ────────────────────────────────────────────────────────
 function ExternalLink({ href, label, emoji, dim }) {
   if (!href) return null
@@ -90,8 +105,62 @@ function InfoRow({ label, value }) {
 }
 
 // ── Deal Card ───────────────────────────────────────────────────────────────────
-function DealCard({ deal }) {
-  const [expanded, setExpanded] = useState(false)
+function DealCard({ deal: initialDeal }) {
+  const [expanded, setExpanded]     = useState(false)
+  const [localDeal, setLocalDeal]   = useState(initialDeal)
+  const [editState, setEditState]   = useState({
+    dealOutcome: initialDeal.dealOutcome || '',
+    pifOverride: initialDeal.pifOverride === null || initialDeal.pifOverride === undefined
+      ? ''
+      : initialDeal.pifOverride ? 'true' : 'false',
+    termOverride: initialDeal.termOverride != null ? String(initialDeal.termOverride) : '',
+  })
+  const [saving, setSaving]         = useState(false)
+  const [saveStatus, setSaveStatus] = useState(null) // null | 'saved' | 'error: ...'
+
+  const deal = localDeal
+
+  const handleSave = async () => {
+    setSaving(true)
+    setSaveStatus(null)
+    try {
+      const res = await fetch('/api/deals/closed/edit', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientName:  deal.clientName,
+          dealDate:    deal.dealDate,
+          dealOutcome: editState.dealOutcome || null,
+          pifOverride: editState.pifOverride === '' ? null : editState.pifOverride === 'true',
+          termOverride: editState.termOverride ? parseFloat(editState.termOverride) : null,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok || !json.ok) throw new Error(json.error || `HTTP ${res.status}`)
+
+      // Update local deal to reflect new values immediately
+      const newPifOverride  = editState.pifOverride === '' ? null : editState.pifOverride === 'true'
+      const newTermOverride = editState.termOverride ? parseFloat(editState.termOverride) : null
+      const newDealOutcome  = editState.dealOutcome || null
+      setLocalDeal(prev => ({
+        ...prev,
+        dealOutcome:   newDealOutcome,
+        pifOverride:   newPifOverride,
+        termOverride:  newTermOverride,
+        hasManualEdit: newDealOutcome !== null || newPifOverride !== null || newTermOverride !== null,
+        pif:           newPifOverride !== null ? newPifOverride : prev.pif,
+        term:          newTermOverride !== null ? newTermOverride : initialDeal.term,
+      }))
+      setSaveStatus('saved')
+    } catch (err) {
+      setSaveStatus(`error: ${err.message}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const inputClass  = 'rounded-lg border border-gray-700 bg-gray-800 px-2.5 py-1.5 text-xs text-white placeholder-gray-500 focus:border-gray-500 focus:outline-none'
+  const selectClass = 'rounded-lg border border-gray-700 bg-gray-800 px-2.5 py-1.5 text-xs text-white focus:border-gray-500 focus:outline-none'
 
   const dateLabel = deal.dealDate
     ? fmtDate(deal.dealDate)
@@ -120,7 +189,13 @@ function DealCard({ deal }) {
               </h3>
               <span className="text-xs text-gray-500 font-mono">{deal.acronym}</span>
               {deal.pif ? <PIFBadge /> : <MRRBadge />}
-              {deal.dealType && <DealTypeBadge type={deal.dealType} />}
+              {deal.dealOutcome
+                ? <DealOutcomeBadge outcome={deal.dealOutcome} />
+                : (deal.dealType && <DealTypeBadge type={deal.dealType} />)
+              }
+              {deal.hasManualEdit && (
+                <span title="Manually edited" className="text-xs text-gray-500 select-none">✏️</span>
+              )}
             </div>
 
             <div className="flex flex-wrap items-center gap-3 text-sm text-gray-400">
@@ -212,6 +287,68 @@ function DealCard({ deal }) {
                   <InfoRow label="Calls to Close" value={String(deal.callCount)} />
                   <InfoRow label="Total Call Time" value={fmtDuration(deal.totalCallSecs)} />
                 </>
+              )}
+            </div>
+          </div>
+
+          {/* Edit Deal */}
+          <div className="pt-2 border-t border-gray-700/50">
+            <h4 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">✏️ Edit Deal</h4>
+            <div className="flex flex-wrap items-end gap-3">
+              {/* Deal Outcome */}
+              <div>
+                <label className="block text-[10px] text-gray-500 mb-1">Deal Outcome</label>
+                <select
+                  value={editState.dealOutcome}
+                  onChange={e => setEditState(s => ({ ...s, dealOutcome: e.target.value }))}
+                  className={selectClass}
+                >
+                  <option value="">Auto (from sync)</option>
+                  <option value="New Deal">New Deal</option>
+                  <option value="Lateral">Lateral</option>
+                  <option value="Down Sell">Down Sell</option>
+                </select>
+              </div>
+              {/* PiF Override */}
+              <div>
+                <label className="block text-[10px] text-gray-500 mb-1">PiF Override</label>
+                <select
+                  value={editState.pifOverride}
+                  onChange={e => setEditState(s => ({ ...s, pifOverride: e.target.value }))}
+                  className={selectClass}
+                >
+                  <option value="">Auto (from sync)</option>
+                  <option value="true">Force PiF = Yes</option>
+                  <option value="false">Force PiF = No</option>
+                </select>
+              </div>
+              {/* Term Override */}
+              <div>
+                <label className="block text-[10px] text-gray-500 mb-1">Term Override (mo)</label>
+                <input
+                  type="number"
+                  value={editState.termOverride}
+                  onChange={e => setEditState(s => ({ ...s, termOverride: e.target.value }))}
+                  placeholder="Auto"
+                  min="1"
+                  max="60"
+                  className={`${inputClass} w-24`}
+                />
+              </div>
+              {/* Save button */}
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="px-3 py-1.5 rounded-lg border border-violet-700 bg-violet-900/40 text-xs font-medium text-violet-300 hover:bg-violet-800/60 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                {saving ? '⏳ Saving…' : '💾 Save'}
+              </button>
+              {saveStatus && (
+                <span className={`text-xs font-medium ${
+                  saveStatus === 'saved' ? 'text-emerald-400' : 'text-red-400'
+                }`}>
+                  {saveStatus === 'saved' ? 'Saved ✓' : saveStatus}
+                </span>
               )}
             </div>
           </div>

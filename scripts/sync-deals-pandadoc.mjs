@@ -481,6 +481,9 @@ async function upsertDeal(client, d) {
        "renewalAmount"  = EXCLUDED."renewalAmount",
        "dealType"       = EXCLUDED."dealType",
        "syncedAt"       = now()
+       -- NOTE: dealOutcome, pifOverride, termOverride, lastEditedAt, editedBy are intentionally
+       -- EXCLUDED from this update list. They are manual overrides set via /api/deals/closed/edit
+       -- and must NEVER be overwritten by PandaDoc sync.
      RETURNING xmax`,
     [
       d.tenantId,
