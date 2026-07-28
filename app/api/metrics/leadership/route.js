@@ -58,21 +58,33 @@ async function fetchLiveBundle(origin) {
     cx: '/api/metrics/cx',
   }
 
-  const entries = await Promise.all(Object.entries(endpoints).map(async ([k, p]) => {
-    try {
+  const entries = Object.entries(endpoints)
+  const results = []
+  const BATCH_SIZE = 2
+
+  for (let i = 0; i < entries.length; i += BATCH_SIZE) {
+    const slice = entries.slice(i, i + BATCH_SIZE)
+    const settled = await Promise.all(slice.map(async ([k, p]) => {
       const controller = new AbortController()
       const timeout = setTimeout(() => controller.abort(), 20000) // 20s per endpoint
-      const res = await fetch(`${origin}${p}`, { cache: 'no-store', signal: controller.signal })
-      clearTimeout(timeout)
-      const json = await res.json()
-      return [k, json]
-    } catch (err) {
-      console.error(`[leadership] endpoint ${p} failed:`, err?.message)
-      return [k, { error: err?.message || 'fetch failed', partial: true }]
-    }
-  }))
+      try {
+        const res = await fetch(`${origin}${p}`, { cache: 'no-store', signal: controller.signal })
+        if (!res.ok) {
+          console.error(`[leadership] endpoint ${p} failed: HTTP ${res.status}`)
+          return [k, { error: `HTTP ${res.status}`, partial: true }]
+        }
+        return [k, await res.json()]
+      } catch (err) {
+        console.error(`[leadership] endpoint ${p} failed:`, err?.message)
+        return [k, { error: err?.message || 'fetch failed', partial: true }]
+      } finally {
+        clearTimeout(timeout)
+      }
+    }))
+    results.push(...settled)
+  }
 
-  const payload = Object.fromEntries(entries)
+  const payload = Object.fromEntries(results)
   payload.meta = {
     sourceHealth: buildSourceHealth(payload),
     staleSourceCount: Object.values(buildSourceHealth(payload)).filter(s => s.stale).length,
