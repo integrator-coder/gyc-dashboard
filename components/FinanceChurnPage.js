@@ -268,6 +268,25 @@ export default function FinanceChurnPage() {
             </div>
           </div>
 
+          {data?.lateralMovements?.confirmed?.length > 0 && (
+            <section className="rounded-xl p-5 space-y-4 bg-blue-950/30 border border-blue-800">
+              <div>
+                <h2 className="text-white font-semibold">Monthly → PIF Lateral Movements</h2>
+                <p className="text-gray-300 text-xs mt-1">Confirmed billing conversions are retained clients, not churn. MRR is temporarily offline while PIF cash is collected upfront.</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {data.lateralMovements.confirmed.map(row => (
+                  <div key={`${row.clientName}-${row.movementDate}`} className="bg-gray-950/60 border border-blue-900 rounded-lg p-4">
+                    <p className="text-white font-medium">{row.clientName}</p>
+                    <p className="text-gray-300 text-xs mt-1">{formatCurrency(row.mrrMoved)} MRR moved → {formatCurrency(row.pifCashReceived)} PIF cash</p>
+                    <p className="text-blue-300 text-xs mt-2">{row.termMonths}-month term · recurring return {new Date(row.scheduledReturnDate).toLocaleDateString('en-US', { timeZone: 'UTC' })}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-gray-400 text-xs">{data.lateralMovements.policy} June&apos;s unmatched PIF deals remain unclassified.</p>
+            </section>
+          )}
+
           {/* Trend Charts — 2 col grid */}
           {(
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

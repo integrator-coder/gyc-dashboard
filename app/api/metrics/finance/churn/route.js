@@ -263,9 +263,37 @@ export async function GET() {
     const allChartSorted = Object.values(allChartKeyed).sort((a, b) => a.key.localeCompare(b.key))
     const finalChartData = allChartSorted.slice(-6)
 
+    let lateralMovements = []
+    try {
+      const dbClient = await pool.connect()
+      try {
+        const { rows: lateralRows } = await dbClient.query(`
+          SELECT "clientName", "movementDate", "mrrMoved", "pifCashReceived",
+                 "termMonths", "scheduledReturnDate", status
+          FROM "ChurnLateralMovement"
+          WHERE "tenantId"='gyc' AND status='confirmed'
+          ORDER BY "movementDate" DESC
+        `)
+        lateralMovements = lateralRows.map(row => ({
+          ...row,
+          mrrMoved: Number(row.mrrMoved),
+          pifCashReceived: Number(row.pifCashReceived),
+          termMonths: Number(row.termMonths),
+        }))
+      } finally {
+        dbClient.release()
+      }
+    } catch (e) {
+      if (e.code !== '42P01') console.error('finance/churn lateral ledger error:', e.message)
+    }
+
     return NextResponse.json({
       months: finalMonths,
       chartData: finalChartData,
+      lateralMovements: {
+        policy: 'Only confirmed same-customer Monthly → PIF conversions are excluded from churn. Ambiguous deals are not reclassified.',
+        confirmed: lateralMovements,
+      },
       updatedAt: dbRows.length ? dbRows[dbRows.length - 1].syncedAt : new Date().toISOString(),
       latestMonthIsPartial: finalMonths[0]?.key === new Date().toISOString().slice(0, 7),
     })

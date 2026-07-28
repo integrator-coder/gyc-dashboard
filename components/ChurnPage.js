@@ -240,14 +240,14 @@ export default function ChurnPage() {
               value={fmtPct(latest.churnPct)}
               sub="% of clients cancelled — healthy: <2%"
               negative={latest.churnPct > 3}
-              tooltip="Percentage of clients who cancelled in the period. Pre-calculated in the tracking sheet. Healthy target: <2%. Values >20% are filtered as first-month artifacts. Source: Google Sheets row 13."
+              tooltip="Unique customers truly lost ÷ opening active customers. Multiple canceled subscriptions count once, and confirmed Monthly → PIF conversions are excluded. Healthy target: <2%."
             />
             <KpiCard
               label="Revenue Churn Rate"
               value={fmtPct(latest.churnRevPct)}
               sub="% of MRR lost — healthy: <3%"
               negative={latest.churnRevPct > 3}
-              tooltip="Percentage of MRR lost from cancellations in the period. Pre-calculated in the tracking sheet. Healthy target: <3%. Source: Google Sheets row 14."
+              tooltip="MRR lost from true cancellations ÷ opening MRR. Confirmed Monthly → PIF movements are deferred retained value and excluded. Healthy target: <3%."
             />
             <KpiCard
               label="Net MRR Change"
@@ -264,9 +264,50 @@ export default function ChurnPage() {
               value={`-${latest.clientsLost ?? 0} / +${latest.clientsAdded ?? 0}`}
               sub={`Net ${(latest.clientsAdded ?? 0) - (latest.clientsLost ?? 0) >= 0 ? '+' : ''}${(latest.clientsAdded ?? 0) - (latest.clientsLost ?? 0)} clients this month`}
               negative={(latest.clientsLost ?? 0) > (latest.clientsAdded ?? 0)}
-              tooltip="Clients lost vs clients gained this month. Net = Clients Added − Clients Lost. Negative net means more cancellations than new sign-ups. Source: Google Sheets rows 8–11."
+              tooltip="Unique customers truly lost vs clients gained this month. Multiple canceled subscriptions for one customer count once. Confirmed Monthly → PIF conversions are excluded. Net = Clients Added − Clients Lost."
             />
           </div>
+
+          {activeTab === 'marketing' && data.lateralMovements?.confirmed?.length > 0 && (
+            <section className="bg-blue-950/30 border border-blue-800 rounded-xl p-5 space-y-4">
+              <div>
+                <h2 className="text-white font-semibold">Monthly → PIF Lateral Movements</h2>
+                <p className="text-gray-300 text-xs mt-1">
+                  Confirmed clients who moved from monthly billing to an upfront term. Their MRR is temporarily offline, so they are excluded from true churn and scheduled for recurring return.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <KpiCard label="Confirmed Conversions" value={data.lateralMovements.totals.count} sub="Excluded from clients lost" />
+                <KpiCard label="MRR Moved Offline" value={fmt$(data.lateralMovements.totals.mrrMoved)} sub="Deferred, not lost" />
+                <KpiCard label="PIF Cash Received" value={fmt$(data.lateralMovements.totals.pifCashReceived)} sub="Upfront contracted cash" highlight />
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="text-gray-400 text-xs uppercase">
+                    <tr className="border-b border-blue-900">
+                      <th className="text-left py-2 pr-4">Client</th>
+                      <th className="text-right py-2 px-4">MRR moved</th>
+                      <th className="text-right py-2 px-4">PIF cash</th>
+                      <th className="text-right py-2 px-4">Term</th>
+                      <th className="text-right py-2 pl-4">Recurring return</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.lateralMovements.confirmed.map(row => (
+                      <tr key={`${row.stripeCustomerId}-${row.movementDate}`} className="border-b border-blue-950 text-gray-200">
+                        <td className="py-3 pr-4"><span className="font-medium text-white">{row.clientName}</span><br /><span className="text-xs text-gray-400">Moved {new Date(row.movementDate).toLocaleDateString('en-US', { timeZone: 'UTC' })}</span></td>
+                        <td className="text-right py-3 px-4">{fmt$(row.mrrMoved)}</td>
+                        <td className="text-right py-3 px-4 text-teal-300">{fmt$(row.pifCashReceived)}</td>
+                        <td className="text-right py-3 px-4">{row.termMonths} months</td>
+                        <td className="text-right py-3 pl-4">{new Date(row.scheduledReturnDate).toLocaleDateString('en-US', { timeZone: 'UTC' })}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-gray-400 text-xs">Policy: {data.lateralMovements.policy} June&apos;s unmatched PIF deals remain unclassified.</p>
+            </section>
+          )}
 
           {/* Yearly Summaries */}
           <p className="text-gray-300 text-xs uppercase tracking-wide font-medium">Year-by-Year Summary</p>

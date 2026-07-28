@@ -292,6 +292,35 @@ async function fetchDBChurnMetrics(sheetMonths) {
   }
 }
 
+async function fetchConfirmedLateralMovements() {
+  const dbClient = await pool.connect()
+  try {
+    const { rows } = await dbClient.query(`
+      SELECT "stripeCustomerId", "clientName", "movementDate", "mrrMoved",
+             "pifCashReceived", "termMonths", "scheduledReturnDate", status
+      FROM "ChurnLateralMovement"
+      WHERE "tenantId" = 'gyc' AND status = 'confirmed'
+      ORDER BY "movementDate" DESC
+    `)
+    return rows.map(row => ({
+      stripeCustomerId: row.stripeCustomerId,
+      clientName: row.clientName,
+      movementDate: row.movementDate,
+      mrrMoved: Number(row.mrrMoved),
+      pifCashReceived: Number(row.pifCashReceived),
+      termMonths: Number(row.termMonths),
+      scheduledReturnDate: row.scheduledReturnDate,
+      status: row.status,
+    }))
+  } catch (error) {
+    // Backward-compatible during deployment before the ledger migration runs.
+    if (error.code === '42P01') return []
+    throw error
+  } finally {
+    dbClient.release()
+  }
+}
+
 // Convert a MonthlyChurnMetrics DB row into the same shape parseTabData returns
 function dbRowToMonthly(row) {
   const clientCount = Number(row.clientCount) || 0
@@ -357,7 +386,10 @@ export async function getChurnMetrics() {
       return `${yr >= 23 ? 2000 + yr : 2100 + yr}-${String(mo + 1).padStart(2, '0')}`
     }).filter(Boolean)
 
-    const dbRows = await fetchDBChurnMetrics(sheetMonths)
+    const [dbRows, lateralMovements] = await Promise.all([
+      fetchDBChurnMetrics(sheetMonths),
+      fetchConfirmedLateralMovements(),
+    ])
     const dbMonthly = dbRows.map(r => ({ ...dbRowToMonthly(r), month: monthToLabel(r.month) }))
     const combinedMonthly = [...marketingMonthly, ...dbMonthly]
 
@@ -374,6 +406,15 @@ export async function getChurnMetrics() {
       },
       recruiting: {
         monthly: recruitingMonthly,
+      },
+      lateralMovements: {
+        policy: 'Only confirmed same-customer Monthly → PIF conversions are excluded from client and revenue churn. Ambiguous PIF deals remain unclassified.',
+        confirmed: lateralMovements,
+        totals: lateralMovements.reduce((totals, row) => ({
+          count: totals.count + 1,
+          mrrMoved: totals.mrrMoved + row.mrrMoved,
+          pifCashReceived: totals.pifCashReceived + row.pifCashReceived,
+        }), { count: 0, mrrMoved: 0, pifCashReceived: 0 }),
       },
       updatedAt: dbRows.length ? dbRows[dbRows.length - 1].syncedAt : new Date().toISOString(),
       latestMonthIsPartial: combinedMonthly.at(-1)?.month === monthToLabel(new Date().toISOString().slice(0, 7)),

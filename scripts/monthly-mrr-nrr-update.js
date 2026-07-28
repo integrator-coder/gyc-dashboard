@@ -57,11 +57,16 @@ async function fetchAllSubscriptions() {
   return subs;
 }
 
-function computeMonthMetrics(subs, monthStr) {
+function computeMonthMetrics(subs, monthStr, confirmedLaterals = []) {
   const { startUnix, endUnix } = monthBounds(monthStr);
 
   let mrr = 0, newMrr = 0, retainedNewMrr = 0, churnedMrr = 0, activeCount = 0;
-  let clientsAdded = 0, clientsLost = 0;
+  let clientsAdded = 0;
+  const lostCustomerIds = new Set();
+  const lateralByCanceledSubscription = new Map(
+    confirmedLaterals.map(row => [row.canceledSubscriptionId, row])
+  );
+  let lateralMovementMrr = 0;
   
   // Split by interval type
   let monthlyMRR = 0, pifMRR = 0;
@@ -117,8 +122,16 @@ function computeMonthMetrics(subs, monthStr) {
 
     // Churned this month
     if (canceledAt != null && canceledAt >= startUnix && canceledAt <= endUnix) {
+      const lateral = lateralByCanceledSubscription.get(sub.id);
+      // Policy: a cancellation is excluded from churn only after a human-confirmed
+      // Monthly → PIF ledger entry ties the same Stripe customer to both events.
+      // Ambiguous PIF deals remain churn until they are explicitly confirmed.
+      if (lateral && String(sub.customer) === lateral.stripeCustomerId) {
+        lateralMovementMrr += subMrr;
+        continue;
+      }
       churnedMrr += subMrr;
-      clientsLost++;
+      lostCustomerIds.add(String(sub.customer));
       
       if (isMonthly) {
         monthlyChurnedMRR += subMrr;
@@ -135,7 +148,10 @@ function computeMonthMetrics(subs, monthStr) {
     churnedMrr: Math.round(churnedMrr * 100) / 100,
     activeSubscriptions: activeCount,
     clientsAdded,
-    clientsLost,
+    // A client can have multiple canceled subscriptions. Churn is a unique-logo
+    // metric, so count Stripe customers rather than subscription objects.
+    clientsLost: lostCustomerIds.size,
+    lateralMovementMrr: Math.round(lateralMovementMrr * 100) / 100,
     monthlyMRR: Math.round(monthlyMRR * 100) / 100,
     pifMRR: Math.round(pifMRR * 100) / 100,
     monthlyClients,
@@ -188,7 +204,10 @@ async function upsertChurnMetrics(client, monthStr, metrics, prevMetrics) {
   // Ending MRR less new-logo MRR is the ending revenue from the opening cohort.
   // This correctly excludes acquisition from NRR. GRR excludes expansion and is
   // therefore capped at 100%.
-  const nrr = prevMRR > 0 ? Math.round(((totalMRR - metrics.retainedNewMrr) / prevMRR) * 1000) / 10 : null;
+  // Confirmed Monthly → PIF conversions retain the customer and contracted
+  // value even though recurring MRR temporarily leaves Stripe. Add that deferred
+  // cohort value back to NRR; do not add PIF cash or new-logo revenue.
+  const nrr = prevMRR > 0 ? Math.round(((totalMRR - metrics.retainedNewMrr + metrics.lateralMovementMrr) / prevMRR) * 1000) / 10 : null;
   const grr = prevMRR > 0 ? Math.round(Math.min(100, Math.max(0, (prevMRR - metrics.churnedMrr) / prevMRR * 100)) * 10) / 10 : null;
 
   // Compute split NRR
@@ -196,7 +215,7 @@ async function upsertChurnMetrics(client, monthStr, metrics, prevMetrics) {
   const prevPifMRR = prevMetrics?.pifMRR || 0;
   
   const monthlyNRR = prevMonthlyMRR > 0 
-    ? Math.round(((metrics.monthlyMRR - metrics.monthlyRetainedNewMRR) / prevMonthlyMRR) * 1000) / 10
+    ? Math.round(((metrics.monthlyMRR - metrics.monthlyRetainedNewMRR + metrics.lateralMovementMrr) / prevMonthlyMRR) * 1000) / 10
     : null;
   
   const pifNRR = prevPifMRR > 0 
@@ -275,6 +294,36 @@ async function ensureTables(client) {
     )
   `);
   await client.query(`ALTER TABLE "MonthlyChurnMetrics" ADD COLUMN IF NOT EXISTS "revenueChurnPct" NUMERIC(6,2)`);
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS "ChurnLateralMovement" (
+      "id" BIGSERIAL PRIMARY KEY,
+      "tenantId" TEXT NOT NULL DEFAULT 'gyc',
+      "stripeCustomerId" TEXT NOT NULL,
+      "canceledSubscriptionId" TEXT NOT NULL,
+      "clientName" TEXT NOT NULL,
+      "movementDate" DATE NOT NULL,
+      "mrrMoved" NUMERIC(12,2) NOT NULL,
+      "pifCashReceived" NUMERIC(12,2) NOT NULL,
+      "termMonths" INT NOT NULL,
+      "scheduledReturnDate" DATE NOT NULL,
+      "status" TEXT NOT NULL DEFAULT 'confirmed',
+      "evidence" TEXT,
+      "confirmedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE ("tenantId", "canceledSubscriptionId")
+    )
+  `);
+}
+
+async function loadConfirmedLaterals(client) {
+  const { rows } = await client.query(`
+    SELECT "stripeCustomerId", "canceledSubscriptionId", "movementDate",
+           "mrrMoved", "pifCashReceived", "termMonths", "scheduledReturnDate"
+    FROM "ChurnLateralMovement"
+    WHERE "tenantId" = 'gyc' AND status = 'confirmed'
+  `);
+  return rows;
 }
 
 async function main() {
@@ -291,6 +340,7 @@ async function main() {
 
   try {
     await ensureTables(client);
+    const confirmedLaterals = await loadConfirmedLaterals(client);
 
     // Build metrics for each target month + the month before (for NRR prev-month reference)
     const allMonths = [targets[0]]; // we need month before first target for NRR
@@ -301,10 +351,10 @@ async function main() {
 
     const metricsMap = {};
     // Compute prev month metrics for NRR baseline
-    metricsMap[prevMonthStr] = computeMonthMetrics(subs, prevMonthStr);
+    metricsMap[prevMonthStr] = computeMonthMetrics(subs, prevMonthStr, confirmedLaterals);
 
     for (const month of targets) {
-      metricsMap[month] = computeMonthMetrics(subs, month);
+      metricsMap[month] = computeMonthMetrics(subs, month, confirmedLaterals);
     }
 
     for (const month of targets) {

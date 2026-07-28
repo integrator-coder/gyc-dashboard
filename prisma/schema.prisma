@@ -859,26 +859,26 @@ model ClientGoogleAds {
 }
 
 model ClientGoogleAdsSnapshot {
-  id                  Int            @id @default(autoincrement())
-  tenantId            String         @default("gyc")
-  clientId            Int?
-  companyAcronym      String
-  customerId          String?        // Google Ads customer ID (no dashes)
-  periodMonth         String         // YYYY-MM
-  impressions         Int?
-  clicks              Int?
-  spend               Decimal?       @db.Decimal(10, 2)
-  conversions         Decimal?       @db.Decimal(8, 2)
-  costPerConversion   Decimal?       @db.Decimal(10, 2)
-  conversionRate      Decimal?       @db.Decimal(6, 4)
-  impressionShare     Decimal?       @db.Decimal(6, 4)
-  activeCampaigns     Int?
-  campaignNames       String[]       @default([])
-  topKeywords         String[]       @default([])
-  budgetUtilization   Decimal?       @db.Decimal(6, 4)
-  syncedAt            DateTime       @default(now()) @db.Timestamptz(6)
-  dataSource          String         @default("google-ads-api")
-  ClientProfile       ClientProfile? @relation(fields: [clientId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id                Int            @id @default(autoincrement())
+  tenantId          String         @default("gyc")
+  clientId          Int?
+  companyAcronym    String
+  customerId        String? // Google Ads customer ID (no dashes)
+  periodMonth       String // YYYY-MM
+  impressions       Int?
+  clicks            Int?
+  spend             Decimal?       @db.Decimal(10, 2)
+  conversions       Decimal?       @db.Decimal(8, 2)
+  costPerConversion Decimal?       @db.Decimal(10, 2)
+  conversionRate    Decimal?       @db.Decimal(6, 4)
+  impressionShare   Decimal?       @db.Decimal(6, 4)
+  activeCampaigns   Int?
+  campaignNames     String[]       @default([])
+  topKeywords       String[]       @default([])
+  budgetUtilization Decimal?       @db.Decimal(6, 4)
+  syncedAt          DateTime       @default(now()) @db.Timestamptz(6)
+  dataSource        String         @default("google-ads-api")
+  ClientProfile     ClientProfile? @relation(fields: [clientId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([tenantId, companyAcronym, periodMonth])
   @@index([companyAcronym], map: "CGAS_acronym_idx")
@@ -963,83 +963,83 @@ model ClientMarketIntelligence {
 }
 
 model ClientProfile {
-  id                     Int                      @id @default(autoincrement())
-  tenantId               String                   @default("gyc")
-  acronym                String?
-  companyName            String
-  ownerName              String?
-  email                  String?
-  phone                  String?
-  website                String?
-  locationCount          Int?                     @default(1)
-  state                  String?
-  city                   String?
-  zipCode                String?
-  status                 String?                  @default("active")
-  assignedGA             String?
-  assignedGAEmail        String?
-  crmType                String?
-  startDate              DateTime?                @db.Date
-  cancelledDate          DateTime?                @db.Date
-  hasWebsite             Boolean?                 @default(false)
-  hasSEO                 Boolean?                 @default(false)
-  hasCRM                 Boolean?                 @default(false)
-  hasGoogleAds           Boolean?                 @default(false)
-  hasBlueprint           Boolean?                 @default(false)
-  hasPaidMedia           Boolean?                 @default(false)
-  hasCommand             Boolean?                 @default(false)
-  serviceList            String[]
-  mrr                    Decimal?                 @default(0) @db.Decimal(10, 2)
-  stripeCustomerId       String?
-  stripeStatus           String?
-  isOverdue              Boolean?                 @default(false)
-  overdueAmount          Decimal?                 @default(0) @db.Decimal(10, 2)
-  lifetimeValue          Decimal?                 @default(0) @db.Decimal(12, 2)
-  overdueCount           Int?                     @default(0)
-  lastOverdueDate        DateTime?                @db.Date
-  avgDaysToCatchUp       Int?
-  catchUpRate            Decimal?                 @db.Decimal(4, 2)
-  lastOverdueReason      String?
-  ghlContactId           String?
-  ghlPipelineStage       String?
-  notes                  String?
-  teamNotes              String?
-  lastEnrichedAt         DateTime?                @default(now()) @db.Timestamp(6)
-  createdAt              DateTime?                @default(now()) @db.Timestamp(6)
-  updatedAt              DateTime?                @default(now()) @db.Timestamp(6)
-  latestFunnelMonth      String?
-  avgMonthlyLeads        Decimal?                 @db.Decimal(8, 2)
-  avgMonthlyTours        Decimal?                 @db.Decimal(8, 2)
-  avgMonthlyRegistered   Decimal?                 @db.Decimal(8, 2)
-  leadToTourRate         Decimal?                 @db.Decimal(8, 2)
-  tourToRegRate          Decimal?                 @db.Decimal(8, 2)
-  funnelDataMonths       Int?                     @default(0)
-  funnelTrend            String?
-  lastFunnelUpdated      DateTime?                @db.Timestamp(6)
-  trendWindow            String?
-  trendChangePct         Int?
-  directorName           String?
-  directorEmail          String?
-  directorPhone          String?
-  avgTuition             Decimal?                 @db.Decimal(10, 2)
-  currentEnrollment      String?
-  centerCapacity         String?
-  schoolYearBegins       String?
-  timeZone               String?
-  clientFolderUrl        String?
-  leadDataUrl            String?
-  notionPageId           String?
-  gmbAccess              String?
-  gbpBaselineReviews     Int?
-  gbpBaselineRating      Decimal?                 @db.Decimal(3, 2)
-  gbpBaselineDate        DateTime?                @db.Date
-  websiteNotes           String?
-  seoNotes               String?
-  crmNotes               String?
-  seoSheetId             String?
-  googleAdsCustomerId    String?
-  ClientStripeLink       ClientStripeLink[]
-  ClientStripeLinkReview ClientStripeLinkReview[]
+  id                      Int                       @id @default(autoincrement())
+  tenantId                String                    @default("gyc")
+  acronym                 String?
+  companyName             String
+  ownerName               String?
+  email                   String?
+  phone                   String?
+  website                 String?
+  locationCount           Int?                      @default(1)
+  state                   String?
+  city                    String?
+  zipCode                 String?
+  status                  String?                   @default("active")
+  assignedGA              String?
+  assignedGAEmail         String?
+  crmType                 String?
+  startDate               DateTime?                 @db.Date
+  cancelledDate           DateTime?                 @db.Date
+  hasWebsite              Boolean?                  @default(false)
+  hasSEO                  Boolean?                  @default(false)
+  hasCRM                  Boolean?                  @default(false)
+  hasGoogleAds            Boolean?                  @default(false)
+  hasBlueprint            Boolean?                  @default(false)
+  hasPaidMedia            Boolean?                  @default(false)
+  hasCommand              Boolean?                  @default(false)
+  serviceList             String[]
+  mrr                     Decimal?                  @default(0) @db.Decimal(10, 2)
+  stripeCustomerId        String?
+  stripeStatus            String?
+  isOverdue               Boolean?                  @default(false)
+  overdueAmount           Decimal?                  @default(0) @db.Decimal(10, 2)
+  lifetimeValue           Decimal?                  @default(0) @db.Decimal(12, 2)
+  overdueCount            Int?                      @default(0)
+  lastOverdueDate         DateTime?                 @db.Date
+  avgDaysToCatchUp        Int?
+  catchUpRate             Decimal?                  @db.Decimal(4, 2)
+  lastOverdueReason       String?
+  ghlContactId            String?
+  ghlPipelineStage        String?
+  notes                   String?
+  teamNotes               String?
+  lastEnrichedAt          DateTime?                 @default(now()) @db.Timestamp(6)
+  createdAt               DateTime?                 @default(now()) @db.Timestamp(6)
+  updatedAt               DateTime?                 @default(now()) @db.Timestamp(6)
+  latestFunnelMonth       String?
+  avgMonthlyLeads         Decimal?                  @db.Decimal(8, 2)
+  avgMonthlyTours         Decimal?                  @db.Decimal(8, 2)
+  avgMonthlyRegistered    Decimal?                  @db.Decimal(8, 2)
+  leadToTourRate          Decimal?                  @db.Decimal(8, 2)
+  tourToRegRate           Decimal?                  @db.Decimal(8, 2)
+  funnelDataMonths        Int?                      @default(0)
+  funnelTrend             String?
+  lastFunnelUpdated       DateTime?                 @db.Timestamp(6)
+  trendWindow             String?
+  trendChangePct          Int?
+  directorName            String?
+  directorEmail           String?
+  directorPhone           String?
+  avgTuition              Decimal?                  @db.Decimal(10, 2)
+  currentEnrollment       String?
+  centerCapacity          String?
+  schoolYearBegins        String?
+  timeZone                String?
+  clientFolderUrl         String?
+  leadDataUrl             String?
+  notionPageId            String?
+  gmbAccess               String?
+  gbpBaselineReviews      Int?
+  gbpBaselineRating       Decimal?                  @db.Decimal(3, 2)
+  gbpBaselineDate         DateTime?                 @db.Date
+  websiteNotes            String?
+  seoNotes                String?
+  crmNotes                String?
+  seoSheetId              String?
+  googleAdsCustomerId     String?
+  ClientStripeLink        ClientStripeLink[]
+  ClientStripeLinkReview  ClientStripeLinkReview[]
   ClientGoogleAdsSnapshot ClientGoogleAdsSnapshot[]
 
   @@unique([tenantId, companyName])
@@ -1317,6 +1317,28 @@ model MRRHistory {
   @@unique([tenantId, month])
 }
 
+model ChurnLateralMovement {
+  id                     BigInt   @id @default(autoincrement())
+  tenantId               String   @default("gyc")
+  stripeCustomerId       String
+  canceledSubscriptionId String
+  clientName             String
+  movementDate           DateTime @db.Date
+  mrrMoved               Decimal  @db.Decimal(12, 2)
+  pifCashReceived        Decimal  @db.Decimal(12, 2)
+  termMonths             Int
+  scheduledReturnDate    DateTime @db.Date
+  status                 String   @default("confirmed")
+  evidence               String?
+  confirmedAt            DateTime @default(now()) @db.Timestamptz(6)
+  createdAt              DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt              DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([tenantId, canceledSubscriptionId])
+  @@index([tenantId, movementDate])
+  @@index([stripeCustomerId])
+}
+
 model NewBusinessSnapshot {
   id       BigInt   @id @default(autoincrement())
   asOf     DateTime @default(now()) @db.Timestamptz(6)
@@ -1504,84 +1526,84 @@ model WebAnalyticsSnapshot {
 }
 
 model GoogleAdsAccount {
-  id              String   @id @default(cuid())
-  accountId       String   @unique  // Google Ads customer ID
-  accountName     String
-  currSpend       Float    @default(0)
-  currClicks      Int      @default(0)
-  currImpressions Int      @default(0)
-  currCpc         Float    @default(0)
-  currCtr         Float    @default(0)
-  prevSpend       Float    @default(0)
-  prevClicks      Int      @default(0)
-  prevImpressions Int      @default(0)
-  prevCpc         Float    @default(0)
-  cpcChange       Float?
-  clicksChange    Float?
+  id                String   @id @default(cuid())
+  accountId         String   @unique // Google Ads customer ID
+  accountName       String
+  currSpend         Float    @default(0)
+  currClicks        Int      @default(0)
+  currImpressions   Int      @default(0)
+  currCpc           Float    @default(0)
+  currCtr           Float    @default(0)
+  prevSpend         Float    @default(0)
+  prevClicks        Int      @default(0)
+  prevImpressions   Int      @default(0)
+  prevCpc           Float    @default(0)
+  cpcChange         Float?
+  clicksChange      Float?
   impressionsChange Float?
-  flagged         Boolean  @default(false)
-  flags           String[] // array of flag strings
-  lastSynced      DateTime @default(now())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  flagged           Boolean  @default(false)
+  flags             String[] // array of flag strings
+  lastSynced        DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   @@index([accountId])
   @@index([flagged])
 }
 
 model GoogleAdsMonthlySnapshot {
-  id          String   @id @default(cuid())
-  monthKey    String   @unique  // "2026-01", "2026-02", etc.
-  monthLabel  String   // "Jan 2026"
-  isPartial   Boolean  @default(false)  // true = current in-progress month
-  spend       Float    @default(0)
-  clicks      Int      @default(0)
-  impressions Int      @default(0)
-  avgCpc      Float    @default(0)
-  accountCount Int     @default(0)
-  updatedAt   DateTime @updatedAt
-  createdAt   DateTime @default(now())
+  id           String   @id @default(cuid())
+  monthKey     String   @unique // "2026-01", "2026-02", etc.
+  monthLabel   String // "Jan 2026"
+  isPartial    Boolean  @default(false) // true = current in-progress month
+  spend        Float    @default(0)
+  clicks       Int      @default(0)
+  impressions  Int      @default(0)
+  avgCpc       Float    @default(0)
+  accountCount Int      @default(0)
+  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now())
 }
 
 model AclDiscrepancy {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   clientId    String?
   clientName  String
   acronym     String?
-  changeType  String   // 'cancellation' | 'status_change' | 'mrr_mismatch' | 'evergreen_transition' | 'pif_activation'
-  dbValue     String   // current value in DB
-  stripeValue String   // what Stripe shows
-  mrrImpact   Float?   // dollar impact
-  status      String   @default("pending") // 'pending' | 'approved' | 'dismissed'
+  changeType  String // 'cancellation' | 'status_change' | 'mrr_mismatch' | 'evergreen_transition' | 'pif_activation'
+  dbValue     String // current value in DB
+  stripeValue String // what Stripe shows
+  mrrImpact   Float? // dollar impact
+  status      String    @default("pending") // 'pending' | 'approved' | 'dismissed'
   dismissNote String?
   reviewedBy  String?
   reviewedAt  DateTime?
-  syncRunAt   DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  syncRunAt   DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model AclSyncLog {
-  id            String   @id @default(cuid())
-  runAt         DateTime @default(now())
-  clientsChecked Int
+  id                 String   @id @default(cuid())
+  runAt              DateTime @default(now())
+  clientsChecked     Int
   discrepanciesFound Int
-  syncType      String   // 'daily' | 'monthly'
-  status        String   @default("completed")
+  syncType           String // 'daily' | 'monthly'
+  status             String   @default("completed")
 }
 
 model AIWatchVariable {
   id            String   @id @default(cuid())
   tenantId      String
-  key           String   // e.g. "nvidia_pe_ratio", "vc_investment_quarterly"
-  category      String   // "valuation" | "investment_flow" | "infrastructure" | "adoption" | "regulatory"
+  key           String // e.g. "nvidia_pe_ratio", "vc_investment_quarterly"
+  category      String // "valuation" | "investment_flow" | "infrastructure" | "adoption" | "regulatory"
   label         String
   description   String?  @db.Text
   value         Float?
   previousValue Float?
-  unit          String?  // "$B", "%", "TWh", "x" (multiple), etc.
+  unit          String? // "$B", "%", "TWh", "x" (multiple), etc.
   status        String   @default("green") // "green" | "yellow" | "red"
-  trend         String?  // "up" | "down" | "stable"
+  trend         String? // "up" | "down" | "stable"
   source        String?
   sourceUrl     String?
   lastUpdated   DateTime @default(now())
@@ -1593,39 +1615,39 @@ model AIWatchVariable {
 }
 
 model AIWatchSuspicion {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   tenantId      String
   title         String
-  description   String   @db.Text
-  severity      String   // "watch" | "suspicion" | "alert"
+  description   String    @db.Text
+  severity      String // "watch" | "suspicion" | "alert"
   variables     String[] // array of variable keys involved
-  historicalRef String?  // which bubble pattern this echoes
-  isActive      Boolean  @default(true)
-  detectedAt    DateTime @default(now())
+  historicalRef String? // which bubble pattern this echoes
+  isActive      Boolean   @default(true)
+  detectedAt    DateTime  @default(now())
   resolvedAt    DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @default(now()) @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
 
   @@index([tenantId, isActive])
   @@index([tenantId, severity])
 }
 
 model AIWatchCompany {
-  id            String   @id @default(cuid())
-  tenantId      String
-  ticker        String?
-  name          String
-  category      String   // "hardware" | "hyperscaler" | "ai_first_public" | "ai_first_private" | "physical_ai" | "energy_ai"
-  currentPrice  Float?
-  marketCap     Float?
-  peRatio       Float?
+  id              String   @id @default(cuid())
+  tenantId        String
+  ticker          String?
+  name            String
+  category        String // "hardware" | "hyperscaler" | "ai_first_public" | "ai_first_private" | "physical_ai" | "energy_ai"
+  currentPrice    Float?
+  marketCap       Float?
+  peRatio         Float?
   revenueMultiple Float?
-  priceChange1d Float?
-  priceChange7d Float?
-  priceChange30d Float?
-  lastUpdated   DateTime @default(now())
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @default(now()) @updatedAt
+  priceChange1d   Float?
+  priceChange7d   Float?
+  priceChange30d  Float?
+  lastUpdated     DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
 
   @@index([tenantId, category])
   @@index([ticker])
@@ -1634,8 +1656,8 @@ model AIWatchCompany {
 model AIWatchSnapshot {
   id              String   @id @default(cuid())
   tenantId        String
-  bubbleScore     Float    // 0-10
-  compositeStatus String   // "green" | "yellow" | "red"
+  bubbleScore     Float // 0-10
+  compositeStatus String // "green" | "yellow" | "red"
   snapshotAt      DateTime @default(now())
   notes           String?  @db.Text
   createdAt       DateTime @default(now())
