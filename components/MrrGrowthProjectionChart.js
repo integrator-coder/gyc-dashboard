@@ -60,7 +60,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 export default function MrrGrowthProjectionChart({ mrrProjection }) {
   const [selectedChurn, setSelectedChurn] = useState('0')
 
-  const { currentMRR = 0, historical = [], projected = [] } = mrrProjection || {}
+  const { currentMRR = 0, projectionStartMRR = 230354, historical = [], projected = [] } = mrrProjection || {}
 
   // Build combined chart data
   const chartData = useMemo(() => {
@@ -110,9 +110,9 @@ export default function MrrGrowthProjectionChart({ mrrProjection }) {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
         <div>
-          <h2 className="text-white font-semibold">MRR Growth Projection — Renewals + Churn</h2>
+          <h2 className="text-white font-semibold">MRR Growth — Historical + Projected Renewals</h2>
           <p className="text-gray-400 text-xs mt-0.5">
-            Historical actual MRR · Projected base + renewal stack · Starting MRR: {fmt$(currentMRR)}
+            Last 12 months actual · Projected base + PIF renewal stack · Projection base: {fmt$(projectionStartMRR)}
           </p>
         </div>
 
@@ -141,8 +141,12 @@ export default function MrrGrowthProjectionChart({ mrrProjection }) {
       {/* Summary stat pills */}
       <div className="flex flex-wrap gap-3 mb-4">
         <div className="bg-gray-800 rounded-lg px-3 py-2">
-          <p className="text-gray-500 text-xs">Current MRR</p>
+          <p className="text-gray-500 text-xs">Current MRR (Live)</p>
           <p className="text-white font-semibold text-sm">{fmt$(currentMRR)}</p>
+        </div>
+        <div className="bg-gray-800 rounded-lg px-3 py-2">
+          <p className="text-gray-500 text-xs">Projection Start MRR</p>
+          <p className="text-indigo-400 font-semibold text-sm">{fmt$(projectionStartMRR)}</p>
         </div>
         {lastProjected && (
           <div className="bg-gray-800 rounded-lg px-3 py-2">
@@ -157,8 +161,8 @@ export default function MrrGrowthProjectionChart({ mrrProjection }) {
         {lastProjected && (
           <div className="bg-gray-800 rounded-lg px-3 py-2">
             <p className="text-gray-500 text-xs">Net Change ({selectedChurn}% churn)</p>
-            <p className={`font-semibold text-sm ${lastProjected.total >= currentMRR ? 'text-green-400' : 'text-red-400'}`}>
-              {lastProjected.total >= currentMRR ? '+' : ''}{fmt$(lastProjected.total - currentMRR)}
+            <p className={`font-semibold text-sm ${lastProjected.total >= projectionStartMRR ? 'text-green-400' : 'text-red-400'}`}>
+              {lastProjected.total >= projectionStartMRR ? '+' : ''}{fmt$(lastProjected.total - projectionStartMRR)}
             </p>
           </div>
         )}

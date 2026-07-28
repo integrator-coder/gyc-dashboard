@@ -363,7 +363,7 @@ export async function GET() {
     const missingRenewal = []
 
     // Query DB for PIF deals with renewalAmount set (the projection data)
-    const [renewalRes, missingRes, mrrMetricsRes, mrrHistoryRes] = await Promise.all([
+    const [renewalRes, missingRes, mrrMetricsRes, mrrHistoryRes, dailyRevRes] = await Promise.all([
       pool.query(`
         SELECT
           to_char("dealDate"::date + (
@@ -413,7 +413,13 @@ export async function GET() {
         ORDER BY renewal_month_key
       `),
       pool.query(`SELECT mrr FROM "StripeMetrics" ORDER BY "syncedAt" DESC LIMIT 1`),
-      pool.query(`SELECT month, mrr::numeric AS mrr FROM "MRRHistory" WHERE "tenantId" = 'gyc' ORDER BY month DESC LIMIT 13`),
+      pool.query(`SELECT month, mrr::numeric AS mrr FROM "MRRHistory" WHERE "tenantId" = 'gyc' ORDER BY month DESC LIMIT 12`),
+      pool.query(`
+        SELECT to_char(date::date, 'YYYY-MM') AS month, SUM(amount) AS mrr
+        FROM "DailyRevenue"
+        WHERE "tenantId" = 'gyc'
+        GROUP BY 1 ORDER BY 1 DESC LIMIT 15
+      `),
     ])
 
     for (const row of renewalRes.rows) {
@@ -451,20 +457,33 @@ export async function GET() {
     }
 
     const currentMRR = parseFloat(mrrMetricsRes.rows[0]?.mrr || 0)
+    const PROJECTION_START_MRR = 230354  // Fixed starting MRR for projection baseline
 
-    const historical = mrrHistoryRes.rows
-      .map(r => {
-        const [yr, mo] = r.month.split('-')
-        return {
-          month: r.month,
-          label: `${MONTH_LABELS_SHORT[mo]} ${yr.slice(2)}`,
-          mrr: parseFloat(r.mrr),
-          type: 'actual'
-        }
+    // Build historical MRR for last 12 months: MRRHistory primary, DailyRevenue fallback
+    const mrrHistoryByMonth = {}
+    for (const r of mrrHistoryRes.rows) {
+      mrrHistoryByMonth[r.month] = parseFloat(r.mrr)
+    }
+    const dailyRevByMonth = {}
+    for (const r of dailyRevRes.rows) {
+      dailyRevByMonth[r.month] = parseFloat(r.mrr)
+    }
+    const historical = []
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const yr = d.getFullYear()
+      const mo = String(d.getMonth() + 1).padStart(2, '0')
+      const key = `${yr}-${mo}`
+      const mrr = mrrHistoryByMonth[key] ?? dailyRevByMonth[key] ?? 0
+      historical.push({
+        month: key,
+        label: `${MONTH_LABELS_SHORT[mo]} ${String(yr).slice(2)}`,
+        mrr,
+        type: 'actual'
       })
-      .sort((a, b) => a.month.localeCompare(b.month))
+    }
 
-    // Build 13 future months starting from next month
+    // Build 13 future months starting from next month (Aug 2026 → Aug 2027)
     const CHURN_RATES = [0, 0.03, 0.05, 0.08]
     const futureMonths = []
     for (let i = 1; i <= 13; i++) {
@@ -479,7 +498,7 @@ export async function GET() {
       const scenarios = {}
       for (const rate of CHURN_RATES) {
         const rateKey = String(Math.round(rate * 100))
-        const base = Math.round(currentMRR * Math.pow(1 - rate, i))
+        const base = Math.round(PROJECTION_START_MRR * Math.pow(1 - rate, i))
         let priorRenewals = 0
         for (let j = 1; j < i; j++) {
           const prevRenewal = renewalByMonth[futureMonths[j - 1].key]?.mrr || 0
@@ -495,7 +514,7 @@ export async function GET() {
       return { month: key, label, renewalThisMonth: Math.round(renewalThisMonth), scenarios }
     })
 
-    const mrrProjection = { currentMRR, historical, projected }
+    const mrrProjection = { currentMRR, projectionStartMRR: PROJECTION_START_MRR, historical, projected }
     // ─── End MRR Growth Projection ────────────────────────────────────────────────
 
     // PIF vs Recurring stats

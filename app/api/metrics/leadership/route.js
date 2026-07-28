@@ -105,7 +105,7 @@ export async function GET(req) {
     // Guard: refuse to save if too many sources failed
     const errorCount = Object.values(payload.meta?.sourceHealth || {}).filter(s => !s.ok).length
     const totalSources = Object.keys(payload.meta?.sourceHealth || {}).length
-    if (errorCount >= 3) {
+    if (errorCount >= 6) {
       console.warn(`[leadership] Refresh blocked — ${errorCount}/${totalSources} sources failed. Returning last good snapshot.`)
       if (latest?.payload) {
         return NextResponse.json({
