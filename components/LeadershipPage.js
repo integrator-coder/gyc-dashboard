@@ -262,6 +262,43 @@ export default function LeadershipPage() {
   }
   const selectedNewMoneyMetric = newMoneyMetricConfig[newMoneyMetric] || newMoneyMetricConfig.contractValue
 
+  // Leadership sales KPIs use the same Google Sheet truth as New Business.
+  // SalesDeal contains historical/imported duplicates and is not authoritative
+  // for deal counts, cash at signing, or new MRR.
+  const pctChange = (current, prior) => hasValue(prior) && Number(prior) !== 0
+    ? ((Number(current) - Number(prior)) / Number(prior) * 100).toFixed(1)
+    : null
+  const leadershipYtd = yoyData?.ytdSummary ? {
+    currentYear: now.getFullYear(),
+    priorYear: now.getFullYear() - 1,
+    revenue: yoyData.ytdSummary.revenue,
+    deals: {
+      current: newBusiness?.summary?.ytdDeals,
+      prior: newBusiness?.summary?.ytdCount25,
+      pctChange: pctChange(newBusiness?.summary?.ytdDeals, newBusiness?.summary?.ytdCount25),
+    },
+    cashAtSigning: {
+      current: newBusiness?.summary?.ytdFirstPayment,
+      prior: newBusiness?.summary?.ytdFP25,
+      pctChange: pctChange(newBusiness?.summary?.ytdFirstPayment, newBusiness?.summary?.ytdFP25),
+    },
+    mrr: {
+      current: newBusiness?.summary?.mrr?.ytd26,
+      prior: newBusiness?.summary?.mrr?.ytd25,
+      pctChange: pctChange(newBusiness?.summary?.mrr?.ytd26, newBusiness?.summary?.mrr?.ytd25),
+    },
+  } : null
+  const leadershipYoyMonthly = (newBusiness?.monthlyComparison || []).map(m => ({
+    month: m.month,
+    deals_2025: m.count25,
+    deals_2026: m.count26,
+    cash_2025: m['2025'],
+    cash_2026: m['2026'],
+    mrr_2025: m.mrr25,
+    mrr_2026: m.mrr26,
+  }))
+  const leadershipYoyYears = ['2025', '2026']
+
   const serviceTimeframeLabels = { month: 'This Month', quarter: 'This Quarter', ytd: 'YTD', all: 'All Time' }
 
   return (
@@ -375,8 +412,8 @@ export default function LeadershipPage() {
         </Panel>
       </div>
 
-      {yoyData?.ytdSummary && (() => {
-        const ytd = yoyData.ytdSummary
+      {leadershipYtd && (() => {
+        const ytd = leadershipYtd
         const curY = ytd.currentYear
         const preY = ytd.priorYear
         const pctTone = (p) => p === null ? 'default' : Number(p) >= 0 ? 'good' : 'bad'
@@ -400,31 +437,31 @@ export default function LeadershipPage() {
                 value={`${curY}: ${fmtN(ytd.deals.current)}`}
                 sub={`${preY}: ${fmtN(ytd.deals.prior)}${pctLabel(ytd.deals.pctChange)}`}
                 tone={pctTone(ytd.deals.pctChange)}
-                tooltip={`Count of closed-won deals year-to-date in ${curY} vs the same period in ${preY}. Source: SalesDeal.`}
+                tooltip={`Count of closed-won deals year-to-date in ${curY} vs the same period in ${preY}. Source: Sales KPI Google Sheet, matching New Business.`}
               />
               <Card
                 label={`Cash at Signing YTD`}
                 value={`${curY}: ${fmt$(ytd.cashAtSigning.current)}`}
                 sub={`${preY}: ${fmt$(ytd.cashAtSigning.prior)}${pctLabel(ytd.cashAtSigning.pctChange)}`}
                 tone={pctTone(ytd.cashAtSigning.pctChange)}
-                tooltip={`First payments collected at close year-to-date in ${curY} vs ${preY}. Source: SalesDeal.`}
+                tooltip={`First payments collected at close year-to-date in ${curY} vs ${preY}. Source: Sales KPI Google Sheet, matching New Business.`}
               />
               <Card
                 label={`New MRR Added YTD`}
                 value={`${curY}: ${fmt$(ytd.mrr.current)}/mo`}
                 sub={`${preY}: ${fmt$(ytd.mrr.prior)}/mo${pctLabel(ytd.mrr.pctChange)}`}
                 tone={pctTone(ytd.mrr.pctChange)}
-                tooltip={`New monthly recurring revenue added from deals closed year-to-date in ${curY} vs same period ${preY}. Monthly deals only (PIF excluded). Source: SalesDeal.`}
+                tooltip={`New monthly recurring revenue added from deals closed year-to-date in ${curY} vs same period ${preY}. Source: Sales KPI Google Sheet, matching New Business.`}
               />
             </div>
           </Panel>
         )
       })()}
 
-      {yoyData && (
+      {leadershipYtd && (
         <Panel
           title="Monthly Sales — Year over Year"
-          sub={`${(yoyData.years || []).join(' vs ')} · ${yoyMetric === 'deals' ? 'Deal Count' : yoyMetric === 'mrr' ? 'New MRR' : 'Cash Collected'} by Month`}
+          sub={`${leadershipYoyYears.join(' vs ')} · ${yoyMetric === 'deals' ? 'Deal Count' : yoyMetric === 'mrr' ? 'New MRR' : 'Cash at Signing'} by Month · Sales KPI Sheet`}
         >
           <div className="mb-3 flex flex-wrap gap-1.5">
             {[['deals', 'Deal Count'], ['cash', 'Cash Collected'], ['mrr', 'New MRR']].map(([key, label]) => (
@@ -443,7 +480,7 @@ export default function LeadershipPage() {
           </div>
 
           <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={yoyData.monthly || []} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+            <LineChart data={leadershipYoyMonthly} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />
               <XAxis dataKey="month" tick={{ fill: chartAxis, fontSize: 11 }} />
               <YAxis
@@ -461,10 +498,9 @@ export default function LeadershipPage() {
                 strokeDasharray="4 4"
                 label={{ value: 'Now', fill: '#fbbf24', fontSize: 10, position: 'insideTopRight' }}
               />
-              {(yoyData.years || []).map((year) => {
+              {leadershipYoyYears.map((year) => {
                 const yearColors = { '2024': '#A66FCD', '2025': '#6B7280', '2026': '#14B8A6' }
-                // Cash view uses DailyRevenue keys (revenue_YEAR) which includes 2024 data
-                const metricKey = yoyMetric === 'cash' ? `revenue_${year}` : `${yoyMetric}_${year}`
+                const metricKey = `${yoyMetric}_${year}`
                 return (
                   <Line
                     key={year}
@@ -472,7 +508,7 @@ export default function LeadershipPage() {
                     dataKey={metricKey}
                     name={year}
                     stroke={yearColors[year] || '#94a3b8'}
-                    strokeWidth={year === yoyData.latestYear ? 2.5 : 1.5}
+                    strokeWidth={year === '2026' ? 2.5 : 1.5}
                     dot={{ r: 3 }}
                     activeDot={{ r: 5 }}
                     connectNulls={false}
@@ -484,10 +520,10 @@ export default function LeadershipPage() {
 
           {(() => {
             const curMonth = now.getMonth() + 1
-            const change = yoyData.yoyChanges?.[curMonth]
-            if (!change) return null
-            const dealsChg = change.deals !== null ? Number(change.deals) : null
-            const cashChg = change.cash !== null ? Number(change.cash) : null
+            const row = leadershipYoyMonthly[curMonth - 1]
+            if (!row) return null
+            const dealsChg = pctChange(row.deals_2026, row.deals_2025)
+            const cashChg = pctChange(row.cash_2026, row.cash_2025)
             const monthName = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][curMonth - 1]
             return (
               <div className="mt-3 flex flex-wrap gap-3 text-xs">
@@ -495,14 +531,14 @@ export default function LeadershipPage() {
                   <div className={`rounded-lg px-3 py-1.5 ${
                     dealsChg >= 0 ? 'bg-emerald-500/10 text-emerald-300' : 'bg-rose-500/10 text-rose-300'
                   }`}>
-                    Deals YoY ({monthName}): {dealsChg >= 0 ? '+' : ''}{change.deals}%
+                    Deals YoY ({monthName}): {Number(dealsChg) >= 0 ? '+' : ''}{dealsChg}%
                   </div>
                 )}
                 {cashChg !== null && (
                   <div className={`rounded-lg px-3 py-1.5 ${
                     cashChg >= 0 ? 'bg-emerald-500/10 text-emerald-300' : 'bg-rose-500/10 text-rose-300'
                   }`}>
-                    Cash YoY ({monthName}): {cashChg >= 0 ? '+' : ''}{change.cash}%
+                    Cash at Signing YoY ({monthName}): {Number(cashChg) >= 0 ? '+' : ''}{cashChg}%
                   </div>
                 )}
               </div>
