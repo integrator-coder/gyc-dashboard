@@ -15,6 +15,10 @@ const SALES_REPS = new Set(['Jesse'])  // Jesse is the only active sales rep. Br
 const UPSELL_REPS = new Set(['JC', 'Zu', 'Stefen', 'Todd', 'Travis', 'Kim'])
 const fmt$ = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(Number(n || 0))
 const fmtN = (n) => new Intl.NumberFormat('en-US').format(Number(n || 0))
+const hasValue = (n) => n !== null && n !== undefined && n !== '' && Number.isFinite(Number(n))
+const fmtMaybe$ = (n) => hasValue(n) ? fmt$(n) : '—'
+const fmtMaybeN = (n) => hasValue(n) ? fmtN(n) : '—'
+const fmtMaybePct = (n) => hasValue(n) ? `${Number(n).toFixed(1)}%` : '—'
 const chartGrid = 'rgba(150, 160, 179, 0.14)'
 const chartAxis = '#96A0B3'
 
@@ -115,13 +119,16 @@ export default function LeadershipPage() {
     const finance = data.finance || {}
     const metrics = finance.metrics || {}
     const daily = finance.dailyRevenue || []
-    const today = now.toISOString().split('T')[0]
-    const yesterdayDate = new Date(now)
-    yesterdayDate.setDate(yesterdayDate.getDate() - 1)
-    const yesterday = yesterdayDate.toISOString().split('T')[0]
+    const easternDate = (date) => new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Toronto', year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(date)
+    const today = easternDate(now)
+    const yesterdayDate = new Date(now.getTime() - 86400000)
+    const yesterday = easternDate(yesterdayDate)
     const todayCash = daily.find((d) => d.date === today)?.amount || 0
     const yesterdayCash = daily.find((d) => d.date === yesterday)?.amount || 0
-    const avg7 = daily.slice(-7).length ? daily.slice(-7).reduce((s, d) => s + d.amount, 0) / daily.slice(-7).length : 0
+    const completedDays = daily.filter((d) => d.date < today).slice(-7)
+    const avg7 = completedDays.length ? completedDays.reduce((s, d) => s + d.amount, 0) / completedDays.length : 0
 
     const churn = data.churn?.marketing || {}
     const monthly = churn.monthly || []
@@ -179,6 +186,11 @@ export default function LeadershipPage() {
 
   const { finance, dunning, sales, leads, dealSize, newBusiness, clientHealth } = data
   const { metrics, todayCash, yesterdayCash, avg7, latestChurn, nrr, qStats, alerts } = derived
+  const latestChurnPeriod = `${latestChurn?.month || 'Latest month'}${data.churn?.latestMonthIsPartial ? ' MTD' : ''}`
+  const lateralTotals = data.churn?.lateralMovements?.totals || {}
+  const grr = data.churn?.marketing?.grr || {}
+  const sourceHealth = data.meta?.sourceHealth || {}
+  const staleSources = Object.entries(sourceHealth).filter(([, health]) => health?.stale || !health?.ok)
 
   const ytdCash = data?.finance?.ytdCash || 0
   const startOfYear = new Date(now.getFullYear(), 0, 1)
@@ -262,6 +274,11 @@ export default function LeadershipPage() {
           {data?.snapshot?.asOf && (
             <p className="mt-1 text-xs executive-faint">Snapshot: {new Date(data.snapshot.asOf).toLocaleString()} · {data.snapshot.source}</p>
           )}
+          {staleSources.length > 0 && (
+            <p className="mt-1 text-xs text-amber-300">
+              Source notice: {staleSources.map(([name, health]) => `${name}${health?.asOf ? ` (${new Date(health.asOf).toLocaleDateString()})` : ''}`).join(', ')} {staleSources.length === 1 ? 'is' : 'are'} not current.
+            </p>
+          )}
         </div>
       </div>
 
@@ -283,8 +300,8 @@ export default function LeadershipPage() {
           label="MRR"
           primaryValue={fmt$(metrics?.mrrCollected || metrics?.mrr)}
           primarySub="Active + past-due subs"
-          secondaryValue={fmt$(metrics?.mrrContracted)}
-          secondarySub={`Contracted incl. ${metrics?.unpaidCount || 17} unpaid subs`}
+          secondaryValue={fmtMaybe$(metrics?.mrrContracted)}
+          secondarySub={`Contracted incl. ${fmtMaybeN(metrics?.unpaidCount)} unpaid subs`}
           atRisk={metrics?.mrrAtRisk ? fmt$(metrics.mrrAtRisk) : null}
           tooltip="Two MRR views: Active MRR counts active + past-due subscriptions (money being collected now). Contracted MRR also includes unpaid subscriptions that have failed payments but haven't yet cancelled. The at-risk amount is the gap between the two."
         />
@@ -299,8 +316,8 @@ export default function LeadershipPage() {
         />
         <Card label="Cash Collected, YTD" value={fmt$(ytdCash)} tooltip="Total cash actually collected year-to-date from all Stripe payments. Raw sum of daily revenue from January 1 to today. Source: Stripe DailyRevenue." />
         <Card label="YTD Annualized Revenue" value={fmt$(estAnnualRevenue)} tooltip={`Year-to-date cash collected, annualized using actual elapsed days: YTD cash ÷ ${daysElapsed} days elapsed × 365. Includes recurring and one-time cash collected. Source: Stripe YTD.`} />
-        <Card label="Active Clients" value={fmtN(metrics?.activeCustomers)} tooltip="Number of clients with at least one active Stripe subscription. Source: Stripe." />
-        <Card label="Churned (30d)" value={fmtN(metrics?.churnedCustomers)} tone={Number(metrics?.churnedCustomers || 0) > 10 ? 'bad' : 'warn'} tooltip="Number of clients whose subscriptions were cancelled in the last 30 days. Source: Stripe." />
+        <Card label="Active Subscriptions" value={fmtMaybeN(metrics?.activeCustomers)} sub={hasValue(latestChurn?.clientCount) ? `${fmtN(latestChurn.clientCount)} clients in ${latestChurnPeriod} churn cohort` : null} tooltip="Count of active Stripe subscriptions, which is not the same as unique clients because one customer can hold multiple subscriptions. The sub-label shows the client count used by the monthly churn cohort." />
+        <Card label={`True Clients Lost (${latestChurnPeriod})`} value={fmtMaybeN(latestChurn?.clientsLost)} tone={Number(latestChurn?.clientsLost || 0) > 10 ? 'bad' : 'warn'} tooltip="Unique customers truly lost in the displayed month. Duplicate subscription cancellations are deduplicated and confirmed Monthly → PIF lateral movements are excluded. Source: Stripe cohort and confirmed PIF movement ledger." />
         <Card label="RPE (MRR)" value={fmt$(Number(metrics?.mrr || 0) * 12 / 18.5)} sub="MRR x12 / 18.5" tooltip="Revenue Per Employee based on MRR: (MRR × 12) ÷ 18.5 headcount. Measures annualized MRR productivity per team member. Headcount fixed at 18.5." />
         <Card label="RPE (Revenue)" value={fmt$(estAnnualRevenue / 18.5)} sub="YTD ann. / 18.5" tooltip={`Revenue Per Employee based on YTD annualized revenue: (YTD ÷ ${daysElapsed}d × 365) ÷ 18.5 headcount. Includes one-time fees. Headcount fixed at 18.5.`} />
         <Card label="Today's Cash" value={fmt$(todayCash)} tooltip="Total cash collected today from Stripe payments. Resets at midnight. Source: Stripe daily revenue feed." />
@@ -494,12 +511,13 @@ export default function LeadershipPage() {
         </Panel>
       )}
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
-        <Card label="Client Churn Rate" value={`${(latestChurn?.churnPct || 0).toFixed(1)}%`} tone={(latestChurn?.churnPct || 0) > 3 ? 'bad' : 'warn'} tooltip="Percentage of active clients who cancelled in the most recent tracked month. Formula: Clients Lost ÷ Start-of-Month Active Clients × 100. Source: GYC Churn Tracker Google Sheet." />
-        <Card label="Revenue Churn Rate" value={`${(latestChurn?.churnRevPct || 0).toFixed(1)}%`} tone={(latestChurn?.churnRevPct || 0) > 3 ? 'bad' : 'warn'} tooltip="Percentage of MRR lost due to cancellations in the most recent tracked month. Formula: MRR Lost ÷ Start-of-Month MRR × 100. Source: GYC Churn Tracker Google Sheet." />
-        <Card label="Net MRR Change" value={`${Number(latestChurn?.netMRR || 0) >= 0 ? '+' : '-'}${fmt$(latestChurn?.netMRR || 0)}`} tone={Number(latestChurn?.netMRR || 0) >= 0 ? 'good' : 'bad'} tooltip="Net change in MRR for the most recent tracked month: new MRR added minus MRR lost to churn. Positive = growing, negative = contracting. Source: GYC Churn Tracker Google Sheet." />
-        <Card label="Client Movement" value={`-${latestChurn?.clientsLost || 0} / +${latestChurn?.clientsAdded || 0}`} tooltip="Net client count change in the most recent tracked month: clients lost (cancelled) vs. clients added (new). Source: GYC Churn Tracker Google Sheet." />
-        <Card label="NRR (Current / 3m / 12m)" value={`${(nrr?.currentMonth || 0).toFixed(1)}% / ${(nrr?.trailing3mo || 0).toFixed(1)}% / ${(nrr?.trailing12mo || 0).toFixed(1)}%`} tone={(nrr?.currentMonth || 0) >= 100 ? 'good' : 'warn'} tooltip="Net Revenue Retention: % of MRR retained from existing clients including expansions, contractions, and churn. >100% means upsells offset churn. Shows: current month / 3-month trailing avg / 12-month trailing avg. Source: GYC Churn Tracker Google Sheet." />
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-7">
+        <Card label={`Client Churn (${latestChurnPeriod})`} value={fmtMaybePct(latestChurn?.churnPct)} tone={(latestChurn?.churnPct || 0) > 3 ? 'bad' : 'warn'} tooltip="True unique clients lost ÷ start-of-month active clients. Duplicate cancellations and confirmed Monthly → PIF movements are excluded. Current month is month-to-date. Source: Stripe cohort." />
+        <Card label={`Revenue Churn (${latestChurnPeriod})`} value={fmtMaybePct(latestChurn?.churnRevPct)} tone={(latestChurn?.churnRevPct || 0) > 3 ? 'bad' : 'warn'} tooltip="True churned MRR ÷ start-of-month cohort MRR. Confirmed Monthly → PIF movements are excluded. Current month is month-to-date. Source: Stripe cohort." />
+        <Card label={`Book MRR Change (${latestChurnPeriod})`} value={hasValue(latestChurn?.netMRR) ? `${Number(latestChurn.netMRR) >= 0 ? '+' : ''}${fmt$(latestChurn.netMRR)}` : '—'} tone={Number(latestChurn?.netMRR || 0) >= 0 ? 'good' : 'bad'} tooltip="New subscription MRR minus true churned MRR for the displayed month. This is book MRR movement; confirmed PIF conversion value is tracked separately as deferred recurring value." />
+        <Card label={`Client Movement (${latestChurnPeriod})`} value={hasValue(latestChurn?.clientsLost) && hasValue(latestChurn?.clientsAdded) ? `-${latestChurn.clientsLost} / +${latestChurn.clientsAdded}` : '—'} sub={hasValue(lateralTotals?.count) ? `${lateralTotals.count} Monthly → PIF excluded` : null} tooltip="True unique clients lost versus clients added. Duplicate cancellations are deduplicated; only human-confirmed Monthly → PIF movements are excluded." />
+        <Card label="NRR (MTD / 3m / 12m)" value={`${fmtMaybePct(nrr?.currentMonth)} / ${fmtMaybePct(nrr?.trailing3mo)} / ${fmtMaybePct(nrr?.trailing12mo)}`} tone={(nrr?.currentMonth || 0) >= 100 ? 'good' : 'warn'} tooltip="Net Revenue Retention for the existing-client cohort, including contraction/expansion and excluding confirmed Monthly → PIF movements from churn. Current month is MTD; trailing values are monthly averages. Source: Stripe cohort for May 2026 onward." />
+        <Card label="GRR (MTD / 3m / 12m)" value={`${fmtMaybePct(grr?.current)} / ${fmtMaybePct(grr?.trailing3m)} / ${fmtMaybePct(grr?.trailing12m)}`} tone={(grr?.current || 0) >= 95 ? 'good' : 'warn'} tooltip="Gross Revenue Retention for the existing-client cohort before expansion. Confirmed Monthly → PIF movements are excluded from churn. Current month is MTD." />
         <Card label="Dunning Topline" value={`${fmtN(dunning?.summary?.pastDueCount)} past due`} sub={`${fmt$(dunning?.summary?.mrrAtRisk)} at risk · ${fmt$(dunning?.summary?.totalOutstanding)} outstanding`} tone={Number(dunning?.summary?.pastDueCount || 0) > 0 ? 'bad' : 'good'} tooltip="Clients currently in the dunning (payment recovery) process with past-due Stripe invoices. MRR at Risk = monthly revenue from past-due clients. Outstanding = total unpaid invoice amount. Source: Stripe dunning data." />
       </div>
 

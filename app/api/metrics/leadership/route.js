@@ -15,7 +15,8 @@ export const dynamic = 'force-dynamic'
 const { Pool } = pkg
 const pool = new Pool({ connectionString: process.env.NEON_DATABASE_URL || process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } })
 
-const SNAPSHOT_MAX_AGE_HOURS = 8
+const SNAPSHOT_MAX_AGE_HOURS = 1
+const BUNDLE_SCHEMA_VERSION = 2
 
 async function ensureTable() {
   await pool.query(`
@@ -33,9 +34,9 @@ async function loadLatest() {
   return rows[0] || null
 }
 
-function isFresh(asOf) {
+function isFresh(asOf, payload) {
   const ageMs = Date.now() - new Date(asOf).getTime()
-  return ageMs < SNAPSHOT_MAX_AGE_HOURS * 60 * 60 * 1000
+  return payload?.meta?.schemaVersion === BUNDLE_SCHEMA_VERSION && ageMs < SNAPSHOT_MAX_AGE_HOURS * 60 * 60 * 1000
 }
 
 function buildSourceHealth(payload) {
@@ -87,6 +88,7 @@ async function fetchLiveBundle() {
 
   const payload = Object.fromEntries(results)
   payload.meta = {
+    schemaVersion: BUNDLE_SCHEMA_VERSION,
     sourceHealth: buildSourceHealth(payload),
     staleSourceCount: Object.values(buildSourceHealth(payload)).filter(s => s.stale).length,
   }
@@ -101,7 +103,7 @@ export async function GET(req) {
     const forceRefresh = url.searchParams.get('refresh') === '1'
 
     const latest = await loadLatest()
-    if (!forceRefresh && latest?.payload && latest?.asOf && isFresh(latest.asOf)) {
+    if (!forceRefresh && latest?.payload && latest?.asOf && isFresh(latest.asOf, latest.payload)) {
       return NextResponse.json({
         ...latest.payload,
         snapshot: {
