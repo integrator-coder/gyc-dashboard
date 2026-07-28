@@ -451,16 +451,19 @@ export default function FinanceChurnPage() {
                   <StatCard
                     label="Reductions (MRR Lost)"
                     value={formatCurrency(selected.reductions)}
+                    sub={selected.reductions == null ? 'Not separated in Stripe snapshot' : undefined}
                     color="red"
                   />
                   <StatCard
                     label="Upsells (MRR Added)"
                     value={formatCurrency(selected.upsells)}
+                    sub={selected.upsells == null ? 'Not separated in Stripe snapshot' : undefined}
                     color="green"
                   />
                   <StatCard
                     label="Net Upsells"
                     value={formatCurrency(selected.netUpsells)}
+                    sub={selected.netUpsells == null ? 'Not separated in Stripe snapshot' : undefined}
                     color={selected.netUpsells >= 0 ? 'green' : 'red'}
                   />
                 </div>

@@ -215,9 +215,12 @@ export async function GET() {
         nrr: r.nrr == null ? null : parseFloat(r.nrr),
         grr: r.grr == null ? null : parseFloat(r.grr),
         syncedAt: r.syncedAt,
-        reductions: 0,
-        upsells: 0,
-        netUpsells: 0,
+        // Stripe snapshot rows do not separately identify existing-client
+        // expansions/contractions. Null prevents the UI from presenting
+        // unavailable data as a real $0 result.
+        reductions: null,
+        upsells: null,
+        netUpsells: null,
         lostMrr: churnedMRR,
         newMrr: newMRR,
       }

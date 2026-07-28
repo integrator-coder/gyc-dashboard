@@ -424,7 +424,8 @@ export default function ChurnPage() {
                       <XAxis
                         dataKey="month"
                         tick={{ fill: '#9CA3AF', fontSize: 10 }}
-                        interval={Math.max(1, Math.floor(nrr.monthly.length / 12))}
+                        interval="preserveStartEnd"
+                        minTickGap={36}
                       />
                       <YAxis
                         tickFormatter={v => v + '%'}
@@ -584,7 +585,8 @@ export default function ChurnPage() {
                     <XAxis
                       dataKey="month"
                       tick={{ fill: '#9CA3AF', fontSize: 10 }}
-                      interval={Math.max(1, Math.floor(chartData.length / 12))}
+                      interval="preserveStartEnd"
+                      minTickGap={36}
                     />
                     <YAxis
                       tickFormatter={v => v + '%'}
@@ -697,7 +699,8 @@ export default function ChurnPage() {
                     <XAxis
                       dataKey="month"
                       tick={{ fill: '#9CA3AF', fontSize: 10 }}
-                      interval={Math.max(1, Math.floor(avgDaysChartData.length / 12))}
+                      interval="preserveStartEnd"
+                      minTickGap={36}
                     />
                     <YAxis
                       tickFormatter={v => v + 'd'}
@@ -738,7 +741,7 @@ export default function ChurnPage() {
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="month" tick={{ fill: '#9CA3AF', fontSize: 10 }} interval={Math.max(1, Math.floor(chartData.length / 12))} />
+                  <XAxis dataKey="month" tick={{ fill: '#9CA3AF', fontSize: 10 }} interval="preserveStartEnd" minTickGap={36} />
                   <YAxis tick={{ fill: '#9CA3AF', fontSize: 11 }} width={48} />
                   <Tooltip content={({ active, payload, label }) => active && payload?.length ? (
                     <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm">
@@ -757,7 +760,7 @@ export default function ChurnPage() {
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="month" tick={{ fill: '#9CA3AF', fontSize: 10 }} interval={Math.max(1, Math.floor(chartData.length / 12))} />
+                  <XAxis dataKey="month" tick={{ fill: '#9CA3AF', fontSize: 10 }} interval="preserveStartEnd" minTickGap={36} />
                   <YAxis tickFormatter={fmtK} tick={{ fill: '#9CA3AF', fontSize: 11 }} width={56} />
                   <Tooltip content={({ active, payload, label }) => active && payload?.length ? (
                     <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm">
@@ -845,7 +848,7 @@ export default function ChurnPage() {
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="month" tick={{ fill: '#9CA3AF', fontSize: 10 }} interval={Math.max(1, Math.floor(chartData.length / 12))} />
+                  <XAxis dataKey="month" tick={{ fill: '#9CA3AF', fontSize: 10 }} interval="preserveStartEnd" minTickGap={36} />
                   <YAxis tickFormatter={v => v + '%'} tick={{ fill: '#9CA3AF', fontSize: 11 }} width={44} />
                   <ReferenceLine y={3} stroke={AMBER} strokeDasharray="4 2" label={{ value: '3%', fill: AMBER, fontSize: 10, position: 'right' }} />
                   <Tooltip content={({ active, payload, label }) => active && payload?.length ? (
@@ -873,7 +876,7 @@ export default function ChurnPage() {
               <ResponsiveContainer width="100%" height={220}>
                 <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="month" tick={{ fill: '#9CA3AF', fontSize: 10 }} interval={Math.max(1, Math.floor(chartData.length / 12))} />
+                  <XAxis dataKey="month" tick={{ fill: '#9CA3AF', fontSize: 10 }} interval="preserveStartEnd" minTickGap={36} />
                   <YAxis tickFormatter={fmtK} tick={{ fill: '#9CA3AF', fontSize: 11 }} width={56} />
                   <ReferenceLine y={0} stroke="#6B7280" strokeWidth={1} />
                   <Tooltip content={({ active, payload, label }) => active && payload?.length ? (
