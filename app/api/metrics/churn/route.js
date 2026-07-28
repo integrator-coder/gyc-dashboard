@@ -158,13 +158,14 @@ function parseCAMData(rows) {
 }
 
 /**
- * Augment monthly data with GRR and Avg Days to Churn, and return top-level aggregates.
+ * Augment monthly data with GRR and implied client lifetime, and return aggregates.
  * GRR  = (totalMRR - mrrLost) / totalMRR × 100, capped 0–100
- * AvgDays = (1 / churnRate) × 30   where churnRate = churnPct / 100
+ * ImpliedLifetimeDays = (1 / monthly churn rate) × 30. This is modeled,
+ * not the observed tenure of canceled clients.
  */
 function computeGRRAndAvgDays(monthly) {
   const augmented = monthly.map(m => {
-    const grr = m.totalMRR > 0
+    const grr = m.grr != null ? m.grr : m.totalMRR > 0
       ? Math.round(Math.min(100, Math.max(0, (m.totalMRR - m.mrrLost) / m.totalMRR * 100)) * 10) / 10
       : null
     const avgDaysToChurn = (m.churnPct > 0 && m.churnPct <= 20)
@@ -218,7 +219,9 @@ function computeNRR(monthly) {
     const prevMRR = prev.totalMRR
     if (!prevMRR) continue
 
-    const nrrVal = ((prevMRR + (curr.upsells || 0) - (curr.reductions || 0) - (curr.mrrLost || 0)) / prevMRR) * 100
+    const nrrVal = curr.nrr != null
+      ? curr.nrr
+      : ((prevMRR + (curr.upsells || 0) - (curr.reductions || 0) - (curr.mrrLost || 0)) / prevMRR) * 100
 
     // Filter extreme outliers
     if (nrrVal < 0 || nrrVal > 200) continue
@@ -226,7 +229,8 @@ function computeNRR(monthly) {
     const dataPoint = {
       month:         curr.month,
       nrr:           Math.round(nrrVal * 10) / 10,
-      startMRR:      prevMRR,
+      startMRR:      curr.nrr != null ? null : prevMRR,
+      source:        curr.nrr != null ? 'Stripe cohort' : 'Google Sheets bridge',
       upsells:       curr.upsells       || 0,
       reductions:    curr.reductions    || 0,
       cancellations: curr.mrrLost       || 0,
@@ -272,8 +276,8 @@ async function fetchDBChurnMetrics(sheetMonths) {
   try {
     const { rows } = await dbClient.query(`
       SELECT month, "totalMRR", "clientCount", "clientsAdded", "clientsLost",
-             "newMRR", "churnedMRR", "netMRR", "churnPct", "nrr", "grr",
-             "monthlyMRR", "pifMRR", "monthlyNRR", "pifNRR"
+             "newMRR", "churnedMRR", "netMRR", "churnPct", "revenueChurnPct", "nrr", "grr",
+             "monthlyMRR", "pifMRR", "monthlyNRR", "pifNRR", "syncedAt"
       FROM "MonthlyChurnMetrics"
       WHERE "tenantId" = 'gyc'
       ORDER BY month ASC
@@ -290,27 +294,33 @@ async function fetchDBChurnMetrics(sheetMonths) {
 
 // Convert a MonthlyChurnMetrics DB row into the same shape parseTabData returns
 function dbRowToMonthly(row) {
+  const clientCount = Number(row.clientCount) || 0
+  const totalMRR = parseFloat(row.totalMRR) || 0
+
   return {
     month:        row.month,
-    clientCount:  row.clientcount || 0,
-    avgMRR:       row.clientcount > 0 ? Math.round(row.totalmrr / row.clientcount) : 0,
-    totalMRR:     parseFloat(row.totalmrr) || 0,
-    clientsLost:  row.clientslost || 0,
-    mrrLost:      parseFloat(row.churnedmrr) || 0,
-    clientsAdded: row.clientsadded || 0,
-    mrrAdded:     parseFloat(row.newmrr) || 0,
-    churnPct:     parseFloat(row.churnpct) || 0,
-    churnRevPct:  parseFloat(row.churnpct) || 0,
+    clientCount,
+    avgMRR:       clientCount > 0 ? Math.round(totalMRR / clientCount) : 0,
+    totalMRR,
+    clientsLost:  Number(row.clientsLost) || 0,
+    mrrLost:      parseFloat(row.churnedMRR) || 0,
+    clientsAdded: Number(row.clientsAdded) || 0,
+    mrrAdded:     parseFloat(row.newMRR) || 0,
+    churnPct:     parseFloat(row.churnPct) || 0,
+    churnRevPct:  parseFloat(row.revenueChurnPct) || 0,
     reductions:   0,
     upsells:      0,
     netUpsells:   0,
-    lostMRR:      parseFloat(row.churnedmrr) || 0,
-    newMRR:       parseFloat(row.newmrr) || 0,
-    netMRR:       parseFloat(row.netmrr) || 0,
-    monthlyMRR:   parseFloat(row.monthlymrr) || 0,
-    pifMRR:       parseFloat(row.pifmrr) || 0,
-    monthlyNRR:   parseFloat(row.monthlynrr) || null,
-    pifNRR:       parseFloat(row.pifnrr) || null,
+    lostMRR:      parseFloat(row.churnedMRR) || 0,
+    newMRR:       parseFloat(row.newMRR) || 0,
+    netMRR:       parseFloat(row.netMRR) || 0,
+    monthlyMRR:   parseFloat(row.monthlyMRR) || 0,
+    pifMRR:       parseFloat(row.pifMRR) || 0,
+    monthlyNRR:   row.monthlyNRR == null ? null : parseFloat(row.monthlyNRR),
+    pifNRR:       row.pifNRR == null ? null : parseFloat(row.pifNRR),
+    nrr:          row.nrr == null ? null : parseFloat(row.nrr),
+    grr:          row.grr == null ? null : parseFloat(row.grr),
+    syncedAt:     row.syncedAt,
   }
 }
 
@@ -365,7 +375,8 @@ export async function getChurnMetrics() {
       recruiting: {
         monthly: recruitingMonthly,
       },
-      updatedAt: new Date().toISOString(),
+      updatedAt: dbRows.length ? dbRows[dbRows.length - 1].syncedAt : new Date().toISOString(),
+      latestMonthIsPartial: combinedMonthly.at(-1)?.month === monthToLabel(new Date().toISOString().slice(0, 7)),
     }
 }
 

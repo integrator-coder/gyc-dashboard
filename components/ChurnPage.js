@@ -191,7 +191,8 @@ export default function ChurnPage() {
         <div>
           <h1 className="text-2xl font-bold text-white">Churn</h1>
           <p className="text-gray-400 text-sm mt-1">
-            Client retention · MRR trends · Updated {new Date(data.updatedAt).toLocaleTimeString()}
+            Client retention · MRR trends · Data refreshed {new Date(data.updatedAt).toLocaleString()}
+            {data.latestMonthIsPartial ? ' · Current month is month-to-date' : ''}
           </p>
         </div>
         <div className="flex gap-1 bg-gray-900 border border-gray-800 rounded-lg p-1">
@@ -456,9 +457,10 @@ export default function ChurnPage() {
                               </p>
                               {payload[0].payload && (
                                 <div className="mt-1 text-gray-400 text-xs space-y-0.5">
-                                  <p>Start MRR: {fmt$(payload[0].payload.startMRR)}</p>
-                                  <p>Upsells: +{fmt$(payload[0].payload.upsells)}</p>
-                                  <p>Reductions: -{fmt$(payload[0].payload.reductions)}</p>
+                                  {payload[0].payload.startMRR != null && <p>Start MRR: {fmt$(payload[0].payload.startMRR)}</p>}
+                                  <p>Source: {payload[0].payload.source}</p>
+                                  {payload[0].payload.source !== 'Stripe cohort' && <p>Upsells: +{fmt$(payload[0].payload.upsells)}</p>}
+                                  {payload[0].payload.source !== 'Stripe cohort' && <p>Reductions: -{fmt$(payload[0].payload.reductions)}</p>}
                                   <p>Cancellations: -{fmt$(payload[0].payload.cancellations)}</p>
                                 </div>
                               )}
@@ -625,7 +627,7 @@ export default function ChurnPage() {
           {avgDaysToChurn && (
             <>
               <p className="text-gray-300 text-xs uppercase tracking-wide font-medium">
-                Avg Days to Churn
+                Implied Client Lifetime
               </p>
 
               {/* Avg Days KPI cards */}
@@ -633,8 +635,8 @@ export default function ChurnPage() {
                 {/* Current month */}
                 <div className="rounded-xl border p-4 flex flex-col gap-1 bg-purple-950/60 border-purple-800">
                   <p className="text-gray-400 text-xs font-medium uppercase tracking-wide leading-tight flex items-center">
-                    Current Month Avg Days
-                    <MetricTooltip text="Estimated average days a client stays before churning. Formula: (1 ÷ Monthly Churn Rate) × 30." />
+                    Current Implied Lifetime
+                    <MetricTooltip text="Modeled client lifetime based on the current monthly churn rate. Formula: (1 ÷ Monthly Churn Rate) × 30. This is not observed cancellation tenure." />
                   </p>
                   <p className="text-2xl font-bold leading-snug text-purple-300">
                     {avgDaysToChurn.current != null ? avgDaysToChurn.current.toLocaleString() + 'd' : '—'}
@@ -653,8 +655,8 @@ export default function ChurnPage() {
                 {/* Trailing 3-month */}
                 <div className="rounded-xl border p-4 flex flex-col gap-1 bg-purple-950/60 border-purple-800">
                   <p className="text-gray-400 text-xs font-medium uppercase tracking-wide leading-tight flex items-center">
-                    Trailing 3-Month Avg Days
-                    <MetricTooltip text="Estimated average days a client stays before churning. Formula: (1 ÷ Monthly Churn Rate) × 30." />
+                    Trailing 3-Month Lifetime
+                    <MetricTooltip text="Average modeled client lifetime over the latest three months. This is inferred from churn rate, not observed cancellation tenure." />
                   </p>
                   <p className="text-2xl font-bold leading-snug text-purple-300">
                     {avgDaysToChurn.trailing3m != null ? avgDaysToChurn.trailing3m.toLocaleString() + 'd' : '—'}
@@ -665,8 +667,8 @@ export default function ChurnPage() {
                 {/* Trailing 12-month */}
                 <div className="rounded-xl border p-4 flex flex-col gap-1 bg-purple-950/60 border-purple-800">
                   <p className="text-gray-400 text-xs font-medium uppercase tracking-wide leading-tight flex items-center">
-                    Trailing 12-Month Avg Days
-                    <MetricTooltip text="Estimated average days a client stays before churning. Formula: (1 ÷ Monthly Churn Rate) × 30." />
+                    Trailing 12-Month Lifetime
+                    <MetricTooltip text="Average modeled client lifetime over the latest twelve months. This is inferred from churn rate, not observed cancellation tenure." />
                   </p>
                   <p className="text-2xl font-bold leading-snug text-purple-300">
                     {avgDaysToChurn.trailing12m != null ? avgDaysToChurn.trailing12m.toLocaleString() + 'd' : '—'}
@@ -680,8 +682,8 @@ export default function ChurnPage() {
               {/* Avg Days line chart */}
               <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
                 <h2 className="text-white font-semibold mb-1 flex items-center">
-                  Avg Days to Churn Over Time
-                  <MetricTooltip text="Estimated average days a client stays before churning. Formula: (1 ÷ Monthly Churn Rate) × 30." />
+                  Implied Client Lifetime Over Time
+                  <MetricTooltip text="Modeled lifetime derived from monthly churn: (1 ÷ churn rate) × 30. This is not observed cancellation tenure." />
                 </h2>
                 <p className="text-gray-300 text-xs mb-4">
                   Higher = clients staying longer · null months excluded (zero churn = infinite days)
@@ -708,7 +710,7 @@ export default function ChurnPage() {
                         active && payload?.length ? (
                           <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm min-w-[180px]">
                             <p className="text-white font-semibold mb-1">{label}</p>
-                            <p style={{ color: PURPLE }}>Avg Days: {payload[0].value?.toLocaleString()}d</p>
+                            <p style={{ color: PURPLE }}>Implied lifetime: {payload[0].value?.toLocaleString()}d</p>
                           </div>
                         ) : null
                       }
@@ -716,7 +718,7 @@ export default function ChurnPage() {
                     <Line
                       type="monotone"
                       dataKey="avgDaysToChurn"
-                      name="Avg Days to Churn"
+                      name="Implied Client Lifetime"
                       stroke={PURPLE}
                       strokeWidth={2.5}
                       dot={false}

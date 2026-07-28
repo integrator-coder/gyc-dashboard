@@ -174,7 +174,7 @@ export async function GET() {
       try {
         const { rows: dbData } = await dbClient.query(`
           SELECT month, "totalMRR", "clientCount", "clientsAdded", "clientsLost",
-                 "newMRR", "churnedMRR", "netMRR", "churnPct"
+                 "newMRR", "churnedMRR", "netMRR", "churnPct", "revenueChurnPct", "nrr", "grr", "syncedAt"
           FROM "MonthlyChurnMetrics"
           WHERE "tenantId" = 'gyc' AND month > $1
           ORDER BY month ASC
@@ -194,7 +194,7 @@ export async function GET() {
       const shortNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
       const mi = parseInt(m, 10) - 1
       const totalMrr = parseFloat(r.totalMRR) || 0
-      const clientCount = r.clientcount || 0
+      const clientCount = Number(r.clientCount) || 0
       const avgMrrPerClient = clientCount > 0 ? Math.round(totalMrr / clientCount) : 0
       const churnedMRR = parseFloat(r.churnedMRR) || 0
       const newMRR = parseFloat(r.newMRR) || 0
@@ -206,12 +206,15 @@ export async function GET() {
         clientCount,
         avgMrrPerClient,
         totalMrr,
-        clientsLost: r.clientslost || 0,
+        clientsLost: Number(r.clientsLost) || 0,
         mrrLost: churnedMRR,
-        clientsAdded: r.clientsadded || 0,
+        clientsAdded: Number(r.clientsAdded) || 0,
         mrrAdded: newMRR,
         churnRateCount: churnPct,
-        churnRateRevenue: churnPct,
+        churnRateRevenue: parseFloat(r.revenueChurnPct) || 0,
+        nrr: r.nrr == null ? null : parseFloat(r.nrr),
+        grr: r.grr == null ? null : parseFloat(r.grr),
+        syncedAt: r.syncedAt,
         reductions: 0,
         upsells: 0,
         netUpsells: 0,
@@ -257,7 +260,12 @@ export async function GET() {
     const allChartSorted = Object.values(allChartKeyed).sort((a, b) => a.key.localeCompare(b.key))
     const finalChartData = allChartSorted.slice(-6)
 
-    return NextResponse.json({ months: finalMonths, chartData: finalChartData })
+    return NextResponse.json({
+      months: finalMonths,
+      chartData: finalChartData,
+      updatedAt: dbRows.length ? dbRows[dbRows.length - 1].syncedAt : new Date().toISOString(),
+      latestMonthIsPartial: finalMonths[0]?.key === new Date().toISOString().slice(0, 7),
+    })
   } catch (error) {
     console.error('Churn sheet error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })

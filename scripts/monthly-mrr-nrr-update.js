@@ -60,13 +60,14 @@ async function fetchAllSubscriptions() {
 function computeMonthMetrics(subs, monthStr) {
   const { startUnix, endUnix } = monthBounds(monthStr);
 
-  let mrr = 0, newMrr = 0, churnedMrr = 0, activeCount = 0;
+  let mrr = 0, newMrr = 0, retainedNewMrr = 0, churnedMrr = 0, activeCount = 0;
   let clientsAdded = 0, clientsLost = 0;
   
   // Split by interval type
   let monthlyMRR = 0, pifMRR = 0;
   let monthlyClients = 0, pifClients = 0;
   let monthlyNewMRR = 0, pifNewMRR = 0;
+  let monthlyRetainedNewMRR = 0, pifRetainedNewMRR = 0;
   let monthlyChurnedMRR = 0, pifChurnedMRR = 0;
 
   for (const sub of subs) {
@@ -81,9 +82,10 @@ function computeMonthMetrics(subs, monthStr) {
     const isMonthly = firstInterval === 'month';
     const isPIF = firstInterval === 'year';
 
-    // Active during this month: started before month end AND not canceled before month start
-    const activeInMonth = created <= endUnix && (canceledAt == null || canceledAt > startUnix);
-    if (activeInMonth) {
+    // Ending snapshot: active at month end. This makes MRR/client counts comparable
+    // month to month instead of counting anyone who was active for a single day.
+    const activeAtEnd = created <= endUnix && (canceledAt == null || canceledAt > endUnix);
+    if (activeAtEnd) {
       mrr += subMrr;
       activeCount++;
       
@@ -106,6 +108,11 @@ function computeMonthMetrics(subs, monthStr) {
       } else if (isPIF) {
         pifNewMRR += subMrr;
       }
+      if (activeAtEnd) {
+        retainedNewMrr += subMrr;
+        if (isMonthly) monthlyRetainedNewMRR += subMrr;
+        else if (isPIF) pifRetainedNewMRR += subMrr;
+      }
     }
 
     // Churned this month
@@ -124,6 +131,7 @@ function computeMonthMetrics(subs, monthStr) {
   return {
     mrr: Math.round(mrr * 100) / 100,
     newMrr: Math.round(newMrr * 100) / 100,
+    retainedNewMrr: Math.round(retainedNewMrr * 100) / 100,
     churnedMrr: Math.round(churnedMrr * 100) / 100,
     activeSubscriptions: activeCount,
     clientsAdded,
@@ -134,23 +142,22 @@ function computeMonthMetrics(subs, monthStr) {
     pifClients,
     monthlyNewMRR: Math.round(monthlyNewMRR * 100) / 100,
     pifNewMRR: Math.round(pifNewMRR * 100) / 100,
+    monthlyRetainedNewMRR: Math.round(monthlyRetainedNewMRR * 100) / 100,
+    pifRetainedNewMRR: Math.round(pifRetainedNewMRR * 100) / 100,
     monthlyChurnedMRR: Math.round(monthlyChurnedMRR * 100) / 100,
     pifChurnedMRR: Math.round(pifChurnedMRR * 100) / 100,
   };
 }
 
-// Which months to update: previous month + current month (first-of-month run finalizes last month)
+// Refresh the current month and the prior two months. Stripe cancellations and
+// subscription changes can be back-dated, so a one-month lookback is not enough.
 function getTargetMonths() {
   const now = new Date();
   const months = [];
-
-  // Previous month (finalized)
-  const prev = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
-  months.push(`${prev.getUTCFullYear()}-${String(prev.getUTCMonth() + 1).padStart(2, '0')}`);
-
-  // Current month (partial, will be re-run next month)
-  const curr = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  months.push(`${curr.getUTCFullYear()}-${String(curr.getUTCMonth() + 1).padStart(2, '0')}`);
+  for (let offset = 2; offset >= 0; offset--) {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - offset, 1));
+    months.push(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`);
+  }
 
   // Only return months after Apr-26 (sheet covers through then)
   return months.filter(m => m > '2026-04');
@@ -173,33 +180,37 @@ async function upsertMRRHistory(client, monthStr, metrics) {
 
 async function upsertChurnMetrics(client, monthStr, metrics, prevMetrics) {
   const totalMRR = metrics.mrr;
-  const churnPct = totalMRR > 0 ? Math.round((metrics.churnedMrr / totalMRR) * 1000) / 10 : 0;
-  const netMRR = metrics.newMrr - metrics.churnedMrr;
   const prevMRR = prevMetrics?.mrr || 0;
-  const nrr = prevMRR > 0 ? Math.round(((totalMRR - metrics.churnedMrr) / prevMRR) * 1000) / 10 : null;
-  // GRR = (totalMRR - churnedMRR) / totalMRR × 100  — self-contained, matches dashboard formula
-  const grr = totalMRR > 0 ? Math.round(Math.min(100, Math.max(0, (totalMRR - metrics.churnedMrr) / totalMRR * 100)) * 10) / 10 : null;
+  const prevClients = prevMetrics?.activeSubscriptions || 0;
+  const churnPct = prevClients > 0 ? Math.round((metrics.clientsLost / prevClients) * 1000) / 10 : 0;
+  const revenueChurnPct = prevMRR > 0 ? Math.round((metrics.churnedMrr / prevMRR) * 1000) / 10 : 0;
+  const netMRR = metrics.newMrr - metrics.churnedMrr;
+  // Ending MRR less new-logo MRR is the ending revenue from the opening cohort.
+  // This correctly excludes acquisition from NRR. GRR excludes expansion and is
+  // therefore capped at 100%.
+  const nrr = prevMRR > 0 ? Math.round(((totalMRR - metrics.retainedNewMrr) / prevMRR) * 1000) / 10 : null;
+  const grr = prevMRR > 0 ? Math.round(Math.min(100, Math.max(0, (prevMRR - metrics.churnedMrr) / prevMRR * 100)) * 10) / 10 : null;
 
   // Compute split NRR
   const prevMonthlyMRR = prevMetrics?.monthlyMRR || 0;
   const prevPifMRR = prevMetrics?.pifMRR || 0;
   
   const monthlyNRR = prevMonthlyMRR > 0 
-    ? Math.round(((metrics.monthlyMRR - metrics.monthlyChurnedMRR) / prevMonthlyMRR) * 1000) / 10 
+    ? Math.round(((metrics.monthlyMRR - metrics.monthlyRetainedNewMRR) / prevMonthlyMRR) * 1000) / 10
     : null;
   
   const pifNRR = prevPifMRR > 0 
-    ? Math.round(((metrics.pifMRR - metrics.pifChurnedMRR) / prevPifMRR) * 1000) / 10 
+    ? Math.round(((metrics.pifMRR - metrics.pifRetainedNewMRR) / prevPifMRR) * 1000) / 10
     : null;
 
   await client.query(
     `INSERT INTO "MonthlyChurnMetrics"
       ("tenantId", "month", "totalMRR", "clientCount", "clientsAdded", "clientsLost",
-       "newMRR", "churnedMRR", "netMRR", "churnPct", "nrr", "grr",
+       "newMRR", "churnedMRR", "netMRR", "churnPct", "revenueChurnPct", "nrr", "grr",
        "monthlyMRR", "pifMRR", "monthlyClients", "pifClients",
        "monthlyChurnedMRR", "pifChurnedMRR", "monthlyNewMRR", "pifNewMRR",
        "monthlyNRR", "pifNRR", "syncedAt")
-     VALUES ('gyc', $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, NOW())
+     VALUES ('gyc', $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NOW())
      ON CONFLICT ("tenantId", "month") DO UPDATE SET
        "totalMRR" = EXCLUDED."totalMRR",
        "clientCount" = EXCLUDED."clientCount",
@@ -209,6 +220,7 @@ async function upsertChurnMetrics(client, monthStr, metrics, prevMetrics) {
        "churnedMRR" = EXCLUDED."churnedMRR",
        "netMRR" = EXCLUDED."netMRR",
        "churnPct" = EXCLUDED."churnPct",
+       "revenueChurnPct" = EXCLUDED."revenueChurnPct",
        "nrr" = EXCLUDED."nrr",
        "grr" = EXCLUDED."grr",
        "monthlyMRR" = EXCLUDED."monthlyMRR",
@@ -223,7 +235,7 @@ async function upsertChurnMetrics(client, monthStr, metrics, prevMetrics) {
        "pifNRR" = EXCLUDED."pifNRR",
        "syncedAt" = NOW()`,
     [monthStr, totalMRR, metrics.activeSubscriptions, metrics.clientsAdded, metrics.clientsLost,
-     metrics.newMrr, metrics.churnedMrr, netMRR, churnPct, nrr, grr,
+     metrics.newMrr, metrics.churnedMrr, netMRR, churnPct, revenueChurnPct, nrr, grr,
      metrics.monthlyMRR, metrics.pifMRR, metrics.monthlyClients, metrics.pifClients,
      metrics.monthlyChurnedMRR, metrics.pifChurnedMRR, metrics.monthlyNewMRR, metrics.pifNewMRR,
      monthlyNRR, pifNRR]
@@ -245,6 +257,7 @@ async function ensureTables(client) {
       "churnedMRR"   NUMERIC(12,2),
       "netMRR"       NUMERIC(12,2),
       "churnPct"     NUMERIC(6,2),
+      "revenueChurnPct" NUMERIC(6,2),
       "nrr"          NUMERIC(6,2),
       "grr"          NUMERIC(6,2),
       "monthlyMRR"   NUMERIC(12,2),
@@ -261,6 +274,7 @@ async function ensureTables(client) {
       UNIQUE ("tenantId", "month")
     )
   `);
+  await client.query(`ALTER TABLE "MonthlyChurnMetrics" ADD COLUMN IF NOT EXISTS "revenueChurnPct" NUMERIC(6,2)`);
 }
 
 async function main() {

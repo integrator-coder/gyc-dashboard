@@ -185,7 +185,8 @@ export default function FinanceChurnPage() {
         <div>
           <h1 className="text-2xl font-bold text-white">Churn Report</h1>
           <p className="text-gray-300 text-sm mt-0.5">
-            Last 3 months — Google Sheet source of truth
+            Last 3 months — Google Sheets history + live Stripe data
+            {data?.latestMonthIsPartial ? ' · Current month is month-to-date' : ''}
           </p>
         </div>
       </div>
