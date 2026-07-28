@@ -590,6 +590,17 @@ export async function GET() {
       children: [],
     },
     {
+      name: 'Herbi',
+      role: 'Media Intelligence + Research',
+      category: 'worker',
+      node: 'Mac Mini',
+      status: inProgress.some((t) => t.owner === 'Herbi') ? 'working' : 'idle',
+      currentTask: inProgress.find((t) => t.owner === 'Herbi')?.title || 'Media transcription + research analysis',
+      lastActivity: nowIso,
+      reportsTo: 'Wall·E',
+      children: [],
+    },
+    {
       name: 'Mouse',
       role: 'Second Orchestrator — Role TBD',
       category: 'main',

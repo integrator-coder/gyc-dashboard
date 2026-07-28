@@ -85,6 +85,7 @@ const AGENT_MODEL = {
   'C3PO':   'DeepSeek V4 Flash',
   'Ratchet': 'Gemini 2.5 Flash Lite',
   'Morpheus': 'DeepSeek V4 Flash',
+  'Herbi':    'DeepSeek V4 Flash',
   'BB-8':    'GPT-5.3-Codex',
   'Fulcrum': 'Claude Haiku',
   'Vision':  'Claude Haiku',
@@ -110,6 +111,7 @@ const AGENT_MODEL_ACCESS = {
   'C3PO':      { default: 'DeepSeek V4 Flash', escalate: 'GPT-5.6 Sol (via R2)' },
   'Ratchet':   { default: 'Gemini 2.5 Flash Lite', escalate: null },
   'Morpheus':  { default: 'DeepSeek V4 Flash', escalate: 'GPT-5.6 Sol (via Yoda)' },
+  'Herbi':     { default: 'DeepSeek V4 Flash', escalate: 'GPT-5.6 Sol (via Wall·E)' },
   'BB-8':      { default: 'GPT-5.3-Codex', escalate: null },
   'Fulcrum':   { default: 'Claude Haiku', escalate: 'Sonnet (via Wall·E)' },
   'Vision':    { default: 'Claude Haiku', escalate: null },
@@ -134,6 +136,7 @@ const AGENT_RESPONSIBILITIES = {
   'Echo':    ['Division Lead — Operations & Delivery', 'Manages: R2 (Builder), C3PO (QA)', 'Owns all complex builds (2+ files): spec → R2 → C3PO → proof → report', 'Reports consolidated summaries to Wall·E every 4 hours', 'The delivery chain — nothing ships without Echo confirming C3PO sign-off'],
   'C3PO':   ['QA validation specialist — Tier 2 under Echo', 'Validates all builds before shipping — reports to Echo', 'Runs build checks, smoke tests, regression scans on new code', 'Returns explicit pass/fail verdict with test evidence', 'Nothing ships without C3PO sign-off — the release gate'],
   'Morpheus': ['Memory Dreaming specialist — Tier 2 under Yoda', 'Runs nightly memory consolidation across the fleet', 'Promotes significant decisions and patterns to MEMORY.md', 'Reports memory health weekly to Yoda', 'The fleet memory keeper — ensures continuity across sessions'],
+  'Herbi': ['Media intelligence and research specialist', 'Transcribes and analyzes YouTube, Instagram, and other media sources', 'Stores source material and findings in the GYC knowledge layer', 'Uses the low-cost DeepSeek workhorse for routine research loops', 'Escalates unusually complex synthesis to Wall·E'],
     'Ratchet': ['Fleet watchdog specialist — Tier 2 under Thrawn', 'Monitors heartbeat and status of every agent in the fleet', 'Scans cron job history for errors, missed runs, degraded patterns', 'Reports anomalies to Thrawn immediately; critical failures go direct to Wall·E', 'The fleet immune system — catches problems before Todd ever notices'],
   'BB-8':    ['Eve\'s dedicated coding agent running on Mac Studio', 'Builds and maintains all sync scripts, pipeline jobs, and Eve-side tooling', 'Handles Mac Studio automations and data transformation scripts', 'Works in concert with Eve — BB-8 builds the tools that Eve runs', 'Mirrors R2\'s role but scoped entirely to the data infrastructure layer'],
   'Fulcrum': ['Researches the external landscape: competitors, industry trends, best practices', 'Produces structured research memos with evidence and GYC-specific implications', 'Covers: childcare marketing, AI tooling, sales benchmarks, growth playbooks', 'Rotates through topic library on a defined cadence — no topic goes stale', 'The strategic antenna — keeps GYC\'s knowledge current with what\'s happening outside'],
@@ -415,6 +418,7 @@ function AgentOrgChart({ agents }) {
     'Monday':    { cx: COL.A,   cy: R4, size: 'sm', planned: true },
     'Vision':    { cx: COL.D,   cy: R4, size: 'sm' },
     'Morpheus':  { cx: COL.B,   cy: R4, size: 'sm' },
+    'Herbi':     { cx: COL.C,   cy: R4, size: 'sm' },
     'Scribe':    { cx: COL.A,   cy: R5, size: 'sm', planned: true },
     'Arbiter':   { cx: COL.A,   cy: R6, size: 'sm', planned: true },
   }
@@ -445,6 +449,7 @@ function AgentOrgChart({ agents }) {
     // Mini-2 planned cluster
     ['Wall·E',  'Thrawn',     { color: '#0d9488' }],
     ['Wall·E',  'Soundwave',      { color: '#f59e0b' }],
+    ['Wall·E',  'Herbi',          { color: '#22c55e' }],
     ['Mini-2',  'Monday',    { color: '#2563eb', dashed: true }],
     ['Mini-2',  'Scribe',    { color: '#c2410c', dashed: true }],
     ['Mini-2',  'Arbiter',   { color: '#7c3aed', dashed: true }],
@@ -529,6 +534,7 @@ function AgentOrgChart({ agents }) {
             'Thrawn':   { role: 'Division Lead — Business Intelligence',     node: 'Mac Mini (live)' },
             'Echo':    { role: 'Division Lead — Operations & Delivery',     node: 'Mac Mini (live)' },
             'Morpheus': { role: 'Memory Dreaming — reports to Yoda',        node: 'Mac Mini (live)' },
+            'Herbi':    { role: 'Media Intelligence + Research',             node: 'Mac Mini (live)' },
             'Monday':  { role: 'M3 Client Dashboard',                       node: 'Mac Mini #2 (planned)' },
             'Scribe':  { role: 'Report + Document Generation',              node: 'Mac Mini #2 (planned)' },
             'Arbiter': { role: 'Escalation + Inter-Agent Routing',          node: 'Mac Mini #2 (planned)' },
@@ -1091,7 +1097,7 @@ export default function MissionControlPage() {
             {/* Node breakdown */}
             <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
               {[
-                { name: 'GYC-Integrator-Claw', type: 'Mac Mini (2024)', status: 'live', agents: 'Wall·E, Yoda, R2, Thrawn, Soundwave, Echo, C3PO, Ratchet, Morpheus (all reporting to Wall·E)', color: '#7c3aed' },
+                { name: 'GYC-Integrator-Claw', type: 'Mac Mini (2024)', status: 'live', agents: 'Wall·E, Yoda, R2, Thrawn, Soundwave, Echo, C3PO, Ratchet, Morpheus, Herbi (all reporting to Wall·E)', color: '#7c3aed' },
                 { name: 'GYC-Data-Claw', type: 'Mac Studio (M2 Max)', status: 'live', agents: 'Eve, BB-8, Fulcrum, Vision', color: '#0891b2' },
                 { name: 'Laptop', type: 'Portable Node', status: 'pending', agents: 'Friday', color: '#374151' },
                 { name: 'GYC-Growth-Claw', type: 'Mac Mini #2', status: 'live', agents: 'Mouse, Chopper, Cassian, Coulson, Pepper', color: '#10b981' },
