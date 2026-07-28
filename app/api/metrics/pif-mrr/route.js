@@ -61,6 +61,17 @@ export async function GET() {
       ORDER BY sd."pifEndDate" ASC NULLS LAST
     `)
 
+    // Human-confirmed Monthly → PIF movements are the authoritative churn
+    // exclusion ledger. Include them even when SalesDeal.dealOutcome has not
+    // yet been backfilled, otherwise Leadership contradicts the Churn page.
+    const { rows: confirmedMovementRows } = await client.query(`
+      SELECT "clientName", "movementDate", "mrrMoved", "pifCashReceived",
+             "termMonths", "scheduledReturnDate"
+      FROM "ChurnLateralMovement"
+      WHERE "tenantId" = 'gyc' AND status = 'confirmed'
+      ORDER BY "scheduledReturnDate" ASC
+    `)
+
     // ── New PIFs: new MRR coming online in the future ──────────────────────────
     // dealOutcome = 'New Deal' AND (pif = true OR pifOverride = true)
     const { rows: newPifRows } = await client.query(`
@@ -121,7 +132,7 @@ export async function GET() {
     const today = new Date()
 
     // Shape Lateral PIFs
-    const lateralPifs = lateralRows.map(r => {
+    const classifiedLateralPifs = lateralRows.map(r => {
       const endDate = r.pifEndDate ? new Date(r.pifEndDate) : null
       const isActive = endDate ? endDate > today : true
       return {
@@ -136,6 +147,31 @@ export async function GET() {
         status: isActive ? 'active' : 'expired',
       }
     })
+
+    const confirmedLateralPifs = confirmedMovementRows.map(r => {
+      const endDate = r.scheduledReturnDate ? new Date(r.scheduledReturnDate) : null
+      const startDate = r.movementDate ? new Date(r.movementDate) : null
+      const isActive = endDate ? endDate > today : true
+      return {
+        clientName: r.clientName,
+        rep: 'Confirmed ledger',
+        dealDate: startDate ? startDate.toISOString().split('T')[0] : null,
+        mrrOffline: Number(r.mrrMoved || 0),
+        pifCashReceived: Number(r.pifCashReceived || 0),
+        pifStartDate: startDate ? startDate.toISOString().split('T')[0] : null,
+        pifEndDate: endDate ? endDate.toISOString().split('T')[0] : null,
+        mrrReturnAmount: Number(r.mrrMoved || 0),
+        monthsRemaining: monthsRemaining(endDate),
+        status: isActive ? 'active' : 'expired',
+        source: 'confirmed-ledger',
+      }
+    })
+
+    const confirmedNames = new Set(confirmedLateralPifs.map(p => p.clientName.trim().toLowerCase()))
+    const lateralPifs = [
+      ...confirmedLateralPifs,
+      ...classifiedLateralPifs.filter(p => !confirmedNames.has(p.clientName.trim().toLowerCase())),
+    ]
 
     // Shape New PIFs
     const newPifs = newPifRows.map(r => {
