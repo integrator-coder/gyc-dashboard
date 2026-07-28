@@ -16,6 +16,7 @@ import FulcrumIntel from '@/components/FulcrumIntel'
 import ClientHealthMonitor from '@/components/ClientHealthMonitor'
 import AgentEventLog from '@/components/AgentEventLog'
 import ZoomClassifierPage from '@/components/ZoomClassifierPage'
+import agentModelConfig from '@/data/agent-models.generated.json'
 
 function fmtEpoch(epoch) {
   if (!epoch) return '—'
@@ -98,9 +99,12 @@ const AGENT_MODEL = {
   'Cassian':  'Claude Sonnet 4.5',
   'Coulson':  'Claude Sonnet 4.5',
   'Pepper':   'Claude Sonnet 4.5',
+  ...agentModelConfig.agentModels,
 }
 
-const AGENT_MODEL_ACCESS = {
+const AGENT_HEARTBEAT_MODEL = agentModelConfig.agentHeartbeats || {}
+
+const BASE_AGENT_MODEL_ACCESS = {
   'Wall·E':    { default: 'GPT-5.6 Sol', escalate: null },
   'Eve':       { default: 'GPT-5.3-Codex', escalate: null },
   'R2':        { default: 'GPT-5.6 Sol', escalate: null },
@@ -125,6 +129,11 @@ const AGENT_MODEL_ACCESS = {
   'Coulson':  { default: 'Claude Sonnet 4.5', escalate: 'Sonnet 4.6 (via Mouse)' },
   'Pepper':   { default: 'Claude Sonnet 4.5', escalate: 'Sonnet 4.6 (via Mouse)' },
 }
+
+const AGENT_MODEL_ACCESS = Object.fromEntries(Object.entries(AGENT_MODEL).map(([name, model]) => [
+  name,
+  { ...(BASE_AGENT_MODEL_ACCESS[name] || {}), default: model },
+]))
 
 const AGENT_RESPONSIBILITIES = {
   'Wall·E':  ['Primary orchestrator for all GYC AI operations', 'Manages agent fleet task routing and coordination', 'Strategy, planning, and daily decision-making with Todd', 'Bridges all data, tools, and agents into coherent output', 'The human-facing intelligence layer — everything routes through here'],
@@ -324,6 +333,11 @@ function AgentCard({ agent, size = 'md' }) {
         {modelAccess.escalate && (
           <div style={{ fontSize: 9, color: '#4b5563', marginTop: 1 }}>
             ↑ {modelAccess.escalate}
+          </div>
+        )}
+        {AGENT_HEARTBEAT_MODEL[agent.name] && (
+          <div style={{ fontSize: 9, color: '#6b7280', marginTop: 1 }}>
+            Heartbeat: <span style={{ color: '#9ca3af' }}>{AGENT_HEARTBEAT_MODEL[agent.name]}</span>
           </div>
         )}
       </div>
@@ -1065,6 +1079,19 @@ export default function MissionControlPage() {
           <div className="mb-6 rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-5">
             <div className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300">Operating Reminder</div>
             <div className="mt-2 text-sm text-gray-300">The fleet structure, node map, and Wall·E ↔ Eve operating model are now captured in the <a href="/team/openclaw" className="text-cyan-200 hover:text-cyan-100">OpenClaw Operating Wiki</a>. Any change to agent roles, node wiring, or delegation rules should update both the wiki and this Mission Control surface.</div>
+          </div>
+
+          <div className="mb-6 grid gap-3 sm:grid-cols-3">
+            {[
+              ['Fleet default', agentModelConfig.defaults?.primary],
+              ['Heartbeat default', agentModelConfig.defaults?.heartbeat],
+              ['Subagent default', agentModelConfig.defaults?.subagents],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-xl border border-violet-400/20 bg-violet-400/5 px-4 py-3">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-300">{label}</div>
+                <div className="mt-1 text-sm font-semibold text-white">{value || '—'}</div>
+              </div>
+            ))}
           </div>
 
           {/* Fleet description */}

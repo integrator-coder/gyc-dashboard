@@ -1,0 +1,25 @@
+{
+  "agentModels": {
+    "C3PO": "DeepSeek V4 Flash",
+    "Echo": "DeepSeek V4 Flash",
+    "Herbi": "DeepSeek V4 Flash",
+    "Morpheus": "DeepSeek V4 Flash",
+    "R2": "GPT-5.6 Sol",
+    "Ratchet": "Gemini 2.5 Flash Lite",
+    "Soundwave": "Gemini 2.5 Flash Lite",
+    "Thrawn": "DeepSeek V4 Flash",
+    "Wall·E": "GPT-5.6 Sol",
+    "Yoda": "GPT-5.6 Sol"
+  },
+  "agentHeartbeats": {
+    "Morpheus": "Gemini 2.5 Flash Lite",
+    "Ratchet": "Gemini 2.5 Flash Lite",
+    "Soundwave": "Gemini 2.5 Flash Lite",
+    "Thrawn": "Gemini 2.5 Flash Lite"
+  },
+  "defaults": {
+    "primary": "DeepSeek V4 Flash",
+    "heartbeat": "Gemini 2.5 Flash Lite",
+    "subagents": "Gemini 2.5 Flash Lite"
+  }
+}
