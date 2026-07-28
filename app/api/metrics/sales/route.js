@@ -179,8 +179,7 @@ async function fetchRep(rep) {
   }
 }
 
-export async function GET() {
-  try {
+export async function getSalesMetrics() {
     const allReps = [...PRIMARY_REPS, ...OUTBOUND_REPS, ...GROWTH_ADVISORS]
 
     // Fetch sheet data + GHL closed won in parallel
@@ -239,7 +238,7 @@ export async function GET() {
       teamMetrics[metric] = out
     }
 
-    return NextResponse.json({
+    return {
       team: {
         metrics: teamMetrics,
         targets: { daily: DAILY_TARGETS, weekly: WEEKLY_TARGETS, monthly: MONTHLY_TARGETS }
@@ -250,7 +249,12 @@ export async function GET() {
       outboundReps: OUTBOUND_REPS,
       growthAdvisors: GROWTH_ADVISORS,
       updatedAt: new Date().toISOString(),
-    })
+    }
+}
+
+export async function GET() {
+  try {
+    return NextResponse.json(await getSalesMetrics())
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

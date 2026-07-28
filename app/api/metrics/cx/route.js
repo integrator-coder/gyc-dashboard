@@ -46,8 +46,7 @@ async function queryDatabase(databaseId, startCursor) {
   return res.json()
 }
 
-export async function GET() {
-  try {
+export async function getCxMetrics() {
     // Paginate through all clients
     const allResults = []
     let cursor = undefined
@@ -118,7 +117,7 @@ export async function GET() {
       .filter(c => !c.mc || c.mc.trim() === '')
       .map(c => ({ name: c.name, acronym: c.acronym }))
 
-    return NextResponse.json({
+    return {
       totalClients: total,
       currentQuarter,
       currentMonth,
@@ -127,7 +126,12 @@ export async function GET() {
       byMc,
       unassigned,
       updatedAt: new Date().toISOString()
-    })
+    }
+}
+
+export async function GET() {
+  try {
+    return NextResponse.json(await getCxMetrics())
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

@@ -321,8 +321,7 @@ function monthToLabel(m) {
   return `${names[parseInt(mo,10)-1]}-${y.slice(2)}`
 }
 
-export async function GET() {
-  try {
+export async function getChurnMetrics() {
     const client = await auth.getClient()
     const sheets = google.sheets({ version: 'v4', auth: client })
 
@@ -354,7 +353,7 @@ export async function GET() {
 
     const { augmented: marketingAugmented, grr, avgDaysToChurn } = computeGRRAndAvgDays(combinedMonthly)
 
-    return NextResponse.json({
+    return {
       marketing: {
         monthly: marketingAugmented,
         camRevenue,
@@ -367,7 +366,12 @@ export async function GET() {
         monthly: recruitingMonthly,
       },
       updatedAt: new Date().toISOString(),
-    })
+    }
+}
+
+export async function GET() {
+  try {
+    return NextResponse.json(await getChurnMetrics())
   } catch (err) {
     console.error('Churn API error:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })

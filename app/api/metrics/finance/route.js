@@ -9,7 +9,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 })
 
-export async function GET() {
+export async function getFinanceMetrics() {
   const client = await pool.connect()
   try {
     // Latest and previous StripeMetrics snapshots
@@ -127,7 +127,7 @@ export async function GET() {
       unpaidCount,
     } : null
 
-    return NextResponse.json({
+    return {
       metrics: enrichedMetrics,
       previous,
       customers,
@@ -137,11 +137,17 @@ export async function GET() {
       dailyRevenue,
       ytdCash,
       cashByMonth,
-    })
+    }
+  } finally {
+    client.release()
+  }
+}
+
+export async function GET() {
+  try {
+    return NextResponse.json(await getFinanceMetrics())
   } catch (error) {
     console.error('Finance metrics error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
-  } finally {
-    client.release()
   }
 }

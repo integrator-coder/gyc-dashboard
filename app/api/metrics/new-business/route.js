@@ -308,8 +308,7 @@ function summariseServiceByDealType(deals) {
     .sort((a, b) => b.totalFP - a.totalFP)
 }
 
-export async function GET() {
-  try {
+export async function getNewBusinessMetrics() {
     const client = await auth.getClient()
     const sheets = google.sheets({ version: 'v4', auth: client })
 
@@ -604,7 +603,7 @@ export async function GET() {
     const splitMonthly26 = summariseDealTypeByMonth(deals26)
     const splitByService26 = summariseServiceByDealType(deals26)
 
-    return NextResponse.json({
+    return {
       commissionTracker,
       summary: {
         ytdFirstPayment: ytdFP,
@@ -647,7 +646,12 @@ export async function GET() {
       },
       mrrProjection,
       updatedAt: new Date().toISOString(),
-    })
+    }
+}
+
+export async function GET() {
+  try {
+    return NextResponse.json(await getNewBusinessMetrics())
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }

@@ -1,5 +1,15 @@
 import { NextResponse } from 'next/server'
 import pkg from 'pg'
+import { getFinanceMetrics } from '../finance/route'
+import { getChurnMetrics } from '../churn/route'
+import { getDunningMetrics } from '../dunning/route'
+import { getSalesMetrics } from '../sales/route'
+import { getLeadMetrics } from '../ghl-leads/route'
+import { getDealSizeMetrics } from '../deal-size/route'
+import { getNewBusinessMetrics } from '../new-business/route'
+import { getSalesAnalysisMetrics } from '../sales-analysis/route'
+import { getClientHealthMetrics } from '../client-health/route'
+import { getCxMetrics } from '../cx/route'
 
 export const dynamic = 'force-dynamic'
 const { Pool } = pkg
@@ -44,41 +54,32 @@ function buildSourceHealth(payload) {
   return out
 }
 
-async function fetchLiveBundle(origin) {
-  const endpoints = {
-    finance: '/api/metrics/finance',
-    churn: '/api/metrics/churn',
-    dunning: '/api/metrics/dunning',
-    sales: '/api/metrics/sales',
-    leads: '/api/metrics/ghl-leads',
-    dealSize: '/api/metrics/deal-size',
-    newBusiness: '/api/metrics/new-business',
-    salesAnalysis: '/api/metrics/sales-analysis',
-    clientHealth: '/api/metrics/client-health',
-    cx: '/api/metrics/cx',
+async function fetchLiveBundle() {
+  const sources = {
+    finance: getFinanceMetrics,
+    churn: getChurnMetrics,
+    dunning: getDunningMetrics,
+    sales: getSalesMetrics,
+    leads: getLeadMetrics,
+    dealSize: getDealSizeMetrics,
+    newBusiness: getNewBusinessMetrics,
+    salesAnalysis: getSalesAnalysisMetrics,
+    clientHealth: getClientHealthMetrics,
+    cx: getCxMetrics,
   }
 
-  const entries = Object.entries(endpoints)
+  const entries = Object.entries(sources)
   const results = []
   const BATCH_SIZE = 2
 
   for (let i = 0; i < entries.length; i += BATCH_SIZE) {
     const slice = entries.slice(i, i + BATCH_SIZE)
-    const settled = await Promise.all(slice.map(async ([k, p]) => {
-      const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 20000) // 20s per endpoint
+    const settled = await Promise.all(slice.map(async ([k, load]) => {
       try {
-        const res = await fetch(`${origin}${p}`, { cache: 'no-store', signal: controller.signal })
-        if (!res.ok) {
-          console.error(`[leadership] endpoint ${p} failed: HTTP ${res.status}`)
-          return [k, { error: `HTTP ${res.status}`, partial: true }]
-        }
-        return [k, await res.json()]
+        return [k, await load()]
       } catch (err) {
-        console.error(`[leadership] endpoint ${p} failed:`, err?.message)
+        console.error(`[leadership] source ${k} failed:`, err?.message)
         return [k, { error: err?.message || 'fetch failed', partial: true }]
-      } finally {
-        clearTimeout(timeout)
       }
     }))
     results.push(...settled)
@@ -111,8 +112,7 @@ export async function GET(req) {
       })
     }
 
-    const origin = `${url.protocol}//${url.host}`
-    const payload = await fetchLiveBundle(origin)
+    const payload = await fetchLiveBundle()
 
     // Guard: refuse to save if too many sources failed
     const errorCount = Object.values(payload.meta?.sourceHealth || {}).filter(s => !s.ok).length

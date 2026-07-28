@@ -331,7 +331,7 @@ async function analyseStripeHistory() {
 }
 
 // ── Route handler ─────────────────────────────────────────────────────────────
-export async function GET() {
+export async function getSalesAnalysisMetrics() {
   let dbClient = null
   try {
     const client = await auth.getClient()
@@ -365,7 +365,7 @@ export async function GET() {
     }
     const availableMonths = [...monthSet.values()].sort((a, b) => a.key.localeCompare(b.key))
 
-    return NextResponse.json({
+    return {
       overall,
       year2025: y2025,
       year2026: y2026,
@@ -376,10 +376,16 @@ export async function GET() {
       availableMonths,
       stripe: stripeHistory,
       updatedAt: new Date().toISOString(),
-    })
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    }
   } finally {
     if (dbClient) dbClient.release()
+  }
+}
+
+export async function GET() {
+  try {
+    return NextResponse.json(await getSalesAnalysisMetrics())
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

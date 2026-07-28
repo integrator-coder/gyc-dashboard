@@ -108,8 +108,7 @@ function getBucket(days) {
 
 // ── GET /api/metrics/dunning ───────────────────────────────────────────────────
 
-export async function GET() {
-  try {
+export async function getDunningMetrics() {
     // Load historical data from Neon (parallel)
     const [subsResponse, invoicesResponse, history, serviceMap] = await Promise.all([
       stripe.subscriptions.list({
@@ -273,7 +272,7 @@ export async function GET() {
       }
     })
 
-    return NextResponse.json({
+    return {
       summary: {
         pastDueCount,
         mrrAtRisk,
@@ -288,7 +287,12 @@ export async function GET() {
       pastDue,
       failedInvoices: failedList,
       updatedAt: new Date().toISOString(),
-    })
+    }
+}
+
+export async function GET() {
+  try {
+    return NextResponse.json(await getDunningMetrics())
   } catch (err) {
     console.error('[dunning] error:', err)
     return NextResponse.json(

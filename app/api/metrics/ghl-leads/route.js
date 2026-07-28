@@ -48,8 +48,7 @@ async function getRecentContacts(days = 30) {
   return contacts
 }
 
-export async function GET() {
-  try {
+export async function getLeadMetrics() {
     const [pipelines, openOpps, wonOpps, recentContacts] = await Promise.all([
       getPipelines(),
       getAllOpportunities({ status: 'open' }),
@@ -75,7 +74,7 @@ export async function GET() {
 
     const qualifiedLeads = Array.from(qualifiedByContact.values())
 
-    return NextResponse.json({
+    return {
       newLeads: summarizeByWindow(recentContacts, item => item.dateAdded),
       qualifiedLeads: summarizeByWindow(qualifiedLeads, item => item.createdAt),
       metadata: {
@@ -85,7 +84,12 @@ export async function GET() {
           .map(stage => stage.name),
         recentContactsSampled: recentContacts.length,
       },
-    })
+    }
+}
+
+export async function GET() {
+  try {
+    return NextResponse.json(await getLeadMetrics())
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

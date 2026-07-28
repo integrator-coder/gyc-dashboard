@@ -122,7 +122,7 @@ async function fetchHealthData() {
   }
 }
 
-export async function GET() {
+export async function getClientHealthMetrics() {
   try {
     const payload = {
       ...(await fetchHealthData()),
@@ -131,17 +131,25 @@ export async function GET() {
     }
 
     await writeCache(payload)
-    return NextResponse.json(payload)
+    return payload
   } catch (error) {
     const cache = await readCache()
     if (cache) {
-      return NextResponse.json({
+      return {
         ...cache,
         cached: true,
         cacheReason: error.message,
-      })
+      }
     }
 
+    throw error
+  }
+}
+
+export async function GET() {
+  try {
+    return NextResponse.json(await getClientHealthMetrics())
+  } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
