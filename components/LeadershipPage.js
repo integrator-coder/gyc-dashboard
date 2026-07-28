@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import MetricTooltip from '@/components/MetricTooltip'
+import PifMrrImpact from '@/components/PifMrrImpact'
 import {
   ResponsiveContainer,
   BarChart, Bar,
@@ -581,6 +582,11 @@ export default function LeadershipPage() {
           <li>Watch dunning-at-risk MRR alongside churn trend; both are early-warning signals for cash pressure.</li>
         </ul>
       </Panel>
+
+      {/* ── PIF MRR Impact ──────────────────────────────────────────────────── */}
+      <div className="surface-panel rounded-2xl p-5">
+        <PifMrrImpact />
+      </div>
     </div>
   )
 }

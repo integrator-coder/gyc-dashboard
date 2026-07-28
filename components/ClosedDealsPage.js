@@ -114,6 +114,9 @@ function DealCard({ deal: initialDeal }) {
       ? ''
       : initialDeal.pifOverride ? 'true' : 'false',
     termOverride: initialDeal.termOverride != null ? String(initialDeal.termOverride) : '',
+    pifStartDate: initialDeal.pifStartDate || '',
+    pifEndDate: initialDeal.pifEndDate || '',
+    mrrReturnAmount: initialDeal.mrrReturnAmount != null ? String(initialDeal.mrrReturnAmount) : '',
   })
   const [saving, setSaving]         = useState(false)
   const [saveStatus, setSaveStatus] = useState(null) // null | 'saved' | 'error: ...'
@@ -128,28 +131,37 @@ function DealCard({ deal: initialDeal }) {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          clientName:  deal.clientName,
-          dealDate:    deal.dealDate,
-          dealOutcome: editState.dealOutcome || null,
-          pifOverride: editState.pifOverride === '' ? null : editState.pifOverride === 'true',
-          termOverride: editState.termOverride ? parseFloat(editState.termOverride) : null,
+          clientName:      deal.clientName,
+          dealDate:        deal.dealDate,
+          dealOutcome:     editState.dealOutcome || null,
+          pifOverride:     editState.pifOverride === '' ? null : editState.pifOverride === 'true',
+          termOverride:    editState.termOverride ? parseFloat(editState.termOverride) : null,
+          pifStartDate:    editState.pifStartDate || null,
+          pifEndDate:      editState.pifEndDate || null,
+          mrrReturnAmount: editState.mrrReturnAmount ? parseFloat(editState.mrrReturnAmount) : null,
         }),
       })
       const json = await res.json()
       if (!res.ok || !json.ok) throw new Error(json.error || `HTTP ${res.status}`)
 
       // Update local deal to reflect new values immediately
-      const newPifOverride  = editState.pifOverride === '' ? null : editState.pifOverride === 'true'
-      const newTermOverride = editState.termOverride ? parseFloat(editState.termOverride) : null
-      const newDealOutcome  = editState.dealOutcome || null
+      const newPifOverride     = editState.pifOverride === '' ? null : editState.pifOverride === 'true'
+      const newTermOverride    = editState.termOverride ? parseFloat(editState.termOverride) : null
+      const newDealOutcome     = editState.dealOutcome || null
+      const newPifStartDate    = editState.pifStartDate || null
+      const newPifEndDate      = editState.pifEndDate || null
+      const newMrrReturnAmount = editState.mrrReturnAmount ? parseFloat(editState.mrrReturnAmount) : null
       setLocalDeal(prev => ({
         ...prev,
-        dealOutcome:   newDealOutcome,
-        pifOverride:   newPifOverride,
-        termOverride:  newTermOverride,
-        hasManualEdit: newDealOutcome !== null || newPifOverride !== null || newTermOverride !== null,
-        pif:           newPifOverride !== null ? newPifOverride : prev.pif,
-        term:          newTermOverride !== null ? newTermOverride : initialDeal.term,
+        dealOutcome:      newDealOutcome,
+        pifOverride:      newPifOverride,
+        termOverride:     newTermOverride,
+        pifStartDate:     newPifStartDate,
+        pifEndDate:       newPifEndDate,
+        mrrReturnAmount:  newMrrReturnAmount,
+        hasManualEdit:    newDealOutcome !== null || newPifOverride !== null || newTermOverride !== null,
+        pif:              newPifOverride !== null ? newPifOverride : prev.pif,
+        term:             newTermOverride !== null ? newTermOverride : initialDeal.term,
       }))
       setSaveStatus('saved')
     } catch (err) {
@@ -335,6 +347,41 @@ function DealCard({ deal: initialDeal }) {
                   className={`${inputClass} w-24`}
                 />
               </div>
+              {/* PIF Date/Amount fields — only shown for PIF deals */}
+              {(deal.pif || deal.pifOverride || editState.pifOverride === 'true') && (
+                <>
+                  <div>
+                    <label className="block text-[10px] text-gray-500 mb-1">PIF Start Date</label>
+                    <input
+                      type="date"
+                      value={editState.pifStartDate}
+                      onChange={e => setEditState(s => ({ ...s, pifStartDate: e.target.value }))}
+                      className={`${inputClass} w-36`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-gray-500 mb-1">PIF End Date</label>
+                    <input
+                      type="date"
+                      value={editState.pifEndDate}
+                      onChange={e => setEditState(s => ({ ...s, pifEndDate: e.target.value }))}
+                      className={`${inputClass} w-36`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-gray-500 mb-1">Return MRR/mo</label>
+                    <input
+                      type="number"
+                      value={editState.mrrReturnAmount}
+                      onChange={e => setEditState(s => ({ ...s, mrrReturnAmount: e.target.value }))}
+                      placeholder="Auto"
+                      min="0"
+                      step="0.01"
+                      className={`${inputClass} w-28`}
+                    />
+                  </div>
+                </>
+              )}
               {/* Save button */}
               <button
                 onClick={handleSave}

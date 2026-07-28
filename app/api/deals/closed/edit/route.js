@@ -16,10 +16,13 @@ const pool = new Pool({
  * Apply manual overrides to a deal (by clientName + dealDate + tenantId).
  * Overrides are never touched by the PandaDoc sync — only by this endpoint.
  *
- * Body: { clientName, dealDate, dealOutcome, pifOverride, termOverride }
- *   - dealOutcome : 'New Deal' | 'Lateral' | 'Down Sell' | null  (null clears it)
- *   - pifOverride : true | false | null  (null = use synced value)
- *   - termOverride: number | null        (null = use synced value)
+ * Body: { clientName, dealDate, dealOutcome, pifOverride, termOverride, pifStartDate, pifEndDate, mrrReturnAmount }
+ *   - dealOutcome      : 'New Deal' | 'Lateral' | 'Down Sell' | null  (null clears it)
+ *   - pifOverride      : true | false | null  (null = use synced value)
+ *   - termOverride     : number | null        (null = use synced value)
+ *   - pifStartDate     : ISO date string | null
+ *   - pifEndDate       : ISO date string | null
+ *   - mrrReturnAmount  : number | null
  */
 export async function PATCH(request) {
   try {
@@ -29,7 +32,7 @@ export async function PATCH(request) {
     }
 
     const body = await request.json()
-    const { clientName, dealDate, dealOutcome, pifOverride, termOverride } = body
+    const { clientName, dealDate, dealOutcome, pifOverride, termOverride, pifStartDate, pifEndDate, mrrReturnAmount } = body
 
     if (!clientName || !dealDate) {
       return NextResponse.json(
@@ -52,18 +55,24 @@ export async function PATCH(request) {
     const result = await pool.query(
       `UPDATE "SalesDeal"
        SET
-         "dealOutcome"  = $1,
-         "pifOverride"  = $2,
-         "termOverride" = $3,
-         "lastEditedAt" = NOW(),
-         "editedBy"     = $4
-       WHERE "clientName" = $5
-         AND "dealDate"   = $6
+         "dealOutcome"     = $1,
+         "pifOverride"     = $2,
+         "termOverride"    = $3,
+         "pifStartDate"    = $4,
+         "pifEndDate"      = $5,
+         "mrrReturnAmount" = $6,
+         "lastEditedAt"    = NOW(),
+         "editedBy"        = $7
+       WHERE "clientName" = $8
+         AND "dealDate"   = $9
          AND "tenantId"   = 'gyc'`,
       [
-        dealOutcome   ?? null,
-        pifOverride   ?? null,
-        termOverride  ?? null,
+        dealOutcome      ?? null,
+        pifOverride      ?? null,
+        termOverride     ?? null,
+        pifStartDate     ?? null,
+        pifEndDate       ?? null,
+        mrrReturnAmount  != null ? Number(mrrReturnAmount) : null,
         editedBy,
         clientName,
         dealDate,

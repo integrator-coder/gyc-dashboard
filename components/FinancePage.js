@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import MetricCard from '@/components/MetricCard'
 import MetricTooltip from '@/components/MetricTooltip'
+import PifMrrImpact from '@/components/PifMrrImpact'
 import {
   BarChart,
   Bar,
@@ -616,6 +617,18 @@ export default function FinancePage() {
           <p className="mt-2 text-center text-xs executive-faint">Current month highlighted in gold</p>
         </div>
       )}
+
+      {/* ── PIF MRR Impact ──────────────────────────────────────────────────── */}
+      <div
+        className="rounded-2xl p-5"
+        style={{
+          background: B.panel,
+          border: `1px solid ${B.border}`,
+          boxShadow: `inset 3px 0 0 var(--brand-primary-4), var(--brand-shadow)`,
+        }}
+      >
+        <PifMrrImpact />
+      </div>
     </div>
   )
 }

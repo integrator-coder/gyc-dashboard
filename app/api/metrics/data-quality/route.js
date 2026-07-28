@@ -35,26 +35,10 @@ export async function GET() {
   }
 
   try {
-    // ── Check 1: Finance snapshot freshness ─────────────────────────────────
-    const { rows: snapRows } = await client.query(`
-      SELECT "asOf", payload FROM "LeadershipSnapshot"
-      ORDER BY "asOf" DESC LIMIT 1
-    `)
-    const snap = snapRows[0] || null
-    if (!snap) {
-      addCheck('Finance Snapshot Freshness', false, 'No snapshot found', 'LeadershipSnapshot table is empty')
-    } else {
-      const ageMs = Date.now() - new Date(snap.asOf).getTime()
-      const ageH = ageMs / 3600000
-      const agoStr = fmtAgo(snap.asOf)
-      const pass = ageH < 12
-      addCheck(
-        'Finance Snapshot Freshness',
-        pass,
-        agoStr,
-        pass ? null : `Snapshot is ${agoStr} — exceeds 12h freshness threshold`
-      )
-    }
+    // NOTE: "Finance Snapshot Freshness" (LeadershipSnapshot) check removed 2026-07-28.
+    // LeadershipSnapshot is an orphaned table written only on Thursdays; nothing in the
+    // dashboard reads from it. False positive — real freshness is covered by Checks 2-7
+    // (StripeMetrics, StripeCustomer, DailyRevenue).
 
     // ── Check 2: MRR/ARR consistency ────────────────────────────────────────
     const { rows: stripeRows } = await client.query(`
@@ -192,8 +176,21 @@ export async function GET() {
     }
 
     // ── Check 8: MRR Reconciliation (Profile vs Stripe) ────────────────────
+    // PIF clients are excluded: they pay lump-sum so Stripe shows 0 recurring MRR
+    // while the profile still carries the contracted MRR. That's expected.
     try {
       const { rows: mrrMismatchRows } = await client.query(`
+        WITH active_pif_clients AS (
+          -- Clients with an active PIF deal (pifEndDate in the future or NULL)
+          SELECT DISTINCT sd."clientName" AS acronym
+          FROM "SalesDeal" sd
+          WHERE sd."tenantId" = 'gyc'
+            AND (sd."pif" = true OR sd."pifOverride" = true)
+            AND (
+              sd."pifEndDate" IS NULL
+              OR sd."pifEndDate" > CURRENT_DATE
+            )
+        )
         SELECT 
           cp.acronym,
           cp."companyName",
@@ -207,13 +204,15 @@ export async function GET() {
         WHERE cp."tenantId" = 'gyc'
           AND cp.mrr IS NOT NULL
           AND cp.mrr > 0
+          -- Exclude active PIF clients — Stripe shows lump sum, not monthly
+          AND cp.acronym NOT IN (SELECT acronym FROM active_pif_clients)
         GROUP BY cp.id, cp.acronym, cp."companyName", cp.mrr
         HAVING ABS(ROUND(COALESCE(SUM(sc.mrr), 0)::numeric, 2) - cp.mrr) / cp.mrr > 0.10
         ORDER BY ABS(ROUND(COALESCE(SUM(sc.mrr), 0)::numeric, 2) - cp.mrr) / cp.mrr DESC
         LIMIT 20
       `)
       if (mrrMismatchRows.length === 0) {
-        addCheck('MRR Reconciliation (Profile vs Stripe)', true, 'All linked clients match within 10%', null)
+        addCheck('MRR Reconciliation (Profile vs Stripe)', true, 'All linked clients match within 10% (PIF clients excluded)', null)
       } else {
         const mismatchNote = mrrMismatchRows
           .map(r => `${r.acronym || r.companyName}: profile $${Number(r.profile_mrr).toLocaleString()} vs Stripe $${Number(r.stripe_mrr).toLocaleString()}`)
@@ -221,7 +220,7 @@ export async function GET() {
         addCheck(
           'MRR Reconciliation (Profile vs Stripe)',
           false,
-          `${mrrMismatchRows.length} client(s) with MRR mismatch >10%`,
+          `${mrrMismatchRows.length} client(s) with MRR mismatch >10% (PIF clients excluded)`,
           mismatchNote
         )
       }

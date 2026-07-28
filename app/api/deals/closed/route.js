@@ -83,6 +83,9 @@ export async function GET(request) {
           MAX("termOverride")                                           AS "termOverride",
           BOOL_OR("pifOverride" IS NOT NULL OR "termOverride" IS NOT NULL OR "dealOutcome" IS NOT NULL) AS "hasManualEdit",
           SUM("renewalAmount")                                          AS "renewalAmount",
+          MAX("pifStartDate")                                           AS "pifStartDate",
+          MAX("pifEndDate")                                             AS "pifEndDate",
+          MAX("mrrReturnAmount")                                        AS "mrrReturnAmount",
           STRING_AGG(DISTINCT "service", ' · ' ORDER BY "service")     AS "services",
           COUNT(*)                                                       AS "serviceCount",
           "tenantId"
@@ -121,6 +124,9 @@ export async function GET(request) {
         d."pifOverride",
         d."termOverride",
         d."hasManualEdit",
+        d."pifStartDate",
+        d."pifEndDate",
+        d."mrrReturnAmount",
         -- Client profile
         cp."companyName",
         cp."ownerName",
@@ -284,7 +290,10 @@ export async function GET(request) {
         dealOutcome:   row.dealOutcome || null,
         pifOverride:   row.pifOverride !== null && row.pifOverride !== undefined ? Boolean(row.pifOverride) : null,
         termOverride:  row.termOverride != null ? parseFloat(row.termOverride) : null,
-        hasManualEdit: Boolean(row.hasManualEdit),
+        hasManualEdit:    Boolean(row.hasManualEdit),
+        pifStartDate:    row.pifStartDate ? new Date(row.pifStartDate).toISOString().split('T')[0] : null,
+        pifEndDate:      row.pifEndDate   ? new Date(row.pifEndDate).toISOString().split('T')[0]   : null,
+        mrrReturnAmount: row.mrrReturnAmount != null ? parseFloat(row.mrrReturnAmount) : null,
       }
     })
 
