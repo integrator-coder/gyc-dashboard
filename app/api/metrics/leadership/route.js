@@ -70,7 +70,7 @@ async function fetchLiveBundle() {
 
   const entries = Object.entries(sources)
   const results = []
-  const BATCH_SIZE = 2
+  const BATCH_SIZE = entries.length
 
   for (let i = 0; i < entries.length; i += BATCH_SIZE) {
     const slice = entries.slice(i, i + BATCH_SIZE)
