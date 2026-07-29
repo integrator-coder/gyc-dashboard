@@ -231,7 +231,7 @@ export default function FinanceChurnPage() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Card 1: Clients Lost + MRR Lost */}
             <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-              <p className="text-gray-300 text-xs uppercase tracking-wider mb-1">Clients Lost</p>
+              <p className="text-gray-300 text-xs uppercase tracking-wider mb-1">Logos Lost</p>
               <p className="text-4xl font-bold text-red-400">{selected.clientsLost}</p>
               <p className="text-red-400/70 text-sm font-medium mt-1">
                 {formatCurrency(selected.mrrLost)} MRR
@@ -249,7 +249,7 @@ export default function FinanceChurnPage() {
 
             {/* Card 3: Churn Rates */}
             <div className="rounded-xl p-5" style={{ backgroundColor: '#111111', border: '1px solid #2a1a3e' }}>
-              <p className="text-gray-300 text-xs uppercase tracking-wider mb-1">Churn Rate</p>
+              <p className="text-gray-300 text-xs uppercase tracking-wider mb-1">Logo Churn Rate</p>
               <p className="text-4xl font-bold text-red-400">{selected.churnRateCount}%</p>
               <p className="text-gray-300 text-xs mt-1">
                 Revenue churn: <span className="text-red-400/80">{selected.churnRateRevenue}%</span>
@@ -267,6 +267,20 @@ export default function FinanceChurnPage() {
               </p>
             </div>
           </div>
+
+          {data?.definitions && (
+            <section className="rounded-xl p-5 bg-gray-900 border border-gray-800">
+              <h2 className="text-white font-semibold">Churn definitions</h2>
+              <div className="mt-3 space-y-2 text-xs text-gray-300">
+                <p><span className="text-white font-medium">Client/logo churn:</span> {data.definitions.clientChurn}</p>
+                <p><span className="text-white font-medium">Revenue churn:</span> {data.definitions.revenueChurn}</p>
+                <p><span className="text-white font-medium">Program churn:</span> {data.definitions.programChurn}</p>
+                <p><span className="text-white font-medium">Unknowns:</span> {data.definitions.unknowns}</p>
+                <p><span className="text-white font-medium">GRR:</span> {data.definitions.grr}</p>
+                <p><span className="text-white font-medium">NRR:</span> {data.definitions.nrr}</p>
+              </div>
+            </section>
+          )}
 
           {data?.lateralMovements?.confirmed?.length > 0 && (
             <section className="rounded-xl p-5 space-y-4 bg-blue-950/30 border border-blue-800">
@@ -424,17 +438,17 @@ export default function FinanceChurnPage() {
                 <h4 className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-3">Churn</h4>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <StatCard
-                    label="Clients Lost"
+                    label="Logos Lost"
                     value={selected.clientsLost}
                     color="red"
                   />
                   <StatCard
-                    label="MRR Lost (Cancels)"
+                    label="Logo-Churn MRR"
                     value={formatCurrency(selected.mrrLost)}
                     color="red"
                   />
                   <StatCard
-                    label="Churn Rate (Count)"
+                    label="Logo Churn (Count)"
                     value={`${selected.churnRateCount}%`}
                     color="red"
                   />
@@ -445,6 +459,16 @@ export default function FinanceChurnPage() {
                   />
                 </div>
               </div>
+
+              {selected.programChurnClients > 0 && (
+                <div>
+                  <h4 className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-3">Program Churn (retained logos)</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <StatCard label="Programs Lost" value={selected.programChurnClients} color="red" />
+                    <StatCard label="Program MRR Lost" value={formatCurrency(selected.programChurnMrr)} color="red" />
+                  </div>
+                </div>
+              )}
 
               {/* New Business */}
               <div>

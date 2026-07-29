@@ -16,6 +16,7 @@ require('dotenv').config({ path: require('path').resolve(__dirname, '../.env.loc
 
 const Stripe = require('stripe');
 const { Pool } = require('pg');
+const { classifyCancellation, classificationKey } = require('../lib/churn-classification');
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const pool = new Pool({
@@ -47,26 +48,30 @@ function monthBounds(monthStr) {
 async function fetchAllSubscriptions() {
   console.log('Fetching all Stripe subscriptions...');
   const subs = [];
-  let page = await stripe.subscriptions.list({ limit: 100, status: 'all' });
+  let page = await stripe.subscriptions.list({ limit: 100, status: 'all', expand: ['data.customer'] });
   subs.push(...page.data);
   while (page.has_more) {
-    page = await stripe.subscriptions.list({ limit: 100, status: 'all', starting_after: page.data[page.data.length - 1].id });
+    page = await stripe.subscriptions.list({ limit: 100, status: 'all', starting_after: page.data[page.data.length - 1].id, expand: ['data.customer'] });
     subs.push(...page.data);
   }
   console.log(`Fetched ${subs.length} subscriptions`);
   return subs;
 }
 
-function computeMonthMetrics(subs, monthStr, confirmedLaterals = []) {
+function computeMonthMetrics(subs, monthStr, classifications = []) {
   const { startUnix, endUnix } = monthBounds(monthStr);
 
   let mrr = 0, newMrr = 0, retainedNewMrr = 0, churnedMrr = 0, activeCount = 0;
-  let clientsAdded = 0;
+  const addedCustomerIds = new Set();
   const lostCustomerIds = new Set();
-  const lateralByCanceledSubscription = new Map(
-    confirmedLaterals.map(row => [row.canceledSubscriptionId, row])
+  const classificationByCanceledSubscription = new Map(
+    classifications.map(row => [row.canceledSubscriptionId, row])
   );
+  const classificationByAuditKey = new Map(classifications.filter(row => row.normalizedClientName && row.canceledMonth && row.mrr != null).map(row => [`${row.normalizedClientName}|${row.canceledMonth}|${Number(row.mrr).toFixed(2)}`, row]));
   let lateralMovementMrr = 0;
+  const openingCustomerIds = new Set();
+  let programChurnMrr = 0;
+  const programChurnCustomerIds = new Set();
   
   // Split by interval type
   let monthlyMRR = 0, pifMRR = 0;
@@ -76,6 +81,7 @@ function computeMonthMetrics(subs, monthStr, confirmedLaterals = []) {
   let monthlyChurnedMRR = 0, pifChurnedMRR = 0;
 
   for (const sub of subs) {
+    const customerId = typeof sub.customer === 'object' ? sub.customer.id : String(sub.customer);
     const created = sub.created; // unix
     const canceledAt = sub.canceled_at; // unix or null
     const subMrr = calcSubMRR(sub);
@@ -90,6 +96,7 @@ function computeMonthMetrics(subs, monthStr, confirmedLaterals = []) {
     // Ending snapshot: active at month end. This makes MRR/client counts comparable
     // month to month instead of counting anyone who was active for a single day.
     const activeAtEnd = created <= endUnix && (canceledAt == null || canceledAt > endUnix);
+    if (created < startUnix && (canceledAt == null || canceledAt >= startUnix)) openingCustomerIds.add(customerId);
     if (activeAtEnd) {
       mrr += subMrr;
       activeCount++;
@@ -106,7 +113,7 @@ function computeMonthMetrics(subs, monthStr, confirmedLaterals = []) {
     // New this month
     if (created >= startUnix && created <= endUnix) {
       newMrr += subMrr;
-      clientsAdded++;
+      addedCustomerIds.add(customerId);
       
       if (isMonthly) {
         monthlyNewMRR += subMrr;
@@ -122,16 +129,18 @@ function computeMonthMetrics(subs, monthStr, confirmedLaterals = []) {
 
     // Churned this month
     if (canceledAt != null && canceledAt >= startUnix && canceledAt <= endUnix) {
-      const lateral = lateralByCanceledSubscription.get(sub.id);
-      // Policy: a cancellation is excluded from churn only after a human-confirmed
-      // Monthly → PIF ledger entry ties the same Stripe customer to both events.
-      // Ambiguous PIF deals remain churn until they are explicitly confirmed.
-      if (lateral && String(sub.customer) === lateral.stripeCustomerId) {
-        lateralMovementMrr += subMrr;
+      const customerName = typeof sub.customer === 'object' ? (sub.customer.name || sub.customer.email) : '';
+      const classification = classificationByCanceledSubscription.get(sub.id) || classificationByAuditKey.get(classificationKey(customerName, monthStr, subMrr));
+      const decision = classifyCancellation(classification);
+      // Only an evidence-backed confirmed classification can remove a cancellation
+      // from logo churn. Unknowns remain provisionally included.
+      if (decision.programChurn) { programChurnMrr += subMrr; programChurnCustomerIds.add(customerId); }
+      if (!decision.logoChurn && (!classification.stripeCustomerId || customerId === classification.stripeCustomerId)) {
+        if (decision.retainedValue) lateralMovementMrr += subMrr;
         continue;
       }
       churnedMrr += subMrr;
-      lostCustomerIds.add(String(sub.customer));
+      lostCustomerIds.add(customerId);
       
       if (isMonthly) {
         monthlyChurnedMRR += subMrr;
@@ -147,10 +156,13 @@ function computeMonthMetrics(subs, monthStr, confirmedLaterals = []) {
     retainedNewMrr: Math.round(retainedNewMrr * 100) / 100,
     churnedMrr: Math.round(churnedMrr * 100) / 100,
     activeSubscriptions: activeCount,
-    clientsAdded,
+    clientsAdded: addedCustomerIds.size,
     // A client can have multiple canceled subscriptions. Churn is a unique-logo
     // metric, so count Stripe customers rather than subscription objects.
     clientsLost: lostCustomerIds.size,
+    openingClients: openingCustomerIds.size,
+    programChurnMrr: Math.round(programChurnMrr * 100) / 100,
+    programChurnClients: programChurnCustomerIds.size,
     lateralMovementMrr: Math.round(lateralMovementMrr * 100) / 100,
     monthlyMRR: Math.round(monthlyMRR * 100) / 100,
     pifMRR: Math.round(pifMRR * 100) / 100,
@@ -197,7 +209,7 @@ async function upsertMRRHistory(client, monthStr, metrics) {
 async function upsertChurnMetrics(client, monthStr, metrics, prevMetrics) {
   const totalMRR = metrics.mrr;
   const prevMRR = prevMetrics?.mrr || 0;
-  const prevClients = prevMetrics?.activeSubscriptions || 0;
+  const prevClients = metrics.openingClients || 0;
   const churnPct = prevClients > 0 ? Math.round((metrics.clientsLost / prevClients) * 1000) / 10 : 0;
   const revenueChurnPct = prevMRR > 0 ? Math.round((metrics.churnedMrr / prevMRR) * 1000) / 10 : 0;
   const netMRR = metrics.newMrr - metrics.churnedMrr;
@@ -228,8 +240,8 @@ async function upsertChurnMetrics(client, monthStr, metrics, prevMetrics) {
        "newMRR", "churnedMRR", "netMRR", "churnPct", "revenueChurnPct", "nrr", "grr",
        "monthlyMRR", "pifMRR", "monthlyClients", "pifClients",
        "monthlyChurnedMRR", "pifChurnedMRR", "monthlyNewMRR", "pifNewMRR",
-       "monthlyNRR", "pifNRR", "syncedAt")
-     VALUES ('gyc', $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NOW())
+       "monthlyNRR", "pifNRR", "openingClients", "programChurnClients", "programChurnMRR", "syncedAt")
+     VALUES ('gyc', $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, NOW())
      ON CONFLICT ("tenantId", "month") DO UPDATE SET
        "totalMRR" = EXCLUDED."totalMRR",
        "clientCount" = EXCLUDED."clientCount",
@@ -252,12 +264,15 @@ async function upsertChurnMetrics(client, monthStr, metrics, prevMetrics) {
        "pifNewMRR" = EXCLUDED."pifNewMRR",
        "monthlyNRR" = EXCLUDED."monthlyNRR",
        "pifNRR" = EXCLUDED."pifNRR",
+       "openingClients" = EXCLUDED."openingClients",
+       "programChurnClients" = EXCLUDED."programChurnClients",
+       "programChurnMRR" = EXCLUDED."programChurnMRR",
        "syncedAt" = NOW()`,
     [monthStr, totalMRR, metrics.activeSubscriptions, metrics.clientsAdded, metrics.clientsLost,
      metrics.newMrr, metrics.churnedMrr, netMRR, churnPct, revenueChurnPct, nrr, grr,
      metrics.monthlyMRR, metrics.pifMRR, metrics.monthlyClients, metrics.pifClients,
      metrics.monthlyChurnedMRR, metrics.pifChurnedMRR, metrics.monthlyNewMRR, metrics.pifNewMRR,
-     monthlyNRR, pifNRR]
+     monthlyNRR, pifNRR, metrics.openingClients, metrics.programChurnClients, metrics.programChurnMrr]
   );
 }
 
@@ -294,6 +309,16 @@ async function ensureTables(client) {
     )
   `);
   await client.query(`ALTER TABLE "MonthlyChurnMetrics" ADD COLUMN IF NOT EXISTS "revenueChurnPct" NUMERIC(6,2)`);
+  await client.query(`ALTER TABLE "MonthlyChurnMetrics" ADD COLUMN IF NOT EXISTS "openingClients" INT`);
+  await client.query(`ALTER TABLE "MonthlyChurnMetrics" ADD COLUMN IF NOT EXISTS "programChurnClients" INT`);
+  await client.query(`ALTER TABLE "MonthlyChurnMetrics" ADD COLUMN IF NOT EXISTS "programChurnMRR" NUMERIC(12,2)`);
+  await client.query(`CREATE TABLE IF NOT EXISTS "ChurnClassification" (
+    "id" BIGSERIAL PRIMARY KEY, "tenantId" TEXT NOT NULL DEFAULT 'gyc', "canceledSubscriptionId" TEXT,
+    "stripeCustomerId" TEXT, "clientName" TEXT NOT NULL, "classificationType" TEXT NOT NULL,
+    "normalizedClientName" TEXT NOT NULL, "canceledMonth" TEXT NOT NULL, "mrr" NUMERIC(12,2) NOT NULL,
+    "reason" TEXT, "evidence" TEXT, "status" TEXT NOT NULL DEFAULT 'confirmed', "classifiedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE ("tenantId", "normalizedClientName", "canceledMonth", "mrr"),
+    CHECK ("classificationType" IN ('logo_churn','program_churn','lateral_migration','pif_lateral','billing_replacement','duplicate_artifact','unclassified')))`);
   await client.query(`
     CREATE TABLE IF NOT EXISTS "ChurnLateralMovement" (
       "id" BIGSERIAL PRIMARY KEY,
@@ -316,14 +341,27 @@ async function ensureTables(client) {
   `);
 }
 
-async function loadConfirmedLaterals(client) {
+async function loadChurnClassifications(client) {
   const { rows } = await client.query(`
     SELECT "stripeCustomerId", "canceledSubscriptionId", "movementDate",
            "mrrMoved", "pifCashReceived", "termMonths", "scheduledReturnDate"
     FROM "ChurnLateralMovement"
     WHERE "tenantId" = 'gyc' AND status = 'confirmed'
   `);
-  return rows;
+  await client.query(`INSERT INTO "ChurnClassification" ("tenantId","clientName","normalizedClientName","canceledMonth",mrr,"classificationType",reason,evidence,status) VALUES
+    ('gyc','Frederick Country Day Montessori & Art School','frederickcountrydaymontessoriartschool','2026-06',197,'billing_replacement','Replacement/duplicate subscription; other subscriptions remain active','Stripe + offboarding audit 2026-07-29','confirmed'),
+    ('gyc','Virginia Montessori Academy','virginiamontessoriacademy','2026-06',599,'billing_replacement','Payments continued on active replacement subscription','Stripe audit 2026-07-29','confirmed'),
+    ('gyc','Montessori Children''s Academy','montessorichildrensacademy','2026-06',995,'program_churn','Canceled Google Ads; retained website service','Asana offboarding audit 2026-07-29','confirmed'),
+    ('gyc','Lehigh School Academy','lehighschoolacademy','2026-06',1497,'lateral_migration','Moved Google Ads to SEO; replacement subscription active','Asana + Stripe audit 2026-07-29','confirmed'),
+    ('gyc','TweetyB''s','tweetybs','2026-07',790,'billing_replacement','Subscription replacement/reactivation; logo retained','Stripe audit 2026-07-29','confirmed'),
+    ('gyc','Great Beginnings Daycare and Preschool','greatbeginningsdaycareandpreschool','2026-07',1019,'billing_replacement','Subscription replacement; logo retained','Stripe audit 2026-07-29','confirmed'),
+    ('gyc','Little Treehouse Academy','littletreehouseacademy','2026-07',795,'lateral_migration','Moved Google Ads to Reputation Engine; retained website','Asana offboarding audit 2026-07-29','confirmed'),
+    ('gyc','Crossing Borders Language Center','crossingborderslanguagecenter','2026-07',1395,'lateral_migration','Moved Google Ads to Reputation Engine Core; retained website','Asana offboarding audit 2026-07-29','confirmed'),
+    ('gyc','Kidstown Learning Center','kidstownlearningcenter','2026-07',995,'lateral_migration','Moved Google Ads to SEO; transition services remain active','Asana offboarding audit 2026-07-29','confirmed')
+    ON CONFLICT ("tenantId","normalizedClientName","canceledMonth",mrr) DO UPDATE SET "classificationType"=EXCLUDED."classificationType",reason=EXCLUDED.reason,evidence=EXCLUDED.evidence,status=EXCLUDED.status,"updatedAt"=NOW()`);
+  const { rows: classified } = await client.query(`SELECT "canceledSubscriptionId", "stripeCustomerId", "normalizedClientName", "canceledMonth", mrr, "classificationType", reason, evidence, status FROM "ChurnClassification" WHERE "tenantId"='gyc'`);
+  const existing = new Set(classified.map(row => row.canceledSubscriptionId));
+  return classified.concat(rows.filter(row => !existing.has(row.canceledSubscriptionId)).map(row => ({ ...row, classificationType: 'pif_lateral', status: 'confirmed' })));
 }
 
 async function main() {
@@ -340,7 +378,7 @@ async function main() {
 
   try {
     await ensureTables(client);
-    const confirmedLaterals = await loadConfirmedLaterals(client);
+    const confirmedLaterals = await loadChurnClassifications(client);
 
     // Build metrics for each target month + the month before (for NRR prev-month reference)
     const allMonths = [targets[0]]; // we need month before first target for NRR

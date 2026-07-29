@@ -174,7 +174,8 @@ export async function GET() {
       try {
         const { rows: dbData } = await dbClient.query(`
           SELECT month, "totalMRR", "clientCount", "clientsAdded", "clientsLost",
-                 "newMRR", "churnedMRR", "netMRR", "churnPct", "revenueChurnPct", "nrr", "grr", "syncedAt"
+                 "newMRR", "churnedMRR", "netMRR", "churnPct", "revenueChurnPct", "nrr", "grr",
+                 "openingClients", "programChurnClients", "programChurnMRR", "syncedAt"
           FROM "MonthlyChurnMetrics"
           WHERE "tenantId" = 'gyc' AND month > $1
           ORDER BY month ASC
@@ -214,6 +215,9 @@ export async function GET() {
         churnRateRevenue: parseFloat(r.revenueChurnPct) || 0,
         nrr: r.nrr == null ? null : parseFloat(r.nrr),
         grr: r.grr == null ? null : parseFloat(r.grr),
+        openingClients: Number(r.openingClients) || 0,
+        programChurnClients: Number(r.programChurnClients) || 0,
+        programChurnMrr: parseFloat(r.programChurnMRR) || 0,
         syncedAt: r.syncedAt,
         // Stripe snapshot rows do not separately identify existing-client
         // expansions/contractions. Null prevents the UI from presenting
@@ -291,11 +295,19 @@ export async function GET() {
       months: finalMonths,
       chartData: finalChartData,
       lateralMovements: {
-        policy: 'Only confirmed same-customer Monthly → PIF conversions are excluded from churn. Ambiguous deals are not reclassified.',
+        policy: 'Confirmed PIF conversions, internal service migrations, and billing replacements are retained—not churn. Unknown records remain provisionally included until classified.',
         confirmed: lateralMovements,
       },
       updatedAt: dbRows.length ? dbRows[dbRows.length - 1].syncedAt : new Date().toISOString(),
       latestMonthIsPartial: finalMonths[0]?.key === new Date().toISOString().slice(0, 7),
+      definitions: {
+        clientChurn: 'Confirmed unique logos lost ÷ unique logos active at the opening of the month. Program cancellations, internal migrations, PIF conversions, duplicates, and billing replacements are excluded.',
+        revenueChurn: 'MRR lost from confirmed logo churn (plus currently unclassified cancellations) ÷ opening cohort MRR.',
+        programChurn: 'A service/program cancellation where the client retains another GYC service. Reported separately; excluded from logo and revenue churn.',
+        unknowns: 'Unclassified cancellations remain provisionally included so missing evidence cannot silently improve retention.',
+        grr: '(Opening cohort MRR − confirmed logo-churn MRR − unclassified cancellation MRR) ÷ opening cohort MRR, before expansion.',
+        nrr: 'Ending MRR from the opening cohort ÷ opening cohort MRR, including expansion/contraction and adding back confirmed retained value moved offline; PIF cash is never treated as MRR.',
+      },
     })
   } catch (error) {
     console.error('Churn sheet error:', error)
