@@ -223,8 +223,15 @@ async function loadChurnClassifications(client) {
 }
 
 async function loadCustomerToLogo(client) {
-  const { rows } = await client.query(`SELECT l."stripeCustomerId", COALESCE(NULLIF(p.acronym,''), 'profile:' || p.id::text) AS "logoKey" FROM "ClientStripeLink" l JOIN "ClientProfile" p ON p.id=l."clientProfileId" WHERE l."tenantId"='gyc'`);
-  const map=Object.fromEntries(rows.map(r=>[r.stripeCustomerId,r.logoKey]));
+  const { rows } = await client.query(`
+    SELECT DISTINCT x."stripeCustomerId", COALESCE(NULLIF(p.acronym,''), 'profile:' || p.id::text) AS "logoKey"
+    FROM (
+      SELECT "stripeCustomerId", "clientProfileId" FROM "ClientStripeLink" WHERE "tenantId"='gyc'
+      UNION SELECT "stripeCustomerId", id FROM "ClientProfile" WHERE "tenantId"='gyc' AND "stripeCustomerId" IS NOT NULL
+    ) x JOIN "ClientProfile" p ON p.id=x."clientProfileId"`);
+  const grouped=new Map(); for(const row of rows){if(!grouped.has(row.stripeCustomerId))grouped.set(row.stripeCustomerId,new Set());grouped.get(row.stripeCustomerId).add(row.logoKey)}
+  const collisions=[...grouped].filter(([,logos])=>logos.size>1); if(collisions.length) throw new Error(`Ambiguous customer-to-logo aliases: ${collisions.map(([id])=>id).join(', ')}`)
+  const map=Object.fromEntries([...grouped].map(([id,logos])=>[id,[...logos][0]]));
   // Audited alias: Ethia's Stripe record is the Lehigh School Academy logo.
   map['cus_PMAwGfJRWlcJYi']='LSAEE';
   return map;
