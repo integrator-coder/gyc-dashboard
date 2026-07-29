@@ -4,10 +4,12 @@ import { NextResponse } from 'next/server'
 import pkg from 'pg'
 import nullableMoneyPkg from '@/lib/nullable-money'
 import pifReturnFactsPkg from '@/lib/pif-return-facts'
+import pifReturnQueryPkg from '@/lib/pif-return-query'
 
 const { Pool } = pkg
 const { nullableNumber } = nullableMoneyPkg
 const { summarizePifReturns } = pifReturnFactsPkg
+const { fetchConfirmedPifReturns } = pifReturnQueryPkg
 const pool = new Pool({
   connectionString: process.env.NEON_DATABASE_URL || process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
@@ -68,32 +70,7 @@ export async function GET() {
     // Human-confirmed Monthly → PIF movements are the authoritative churn
     // exclusion ledger. Include them even when SalesDeal.dealOutcome has not
     // yet been backfilled, otherwise Leadership contradicts the Churn page.
-    const { rows: confirmedMovementRows } = await client.query(`
-      SELECT movement."clientName", movement."movementDate", movement."mrrMoved", movement."pifCashReceived",
-             movement."termMonths", movement."scheduledReturnDate",
-             deal."renewalAmount" AS "mrrReturnAmount", deal.service AS "returningProgram"
-      FROM "ChurnLateralMovement" movement
-      LEFT JOIN "ClientStripeLink" stripe_link ON stripe_link."stripeCustomerId"=movement."stripeCustomerId"
-      LEFT JOIN "ClientProfile" profile ON profile.id=stripe_link."clientProfileId"
-      LEFT JOIN LATERAL (
-        SELECT sales_deal."renewalAmount", sales_deal.service
-        FROM "SalesDeal" sales_deal
-        WHERE sales_deal."tenantId"=movement."tenantId"
-          AND sales_deal."dealDate"=movement."movementDate"
-          AND sales_deal."renewalAmount">0
-          AND (sales_deal.pif=true OR sales_deal."pifOverride"=true)
-          AND sales_deal."renewalAmount"<sales_deal."firstPayment"
-          AND (
-            regexp_replace(lower(sales_deal."clientName"),'[^a-z0-9]','','g')=regexp_replace(lower(movement."clientName"),'[^a-z0-9]','','g')
-            OR regexp_replace(lower(sales_deal."clientName"),'[^a-z0-9]','','g')=regexp_replace(lower(COALESCE(profile."companyName",'')),'[^a-z0-9]','','g')
-            OR rtrim(regexp_replace(lower(sales_deal."clientName"),'[^a-z0-9]','','g'),'s')=rtrim(regexp_replace(lower(movement."clientName"),'[^a-z0-9]','','g'),'s')
-          )
-        ORDER BY (regexp_replace(lower(sales_deal."clientName"),'[^a-z0-9]','','g')=regexp_replace(lower(movement."clientName"),'[^a-z0-9]','','g')) DESC, sales_deal.id DESC
-        LIMIT 1
-      ) deal ON TRUE
-      WHERE movement."tenantId" = 'gyc' AND movement.status = 'confirmed'
-      ORDER BY "scheduledReturnDate" ASC
-    `)
+    const confirmedMovementRows = await fetchConfirmedPifReturns(client)
 
     // ── New PIFs: new MRR coming online in the future ──────────────────────────
     // dealOutcome = 'New Deal' AND (pif = true OR pifOverride = true)
@@ -185,7 +162,7 @@ export async function GET() {
         pifEndDate: endDate ? endDate.toISOString().split('T')[0] : null,
         // Returning MRR is a new-deal fact. It is deliberately not inferred
         // from the amount that went offline; migrations can change pricing.
-        mrrReturnAmount: nullableNumber(r.mrrReturnAmount),
+        mrrReturnAmount: nullableNumber(r.returningMrr),
         returningProgram: r.returningProgram,
         monthsRemaining: monthsRemaining(endDate),
         status: isActive ? 'active' : 'expired',
