@@ -2,9 +2,9 @@ const test = require('node:test')
 const assert = require('node:assert/strict')
 const crypto = require('node:crypto')
 const { Client } = require('pg')
-require('dotenv').config({ path: require('node:path').join(__dirname, '..', '.env.local'), quiet: true })
 const { pifReturnFact, summarizePifReturns } = require('../lib/pif-return-facts')
 const { fetchConfirmedPifReturns } = require('../lib/pif-return-query')
+const { assertSafeTestDatabaseUrl } = require('../lib/test-database-safety')
 
 const palm = { clientName: 'Palm Beach Preschool', mrrMoved: 395, returningMrr: 3999, pifCashReceived: 65993, returningProgram: 'Reputation Engine' }
 const primrose = { clientName: 'Primrose School of Burlington', mrrMoved: 899, returningMrr: null, pifCashReceived: 10491, returningProgram: 'Reputation Engine' }
@@ -18,8 +18,13 @@ test('Primrose unknown return remains pending and is not coerced to zero or outg
   assert.deepEqual(summarizePifReturns([palm, primrose]), { pausedMrr: 1294, returningMrr: 3999, pendingReturnMrr: 1 })
 })
 
-test('shared API query maps stable client/date and leaves invalid PIF totals pending', async () => {
-  const db = new Client({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } })
+test('shared API query maps stable client/date and leaves invalid PIF totals pending', async t => {
+  if (!process.env.TEST_DATABASE_URL) {
+    t.skip('TEST_DATABASE_URL not set; DB integration test is fail-closed and does not load .env.local')
+    return
+  }
+  const connectionString = assertSafeTestDatabaseUrl(process.env.TEST_DATABASE_URL)
+  const db = new Client({ connectionString, ssl: /localhost|127\.0\.0\.1/.test(connectionString) ? false : { rejectUnauthorized: false } })
   const schema = `pif_return_${crypto.randomBytes(6).toString('hex')}`
   await db.connect()
   try {
@@ -45,4 +50,13 @@ test('shared API query maps stable client/date and leaves invalid PIF totals pen
     await db.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`).catch(() => {})
     await db.end()
   }
+})
+
+test('test database guard rejects production-like and non-test database URLs', () => {
+  const pg = (host, database) => `postgres://${host}/${database}`
+  assert.throws(() => assertSafeTestDatabaseUrl(), /required/)
+  assert.throws(() => assertSafeTestDatabaseUrl(pg('host.neon.tech', 'safe_test')), /production-like/)
+  assert.throws(() => assertSafeTestDatabaseUrl(pg('localhost', 'gyc_dashboard')), /test-scoped/)
+  assert.throws(() => assertSafeTestDatabaseUrl(pg('localhost', 'dashboard')), /test-scoped/)
+  assert.equal(assertSafeTestDatabaseUrl(pg('localhost', 'gyc_dashboard_test')), pg('localhost', 'gyc_dashboard_test'))
 })
