@@ -1,5 +1,5 @@
 const test=require('node:test'), assert=require('node:assert/strict')
-const {buildLeadershipView}=require('../lib/churn-leadership')
+const {buildLeadershipView,V2_FIELDS,serializeLeadershipRow}=require('../lib/churn-leadership')
 const outcomes={true_logo_churn:['exited','exited'],program_churn:['retained','exited'],internal_lateral:['retained','migrated'],pif_deferred:['retained','deferred'],billing_replacement:['retained','replaced'],duplicate_artifact:['retained','replaced'],unknown:['unknown','unknown']}
 const e=(type,mrr,extra={})=>({cancellationType:type,sourceMrr:mrr,logoKey:extra.name||type,logoOutcome:outcomes[type][0],programOutcome:outcomes[type][1],reviewStatus:'confirmed',...extra})
 test('June audited reconciliation',()=>{const v=buildLeadershipView([
@@ -11,3 +11,5 @@ test('July audited reconciliation and unknown destinations stay unknown',()=>{co
 test('taxonomy fails closed',()=>assert.throws(()=>buildLeadershipView([{cancellationType:'made_up',sourceMrr:1,logoOutcome:'unknown',programOutcome:'unknown'}]),/Invalid/))
 test('contradictory outcome fails closed',()=>assert.throws(()=>buildLeadershipView([e('program_churn',10,{logoOutcome:'exited'})]),/Contradictory/))
 test('duplicate subscription event is counted once',()=>{const x=e('true_logo_churn',100,{name:'A',canceledSubscriptionId:'sub_1'});const v=buildLeadershipView([x,{...x}]);assert.equal(v.totals.logosLost,1);assert.equal(v.totals.logoMrrLost,100)})
+test('canonical program exits dedupe replacement events using opening cohort MRR',()=>{const a=e('program_churn',300,{name:'L',canceledSubscriptionId:'s1',sourceProgramKey:'ads',openingProgramMrr:500}),b=e('program_churn',200,{name:'L',canceledSubscriptionId:'s2',sourceProgramKey:'ads',openingProgramMrr:500}),x=e('true_logo_churn',100,{name:'X',canceledSubscriptionId:'s3',sourceProgramKey:'web',openingProgramMrr:100});const v=buildLeadershipView([a,b,x]);assert.deepEqual([v.totals.programsLost,v.totals.programMrrLost,v.totals.programsLostWithLogoExit,v.totals.programMrrLostWithLogoExit],[1,500,1,100])})
+test('route serializer emits every v2 field and JSON-safe nulls',()=>{const input=Object.fromEntries(V2_FIELDS.map(k=>[k,`${k}-value`]));delete input.destinationMrr;const out=serializeLeadershipRow(input);assert.deepEqual(Object.keys(out),V2_FIELDS);assert.equal(out.destinationMrr,null);assert.doesNotThrow(()=>JSON.stringify(out))})

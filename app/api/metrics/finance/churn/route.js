@@ -6,7 +6,7 @@ import { createGoogleAuth } from '@/lib/google-auth'
 import pkg from 'pg'
 import leadershipPkg from '@/lib/churn-leadership'
 const { Pool } = pkg
-const { buildLeadershipView } = leadershipPkg
+const { buildLeadershipView, serializeLeadershipRow } = leadershipPkg
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -300,8 +300,9 @@ export async function GET() {
     try {
       const dbClient = await pool.connect()
       try {
-        const { rows } = await dbClient.query(`SELECT "canceledSubscriptionId", "logoKey", "clientName", "classificationType" AS "cancellationType", "logoOutcome", "programOutcome", mrr AS "sourceMrr", "sourceProgram", "sourceProgramKey", "destinationMRR" AS "destinationMrr", "destinationProgram", "destinationSubscriptionId", "pifCash", "pifTermMonths", "expectedReturnDate", "pifLifecycleStatus", "reviewStatus", confidence, evidence, reason, "reasonCategory", "canceledMonth" FROM "ChurnClassification" WHERE "tenantId"='gyc' AND "canceledMonth" = ANY($1) ORDER BY "canceledMonth" DESC, "clientName"`, [finalMonths.map(m=>m.key)])
-        leadership = Object.fromEntries(finalMonths.map(m => [m.key, buildLeadershipView(rows.filter(r=>r.canceledMonth===m.key))]))
+        const { rows } = await dbClient.query(`SELECT "canceledSubscriptionId", "logoKey", "clientName", "classificationType" AS "cancellationType", "logoOutcome", "programOutcome", mrr AS "sourceMrr", "sourceProgram", "sourceProgramKey", "openingProgramMRR" AS "openingProgramMrr", "destinationMRR" AS "destinationMrr", "destinationProgram", "destinationSubscriptionId", "pifCash", "pifTermMonths", "expectedReturnDate", "pifLifecycleStatus", "reviewStatus", confidence, evidence, reason, "reasonCategory", "canceledMonth" FROM "ChurnClassification" WHERE "tenantId"='gyc' AND "canceledMonth" = ANY($1) ORDER BY "canceledMonth" DESC, "clientName"`, [finalMonths.map(m=>m.key)])
+        leadership = Object.fromEntries(finalMonths.map(m => [m.key, buildLeadershipView(rows.filter(r=>r.canceledMonth===m.key).map(serializeLeadershipRow))]))
+        for(const month of finalMonths){if(month.openingPrograms!=null&&leadership[month.key]){const reconciled=leadership[month.key].totals.programsLost+leadership[month.key].totals.programsLostWithLogoExit;if(reconciled!==month.programsLost)throw new Error(`Program loss reconciliation failed for ${month.key}: events=${reconciled}, metric=${month.programsLost}`)}}
       } finally { dbClient.release() }
     } catch (e) { throw new Error(`LEADERSHIP_CHURN_SCHEMA_OR_DATA_ERROR: ${e.message}`) }
 
