@@ -177,6 +177,7 @@ async function ensureTables(client) {
     "reason" TEXT, "evidence" TEXT, "status" TEXT NOT NULL DEFAULT 'confirmed', "classifiedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE ("tenantId", "stripeCustomerId", "canceledMonth", "mrr"),
     CHECK ("classificationType" IN ('logo_churn','program_churn','lateral_migration','pif_lateral','billing_replacement','duplicate_artifact','unclassified')))`);
+  await migrateChurnClassificationSchema(client);
   await client.query(`
     CREATE TABLE IF NOT EXISTS "ChurnLateralMovement" (
       "id" BIGSERIAL PRIMARY KEY,
@@ -199,6 +200,26 @@ async function ensureTables(client) {
   `);
 }
 
+async function migrateChurnClassificationSchema(client) {
+  await client.query(`
+    ALTER TABLE "ChurnClassification" ADD COLUMN IF NOT EXISTS "logoKey" TEXT;
+    ALTER TABLE "ChurnClassification" ADD COLUMN IF NOT EXISTS "canceledMonth" TEXT;
+    ALTER TABLE "ChurnClassification" ADD COLUMN IF NOT EXISTS mrr NUMERIC(12,2);
+    ALTER TABLE "ChurnClassification" ALTER COLUMN "canceledSubscriptionId" DROP NOT NULL;
+    ALTER TABLE "ChurnClassification" ALTER COLUMN "normalizedClientName" DROP NOT NULL;
+    UPDATE "ChurnClassification" c SET "logoKey"=COALESCE(NULLIF(p.acronym,''),'profile:'||p.id::text)
+      FROM "ClientStripeLink" l JOIN "ClientProfile" p ON p.id=l."clientProfileId"
+      WHERE c."logoKey" IS NULL AND c."stripeCustomerId"=l."stripeCustomerId";
+  `);
+  await client.query(`DO $$ DECLARE r record; BEGIN
+    FOR r IN SELECT conname FROM pg_constraint WHERE conrelid='"ChurnClassification"'::regclass AND contype='u'
+      AND pg_get_constraintdef(oid) LIKE '%normalizedClientName%'
+    LOOP EXECUTE format('ALTER TABLE "ChurnClassification" DROP CONSTRAINT %I',r.conname); END LOOP;
+  END $$`);
+  await client.query(`CREATE UNIQUE INDEX IF NOT EXISTS "ChurnClassification_stable_customer_month_mrr_uq" ON "ChurnClassification" ("tenantId","stripeCustomerId","canceledMonth",mrr) WHERE "stripeCustomerId" IS NOT NULL`);
+  await client.query(`CREATE UNIQUE INDEX IF NOT EXISTS "ChurnClassification_subscription_uq" ON "ChurnClassification" ("tenantId","canceledSubscriptionId") WHERE "canceledSubscriptionId" IS NOT NULL`);
+}
+
 async function loadChurnClassifications(client) {
   const { rows } = await client.query(`
     SELECT "stripeCustomerId", "canceledSubscriptionId", "movementDate",
@@ -216,7 +237,7 @@ async function loadChurnClassifications(client) {
     ('gyc','cus_JcT1Nlf1rmMdz4','LTA','Little Treehouse Academy','2026-07',795,'lateral_migration','Moved Google Ads to Reputation Engine; retained website','Asana offboarding audit 2026-07-29','confirmed'),
     ('gyc','cus_TOqwelOnvSvBvk','CBG','Crossing Borders Language Center','2026-07',1395,'lateral_migration','Moved Google Ads to Reputation Engine Core; retained website','Asana offboarding audit 2026-07-29','confirmed'),
     ('gyc','cus_T6SGYZlDqyNQaC','KLC','Kidstown Learning Center','2026-07',995,'lateral_migration','Moved Google Ads to SEO; transition services remain active','Asana offboarding audit 2026-07-29','confirmed')
-    ON CONFLICT ("tenantId","stripeCustomerId","canceledMonth",mrr) DO UPDATE SET "classificationType"=EXCLUDED."classificationType",reason=EXCLUDED.reason,evidence=EXCLUDED.evidence,status=EXCLUDED.status,"updatedAt"=NOW()`);
+    ON CONFLICT ("tenantId","stripeCustomerId","canceledMonth",mrr) WHERE "stripeCustomerId" IS NOT NULL DO UPDATE SET "classificationType"=EXCLUDED."classificationType",reason=EXCLUDED.reason,evidence=EXCLUDED.evidence,status=EXCLUDED.status,"updatedAt"=NOW()`);
   const { rows: classified } = await client.query(`SELECT "canceledSubscriptionId", "stripeCustomerId", "logoKey", "canceledMonth", mrr, "classificationType", reason, evidence, status FROM "ChurnClassification" WHERE "tenantId"='gyc'`);
   const existing = new Set(classified.map(row => row.canceledSubscriptionId));
   return classified.concat(rows.filter(row => !existing.has(row.canceledSubscriptionId)).map(row => ({ ...row, classificationType: 'pif_lateral', status: 'confirmed' })));
@@ -267,6 +288,7 @@ async function main() {
 
     for (const month of targets) {
       metricsMap[month] = computeMonthMetrics(subs, month, confirmedLaterals, customerToLogo);
+      if (metricsMap[month].unmappedOpeningCustomers.length) throw new Error(`DATA_QUALITY: ${metricsMap[month].unmappedOpeningCustomers.length} opening Stripe customers lack a stable logo mapping for ${month}`);
     }
 
     for (const month of targets) {
@@ -294,4 +316,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch(e => { console.error('❌ Fatal:', e.message); process.exit(1); });
-module.exports = { upsertChurnMetrics };
+module.exports = { upsertChurnMetrics, migrateChurnClassificationSchema };
