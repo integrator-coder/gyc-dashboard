@@ -300,7 +300,7 @@ export async function GET() {
     try {
       const dbClient = await pool.connect()
       try {
-        const { rows } = await dbClient.query(`SELECT "canceledSubscriptionId", "logoKey", "clientName", "classificationType" AS "cancellationType", "logoOutcome", "programOutcome", mrr AS "sourceMrr", "destinationMRR" AS "destinationMrr", "destinationProgram", "pifCash", "pifTermMonths", "expectedReturnDate", "pifLifecycleStatus", "reviewStatus", confidence, evidence, reason, "reasonCategory", "canceledMonth" FROM "ChurnClassification" WHERE "tenantId"='gyc' AND "canceledMonth" = ANY($1) ORDER BY "canceledMonth" DESC, "clientName"`, [finalMonths.map(m=>m.key)])
+        const { rows } = await dbClient.query(`SELECT "canceledSubscriptionId", "logoKey", "clientName", "classificationType" AS "cancellationType", "logoOutcome", "programOutcome", mrr AS "sourceMrr", "sourceProgram", "sourceProgramKey", "destinationMRR" AS "destinationMrr", "destinationProgram", "destinationSubscriptionId", "pifCash", "pifTermMonths", "expectedReturnDate", "pifLifecycleStatus", "reviewStatus", confidence, evidence, reason, "reasonCategory", "canceledMonth" FROM "ChurnClassification" WHERE "tenantId"='gyc' AND "canceledMonth" = ANY($1) ORDER BY "canceledMonth" DESC, "clientName"`, [finalMonths.map(m=>m.key)])
         leadership = Object.fromEntries(finalMonths.map(m => [m.key, buildLeadershipView(rows.filter(r=>r.canceledMonth===m.key))]))
       } finally { dbClient.release() }
     } catch (e) { throw new Error(`LEADERSHIP_CHURN_SCHEMA_OR_DATA_ERROR: ${e.message}`) }

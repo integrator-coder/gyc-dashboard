@@ -1,6 +1,9 @@
 ALTER TABLE "ChurnClassification" ADD COLUMN IF NOT EXISTS "logoOutcome" TEXT NOT NULL DEFAULT 'unknown';
 ALTER TABLE "ChurnClassification" ADD COLUMN IF NOT EXISTS "programOutcome" TEXT NOT NULL DEFAULT 'unknown';
 ALTER TABLE "ChurnClassification" ADD COLUMN IF NOT EXISTS "destinationProgram" TEXT;
+ALTER TABLE "ChurnClassification" ADD COLUMN IF NOT EXISTS "sourceProgram" TEXT;
+ALTER TABLE "ChurnClassification" ADD COLUMN IF NOT EXISTS "sourceProgramKey" TEXT;
+ALTER TABLE "ChurnClassification" ADD COLUMN IF NOT EXISTS "destinationSubscriptionId" TEXT;
 ALTER TABLE "ChurnClassification" ADD COLUMN IF NOT EXISTS "destinationMRR" NUMERIC(12,2);
 ALTER TABLE "ChurnClassification" ADD COLUMN IF NOT EXISTS "pifCash" NUMERIC(12,2);
 ALTER TABLE "ChurnClassification" ADD COLUMN IF NOT EXISTS "pifTermMonths" INT;
