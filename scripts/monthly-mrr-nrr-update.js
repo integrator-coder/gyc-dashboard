@@ -196,7 +196,10 @@ async function ensureTables(client) {
       "clientName" TEXT NOT NULL,
       "movementDate" DATE NOT NULL,
       "mrrMoved" NUMERIC(12,2) NOT NULL,
-      "pifCashReceived" NUMERIC(12,2) NOT NULL,
+      "pifCashReceived" NUMERIC(12,2),
+      "sourceProgram" TEXT,
+      "sourceProductId" TEXT,
+      "sourcePriceId" TEXT,
       "termMonths" INT NOT NULL,
       "scheduledReturnDate" DATE NOT NULL,
       "status" TEXT NOT NULL DEFAULT 'confirmed',
@@ -236,8 +239,12 @@ async function migrateChurnClassificationSchema(client) {
 }
 
 async function loadChurnClassifications(client) {
+  // A PIF movement can remove one item from a multi-program subscription while
+  // another item stays live. Store the exact source program instead of treating
+  // the subscription's current total as the amount moved offline.
+  await client.query(`ALTER TABLE "ChurnLateralMovement" ADD COLUMN IF NOT EXISTS "sourceProgram" TEXT; ALTER TABLE "ChurnLateralMovement" ADD COLUMN IF NOT EXISTS "sourceProductId" TEXT; ALTER TABLE "ChurnLateralMovement" ADD COLUMN IF NOT EXISTS "sourcePriceId" TEXT; ALTER TABLE "ChurnLateralMovement" ALTER COLUMN "pifCashReceived" DROP NOT NULL`)
   const { rows } = await client.query(`
-    SELECT m."stripeCustomerId",m."canceledSubscriptionId",m."clientName",m."movementDate",m."mrrMoved",m."pifCashReceived",m."termMonths",m."scheduledReturnDate",COALESCE(NULLIF(p.acronym,''),'profile:'||p.id::text) AS "logoKey",p."companyName" AS "profileName"
+    SELECT m."stripeCustomerId",m."canceledSubscriptionId",m."clientName",m."movementDate",m."mrrMoved",m."sourceProgram",m."sourceProductId",m."sourcePriceId",m."pifCashReceived",m."termMonths",m."scheduledReturnDate",COALESCE(NULLIF(p.acronym,''),'profile:'||p.id::text) AS "logoKey",p."companyName" AS "profileName"
     FROM "ChurnLateralMovement" m LEFT JOIN "ClientStripeLink" l ON l."tenantId"=m."tenantId" AND l."stripeCustomerId"=m."stripeCustomerId" LEFT JOIN "ClientProfile" p ON p.id=l."clientProfileId"
     WHERE m."tenantId" = 'gyc' AND m.status = 'confirmed'
   `);
@@ -255,8 +262,7 @@ async function loadChurnClassifications(client) {
     ON CONFLICT ("tenantId","stripeCustomerId","canceledMonth",mrr) WHERE "stripeCustomerId" IS NOT NULL DO UPDATE SET "classificationType"=EXCLUDED."classificationType","logoOutcome"=EXCLUDED."logoOutcome","programOutcome"=EXCLUDED."programOutcome",reason=EXCLUDED.reason,evidence=EXCLUDED.evidence,status=EXCLUDED.status,"updatedAt"=NOW()`);
   await client.query(`UPDATE "ChurnClassification" SET "reviewStatus"='confirmed',confidence='verified' WHERE "tenantId"='gyc' AND status='confirmed' AND evidence IS NOT NULL AND "classificationType"<>'unknown'`);
   const { rows: classified } = await client.query(`SELECT "canceledSubscriptionId", "stripeCustomerId", "logoKey", "canceledMonth", mrr, "classificationType", reason, evidence, status FROM "ChurnClassification" WHERE "tenantId"='gyc'`);
-  const existing = new Set(classified.map(row => row.canceledSubscriptionId));
-  for(const row of rows.filter(row => !existing.has(row.canceledSubscriptionId))){const month=String(row.movementDate).slice(0,7),logoKey=row.logoKey;if(!logoKey)throw new Error(`DATA_QUALITY: PIF movement ${row.canceledSubscriptionId} lacks stable logo mapping`);await client.query(`INSERT INTO "ChurnClassification" ("tenantId","canceledSubscriptionId","stripeCustomerId","logoKey","clientName","canceledMonth",mrr,"classificationType","logoOutcome","programOutcome","pifCash","pifTermMonths","expectedReturnDate","pifLifecycleStatus",evidence,status,"reviewStatus",confidence) VALUES ('gyc',$1,$2,$3,$4,$5,$6,'pif_deferred','retained','deferred',$7,$8,$9,$10,'ChurnLateralMovement bridge','confirmed','confirmed','verified') ON CONFLICT ("tenantId","canceledSubscriptionId") WHERE "canceledSubscriptionId" IS NOT NULL DO UPDATE SET "classificationType"='pif_deferred',"logoOutcome"='retained',"programOutcome"='deferred',"pifCash"=EXCLUDED."pifCash","pifTermMonths"=EXCLUDED."pifTermMonths","expectedReturnDate"=EXCLUDED."expectedReturnDate","pifLifecycleStatus"=EXCLUDED."pifLifecycleStatus"`,[row.canceledSubscriptionId,row.stripeCustomerId,logoKey,row.clientName||logoKey,month,row.mrrMoved,row.pifCashReceived,row.termMonths,row.scheduledReturnDate,pifLifecycleStatus({pifCash:row.pifCashReceived,expectedReturnDate:row.scheduledReturnDate})])}
+  for(const row of rows){const month=String(row.movementDate).slice(0,7),logoKey=row.logoKey;if(!logoKey)throw new Error(`DATA_QUALITY: PIF movement ${row.canceledSubscriptionId} lacks stable logo mapping`);await client.query(`INSERT INTO "ChurnClassification" ("tenantId","canceledSubscriptionId","stripeCustomerId","logoKey","clientName","canceledMonth",mrr,"classificationType","logoOutcome","programOutcome","sourceProgram","sourceProgramKey","openingProgramMRR","pifCash","pifTermMonths","expectedReturnDate","pifLifecycleStatus",evidence,status,"reviewStatus",confidence) VALUES ('gyc',$1,$2,$3,$4,$5,$6,'pif_deferred','retained','deferred',$7,$8,$6,$9,$10,$11,$12,$13,'confirmed','confirmed','verified') ON CONFLICT ("tenantId","canceledSubscriptionId") WHERE "canceledSubscriptionId" IS NOT NULL DO UPDATE SET "stripeCustomerId"=EXCLUDED."stripeCustomerId","logoKey"=EXCLUDED."logoKey","clientName"=EXCLUDED."clientName","canceledMonth"=EXCLUDED."canceledMonth",mrr=EXCLUDED.mrr,"classificationType"='pif_deferred',"logoOutcome"='retained',"programOutcome"='deferred',"sourceProgram"=EXCLUDED."sourceProgram","sourceProgramKey"=EXCLUDED."sourceProgramKey","openingProgramMRR"=EXCLUDED."openingProgramMRR","pifCash"=EXCLUDED."pifCash","pifTermMonths"=EXCLUDED."pifTermMonths","expectedReturnDate"=EXCLUDED."expectedReturnDate","pifLifecycleStatus"=EXCLUDED."pifLifecycleStatus",evidence=EXCLUDED.evidence,status='confirmed',"reviewStatus"='confirmed',confidence='verified'`,[row.canceledSubscriptionId,row.stripeCustomerId,logoKey,row.clientName||logoKey,month,row.mrrMoved,row.sourceProgram,row.sourceProductId||row.sourcePriceId||row.canceledSubscriptionId,row.pifCashReceived,row.termMonths,row.scheduledReturnDate,pifLifecycleStatus({pifCash:row.pifCashReceived,expectedReturnDate:row.scheduledReturnDate}),row.evidence||'ChurnLateralMovement bridge'])}
   const refreshed=await client.query(`SELECT * FROM "ChurnClassification" WHERE "tenantId"='gyc'`);return refreshed.rows;
 }
 

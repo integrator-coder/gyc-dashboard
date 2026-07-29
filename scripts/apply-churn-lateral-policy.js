@@ -25,6 +25,9 @@ const confirmed = [
     clientName: 'Primrose School of Burlington',
     movementDate: '2026-07-02',
     mrrMoved: 899,
+    sourceProgram: 'SEO',
+    sourceProductId: 'prod_TsRVRZv1LSLAQM',
+    sourcePriceId: 'price_1TCl5gEbMXEo3zxqb8Y8e1jb',
     pifCashReceived: 10491,
     termMonths: 6,
     scheduledReturnDate: '2027-01-02',
@@ -35,11 +38,18 @@ const confirmed = [
     canceledSubscriptionId: 'sub_1T5fdoEbMXEo3zxqDhpTV3at',
     clientName: 'Palm Beach Preschool',
     movementDate: '2026-07-16',
-    mrrMoved: 317,
-    pifCashReceived: 19999,
+    // This subscription contained multiple programs. Its current $317 item is
+    // Website Maintenance and remains active; it is not the PIF source.
+    mrrMoved: 395,
+    sourceProgram: 'Paid Media I Autorenewal (Google Ads)',
+    sourceProductId: 'prod_TxyohTOEM5esIS',
+    sourcePriceId: 'price_1T0RgwEbMXEo3zxqBuchIfpg',
+    // No Stripe payment or PandaDoc PIF field substantiates the old $19,999.
+    // Keep cash out of leadership reporting until the payment is verified.
+    pifCashReceived: null,
     termMonths: 6,
     scheduledReturnDate: '2027-01-16',
-    evidence: 'Confirmed Monthly → PIF conversion; Stripe customer identity tied to canceled monthly subscription.',
+    evidence: 'Confirmed Google Ads → six-month PIF conversion. Stripe invoice in_1TnAq2EbMXEo3zxqilvElRGw identifies Paid Media at $395/month; the retained subscription item is Website Maintenance at $317/month. PIF cash remains unverified.',
   },
 ]
 
@@ -56,7 +66,10 @@ async function main() {
         "clientName" TEXT NOT NULL,
         "movementDate" DATE NOT NULL,
         "mrrMoved" NUMERIC(12,2) NOT NULL,
-        "pifCashReceived" NUMERIC(12,2) NOT NULL,
+        "pifCashReceived" NUMERIC(12,2),
+        "sourceProgram" TEXT,
+        "sourceProductId" TEXT,
+        "sourcePriceId" TEXT,
         "termMonths" INT NOT NULL,
         "scheduledReturnDate" DATE NOT NULL,
         "status" TEXT NOT NULL DEFAULT 'confirmed',
@@ -72,27 +85,33 @@ async function main() {
       await client.query(`
         INSERT INTO "ChurnLateralMovement"
           ("tenantId", "stripeCustomerId", "canceledSubscriptionId", "clientName",
-           "movementDate", "mrrMoved", "pifCashReceived", "termMonths",
+           "movementDate", "mrrMoved", "sourceProgram", "sourceProductId", "sourcePriceId", "pifCashReceived", "termMonths",
            "scheduledReturnDate", status, evidence)
-        VALUES ('gyc', $1, $2, $3, $4, $5, $6, $7, $8, 'confirmed', $9)
+        VALUES ('gyc', $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'confirmed', $12)
         ON CONFLICT ("tenantId", "canceledSubscriptionId") DO UPDATE SET
           "stripeCustomerId" = EXCLUDED."stripeCustomerId",
           "clientName" = EXCLUDED."clientName",
           "movementDate" = EXCLUDED."movementDate",
           "mrrMoved" = EXCLUDED."mrrMoved",
+          "sourceProgram" = EXCLUDED."sourceProgram",
+          "sourceProductId" = EXCLUDED."sourceProductId",
+          "sourcePriceId" = EXCLUDED."sourcePriceId",
           "pifCashReceived" = EXCLUDED."pifCashReceived",
           "termMonths" = EXCLUDED."termMonths",
           "scheduledReturnDate" = EXCLUDED."scheduledReturnDate",
           status = 'confirmed', evidence = EXCLUDED.evidence, "updatedAt" = NOW()
       `, [
         row.stripeCustomerId, row.canceledSubscriptionId, row.clientName,
-        row.movementDate, row.mrrMoved, row.pifCashReceived, row.termMonths,
+        row.movementDate, row.mrrMoved, row.sourceProgram, row.sourceProductId,
+        row.sourcePriceId, row.pifCashReceived, row.termMonths,
         row.scheduledReturnDate, row.evidence,
       ])
     }
 
     // July source facts: 13 canceled subscriptions, 12 unique customers.
-    // Remove two confirmed lateral customers and $1,216 of temporarily moved MRR.
+    // Legacy aggregate repair: the old cancellation snapshot itself contained
+    // $899 + $317. Leadership PIF reporting uses the item-level ledger ($1,294),
+    // but this subtraction must remove only what the legacy aggregate included.
     const previous = await client.query(`
       SELECT "totalMRR", "clientCount", "newMRR", "churnedMRR", "monthlyMRR", nrr, "monthlyNRR"
       FROM "MonthlyChurnMetrics" WHERE "tenantId"='gyc' AND month='2026-07'

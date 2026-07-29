@@ -1325,7 +1325,10 @@ model ChurnLateralMovement {
   clientName             String
   movementDate           DateTime @db.Date
   mrrMoved               Decimal  @db.Decimal(12, 2)
-  pifCashReceived        Decimal  @db.Decimal(12, 2)
+  pifCashReceived        Decimal? @db.Decimal(12, 2)
+  sourceProgram          String?
+  sourceProductId        String?
+  sourcePriceId          String?
   termMonths             Int
   scheduledReturnDate    DateTime @db.Date
   status                 String   @default("confirmed")
