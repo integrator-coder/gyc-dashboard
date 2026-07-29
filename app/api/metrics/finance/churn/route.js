@@ -177,7 +177,7 @@ export async function GET() {
         const { rows: dbData } = await dbClient.query(`
           SELECT month, "totalMRR", "clientCount", "clientsAdded", "clientsLost",
                  "newMRR", "churnedMRR", "netMRR", "churnPct", "revenueChurnPct", "nrr", "grr",
-                 "openingClients", "openingCohortMRR", "programChurnClients", "programChurnMRR", "syncedAt"
+                 "openingClients", "openingCohortMRR", "programChurnClients", "programChurnMRR", "openingPrograms", "programsLost", "programChurnRate", "economicNRR", "economicGRR", "stripeNRR", "stripeGRR", "syncedAt"
           FROM "MonthlyChurnMetrics"
           WHERE "tenantId" = 'gyc' AND month > $1
           ORDER BY month ASC
@@ -221,6 +221,8 @@ export async function GET() {
         openingCohortMrr: parseFloat(r.openingCohortMRR) || 0,
         programChurnClients: Number(r.programChurnClients) || 0,
         programChurnMrr: parseFloat(r.programChurnMRR) || 0,
+        openingPrograms: Number(r.openingPrograms)||0, programsLost:Number(r.programsLost)||0, programChurnRate:parseFloat(r.programChurnRate)||0,
+        economicNrr:r.economicNRR==null?null:parseFloat(r.economicNRR), economicGrr:r.economicGRR==null?null:parseFloat(r.economicGRR), stripeNrr:r.stripeNRR==null?null:parseFloat(r.stripeNRR), stripeGrr:r.stripeGRR==null?null:parseFloat(r.stripeGRR),
         syncedAt: r.syncedAt,
         // Stripe snapshot rows do not separately identify existing-client
         // expansions/contractions. Null prevents the UI from presenting
@@ -298,12 +300,10 @@ export async function GET() {
     try {
       const dbClient = await pool.connect()
       try {
-        const { rows } = await dbClient.query(`SELECT "logoKey", "clientName", "classificationType" AS "cancellationType", "logoOutcome", "programOutcome", mrr AS "sourceMrr", "destinationMRR" AS "destinationMrr", "destinationProgram", "pifCash", "expectedReturnDate", "reviewStatus", confidence, evidence, reason, "reasonCategory", "canceledMonth" FROM "ChurnClassification" WHERE "tenantId"='gyc' AND "canceledMonth" = ANY($1) ORDER BY "canceledMonth" DESC, "clientName"`, [finalMonths.map(m=>m.key)])
+        const { rows } = await dbClient.query(`SELECT "canceledSubscriptionId", "logoKey", "clientName", "classificationType" AS "cancellationType", "logoOutcome", "programOutcome", mrr AS "sourceMrr", "destinationMRR" AS "destinationMrr", "destinationProgram", "pifCash", "pifTermMonths", "expectedReturnDate", "pifLifecycleStatus", "reviewStatus", confidence, evidence, reason, "reasonCategory", "canceledMonth" FROM "ChurnClassification" WHERE "tenantId"='gyc' AND "canceledMonth" = ANY($1) ORDER BY "canceledMonth" DESC, "clientName"`, [finalMonths.map(m=>m.key)])
         leadership = Object.fromEntries(finalMonths.map(m => [m.key, buildLeadershipView(rows.filter(r=>r.canceledMonth===m.key))]))
       } finally { dbClient.release() }
-    } catch (e) {
-      if (e.code !== '42P01' && e.code !== '42703') console.error('leadership churn error:', e.message)
-    }
+    } catch (e) { throw new Error(`LEADERSHIP_CHURN_SCHEMA_OR_DATA_ERROR: ${e.message}`) }
 
     return NextResponse.json({
       months: finalMonths,

@@ -17,6 +17,7 @@ require('dotenv').config({ path: require('path').resolve(__dirname, '../.env.loc
 const Stripe = require('stripe');
 const { Pool } = require('pg');
 const { calcSubMRR, computeMonthMetrics, calculateRates } = require('../lib/churn-metrics');
+const { pifLifecycleStatus, OUTCOMES } = require('../lib/churn-classification');
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const pool = new Pool({
@@ -131,6 +132,7 @@ async function upsertChurnMetrics(client, monthStr, metrics, prevMetrics) {
      metrics.monthlyChurnedMRR, metrics.pifChurnedMRR, metrics.monthlyNewMRR, metrics.pifNewMRR,
      monthlyNRR, pifNRR, metrics.openingClients, metrics.programChurnClients, metrics.programChurnMrr, metrics.openingCohortMrr]
   );
+  await client.query(`UPDATE "MonthlyChurnMetrics" SET "openingPrograms"=$2,"programsLost"=$3,"programChurnRate"=$4,"economicNRR"=$5,"economicGRR"=$6,"stripeNRR"=$7,"stripeGRR"=$8 WHERE "tenantId"='gyc' AND month=$1`,[monthStr,metrics.openingPrograms||0,metrics.programsLost||0,metrics.programChurnRate||0,calculateRates(metrics).economicNrr,calculateRates(metrics).economicGrr,calculateRates(metrics).stripeNrr,calculateRates(metrics).stripeGrr]);
 }
 
 async function ensureTables(client) {
@@ -170,13 +172,20 @@ async function ensureTables(client) {
   await client.query(`ALTER TABLE "MonthlyChurnMetrics" ADD COLUMN IF NOT EXISTS "programChurnClients" INT`);
   await client.query(`ALTER TABLE "MonthlyChurnMetrics" ADD COLUMN IF NOT EXISTS "programChurnMRR" NUMERIC(12,2)`);
   await client.query(`ALTER TABLE "MonthlyChurnMetrics" ADD COLUMN IF NOT EXISTS "openingCohortMRR" NUMERIC(12,2)`);
+  await client.query(`ALTER TABLE "MonthlyChurnMetrics" ADD COLUMN IF NOT EXISTS "openingPrograms" INT`);
+  await client.query(`ALTER TABLE "MonthlyChurnMetrics" ADD COLUMN IF NOT EXISTS "programsLost" INT`);
+  await client.query(`ALTER TABLE "MonthlyChurnMetrics" ADD COLUMN IF NOT EXISTS "programChurnRate" NUMERIC(6,2)`);
+  await client.query(`ALTER TABLE "MonthlyChurnMetrics" ADD COLUMN IF NOT EXISTS "economicNRR" NUMERIC(6,2)`);
+  await client.query(`ALTER TABLE "MonthlyChurnMetrics" ADD COLUMN IF NOT EXISTS "economicGRR" NUMERIC(6,2)`);
+  await client.query(`ALTER TABLE "MonthlyChurnMetrics" ADD COLUMN IF NOT EXISTS "stripeNRR" NUMERIC(6,2)`);
+  await client.query(`ALTER TABLE "MonthlyChurnMetrics" ADD COLUMN IF NOT EXISTS "stripeGRR" NUMERIC(6,2)`);
   await client.query(`CREATE TABLE IF NOT EXISTS "ChurnClassification" (
     "id" BIGSERIAL PRIMARY KEY, "tenantId" TEXT NOT NULL DEFAULT 'gyc', "canceledSubscriptionId" TEXT,
     "stripeCustomerId" TEXT, "logoKey" TEXT NOT NULL, "clientName" TEXT NOT NULL, "classificationType" TEXT NOT NULL,
     "canceledMonth" TEXT NOT NULL, "mrr" NUMERIC(12,2) NOT NULL,
     "reason" TEXT, "evidence" TEXT, "status" TEXT NOT NULL DEFAULT 'confirmed', "classifiedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE ("tenantId", "stripeCustomerId", "canceledMonth", "mrr"),
-    CHECK ("classificationType" IN ('logo_churn','program_churn','lateral_migration','pif_lateral','billing_replacement','duplicate_artifact','unclassified')))`);
+    CHECK ("classificationType" IN ('true_logo_churn','program_churn','internal_lateral','pif_deferred','billing_replacement','duplicate_artifact','unknown')))`);
   await migrateChurnClassificationSchema(client);
   await client.query(`
     CREATE TABLE IF NOT EXISTS "ChurnLateralMovement" (
@@ -222,6 +231,8 @@ async function migrateChurnClassificationSchema(client) {
   END $$`);
   await client.query(`CREATE UNIQUE INDEX IF NOT EXISTS "ChurnClassification_stable_customer_month_mrr_uq" ON "ChurnClassification" ("tenantId","stripeCustomerId","canceledMonth",mrr) WHERE "stripeCustomerId" IS NOT NULL`);
   await client.query(`CREATE UNIQUE INDEX IF NOT EXISTS "ChurnClassification_subscription_uq" ON "ChurnClassification" ("tenantId","canceledSubscriptionId") WHERE "canceledSubscriptionId" IS NOT NULL`);
+  const fs=require('node:fs'),path=require('node:path');
+  await client.query(fs.readFileSync(path.resolve(__dirname,'../prisma/migrations/20260729190000_leadership_churn_v2/migration.sql'),'utf8'));
 }
 
 async function loadChurnClassifications(client) {
@@ -231,20 +242,22 @@ async function loadChurnClassifications(client) {
     FROM "ChurnLateralMovement"
     WHERE "tenantId" = 'gyc' AND status = 'confirmed'
   `);
-  await client.query(`INSERT INTO "ChurnClassification" ("tenantId","stripeCustomerId","logoKey","clientName","canceledMonth",mrr,"classificationType",reason,evidence,status) VALUES
-    ('gyc','cus_TBiLmxI5k77n9M','FCDMA','Frederick Country Day Montessori & Art School','2026-06',197,'billing_replacement','Replacement/duplicate subscription; other subscriptions remain active','Stripe + offboarding audit 2026-07-29','confirmed'),
-    ('gyc','cus_TuFXrjd5lWfrY0','VMA','Virginia Montessori Academy','2026-06',599,'billing_replacement','Payments continued on active replacement subscription','Stripe audit 2026-07-29','confirmed'),
-    ('gyc','cus_TZiZXkevvJJIKQ','MCA','Montessori Children''s Academy','2026-06',995,'program_churn','Canceled Google Ads; retained website service','Asana offboarding audit 2026-07-29','confirmed'),
-    ('gyc','cus_PMAwGfJRWlcJYi','LSAEE','Lehigh School Academy / Ethia Dulorie','2026-06',1497,'lateral_migration','Moved Google Ads to SEO; replacement subscription active','Asana + Stripe audit 2026-07-29','confirmed'),
-    ('gyc','cus_SzkLjCYYzyfHJR','TB','TweetyB''s','2026-07',790,'billing_replacement','Subscription replacement/reactivation; logo retained','Stripe audit 2026-07-29','confirmed'),
-    ('gyc','cus_QpYD9QWOGXqoaq','GBD','Great Beginnings Daycare and Preschool','2026-07',1019,'billing_replacement','Subscription replacement; logo retained','Stripe audit 2026-07-29','confirmed'),
-    ('gyc','cus_JcT1Nlf1rmMdz4','LTA','Little Treehouse Academy','2026-07',795,'lateral_migration','Moved Google Ads to Reputation Engine; retained website','Asana offboarding audit 2026-07-29','confirmed'),
-    ('gyc','cus_TOqwelOnvSvBvk','CBG','Crossing Borders Language Center','2026-07',1395,'lateral_migration','Moved Google Ads to Reputation Engine Core; retained website','Asana offboarding audit 2026-07-29','confirmed'),
-    ('gyc','cus_T6SGYZlDqyNQaC','KLC','Kidstown Learning Center','2026-07',995,'lateral_migration','Moved Google Ads to SEO; transition services remain active','Asana offboarding audit 2026-07-29','confirmed')
-    ON CONFLICT ("tenantId","stripeCustomerId","canceledMonth",mrr) WHERE "stripeCustomerId" IS NOT NULL DO UPDATE SET "classificationType"=EXCLUDED."classificationType",reason=EXCLUDED.reason,evidence=EXCLUDED.evidence,status=EXCLUDED.status,"updatedAt"=NOW()`);
+  await client.query(`INSERT INTO "ChurnClassification" ("tenantId","stripeCustomerId","logoKey","clientName","canceledMonth",mrr,"classificationType","logoOutcome","programOutcome",reason,evidence,status) VALUES
+    ('gyc','cus_TBiLmxI5k77n9M','FCDMA','Frederick Country Day Montessori & Art School','2026-06',197,'billing_replacement','retained','replaced','Replacement/duplicate subscription; other subscriptions remain active','Stripe + offboarding audit 2026-07-29','confirmed'),
+    ('gyc','cus_TuFXrjd5lWfrY0','VMA','Virginia Montessori Academy','2026-06',599,'billing_replacement','retained','replaced','Payments continued on active replacement subscription','Stripe audit 2026-07-29','confirmed'),
+    ('gyc','cus_TZiZXkevvJJIKQ','MCA','Montessori Children''s Academy','2026-06',995,'program_churn','retained','exited','Canceled Google Ads; retained website service','Asana offboarding audit 2026-07-29','confirmed'),
+    ('gyc','cus_PMAwGfJRWlcJYi','LSAEE','Lehigh School Academy / Ethia Dulorie','2026-06',1497,'internal_lateral','retained','migrated','Moved Google Ads to SEO; replacement subscription active','Asana + Stripe audit 2026-07-29','confirmed'),
+    ('gyc','cus_SzkLjCYYzyfHJR','TB','TweetyB''s','2026-07',790,'billing_replacement','retained','replaced','Subscription replacement/reactivation; logo retained','Stripe audit 2026-07-29','confirmed'),
+    ('gyc','cus_QpYD9QWOGXqoaq','GBD','Great Beginnings Daycare and Preschool','2026-07',1019,'billing_replacement','retained','replaced','Subscription replacement; logo retained','Stripe audit 2026-07-29','confirmed'),
+    ('gyc','cus_JcT1Nlf1rmMdz4','LTA','Little Treehouse Academy','2026-07',795,'internal_lateral','retained','migrated','Moved Google Ads to Reputation Engine; retained website','Asana offboarding audit 2026-07-29','confirmed'),
+    ('gyc','cus_TOqwelOnvSvBvk','CBG','Crossing Borders Language Center','2026-07',1395,'internal_lateral','retained','migrated','Moved Google Ads to Reputation Engine Core; retained website','Asana offboarding audit 2026-07-29','confirmed'),
+    ('gyc','cus_T6SGYZlDqyNQaC','KLC','Kidstown Learning Center','2026-07',995,'internal_lateral','retained','migrated','Moved Google Ads to SEO; transition services remain active','Asana offboarding audit 2026-07-29','confirmed')
+    ON CONFLICT ("tenantId","stripeCustomerId","canceledMonth",mrr) WHERE "stripeCustomerId" IS NOT NULL DO UPDATE SET "classificationType"=EXCLUDED."classificationType","logoOutcome"=EXCLUDED."logoOutcome","programOutcome"=EXCLUDED."programOutcome",reason=EXCLUDED.reason,evidence=EXCLUDED.evidence,status=EXCLUDED.status,"updatedAt"=NOW()`);
+  await client.query(`UPDATE "ChurnClassification" SET "reviewStatus"='confirmed',confidence='verified' WHERE "tenantId"='gyc' AND status='confirmed' AND evidence IS NOT NULL AND "classificationType"<>'unknown'`);
   const { rows: classified } = await client.query(`SELECT "canceledSubscriptionId", "stripeCustomerId", "logoKey", "canceledMonth", mrr, "classificationType", reason, evidence, status FROM "ChurnClassification" WHERE "tenantId"='gyc'`);
   const existing = new Set(classified.map(row => row.canceledSubscriptionId));
-  return classified.concat(rows.filter(row => !existing.has(row.canceledSubscriptionId)).map(row => ({ ...row, classificationType: 'pif_lateral', status: 'confirmed' })));
+  for(const row of rows.filter(row => !existing.has(row.canceledSubscriptionId))){const month=String(row.movementDate).slice(0,7),logoKey=row.stripeCustomerId;await client.query(`INSERT INTO "ChurnClassification" ("tenantId","canceledSubscriptionId","stripeCustomerId","logoKey","clientName","canceledMonth",mrr,"classificationType","logoOutcome","programOutcome","pifCash","pifTermMonths","expectedReturnDate","pifLifecycleStatus",evidence,status,"reviewStatus",confidence) VALUES ('gyc',$1,$2,$3,$4,$5,$6,'pif_deferred','retained','deferred',$7,$8,$9,$10,'ChurnLateralMovement bridge','confirmed','confirmed','verified') ON CONFLICT ("tenantId","canceledSubscriptionId") WHERE "canceledSubscriptionId" IS NOT NULL DO UPDATE SET "classificationType"='pif_deferred',"logoOutcome"='retained',"programOutcome"='deferred',"pifCash"=EXCLUDED."pifCash","pifTermMonths"=EXCLUDED."pifTermMonths","expectedReturnDate"=EXCLUDED."expectedReturnDate","pifLifecycleStatus"=EXCLUDED."pifLifecycleStatus"`,[row.canceledSubscriptionId,row.stripeCustomerId,logoKey,row.clientName||logoKey,month,row.mrrMoved,row.pifCashReceived,row.termMonths,row.scheduledReturnDate,pifLifecycleStatus({pifCash:row.pifCashReceived,expectedReturnDate:row.scheduledReturnDate})])}
+  const refreshed=await client.query(`SELECT * FROM "ChurnClassification" WHERE "tenantId"='gyc'`);return refreshed.rows;
 }
 
 async function loadCustomerToLogo(client) {
@@ -262,6 +275,21 @@ async function loadCustomerToLogo(client) {
   return map;
 }
 
+async function persistCancellationEvents(client, subs, months, customerToLogo) {
+  for (const sub of subs) {
+    if (!sub.canceled_at) continue
+    const canceledMonth=new Date(sub.canceled_at*1000).toISOString().slice(0,7);if(!months.includes(canceledMonth))continue
+    const customerId=typeof sub.customer==='object'?sub.customer.id:String(sub.customer),logoKey=customerToLogo[customerId]
+    if(!logoKey)throw new Error(`DATA_QUALITY: canceled customer ${customerId} lacks stable logo mapping`)
+    const amount=calcSubMRR(sub),[y,m]=canceledMonth.split('-').map(Number),end=Date.UTC(y,m,1)/1000-1
+    const retained=subs.some(x=>x.id!==sub.id&&(customerToLogo[typeof x.customer==='object'?x.customer.id:String(x.customer)]===logoKey)&&x.created<=end&&(!x.canceled_at||x.canceled_at>end))
+    const destinations=subs.filter(x=>x.id!==sub.id&&(customerToLogo[typeof x.customer==='object'?x.customer.id:String(x.customer)]===logoKey)&&x.created<=end&&(!x.canceled_at||x.canceled_at>end));const destinationMrr=destinations.reduce((n,x)=>n+calcSubMRR(x),0);const destinationProgram=destinations.length===1?String(destinations[0].items?.data?.[0]?.price?.nickname||destinations[0].items?.data?.[0]?.price?.product?.name||destinations[0].items?.data?.[0]?.price?.product||'verified active Stripe program'):null
+    await client.query(`UPDATE "ChurnClassification" SET "canceledSubscriptionId"=COALESCE("canceledSubscriptionId",$1),"destinationMRR"=CASE WHEN "classificationType"='internal_lateral' AND $5::numeric>0 THEN $5::numeric ELSE "destinationMRR" END,"destinationProgram"=CASE WHEN "classificationType"='internal_lateral' AND $6::text IS NOT NULL THEN $6::text ELSE "destinationProgram" END,"reviewStatus"=CASE WHEN "classificationType"='internal_lateral' AND $5::numeric>0 THEN 'confirmed' ELSE "reviewStatus" END,"confidence"=CASE WHEN "classificationType"='internal_lateral' AND $5::numeric>0 THEN 'verified' ELSE "confidence" END WHERE "tenantId"='gyc' AND "stripeCustomerId"=$2 AND "canceledMonth"=$3 AND mrr=$4`,[sub.id,customerId,canceledMonth,amount,destinationMrr,destinationProgram])
+    const type=retained?'program_churn':'true_logo_churn',out=OUTCOMES[type],name=sub.customer?.name||sub.customer?.email||logoKey
+    await client.query(`INSERT INTO "ChurnClassification" ("tenantId","canceledSubscriptionId","stripeCustomerId","logoKey","clientName","classificationType","logoOutcome","programOutcome","canceledMonth",mrr,status,"reviewStatus",confidence,evidence) VALUES ('gyc',$1,$2,$3,$4,$5,$6,$7,$8,$9,'provisional','needs_review','derived','Derived from Stripe cohort; business reason needs review') ON CONFLICT ("tenantId","canceledSubscriptionId") WHERE "canceledSubscriptionId" IS NOT NULL DO NOTHING`,[sub.id,customerId,logoKey,name,type,out[0],out[1],canceledMonth,amount])
+  }
+}
+
 async function main() {
   console.log(`\n🗓  Monthly MRR + NRR Update — ${new Date().toISOString()}`);
   const targets = getTargetMonths();
@@ -276,8 +304,10 @@ async function main() {
 
   try {
     await ensureTables(client);
-    const confirmedLaterals = await loadChurnClassifications(client);
+    await loadChurnClassifications(client);
     const customerToLogo = await loadCustomerToLogo(client);
+    await persistCancellationEvents(client,subs,targets,customerToLogo);
+    const {rows: persistedClassifications}=await client.query(`SELECT * FROM "ChurnClassification" WHERE "tenantId"='gyc'`);
 
     // Build metrics for each target month + the month before (for NRR prev-month reference)
     const allMonths = [targets[0]]; // we need month before first target for NRR
@@ -288,10 +318,10 @@ async function main() {
 
     const metricsMap = {};
     // Compute prev month metrics for NRR baseline
-    metricsMap[prevMonthStr] = computeMonthMetrics(subs, prevMonthStr, confirmedLaterals, customerToLogo);
+    metricsMap[prevMonthStr] = computeMonthMetrics(subs, prevMonthStr, persistedClassifications, customerToLogo);
 
     for (const month of targets) {
-      metricsMap[month] = computeMonthMetrics(subs, month, confirmedLaterals, customerToLogo);
+      metricsMap[month] = computeMonthMetrics(subs, month, persistedClassifications, customerToLogo);
       if (metricsMap[month].unmappedOpeningCustomers.length) throw new Error(`DATA_QUALITY: ${metricsMap[month].unmappedOpeningCustomers.length} opening Stripe customers lack a stable logo mapping for ${month}`);
     }
 
@@ -320,4 +350,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch(e => { console.error('❌ Fatal:', e.message); process.exit(1); });
-module.exports = { upsertChurnMetrics, migrateChurnClassificationSchema };
+module.exports = { upsertChurnMetrics, migrateChurnClassificationSchema, persistCancellationEvents, loadChurnClassifications };
