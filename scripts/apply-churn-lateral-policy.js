@@ -31,7 +31,7 @@ const confirmed = [
     pifCashReceived: 10491,
     termMonths: 6,
     scheduledReturnDate: '2027-01-02',
-    evidence: 'Same Stripe customer; monthly cancellation and paid PIF invoice occurred on 2026-07-02.',
+    evidence: 'Verified Stripe transition: SEO $899/month canceled and Reputation Engine Core invoice in_1TomkdEbMXEo3zxq92KrNsmC paid $10,491 every 6 months on 2026-07-02. The PIF price is the six-month destination contract price, not $899 × 6.',
   },
   {
     stripeCustomerId: 'cus_JXbLLnL0MR22mz',

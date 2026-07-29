@@ -5,7 +5,9 @@ import { createGoogleAuth, SHEETS_READONLY } from '@/lib/google-auth'
 import { NextResponse } from 'next/server'
 import { google } from 'googleapis'
 import pkg from 'pg'
+import nullableMoneyPkg from '@/lib/nullable-money'
 const { Pool } = pkg
+const { nullableNumber } = nullableMoneyPkg
 
 const SHEET_ID = '1kLm6VWX_nlpUsFioKq6JEWLGka5Z3WCTgPUKY2C0Z6A'
 
@@ -307,7 +309,7 @@ async function fetchConfirmedLateralMovements() {
       clientName: row.clientName,
       movementDate: row.movementDate,
       mrrMoved: Number(row.mrrMoved),
-      pifCashReceived: Number(row.pifCashReceived),
+      pifCashReceived: nullableNumber(row.pifCashReceived),
       termMonths: Number(row.termMonths),
       scheduledReturnDate: row.scheduledReturnDate,
       status: row.status,
@@ -413,8 +415,9 @@ export async function getChurnMetrics() {
         totals: lateralMovements.reduce((totals, row) => ({
           count: totals.count + 1,
           mrrMoved: totals.mrrMoved + row.mrrMoved,
-          pifCashReceived: totals.pifCashReceived + row.pifCashReceived,
-        }), { count: 0, mrrMoved: 0, pifCashReceived: 0 }),
+          pifCashReceived: totals.pifCashReceived + (row.pifCashReceived ?? 0),
+          pifCashPendingCount: totals.pifCashPendingCount + (row.pifCashReceived == null ? 1 : 0),
+        }), { count: 0, mrrMoved: 0, pifCashReceived: 0, pifCashPendingCount: 0 }),
       },
       updatedAt: dbRows.length ? dbRows[dbRows.length - 1].syncedAt : new Date().toISOString(),
       latestMonthIsPartial: combinedMonthly.at(-1)?.month === monthToLabel(new Date().toISOString().slice(0, 7)),

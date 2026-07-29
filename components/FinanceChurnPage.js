@@ -298,7 +298,7 @@ export default function FinanceChurnPage() {
                 {data.lateralMovements.confirmed.map(row => (
                   <div key={`${row.clientName}-${row.movementDate}`} className="bg-gray-950/60 border border-blue-900 rounded-lg p-4">
                     <p className="text-white font-medium">{row.clientName}</p>
-                    <p className="text-gray-300 text-xs mt-1">{formatCurrency(row.mrrMoved)} MRR moved → {formatCurrency(row.pifCashReceived)} PIF cash</p>
+                    <p className="text-gray-300 text-xs mt-1">{formatCurrency(row.mrrMoved)} MRR moved → {row.pifCashReceived == null ? 'PIF cash pending verification' : `${formatCurrency(row.pifCashReceived)} PIF cash`}</p>
                     <p className="text-blue-300 text-xs mt-2">{row.termMonths}-month term · recurring return {new Date(row.scheduledReturnDate).toLocaleDateString('en-US', { timeZone: 'UTC' })}</p>
                   </div>
                 ))}
@@ -414,7 +414,7 @@ export default function FinanceChurnPage() {
               <StatCard label="True logo exits" value={leadership.totals.logosLost} sub={`${formatCurrency(leadership.totals.logoMrrLost)} MRR`} color="red" />
               <StatCard label="Program exits" value={leadership.totals.programsLost} sub={`${formatCurrency(leadership.totals.programMrrLost)} downsell`} color="yellow" />
               <StatCard label="Internal laterals" value={leadership.mix.internal_lateral.count} sub={`${formatCurrency(leadership.totals.lateralGrossMrr)} source MRR`} color="blue" />
-              <StatCard label="PIF deferred" value={leadership.mix.pif_deferred.count} sub={`${formatCurrency(leadership.totals.pifOfflineMrr)} offline · ${formatCurrency(leadership.totals.pifCash)} cash`} color="blue" />
+              <StatCard label="PIF deferred" value={leadership.mix.pif_deferred.count} sub={`${formatCurrency(leadership.totals.pifOfflineMrr)} offline · ${formatCurrency(leadership.totals.pifCash)} verified cash${leadership.totals.pifCashPending ? ` · ${leadership.totals.pifCashPending} pending` : ''}`} color="blue" />
               <StatCard label="Billing artifacts" value={leadership.mix.billing_replacement.count + leadership.mix.duplicate_artifact.count} sub="Excluded from churn" />
               <StatCard label="Needs review" value={leadership.totals.needsReview} sub="Never inferred" color="yellow" />
             </div>

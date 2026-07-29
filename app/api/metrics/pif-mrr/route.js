@@ -2,8 +2,10 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import pkg from 'pg'
+import nullableMoneyPkg from '@/lib/nullable-money'
 
 const { Pool } = pkg
+const { nullableNumber } = nullableMoneyPkg
 const pool = new Pool({
   connectionString: process.env.NEON_DATABASE_URL || process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
@@ -157,7 +159,7 @@ export async function GET() {
         rep: 'Confirmed ledger',
         dealDate: startDate ? startDate.toISOString().split('T')[0] : null,
         mrrOffline: Number(r.mrrMoved || 0),
-        pifCashReceived: Number(r.pifCashReceived || 0),
+        pifCashReceived: nullableNumber(r.pifCashReceived),
         pifStartDate: startDate ? startDate.toISOString().split('T')[0] : null,
         pifEndDate: endDate ? endDate.toISOString().split('T')[0] : null,
         mrrReturnAmount: Number(r.mrrMoved || 0),

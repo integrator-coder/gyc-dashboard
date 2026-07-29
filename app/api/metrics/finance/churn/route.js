@@ -5,8 +5,10 @@ import { google } from 'googleapis'
 import { createGoogleAuth } from '@/lib/google-auth'
 import pkg from 'pg'
 import leadershipPkg from '@/lib/churn-leadership'
+import nullableMoneyPkg from '@/lib/nullable-money'
 const { Pool } = pkg
 const { buildLeadershipView, serializeLeadershipRow } = leadershipPkg
+const { nullableNumber } = nullableMoneyPkg
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -286,7 +288,7 @@ export async function GET() {
         lateralMovements = lateralRows.map(row => ({
           ...row,
           mrrMoved: Number(row.mrrMoved),
-          pifCashReceived: Number(row.pifCashReceived),
+          pifCashReceived: nullableNumber(row.pifCashReceived),
           termMonths: Number(row.termMonths),
         }))
       } finally {
