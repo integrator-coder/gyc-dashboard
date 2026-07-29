@@ -291,6 +291,22 @@ async function persistCancellationEvents(client, subs, months, customerToLogo) {
   }
 }
 
+async function runRecomputeTransaction(client,subs,targets,{beforeCommit}={}) {
+  await client.query('BEGIN')
+  try {
+    await loadChurnClassifications(client);
+    const customerToLogo = await loadCustomerToLogo(client);
+    await persistCancellationEvents(client,subs,targets,customerToLogo);
+    const {rows: persistedClassifications}=await client.query(`SELECT * FROM "ChurnClassification" WHERE "tenantId"='gyc'`);
+    const [y,m]=targets[0].split('-').map(Number),prevMonth=new Date(Date.UTC(y,m-2,1)),prevMonthStr=`${prevMonth.getUTCFullYear()}-${String(prevMonth.getUTCMonth()+1).padStart(2,'0')}`,metricsMap={};
+    metricsMap[prevMonthStr]=computeMonthMetrics(subs,prevMonthStr,persistedClassifications,customerToLogo)
+    for(const month of targets){metricsMap[month]=computeMonthMetrics(subs,month,persistedClassifications,customerToLogo);if(metricsMap[month].unmappedOpeningCustomers.length)throw new Error(`DATA_QUALITY: ${metricsMap[month].unmappedOpeningCustomers.length} opening Stripe customers lack a stable logo mapping for ${month}`)}
+    for(const month of targets){const metrics=metricsMap[month],[my,mm]=month.split('-').map(Number),pmDate=new Date(Date.UTC(my,mm-2,1)),pmStr=`${pmDate.getUTCFullYear()}-${String(pmDate.getUTCMonth()+1).padStart(2,'0')}`;await upsertMRRHistory(client,month,metrics);await upsertChurnMetrics(client,month,metrics,metricsMap[pmStr]||null)}
+    if(beforeCommit)await beforeCommit(client)
+    await client.query('COMMIT');return metricsMap
+  } catch(error){await client.query('ROLLBACK');throw error}
+}
+
 async function main() {
   console.log(`\n🗓  Monthly MRR + NRR Update — ${new Date().toISOString()}`);
   const targets = getTargetMonths();
@@ -305,43 +321,7 @@ async function main() {
 
   try {
     await ensureTables(client);
-    await loadChurnClassifications(client);
-    const customerToLogo = await loadCustomerToLogo(client);
-    await persistCancellationEvents(client,subs,targets,customerToLogo);
-    const {rows: persistedClassifications}=await client.query(`SELECT * FROM "ChurnClassification" WHERE "tenantId"='gyc'`);
-
-    // Build metrics for each target month + the month before (for NRR prev-month reference)
-    const allMonths = [targets[0]]; // we need month before first target for NRR
-    // Add the month before first target for prevMetrics reference
-    const [y, m] = targets[0].split('-').map(Number);
-    const prevMonth = new Date(Date.UTC(y, m - 2, 1));
-    const prevMonthStr = `${prevMonth.getUTCFullYear()}-${String(prevMonth.getUTCMonth() + 1).padStart(2, '0')}`;
-
-    const metricsMap = {};
-    // Compute prev month metrics for NRR baseline
-    metricsMap[prevMonthStr] = computeMonthMetrics(subs, prevMonthStr, persistedClassifications, customerToLogo);
-
-    for (const month of targets) {
-      metricsMap[month] = computeMonthMetrics(subs, month, persistedClassifications, customerToLogo);
-      if (metricsMap[month].unmappedOpeningCustomers.length) throw new Error(`DATA_QUALITY: ${metricsMap[month].unmappedOpeningCustomers.length} opening Stripe customers lack a stable logo mapping for ${month}`);
-    }
-
-    for (const month of targets) {
-      const metrics = metricsMap[month];
-      const [my, mm] = month.split('-').map(Number);
-      const pmDate = new Date(Date.UTC(my, mm - 2, 1));
-      const pmStr = `${pmDate.getUTCFullYear()}-${String(pmDate.getUTCMonth() + 1).padStart(2, '0')}`;
-      const prevMetrics = metricsMap[pmStr] || null;
-
-      console.log(`\n📅 ${month}`);
-      console.log(`   MRR: $${metrics.mrr.toLocaleString()} | Active: ${metrics.activeSubscriptions}`);
-      console.log(`   New MRR: $${metrics.newMrr.toLocaleString()} | Churned MRR: $${metrics.churnedMrr.toLocaleString()}`);
-      console.log(`   Clients Added: ${metrics.clientsAdded} | Lost: ${metrics.clientsLost}`);
-
-      await upsertMRRHistory(client, month, metrics);
-      await upsertChurnMetrics(client, month, metrics, prevMetrics);
-      console.log(`   ✅ MRRHistory + MonthlyChurnMetrics updated`);
-    }
+    await runRecomputeTransaction(client,subs,targets)
 
     console.log('\n✅ Monthly update complete.');
   } finally {
@@ -351,4 +331,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch(e => { console.error('❌ Fatal:', e.message); process.exit(1); });
-module.exports = { upsertChurnMetrics, migrateChurnClassificationSchema, persistCancellationEvents, loadChurnClassifications };
+module.exports = { ensureTables, upsertChurnMetrics, migrateChurnClassificationSchema, persistCancellationEvents, loadChurnClassifications, runRecomputeTransaction };
