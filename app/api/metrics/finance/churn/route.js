@@ -4,7 +4,9 @@ import { NextResponse } from 'next/server'
 import { google } from 'googleapis'
 import { createGoogleAuth } from '@/lib/google-auth'
 import pkg from 'pg'
+import leadershipPkg from '@/lib/churn-leadership'
 const { Pool } = pkg
+const { buildLeadershipView } = leadershipPkg
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -292,6 +294,17 @@ export async function GET() {
       if (e.code !== '42P01') console.error('finance/churn lateral ledger error:', e.message)
     }
 
+    let leadership = {}
+    try {
+      const dbClient = await pool.connect()
+      try {
+        const { rows } = await dbClient.query(`SELECT "logoKey", "clientName", "classificationType" AS "cancellationType", "logoOutcome", "programOutcome", mrr AS "sourceMrr", "destinationMRR" AS "destinationMrr", "destinationProgram", "pifCash", "expectedReturnDate", "reviewStatus", confidence, evidence, reason, "reasonCategory", "canceledMonth" FROM "ChurnClassification" WHERE "tenantId"='gyc' AND "canceledMonth" = ANY($1) ORDER BY "canceledMonth" DESC, "clientName"`, [finalMonths.map(m=>m.key)])
+        leadership = Object.fromEntries(finalMonths.map(m => [m.key, buildLeadershipView(rows.filter(r=>r.canceledMonth===m.key))]))
+      } finally { dbClient.release() }
+    } catch (e) {
+      if (e.code !== '42P01' && e.code !== '42703') console.error('leadership churn error:', e.message)
+    }
+
     return NextResponse.json({
       months: finalMonths,
       chartData: finalChartData,
@@ -299,6 +312,7 @@ export async function GET() {
         policy: 'Confirmed PIF conversions, internal service migrations, and billing replacements are retained—not churn. Unknown records remain provisionally included until classified.',
         confirmed: lateralMovements,
       },
+      leadership,
       updatedAt: dbRows.length ? dbRows[dbRows.length - 1].syncedAt : new Date().toISOString(),
       latestMonthIsPartial: finalMonths[0]?.key === new Date().toISOString().slice(0, 7),
       definitions: {
@@ -308,6 +322,10 @@ export async function GET() {
         unknowns: 'Unclassified cancellations remain provisionally included so missing evidence cannot silently improve retention.',
         grr: 'Sum, by opening logo, of the lesser of opening MRR and ending retained MRR ÷ opening-logo cohort MRR. Includes contractions, excludes expansion, and credits confirmed retained value moved offline.',
         nrr: 'Ending MRR for logos present at opening, including expansion/contraction and confirmed retained value moved offline, ÷ actual opening-logo cohort MRR. PIF cash is never treated as MRR.',
+        cancellationType: 'Every cancellation is assigned exactly one bucket: true logo churn, program churn, internal lateral, PIF deferred, billing replacement, duplicate artifact, or unknown.',
+        lateral: 'Internal lateral shows source recurring MRR, verified destination recurring MRR, and net delta. Unknown destination value is never inferred.',
+        pif: 'Monthly-to-PIF is deferred/offline recurring value, not churn. PIF cash is displayed separately and expected return is shown only when verified.',
+        retentionViews: 'Stripe-recurring retention excludes offline PIF value. Economic retention credits confirmed PIF deferred value while keeping PIF cash out of MRR.',
       },
     })
   } catch (error) {

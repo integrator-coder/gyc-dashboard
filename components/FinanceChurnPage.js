@@ -70,6 +70,11 @@ function StatCard({ label, value, sub, color = 'white', prefix, suffix }) {
   )
 }
 
+function MovementTable({ title, rows, kind }) {
+  if (!rows?.length) return null
+  return <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden"><div className="px-5 py-4 border-b border-gray-800"><h3 className="text-white font-semibold">{title}</h3></div><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="text-gray-400 text-xs uppercase"><tr><th className="text-left px-4 py-3">Client</th><th className="text-left px-4 py-3">Outcome</th><th className="text-right px-4 py-3">Source MRR</th><th className="text-right px-4 py-3">Destination MRR</th><th className="text-right px-4 py-3">Net</th><th className="text-left px-4 py-3">Reason / evidence</th></tr></thead><tbody>{rows.map((r,i)=>{const known=r.destinationMrr!==null&&r.destinationMrr!==undefined;return <tr key={`${r.logoKey}-${i}`} className="border-t border-gray-800 text-gray-200"><td className="px-4 py-3">{r.clientName}</td><td className="px-4 py-3">{kind==='pif' ? `Deferred · ${r.expectedReturnDate ? new Date(r.expectedReturnDate).toLocaleDateString() : 'return date needs review'}` : `${r.logoOutcome} / ${r.programOutcome}`}</td><td className="px-4 py-3 text-right">{formatCurrency(Number(r.sourceMrr))}</td><td className="px-4 py-3 text-right">{known ? formatCurrency(Number(r.destinationMrr)) : 'Needs review'}</td><td className="px-4 py-3 text-right">{known ? formatCurrency(Number(r.destinationMrr)-Number(r.sourceMrr)) : '—'}</td><td className="px-4 py-3">{r.reason || r.reasonCategory || 'Unknown'}<span className="block text-xs text-gray-400">{r.confidence || 'unknown'} confidence{r.evidence ? ` · ${r.evidence}` : ''}</span></td></tr>})}</tbody></table></div></div>
+}
+
 // Custom tooltip for churn rate chart
 function ChurnRateTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
@@ -160,6 +165,7 @@ export default function FinanceChurnPage() {
   }
 
   const selected = data?.months?.find(m => m.key === selectedKey) ?? data?.months?.[0]
+  const leadership = selected ? data?.leadership?.[selected.key] : null
   const netMrr = selected ? selected.newMrr - selected.lostMrr : null
   const netMrrColor = netMrr === null ? 'white' : netMrr >= 0 ? 'green' : 'red'
 
@@ -402,6 +408,25 @@ export default function FinanceChurnPage() {
               </div>
             </div>
           )}
+
+          {leadership && <>
+            <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
+              <StatCard label="True logo exits" value={leadership.totals.logosLost} sub={`${formatCurrency(leadership.totals.logoMrrLost)} MRR`} color="red" />
+              <StatCard label="Program exits" value={leadership.totals.programsLost} sub={`${formatCurrency(leadership.totals.programMrrLost)} downsell`} color="yellow" />
+              <StatCard label="Internal laterals" value={leadership.mix.internal_lateral.count} sub={`${formatCurrency(leadership.totals.lateralGrossMrr)} source MRR`} color="blue" />
+              <StatCard label="PIF deferred" value={leadership.mix.pif_deferred.count} sub={`${formatCurrency(leadership.totals.pifOfflineMrr)} offline · ${formatCurrency(leadership.totals.pifCash)} cash`} color="blue" />
+              <StatCard label="Billing artifacts" value={leadership.mix.billing_replacement.count + leadership.mix.duplicate_artifact.count} sub="Excluded from churn" />
+              <StatCard label="Needs review" value={leadership.totals.needsReview} sub="Never inferred" color="yellow" />
+            </div>
+            <div className="bg-gray-900 rounded-xl border border-gray-800 p-5"><h3 className="text-white font-semibold">Cancellation mix & MRR movement</h3><p className="text-gray-400 text-xs mt-1 mb-4">Each event is in exactly one bucket. Destination and net delta appear only when verified.</p><div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">{Object.entries(leadership.mix).map(([k,v])=><div key={k} className="rounded-lg bg-black/30 p-3"><div className="text-xs text-gray-400 capitalize">{k.replaceAll('_',' ')}</div><div className="text-lg text-white font-semibold">{v.count}</div><div className="text-xs text-gray-300">{formatCurrency(v.sourceMrr)} source</div></div>)}</div></div>
+            <MovementTable title="True logo exits" rows={leadership.logoExits} />
+            <MovementTable title="Program exits / downsells" rows={leadership.programExits} />
+            <MovementTable title="Internal laterals" rows={leadership.laterals} />
+            <MovementTable title="Monthly → PIF lifecycle" rows={leadership.pifLifecycle} kind="pif" />
+            <MovementTable title="Billing replacements and duplicates" rows={leadership.replacements} />
+            <MovementTable title="Needs classification review" rows={leadership.needsReview} />
+            <div className="rounded-xl border border-purple-900 bg-purple-950/20 p-4 text-xs text-gray-300 space-y-1"><p><b className="text-white">Logo churn</b> means no retained GYC program; program churn is a downsell while the logo remains.</p><p><b className="text-white">Laterals</b> show source recurring MRR, verified destination MRR, and net delta.</p><p><b className="text-white">PIF</b> is temporarily offline recurring value, not churn. PIF cash stays separate from MRR. Economic retention credits confirmed deferred value; Stripe-recurring retention does not.</p><p><b className="text-white">Unknowns</b> remain Needs Review and are never inferred.</p></div>
+          </>}
 
           {/* Monthly Summary Grid */}
           <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
