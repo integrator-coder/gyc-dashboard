@@ -206,11 +206,15 @@ async function migrateChurnClassificationSchema(client) {
     ALTER TABLE "ChurnClassification" ADD COLUMN IF NOT EXISTS "canceledMonth" TEXT;
     ALTER TABLE "ChurnClassification" ADD COLUMN IF NOT EXISTS mrr NUMERIC(12,2);
     ALTER TABLE "ChurnClassification" ALTER COLUMN "canceledSubscriptionId" DROP NOT NULL;
-    ALTER TABLE "ChurnClassification" ALTER COLUMN "normalizedClientName" DROP NOT NULL;
     UPDATE "ChurnClassification" c SET "logoKey"=COALESCE(NULLIF(p.acronym,''),'profile:'||p.id::text)
       FROM "ClientStripeLink" l JOIN "ClientProfile" p ON p.id=l."clientProfileId"
       WHERE c."logoKey" IS NULL AND c."stripeCustomerId"=l."stripeCustomerId";
   `);
+  await client.query(`DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='ChurnClassification' AND column_name='normalizedClientName') THEN
+      ALTER TABLE "ChurnClassification" ALTER COLUMN "normalizedClientName" DROP NOT NULL;
+    END IF;
+  END $$`);
   await client.query(`DO $$ DECLARE r record; BEGIN
     FOR r IN SELECT conname FROM pg_constraint WHERE conrelid='"ChurnClassification"'::regclass AND contype='u'
       AND pg_get_constraintdef(oid) LIKE '%normalizedClientName%'

@@ -58,7 +58,17 @@ test('cross-month cancellation does not create a false collision',()=>{
  const cls=[{stripeCustomerId:'cus_a',canceledMonth:'2026-06',mrr:500,type:'pif_lateral',confirmed:true}]
  const m=computeMonthMetrics(rows,'2026-06',cls,{cus_a:'A'});assert.equal(m.clientsLost,0);assert.equal(m.lateralMovementMrr,500)
 })
-test('legacy classification schema migration is idempotent and removes name-key dependency',async()=>{
- const calls=[];const db={query:async sql=>{calls.push(sql);return{rows:[]}}};await migrateChurnClassificationSchema(db);await migrateChurnClassificationSchema(db)
- const sql=calls.join('\n');assert.match(sql,/ADD COLUMN IF NOT EXISTS "logoKey"/);assert.match(sql,/DROP NOT NULL/);assert.match(sql,/normalizedClientName/);assert.match(sql,/stable_customer_month_mrr_uq/)
-})
+async function withPostgresSchema(kind,fn){
+ const {Client}=require('pg'),crypto=require('node:crypto');const db=new Client({connectionString:process.env.DATABASE_URL,ssl:{rejectUnauthorized:false}});const schema=`churn_test_${crypto.randomBytes(6).toString('hex')}`
+ await db.connect();try{await db.query('BEGIN');await db.query(`CREATE SCHEMA "${schema}"`);await db.query(`SET LOCAL search_path TO "${schema}"`)
+  await db.query(`CREATE TABLE "ClientProfile" (id bigint primary key, acronym text); CREATE TABLE "ClientStripeLink" ("stripeCustomerId" text,"clientProfileId" bigint)`)
+  if(kind==='fresh')await db.query(`CREATE TABLE "ChurnClassification" (id bigserial primary key,"tenantId" text not null,"canceledSubscriptionId" text,"stripeCustomerId" text,"logoKey" text not null,"clientName" text not null,"classificationType" text not null,"canceledMonth" text not null,mrr numeric(12,2) not null)`)
+  else await db.query(`CREATE TABLE "ChurnClassification" (id bigserial primary key,"tenantId" text not null,"canceledSubscriptionId" text not null,"stripeCustomerId" text,"clientName" text not null,"classificationType" text not null,"normalizedClientName" text not null,"canceledMonth" text,mrr numeric(12,2),UNIQUE("tenantId","normalizedClientName","canceledMonth",mrr))`)
+  await fn(db);await db.query('ROLLBACK')
+ }catch(e){await db.query('ROLLBACK').catch(()=>{});throw e}finally{await db.end()}}
+test('fresh Postgres classification schema migration executes twice',()=>withPostgresSchema('fresh',async db=>{
+ await migrateChurnClassificationSchema(db);await migrateChurnClassificationSchema(db);const x=await db.query(`select column_name from information_schema.columns where table_schema=current_schema() and table_name='ChurnClassification'`);assert.equal(x.rows.some(r=>r.column_name==='logoKey'),true)
+}))
+test('legacy Postgres schema migration executes twice and relaxes name key',()=>withPostgresSchema('legacy',async db=>{
+ await migrateChurnClassificationSchema(db);await migrateChurnClassificationSchema(db);const x=await db.query(`select is_nullable from information_schema.columns where table_schema=current_schema() and table_name='ChurnClassification' and column_name='normalizedClientName'`);assert.equal(x.rows[0].is_nullable,'YES')
+}))
