@@ -175,7 +175,7 @@ export async function GET() {
         const { rows: dbData } = await dbClient.query(`
           SELECT month, "totalMRR", "clientCount", "clientsAdded", "clientsLost",
                  "newMRR", "churnedMRR", "netMRR", "churnPct", "revenueChurnPct", "nrr", "grr",
-                 "openingClients", "programChurnClients", "programChurnMRR", "syncedAt"
+                 "openingClients", "openingCohortMRR", "programChurnClients", "programChurnMRR", "syncedAt"
           FROM "MonthlyChurnMetrics"
           WHERE "tenantId" = 'gyc' AND month > $1
           ORDER BY month ASC
@@ -216,6 +216,7 @@ export async function GET() {
         nrr: r.nrr == null ? null : parseFloat(r.nrr),
         grr: r.grr == null ? null : parseFloat(r.grr),
         openingClients: Number(r.openingClients) || 0,
+        openingCohortMrr: parseFloat(r.openingCohortMRR) || 0,
         programChurnClients: Number(r.programChurnClients) || 0,
         programChurnMrr: parseFloat(r.programChurnMRR) || 0,
         syncedAt: r.syncedAt,
@@ -302,11 +303,11 @@ export async function GET() {
       latestMonthIsPartial: finalMonths[0]?.key === new Date().toISOString().slice(0, 7),
       definitions: {
         clientChurn: 'Confirmed unique logos lost ÷ unique logos active at the opening of the month. Program cancellations, internal migrations, PIF conversions, duplicates, and billing replacements are excluded.',
-        revenueChurn: 'MRR lost from confirmed logo churn (plus currently unclassified cancellations) ÷ opening cohort MRR.',
+        revenueChurn: 'MRR lost from logos that fully left (plus unresolved cancellations that leave no active program) ÷ actual opening-logo cohort MRR.',
         programChurn: 'A service/program cancellation where the client retains another GYC service. Reported separately; excluded from logo and revenue churn.',
         unknowns: 'Unclassified cancellations remain provisionally included so missing evidence cannot silently improve retention.',
-        grr: '(Opening cohort MRR − confirmed logo-churn MRR − unclassified cancellation MRR) ÷ opening cohort MRR, before expansion.',
-        nrr: 'Ending MRR from the opening cohort ÷ opening cohort MRR, including expansion/contraction and adding back confirmed retained value moved offline; PIF cash is never treated as MRR.',
+        grr: 'Sum, by opening logo, of the lesser of opening MRR and ending retained MRR ÷ opening-logo cohort MRR. Includes contractions, excludes expansion, and credits confirmed retained value moved offline.',
+        nrr: 'Ending MRR for logos present at opening, including expansion/contraction and confirmed retained value moved offline, ÷ actual opening-logo cohort MRR. PIF cash is never treated as MRR.',
       },
     })
   } catch (error) {
