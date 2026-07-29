@@ -308,7 +308,7 @@ export default function ChurnPage() {
                   </tbody>
                 </table>
               </div>
-              <p className="text-gray-400 text-xs">Policy: {data.lateralMovements.policy} June&apos;s unmatched PIF deals remain unclassified.</p>
+              <p className="text-gray-400 text-xs">Policy: {data.lateralMovements.policy} June&apos;s unmatched PIF deals remain unclassified. Corrected live values require a controlled new-deals resync followed by a churn-ledger recompute.</p>
             </section>
           )}
 

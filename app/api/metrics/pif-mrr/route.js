@@ -3,9 +3,11 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import pkg from 'pg'
 import nullableMoneyPkg from '@/lib/nullable-money'
+import pifReturnFactsPkg from '@/lib/pif-return-facts'
 
 const { Pool } = pkg
 const { nullableNumber } = nullableMoneyPkg
+const { summarizePifReturns } = pifReturnFactsPkg
 const pool = new Pool({
   connectionString: process.env.NEON_DATABASE_URL || process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
@@ -224,14 +226,15 @@ export async function GET() {
 
     // MRR returning (lateral PIFs expiring — active ones)
     const activeLateralReturns = lateralPifs.filter(p => p.status === 'active')
-    const totalMrrComingOnline = activeLateralReturns.reduce((s, p) => s + (p.mrrReturnAmount || 0), 0)
+    const returnSummary = summarizePifReturns(activeLateralReturns)
+    const totalMrrComingOnline = returnSummary.returningMrr
 
     // Next return date = earliest active lateral PIF end date
     const futureLaterals = activeLaterals
       .filter(p => p.pifEndDate)
       .sort((a, b) => a.pifEndDate.localeCompare(b.pifEndDate))
     const nextReturnDate = futureLaterals[0]?.pifEndDate || null
-    const nextReturnAmount = futureLaterals[0]?.mrrReturnAmount || 0
+    const nextReturnAmount = futureLaterals[0]?.mrrReturnAmount ?? null
 
     // All PIFs summary (regardless of dealOutcome) for unclassified PIF tracking
     const unclassifiedPifs = allPifRows.filter(r => !r.dealOutcome)
@@ -247,8 +250,9 @@ export async function GET() {
       summary: {
         totalMrrOffline: Math.round(totalMrrOffline * 100) / 100,
         totalMrrComingOnline: Math.round(totalMrrComingOnline * 100) / 100,
+        returnMrrPendingCount: returnSummary.pendingReturnMrr,
         nextReturnDate,
-        nextReturnAmount: Math.round(nextReturnAmount * 100) / 100,
+        nextReturnAmount: nextReturnAmount == null ? null : Math.round(nextReturnAmount * 100) / 100,
         totalActivePifDeals: activePifDeals.length,
         unclassifiedPifCount: unclassifiedPifs.length,
       },

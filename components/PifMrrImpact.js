@@ -54,8 +54,9 @@ function SummaryBar({ summary, loading }) {
 
   const totalOffline = summary?.totalMrrOffline || 0
   const totalOnline  = summary?.totalMrrComingOnline || 0
+  const returnPending = summary?.returnMrrPendingCount || 0
   const nextDate     = summary?.nextReturnDate
-  const nextAmt      = summary?.nextReturnAmount || 0
+  const nextAmt      = summary?.nextReturnAmount
   const unclassified = summary?.unclassifiedPifCount || 0
 
   return (
@@ -71,17 +72,17 @@ function SummaryBar({ summary, loading }) {
         <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-400 mb-1">
           MRR Returning
         </p>
-        <p className="text-xl font-bold text-emerald-300">{fmt$(totalOnline)}<span className="text-xs text-emerald-600 ml-1">/mo</span></p>
-        <p className="text-[10px] text-gray-500 mt-0.5">When active laterals expire</p>
+        <p className="text-xl font-bold text-emerald-300">{fmt$(totalOnline)}<span className="text-xs text-emerald-600 ml-1">/mo verified</span></p>
+        <p className="text-[10px] text-gray-500 mt-0.5">{returnPending ? `${returnPending} return amount pending mapping` : 'When active laterals expire'}</p>
       </div>
       <div className="rounded-xl border border-blue-900/60 bg-blue-950/30 px-4 py-3">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-blue-400 mb-1">
           Next Return
         </p>
         <p className="text-xl font-bold text-blue-300">{nextDate ? fmtDate(nextDate) : '—'}</p>
-        {nextAmt > 0 && (
+        {nextAmt != null ? (
           <p className="text-[10px] text-gray-400 mt-0.5">{fmt$(nextAmt)}/mo returning</p>
-        )}
+        ) : nextDate ? <p className="text-[10px] text-amber-300 mt-0.5">Return MRR pending mapping</p> : null}
       </div>
       {unclassified > 0 && (
         <div className="sm:col-span-3 rounded-xl border border-amber-900/50 bg-amber-950/20 px-4 py-2 flex items-center gap-2">
@@ -142,7 +143,7 @@ function LateralPifsTable({ lateralPifs, loading }) {
               </td>
               <td className="px-4 py-2.5 text-gray-400">{fmtDate(p.pifStartDate)}</td>
               <td className="px-4 py-2.5 text-gray-400">{fmtDate(p.pifEndDate)}</td>
-              <td className="px-4 py-2.5 text-right font-mono text-emerald-300">{fmt$(p.mrrReturnAmount)}</td>
+              <td className="px-4 py-2.5 text-right font-mono text-emerald-300">{p.mrrReturnAmount == null ? <span className="text-amber-300">Needs deal mapping</span> : fmt$(p.mrrReturnAmount)}</td>
               <td className="px-4 py-2.5 text-right text-gray-300">
                 {p.status === 'active' ? (
                   <span className="font-semibold">{p.monthsRemaining ?? '—'}</span>
@@ -165,12 +166,14 @@ function LateralPifsTable({ lateralPifs, loading }) {
               </td>
               <td colSpan={3} />
               <td colSpan={2} className="px-4 py-2 text-right font-mono font-bold text-emerald-300">
-                {fmt$(active.reduce((s, p) => s + (p.mrrReturnAmount || 0), 0))} returning
+                {fmt$(active.reduce((s, p) => s + (p.mrrReturnAmount ?? 0), 0))} verified returning
+                {active.some(p => p.mrrReturnAmount == null) && <span className="block text-[10px] text-amber-300">{active.filter(p => p.mrrReturnAmount == null).length} pending mapping</span>}
               </td>
             </tr>
           </tfoot>
         )}
       </table>
+      <p className="border-t border-gray-800 bg-amber-950/20 px-4 py-2 text-[10px] text-amber-300">Live values update only after a controlled new-deals resync and churn-ledger recompute.</p>
     </div>
   )
 }
