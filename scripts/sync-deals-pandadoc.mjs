@@ -21,9 +21,11 @@ import { homedir } from 'os'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import pkg from 'pg'
+import pifPricingPkg from '../lib/pif-deal-pricing.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const { Pool } = pkg
+const { derivePifDealPricing } = pifPricingPkg
 
 // ─── Credentials ─────────────────────────────────────────────────────────────
 const secrets = JSON.parse(readFileSync(homedir() + '/.openclaw/secrets.json', 'utf8'))
@@ -401,24 +403,12 @@ async function processDoc(doc) {
   const quarter   = getQuarter(dateCompleted.getMonth())
 
   // Pricing — from PandaDoc tokens
-  const coreMonthlyRaw  = tokenMap['Core - Standard Monthly Rate']   || ''
-  const growthMonthlyRaw = tokenMap['Growth - Standard Monthly Rate'] || ''
-  const pifRaw          = tokenMap['Core - PIF']                     || ''
-
-  const pif       = !!pifRaw && pifRaw.toString().trim() !== ''
-  const pifAmount = pif ? parseMoney(pifRaw) : 0
-
-  // MRR: prefer PandaDoc token, fall back to Stripe
-  let mrr = parseMoney(coreMonthlyRaw) || parseMoney(growthMonthlyRaw)
   let stripeCustomerId = null
 
   const { mrr: stripeMrr, customerId } = await getStripeMrr(clientEmail)
   stripeCustomerId = customerId
 
-  // Use Stripe MRR only as fallback when PandaDoc token MRR is 0
-  if (mrr === 0 && stripeMrr > 0) {
-    mrr = stripeMrr
-  }
+  const { pif, pifAmount, mrr, renewalAmount } = derivePifDealPricing(tokenMap, stripeMrr)
 
   // Rep attribution from GHL
   const rawRep = await getGhlRep(clientEmail, firstName, lastName)
@@ -431,7 +421,6 @@ async function processDoc(doc) {
 
   const fullTerm      = pif ? mrr * term : 0
   const firstPayment  = pif ? pifAmount  : mrr
-  const renewalAmount = mrr
   const dealType      = classifyDealType(rep, yearLabel)
 
   // firstYear (same formula as Google Sheets: fullTerm + remaining months' MRR if monthly, or fullTerm if PIF)

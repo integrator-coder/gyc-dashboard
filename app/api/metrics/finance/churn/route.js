@@ -279,16 +279,38 @@ export async function GET() {
       const dbClient = await pool.connect()
       try {
         const { rows: lateralRows } = await dbClient.query(`
-          SELECT "clientName", "movementDate", "mrrMoved", "pifCashReceived",
-                 "termMonths", "scheduledReturnDate", status
-          FROM "ChurnLateralMovement"
-          WHERE "tenantId"='gyc' AND status='confirmed'
+          SELECT movement."canceledSubscriptionId", movement."clientName", movement."movementDate", movement."mrrMoved", movement."pifCashReceived",
+                 movement."termMonths", movement."scheduledReturnDate", movement.status,
+                 deal."renewalAmount" AS "returningMrr", deal.service AS "returningProgram"
+          FROM "ChurnLateralMovement" movement
+          LEFT JOIN "ClientStripeLink" stripe_link ON stripe_link."stripeCustomerId"=movement."stripeCustomerId"
+          LEFT JOIN "ClientProfile" profile ON profile.id=stripe_link."clientProfileId"
+          LEFT JOIN LATERAL (
+            SELECT sales_deal."renewalAmount", sales_deal.service
+            FROM "SalesDeal" sales_deal
+            WHERE sales_deal."tenantId"=movement."tenantId"
+              AND sales_deal."dealDate"=movement."movementDate"
+              AND sales_deal."renewalAmount">0
+              AND (sales_deal.pif=true OR sales_deal."pifOverride"=true)
+              AND sales_deal."renewalAmount"<sales_deal."firstPayment"
+              AND (
+                regexp_replace(lower(sales_deal."clientName"),'[^a-z0-9]','','g')=regexp_replace(lower(movement."clientName"),'[^a-z0-9]','','g')
+                OR regexp_replace(lower(sales_deal."clientName"),'[^a-z0-9]','','g')=regexp_replace(lower(COALESCE(profile."companyName",'')),'[^a-z0-9]','','g')
+                OR regexp_replace(lower(sales_deal."clientName"),'[^a-z0-9]','','g')=regexp_replace(lower(COALESCE(profile.acronym,'')),'[^a-z0-9]','','g')
+                OR rtrim(regexp_replace(lower(sales_deal."clientName"),'[^a-z0-9]','','g'),'s')=rtrim(regexp_replace(lower(movement."clientName"),'[^a-z0-9]','','g'),'s')
+              )
+            ORDER BY (regexp_replace(lower(sales_deal."clientName"),'[^a-z0-9]','','g')=regexp_replace(lower(movement."clientName"),'[^a-z0-9]','','g')) DESC, sales_deal.id DESC
+            LIMIT 1
+          ) deal ON TRUE
+          WHERE movement."tenantId"='gyc' AND movement.status='confirmed'
           ORDER BY "movementDate" DESC
         `)
         lateralMovements = lateralRows.map(row => ({
           ...row,
           mrrMoved: Number(row.mrrMoved),
           pifCashReceived: nullableNumber(row.pifCashReceived),
+          returningMrr: nullableNumber(row.returningMrr),
+          returningProgram: row.returningProgram,
           termMonths: Number(row.termMonths),
         }))
       } finally {
@@ -303,7 +325,18 @@ export async function GET() {
       const dbClient = await pool.connect()
       try {
         const { rows } = await dbClient.query(`SELECT "canceledSubscriptionId", "logoKey", "clientName", "classificationType" AS "cancellationType", "logoOutcome", "programOutcome", mrr AS "sourceMrr", "sourceProgram", "sourceProgramKey", "openingProgramMRR" AS "openingProgramMrr", "destinationMRR" AS "destinationMrr", "destinationProgram", "destinationSubscriptionId", "pifCash", "pifTermMonths", "expectedReturnDate", "pifLifecycleStatus", "reviewStatus", confidence, evidence, reason, "reasonCategory", "canceledMonth" FROM "ChurnClassification" WHERE "tenantId"='gyc' AND "canceledMonth" = ANY($1) ORDER BY "canceledMonth" DESC, "clientName"`, [finalMonths.map(m=>m.key)])
-        leadership = Object.fromEntries(finalMonths.map(m => [m.key, buildLeadershipView(rows.filter(r=>r.canceledMonth===m.key).map(serializeLeadershipRow))]))
+        const pifReturns = new Map(lateralMovements.map(movement => [movement.canceledSubscriptionId, movement]))
+        const enrichedRows = rows.map(row => {
+          if (row.cancellationType !== 'pif_deferred') return row
+          const deal = pifReturns.get(row.canceledSubscriptionId)
+          if (!deal) return row
+          return {
+            ...row,
+            destinationMrr: deal.returningMrr,
+            destinationProgram: deal.returningProgram || row.destinationProgram,
+          }
+        })
+        leadership = Object.fromEntries(finalMonths.map(m => [m.key, buildLeadershipView(enrichedRows.filter(r=>r.canceledMonth===m.key).map(serializeLeadershipRow))]))
         for(const month of finalMonths){if(month.openingPrograms!=null&&leadership[month.key]){const reconciled=leadership[month.key].totals.programsLost+leadership[month.key].totals.programsLostWithLogoExit;if(reconciled!==month.programsLost)throw new Error(`Program loss reconciliation failed for ${month.key}: events=${reconciled}, metric=${month.programsLost}`)}}
       } finally { dbClient.release() }
     } catch (e) { throw new Error(`LEADERSHIP_CHURN_SCHEMA_OR_DATA_ERROR: ${e.message}`) }

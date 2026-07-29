@@ -298,8 +298,9 @@ export default function FinanceChurnPage() {
                 {data.lateralMovements.confirmed.map(row => (
                   <div key={`${row.clientName}-${row.movementDate}`} className="bg-gray-950/60 border border-blue-900 rounded-lg p-4">
                     <p className="text-white font-medium">{row.clientName}</p>
-                    <p className="text-gray-300 text-xs mt-1">{formatCurrency(row.mrrMoved)} MRR moved → {row.pifCashReceived == null ? 'PIF cash pending verification' : `${formatCurrency(row.pifCashReceived)} PIF cash`}</p>
-                    <p className="text-blue-300 text-xs mt-2">{row.termMonths}-month term · recurring return {new Date(row.scheduledReturnDate).toLocaleDateString('en-US', { timeZone: 'UTC' })}</p>
+                    <p className="text-gray-300 text-xs mt-1">{formatCurrency(row.mrrMoved)} current MRR offline · {row.pifCashReceived == null ? 'PIF cash pending verification' : `${formatCurrency(row.pifCashReceived)} PIF cash`}</p>
+                    <p className="text-teal-300 text-xs mt-2">{row.returningMrr == null ? 'New recurring MRR needs deal mapping' : `${formatCurrency(row.returningMrr)} new recurring MRR${row.returningProgram ? ` · ${row.returningProgram}` : ''}`}</p>
+                    <p className="text-blue-300 text-xs mt-1">{row.termMonths}-month term · returns {new Date(row.scheduledReturnDate).toLocaleDateString('en-US', { timeZone: 'UTC' })}</p>
                   </div>
                 ))}
               </div>

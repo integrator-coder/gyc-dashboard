@@ -276,9 +276,10 @@ export default function ChurnPage() {
                   Confirmed clients who moved from monthly billing to an upfront term. Their MRR is temporarily offline, so they are excluded from true churn and scheduled for recurring return.
                 </p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <KpiCard label="Confirmed Conversions" value={data.lateralMovements.totals.count} sub="Excluded from clients lost" />
                 <KpiCard label="MRR Moved Offline" value={fmt$(data.lateralMovements.totals.mrrMoved)} sub="Deferred, not lost" />
+                <KpiCard label="New Recurring MRR" value={fmt$(data.lateralMovements.totals.returningMrr)} sub={data.lateralMovements.totals.returningMrrPendingCount ? `${data.lateralMovements.totals.returningMrrPendingCount} deal mapping pending` : 'Scheduled to return'} highlight />
                 <KpiCard label="PIF Cash Received" value={fmt$(data.lateralMovements.totals.pifCashReceived)} sub={data.lateralMovements.totals.pifCashPendingCount ? `${data.lateralMovements.totals.pifCashPendingCount} payment pending verification` : 'Verified upfront cash'} highlight />
               </div>
               <div className="overflow-x-auto">
@@ -289,7 +290,8 @@ export default function ChurnPage() {
                       <th className="text-right py-2 px-4">MRR moved</th>
                       <th className="text-right py-2 px-4">PIF cash</th>
                       <th className="text-right py-2 px-4">Term</th>
-                      <th className="text-right py-2 pl-4">Recurring return</th>
+                      <th className="text-right py-2 px-4">New recurring MRR</th>
+                      <th className="text-right py-2 pl-4">Return date</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -299,6 +301,7 @@ export default function ChurnPage() {
                         <td className="text-right py-3 px-4">{fmt$(row.mrrMoved)}</td>
                         <td className="text-right py-3 px-4 text-teal-300">{row.pifCashReceived == null ? 'Pending verification' : fmt$(row.pifCashReceived)}</td>
                         <td className="text-right py-3 px-4">{row.termMonths} months</td>
+                        <td className="text-right py-3 px-4"><span className="text-teal-300">{row.returningMrr == null ? 'Needs deal mapping' : fmt$(row.returningMrr)}</span>{row.returningProgram && <><br /><span className="text-xs text-gray-400">{row.returningProgram}</span></>}</td>
                         <td className="text-right py-3 pl-4">{new Date(row.scheduledReturnDate).toLocaleDateString('en-US', { timeZone: 'UTC' })}</td>
                       </tr>
                     ))}

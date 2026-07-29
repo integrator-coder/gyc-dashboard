@@ -298,10 +298,34 @@ async function fetchConfirmedLateralMovements() {
   const dbClient = await pool.connect()
   try {
     const { rows } = await dbClient.query(`
-      SELECT "stripeCustomerId", "clientName", "movementDate", "mrrMoved",
-             "pifCashReceived", "termMonths", "scheduledReturnDate", status
-      FROM "ChurnLateralMovement"
-      WHERE "tenantId" = 'gyc' AND status = 'confirmed'
+      SELECT movement."stripeCustomerId", movement."clientName", movement."movementDate", movement."mrrMoved",
+             movement."pifCashReceived", movement."termMonths", movement."scheduledReturnDate", movement.status,
+             deal."renewalAmount" AS "returningMrr", deal.service AS "returningProgram"
+      FROM "ChurnLateralMovement" movement
+      LEFT JOIN "ClientStripeLink" stripe_link
+        ON stripe_link."stripeCustomerId" = movement."stripeCustomerId"
+      LEFT JOIN "ClientProfile" profile
+        ON profile.id = stripe_link."clientProfileId"
+      LEFT JOIN LATERAL (
+        SELECT sales_deal."renewalAmount", sales_deal.service
+        FROM "SalesDeal" sales_deal
+        WHERE sales_deal."tenantId" = movement."tenantId"
+          AND sales_deal."dealDate" = movement."movementDate"
+          AND sales_deal."renewalAmount" > 0
+          AND (sales_deal.pif = true OR sales_deal."pifOverride" = true)
+          AND sales_deal."renewalAmount" < sales_deal."firstPayment"
+          AND (
+            regexp_replace(lower(sales_deal."clientName"), '[^a-z0-9]', '', 'g') = regexp_replace(lower(movement."clientName"), '[^a-z0-9]', '', 'g')
+            OR regexp_replace(lower(sales_deal."clientName"), '[^a-z0-9]', '', 'g') = regexp_replace(lower(COALESCE(profile."companyName", '')), '[^a-z0-9]', '', 'g')
+            OR regexp_replace(lower(sales_deal."clientName"), '[^a-z0-9]', '', 'g') = regexp_replace(lower(COALESCE(profile.acronym, '')), '[^a-z0-9]', '', 'g')
+            OR rtrim(regexp_replace(lower(sales_deal."clientName"), '[^a-z0-9]', '', 'g'), 's') = rtrim(regexp_replace(lower(movement."clientName"), '[^a-z0-9]', '', 'g'), 's')
+          )
+        ORDER BY
+          (regexp_replace(lower(sales_deal."clientName"), '[^a-z0-9]', '', 'g') = regexp_replace(lower(movement."clientName"), '[^a-z0-9]', '', 'g')) DESC,
+          sales_deal.id DESC
+        LIMIT 1
+      ) deal ON TRUE
+      WHERE movement."tenantId" = 'gyc' AND movement.status = 'confirmed'
       ORDER BY "movementDate" DESC
     `)
     return rows.map(row => ({
@@ -312,6 +336,8 @@ async function fetchConfirmedLateralMovements() {
       pifCashReceived: nullableNumber(row.pifCashReceived),
       termMonths: Number(row.termMonths),
       scheduledReturnDate: row.scheduledReturnDate,
+      returningMrr: nullableNumber(row.returningMrr),
+      returningProgram: row.returningProgram,
       status: row.status,
     }))
   } catch (error) {
@@ -415,9 +441,11 @@ export async function getChurnMetrics() {
         totals: lateralMovements.reduce((totals, row) => ({
           count: totals.count + 1,
           mrrMoved: totals.mrrMoved + row.mrrMoved,
+          returningMrr: totals.returningMrr + (row.returningMrr ?? 0),
+          returningMrrPendingCount: totals.returningMrrPendingCount + (row.returningMrr == null ? 1 : 0),
           pifCashReceived: totals.pifCashReceived + (row.pifCashReceived ?? 0),
           pifCashPendingCount: totals.pifCashPendingCount + (row.pifCashReceived == null ? 1 : 0),
-        }), { count: 0, mrrMoved: 0, pifCashReceived: 0, pifCashPendingCount: 0 }),
+        }), { count: 0, mrrMoved: 0, returningMrr: 0, returningMrrPendingCount: 0, pifCashReceived: 0, pifCashPendingCount: 0 }),
       },
       updatedAt: dbRows.length ? dbRows[dbRows.length - 1].syncedAt : new Date().toISOString(),
       latestMonthIsPartial: combinedMonthly.at(-1)?.month === monthToLabel(new Date().toISOString().slice(0, 7)),
