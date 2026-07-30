@@ -306,7 +306,7 @@ async function fetchConfirmedLateralMovements() {
       movementDate: row.movementDate,
       mrrMoved: Number(row.mrrMoved),
       pifCashReceived: nullableNumber(row.pifCashReceived),
-      termMonths: Number(row.termMonths),
+      termMonths: nullableNumber(row.termMonths),
       scheduledReturnDate: row.scheduledReturnDate,
       returningMrr: nullableNumber(row.returningMrr),
       returningProgram: row.returningProgram,

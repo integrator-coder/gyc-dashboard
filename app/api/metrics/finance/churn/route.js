@@ -287,7 +287,7 @@ export async function GET() {
           pifCashReceived: nullableNumber(row.pifCashReceived),
           returningMrr: nullableNumber(row.returningMrr),
           returningProgram: row.returningProgram,
-          termMonths: Number(row.termMonths),
+          termMonths: nullableNumber(row.termMonths),
         }))
       } finally {
         dbClient.release()
