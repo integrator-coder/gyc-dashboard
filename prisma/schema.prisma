@@ -1329,8 +1329,8 @@ model ChurnLateralMovement {
   sourceProgram          String?
   sourceProductId        String?
   sourcePriceId          String?
-  termMonths             Int
-  scheduledReturnDate    DateTime @db.Date
+  termMonths             Int?
+  scheduledReturnDate    DateTime? @db.Date
   status                 String   @default("confirmed")
   evidence               String?
   confirmedAt            DateTime @default(now()) @db.Timestamptz(6)

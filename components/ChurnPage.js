@@ -300,9 +300,9 @@ export default function ChurnPage() {
                         <td className="py-3 pr-4"><span className="font-medium text-white">{row.clientName}</span><br /><span className="text-xs text-gray-400">Moved {new Date(row.movementDate).toLocaleDateString('en-US', { timeZone: 'UTC' })}</span></td>
                         <td className="text-right py-3 px-4">{fmt$(row.mrrMoved)}</td>
                         <td className="text-right py-3 px-4 text-teal-300">{row.pifCashReceived == null ? 'Pending verification' : fmt$(row.pifCashReceived)}</td>
-                        <td className="text-right py-3 px-4">{row.termMonths} months</td>
+                        <td className="text-right py-3 px-4">{row.termMonths == null ? 'Pending verification' : `${row.termMonths} months`}</td>
                         <td className="text-right py-3 px-4"><span className="text-teal-300">{row.returningMrr == null ? 'Needs deal mapping' : fmt$(row.returningMrr)}</span>{row.returningProgram && <><br /><span className="text-xs text-gray-400">{row.returningProgram}</span></>}</td>
-                        <td className="text-right py-3 pl-4">{new Date(row.scheduledReturnDate).toLocaleDateString('en-US', { timeZone: 'UTC' })}</td>
+                        <td className="text-right py-3 pl-4">{row.scheduledReturnDate == null ? 'Pending verification' : new Date(row.scheduledReturnDate).toLocaleDateString('en-US', { timeZone: 'UTC' })}</td>
                       </tr>
                     ))}
                   </tbody>

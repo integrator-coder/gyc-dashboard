@@ -20,6 +20,20 @@ const pool = new Pool({
 
 const confirmed = [
   {
+    stripeCustomerId: 'cus_JcT1Nlf1rmMdz4',
+    canceledSubscriptionId: 'sub_1T2PLpEbMXEo3zxqEKrTAVhl',
+    clientName: 'Little Treehouse Academy',
+    movementDate: '2026-07-24',
+    mrrMoved: 795,
+    sourceProgram: 'Paid Media I Autorenewal (Google Ads)',
+    sourceProductId: null,
+    sourcePriceId: 'price_1T02qYEbMXEo3zxq04MZwUol',
+    pifCashReceived: null,
+    termMonths: null,
+    scheduledReturnDate: null,
+    evidence: 'JC confirmed Google Ads to Reputation Engine Core PIF lateral on 2026-07-30. Stripe confirms the $795 monthly source canceled 2026-07-24; PIF cash, term, and return date remain pending verification.',
+  },
+  {
     stripeCustomerId: 'cus_UB3ROh2YunLXPH',
     canceledSubscriptionId: 'sub_1TCl5gEbMXEo3zxqEp6oAnbQ',
     clientName: 'Primrose School of Burlington',
@@ -70,8 +84,8 @@ async function main() {
         "sourceProgram" TEXT,
         "sourceProductId" TEXT,
         "sourcePriceId" TEXT,
-        "termMonths" INT NOT NULL,
-        "scheduledReturnDate" DATE NOT NULL,
+        "termMonths" INT,
+        "scheduledReturnDate" DATE,
         "status" TEXT NOT NULL DEFAULT 'confirmed',
         "evidence" TEXT,
         "confirmedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -80,6 +94,7 @@ async function main() {
         UNIQUE ("tenantId", "canceledSubscriptionId")
       )
     `)
+    await client.query(`ALTER TABLE "ChurnLateralMovement" ALTER COLUMN "termMonths" DROP NOT NULL, ALTER COLUMN "scheduledReturnDate" DROP NOT NULL`)
 
     for (const row of confirmed) {
       await client.query(`
