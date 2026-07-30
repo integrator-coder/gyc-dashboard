@@ -297,12 +297,40 @@ async function persistCancellationEvents(client, subs, months, customerToLogo) {
   }
 }
 
+// JC's audited July 2026 internal movements. These are business classifications,
+// not Stripe inferences: a canceled source subscription must remain excluded from
+// churn even when the replacement subscription or PIF pricing is not yet mapped.
+const JC_JULY_LATERALS = Object.freeze({
+  AN: { destinationProgram: 'SEO - Core', destinationCadence: 'Monthly' },
+  LSAEE: { destinationProgram: 'SEO - Core', destinationCadence: 'Monthly' },
+  KLC: { destinationProgram: 'SEO - Core', destinationCadence: 'Monthly' },
+  GBD: { destinationProgram: 'Reputation Engine - Core', destinationCadence: 'Monthly' },
+  GMLA: { destinationProgram: 'Reputation Engine - Core', destinationCadence: 'Monthly' },
+  LTA: { destinationProgram: 'Reputation Engine - Core', destinationCadence: 'PIF' },
+})
+
+async function applyAuditedJcLaterals(client) {
+  for (const [logoKey, movement] of Object.entries(JC_JULY_LATERALS)) {
+    await client.query(`UPDATE "ChurnClassification" SET
+      "classificationType"='internal_lateral',"logoOutcome"='retained',"programOutcome"='migrated',
+      "destinationProgram"=$2,reason=$3,evidence='JC audited lateral roster 2026-07-30',status='confirmed',
+      "reviewStatus"=CASE WHEN "destinationMRR" IS NULL THEN 'needs_review' ELSE 'confirmed' END,
+      confidence=CASE WHEN "destinationMRR" IS NULL THEN 'derived' ELSE 'verified' END,"updatedAt"=NOW()
+      WHERE "tenantId"='gyc' AND "logoKey"=$1 AND "canceledMonth"='2026-07'`, [
+      logoKey,
+      movement.destinationProgram,
+      `Moved to ${movement.destinationProgram} (${movement.destinationCadence}); source MRR is lateral movement, not churn`,
+    ])
+  }
+}
+
 async function runRecomputeTransaction(client,subs,targets,{beforeCommit}={}) {
   await client.query('BEGIN')
   try {
     await loadChurnClassifications(client);
     const customerToLogo = await loadCustomerToLogo(client);
     await persistCancellationEvents(client,subs,targets,customerToLogo);
+    await applyAuditedJcLaterals(client);
     const {rows: persistedClassifications}=await client.query(`SELECT * FROM "ChurnClassification" WHERE "tenantId"='gyc'`);
     const [y,m]=targets[0].split('-').map(Number),prevMonth=new Date(Date.UTC(y,m-2,1)),prevMonthStr=`${prevMonth.getUTCFullYear()}-${String(prevMonth.getUTCMonth()+1).padStart(2,'0')}`,metricsMap={};
     metricsMap[prevMonthStr]=computeMonthMetrics(subs,prevMonthStr,persistedClassifications,customerToLogo)
@@ -337,4 +365,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch(e => { console.error('❌ Fatal:', e.message); process.exit(1); });
-module.exports = { ensureTables, upsertChurnMetrics, migrateChurnClassificationSchema, persistCancellationEvents, loadChurnClassifications, runRecomputeTransaction };
+module.exports = { ensureTables, upsertChurnMetrics, migrateChurnClassificationSchema, persistCancellationEvents, loadChurnClassifications, applyAuditedJcLaterals, JC_JULY_LATERALS, runRecomputeTransaction };
