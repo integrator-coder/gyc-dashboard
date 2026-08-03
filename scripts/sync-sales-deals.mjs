@@ -74,8 +74,9 @@ const SALES_REPS = new Set(['Jesse', 'Pia', 'Briana', 'Matt', 'Lex'])
 const UPSELL_REPS = new Set(['JC', 'Zu', 'Stefen', 'Todd', 'Travis', 'Kim'])
 
 function normaliseRep(raw) {
-  if (!raw) return 'Unknown'
-  const trimmed = raw.trim()
+  if (raw === null || raw === undefined) return 'Unknown'
+  const trimmed = String(raw).trim()
+  if (!trimmed) return 'Unknown'
   return REP_ALIASES[trimmed] || REP_ALIASES[trimmed.toLowerCase()] || trimmed
 }
 
@@ -86,25 +87,51 @@ function classifyDealType(rep, year) {
   return 'Unclassified'
 }
 
+function columnIndex(headers, ...names) {
+  return names.map(name => headers.indexOf(name)).find(index => index >= 0) ?? -1
+}
+
 function parseDeals(rows, yearLabel) {
-  return rows.slice(1).filter(r => r[5]).map(r => {
-    const rep = normaliseRep(r[13])
-    const year = Number(yearLabel) || new Date(r[5]).getFullYear()
+  const headers = rows[0] || []
+  const columns = {
+    clientName: columnIndex(headers, 'Client'),
+    name: columnIndex(headers, 'Client Name'),
+    service: columnIndex(headers, 'New Service', 'Service(s)'),
+    quarter: columnIndex(headers, 'Quarter'),
+    month: columnIndex(headers, 'Month'),
+    date: columnIndex(headers, 'Date of Sale'),
+    firstPayment: columnIndex(headers, 'First Payment'),
+    mrr: columnIndex(headers, 'MRR'),
+    term: columnIndex(headers, 'Term'),
+    fullTerm: columnIndex(headers, 'Full Term Amount'),
+    firstYear: columnIndex(headers, 'First Year Amount'),
+    pif: columnIndex(headers, 'PiF?'),
+    renewalAmount: columnIndex(headers, 'Renewal Amount'),
+    rep: columnIndex(headers, 'Sales Person'),
+  }
+
+  const required = ['clientName', 'date', 'rep']
+  const missing = required.filter(key => columns[key] < 0)
+  if (missing.length) throw new Error(`${yearLabel} sheet is missing required columns: ${missing.join(', ')}`)
+
+  return rows.slice(1).filter(r => r[columns.date]).map(r => {
+    const rep = normaliseRep(r[columns.rep])
+    const year = Number(yearLabel)
     return {
       yearLabel: String(yearLabel),
-      clientName: r[0] || '',
-      name:        r[1] || '',
-      service:     r[2] || '',
-      quarter:     r[3] || '',
-      month:       r[4] || '',
-      date:        r[5] || '',
-      firstPayment: Number(r[6])  || 0,
-      mrr:          Number(r[7])  || 0,
-      term:         Number(r[8])  || 0,
-      fullTerm:     Number(r[9])  || 0,
-      firstYear:    Number(r[10]) || 0,
-      pif:          (r[11] || '').toString().trim().toUpperCase() === 'Y',
-      renewalAmount: Number(r[12]) || 0,
+      clientName: r[columns.clientName] || '',
+      name:        r[columns.name] || '',
+      service:     r[columns.service] || '',
+      quarter:     r[columns.quarter] || '',
+      month:       r[columns.month] || '',
+      date:        r[columns.date] || '',
+      firstPayment: Number(r[columns.firstPayment]) || 0,
+      mrr:          Number(r[columns.mrr]) || 0,
+      term:         Number(r[columns.term]) || 0,
+      fullTerm:     Number(r[columns.fullTerm]) || 0,
+      firstYear:    Number(r[columns.firstYear]) || 0,
+      pif:          String(r[columns.pif] || '').trim().toUpperCase() === 'Y',
+      renewalAmount: Number(r[columns.renewalAmount]) || 0,
       rep,
       dealType: classifyDealType(rep, year),
     }
@@ -120,7 +147,10 @@ async function upsertDeals(client, deals) {
     // Parse dealDate — may be a formatted string like "1/15/2025" or a serial number
     let dealDate = '1900-01-01' // sentinel: date missing in source sheet
     if (d.date) {
-      const parsed = new Date(d.date)
+      // Google Sheets returns unformatted dates as serial day numbers.
+      const parsed = typeof d.date === 'number'
+        ? new Date(Date.UTC(1899, 11, 30) + d.date * 86400000)
+        : new Date(d.date)
       if (!isNaN(parsed)) {
         dealDate = parsed.toISOString().split('T')[0]
       }
