@@ -1,5 +1,6 @@
 {
   "agentModels": {
+    "Batman": "Claude Sonnet 5",
     "C3PO": "DeepSeek V4 Flash",
     "Echo": "DeepSeek V4 Flash",
     "Herbi": "DeepSeek V4 Flash",
