@@ -103,8 +103,8 @@ export default function NewBusinessPage() {
     { name: 'Recurring', value: Math.round(summary.ytdFirstPayment - pif.fp26) },
   ]
   const pifDonut25 = [
-    { name: 'Paid in Full', value: Math.round(pif.fp25) },
-    { name: 'Recurring', value: Math.round(summary.q1_2025 - pif.fp25) },
+    { name: 'Paid in Full', value: Math.round(pif.fp25 || 0) },
+    { name: 'Recurring', value: Math.max(0, Math.round((summary.ytdFP25 || 0) - (pif.fp25 || 0))) },
   ]
 
   // MRR line data — only months that have data
