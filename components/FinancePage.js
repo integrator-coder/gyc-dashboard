@@ -18,7 +18,7 @@ import {
   Legend,
 } from 'recharts'
 
-const NORMALIZED_EMPLOYEES = 18.5
+const NORMALIZED_EMPLOYEES = 16
 const RPE_TARGET = 250000
 
 const B = {
