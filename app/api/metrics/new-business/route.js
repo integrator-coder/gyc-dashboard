@@ -67,24 +67,64 @@ function classifyDealType(rep, year) {
   return 'Unclassified'
 }
 
+// Resolve column indices by matching header names, so the parser survives
+// column reorders / inserted columns and does NOT depend on fixed positions.
+// (Root cause of the 2026 breakage: the 2026 tab inserted an "Old MRR" column
+// and renamed Service, shifting every downstream field vs the 2025 layout.)
+function buildColMap(headerRow) {
+  const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+  const idx = {}
+  ;(headerRow || []).forEach((h, i) => {
+    const key = norm(h)
+    if (key && !(key in idx)) idx[key] = i
+  })
+  // Return an index for the first header alias that matches, else -1.
+  const find = (...aliases) => {
+    for (const a of aliases) {
+      const k = norm(a)
+      if (k in idx) return idx[k]
+    }
+    return -1
+  }
+  return {
+    client:       find('Client'),
+    name:         find('Client Name'),
+    service:      find('Service(s)', 'New Service', 'Service'),
+    quarter:      find('Quarter'),
+    month:        find('Month'),
+    date:         find('Date of Sale', 'Date'),
+    firstPayment: find('First Payment'),
+    mrr:          find('MRR'),
+    term:         find('Term'),
+    fullTerm:     find('Full Term Amount', 'Full Term'),
+    firstYear:    find('First Year Amount', 'First Year'),
+    pif:          find('PiF?', 'PIF', 'Pif'),
+    renewalAmount: find('Renewal Amount', 'Renewal'),
+    rep:          find('Sales Person', 'Salesperson', 'Rep'),
+  }
+}
+
 function parseDeals(rows, yearLabel) {
-  return rows.slice(1).filter(r => r[5]).map(r => {
-    const rep = normaliseRep(r[13])
-    const year = Number(yearLabel) || new Date(r[5]).getFullYear()
+  const col = buildColMap(rows[0] || [])
+  // Safe accessor: returns undefined when a column wasn't found (index -1).
+  const get = (r, key) => (col[key] >= 0 ? r[col[key]] : undefined)
+  return rows.slice(1).filter(r => get(r, 'date')).map(r => {
+    const rep = normaliseRep(get(r, 'rep'))
+    const year = Number(yearLabel) || new Date(get(r, 'date')).getFullYear()
     return {
-      client:       r[0]  || '',
-      name:         r[1]  || '',
-      service:      r[2]  || '',
-      quarter:      r[3]  || '',
-      month:        r[4]  || '',
-      date:         r[5]  || '',
-      firstPayment: Number(r[6])  || 0,
-      mrr:          Number(r[7])  || 0,
-      term:         Number(r[8])  || 0,
-      fullTerm:     Number(r[9])  || 0,
-      firstYear:    Number(r[10]) || 0,
-      pif:          (r[11] || '').toString().trim().toUpperCase() === 'Y',
-      renewalAmount: Number(r[12]) || 0,
+      client:       get(r, 'client')  || '',
+      name:         get(r, 'name')    || '',
+      service:      get(r, 'service') || '',
+      quarter:      get(r, 'quarter') || '',
+      month:        get(r, 'month')   || '',
+      date:         get(r, 'date')    || '',
+      firstPayment: Number(get(r, 'firstPayment')) || 0,
+      mrr:          Number(get(r, 'mrr'))          || 0,
+      term:         Number(get(r, 'term'))         || 0,
+      fullTerm:     Number(get(r, 'fullTerm'))     || 0,
+      firstYear:    Number(get(r, 'firstYear'))    || 0,
+      pif:          (get(r, 'pif') || '').toString().trim().toUpperCase() === 'Y',
+      renewalAmount: Number(get(r, 'renewalAmount')) || 0,
       rep,
       year,
       dealType: classifyDealType(rep, year),
