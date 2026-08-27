@@ -609,6 +609,18 @@ export async function getNewBusinessMetrics() {
     const q2YoYFP   = q2FP25 > 0 ? ((q2FP26 - q2FP25) / q2FP25) * 100 : null
     const q2YoYFT   = q2FT25 > 0 ? ((q2FT26 - q2FT25) / q2FT25) * 100 : null
 
+    // Q3 2026 vs Q3 2025 (Jul-Sep fixed)
+    const q3Deals26 = deals26.filter(d => Q3_MONTHS.includes(d.month))
+    const q3Deals25 = deals25.filter(d => Q3_MONTHS.includes(d.month))
+    const q3FP26    = q3Deals26.reduce((s,d) => s + d.firstPayment, 0)
+    const q3FP25    = q3Deals25.reduce((s,d) => s + d.firstPayment, 0)
+    const q3FT26    = q3Deals26.reduce((s,d) => s + d.fullTerm, 0)
+    const q3FT25    = q3Deals25.reduce((s,d) => s + d.fullTerm, 0)
+    const q3Count26 = q3Deals26.length
+    const q3Count25 = q3Deals25.length
+    const q3YoYFP   = q3FP25 > 0 ? ((q3FP26 - q3FP25) / q3FP25) * 100 : null
+    const q3YoYFT   = q3FT25 > 0 ? ((q3FT26 - q3FT25) / q3FT25) * 100 : null
+
     // Full Term YTD
     const ytdFullTerm = deals26.reduce((s, d) => s + d.fullTerm, 0)
 
@@ -656,6 +668,8 @@ export async function getNewBusinessMetrics() {
         q1FP26, q1FP25, q1FT26, q1FT25, q1Count26, q1Count25, q1YoYFP, q1YoYFT,
         // Q2
         q2FP26, q2FP25, q2FT26, q2FT25, q2Count26, q2Count25, q2YoYFP, q2YoYFT,
+        // Q3
+        q3FP26, q3FP25, q3FT26, q3FT25, q3Count26, q3Count25, q3YoYFP, q3YoYFT,
         // YTD
         ytdFullTerm,
         ytdFP25, ytdFT25, ytdCount25, ytdYoYFP, ytdYoYFT,

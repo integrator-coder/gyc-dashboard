@@ -130,8 +130,8 @@ export default function NewBusinessPage() {
         )}
       </div>
 
-      {/* KPI Cards — 6 cards: Q1, Q2, YTD, Cash, Avg Deal, Current Month MRR */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      {/* KPI Cards — 7 cards: Q1, Q2, Q3, YTD, Cash, Avg Deal, Current Month MRR */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4">
         <KpiCard
           label="Q1 2026 Contract Value"
           value={fmt$(summary.q1FT26 || 0)}
@@ -142,6 +142,12 @@ export default function NewBusinessPage() {
           label="Q2 2026 Contract Value"
           value={fmt$(summary.q2FT26 || 0)}
           sub={`vs ${fmt$(summary.q2FT25 || 0)} in 2025 · ${summary.q2YoYFT != null ? `${summary.q2YoYFT >= 0 ? '+' : ''}${Math.round(summary.q2YoYFT)}% YoY` : '—'}`}
+          highlight={false}
+        />
+        <KpiCard
+          label="Q3 2026 Contract Value (in progress)"
+          value={fmt$(summary.q3FT26 || 0)}
+          sub={`vs ${fmt$(summary.q3FT25 || 0)} in 2025 · ${summary.q3YoYFT != null ? `${summary.q3YoYFT >= 0 ? '+' : ''}${Math.round(summary.q3YoYFT)}% YoY` : '—'} · ${summary.q3Count26 || 0} deals`}
           highlight={false}
         />
         <KpiCard
