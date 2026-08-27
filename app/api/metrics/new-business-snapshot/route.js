@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import pkg from 'pg'
+import { getNewBusinessMetrics } from '../new-business/route'
 
 export const dynamic = 'force-dynamic'
 const { Pool } = pkg
@@ -28,9 +29,13 @@ function isFresh(asOf) {
   return ageMs < SNAPSHOT_MAX_AGE_HOURS * 60 * 60 * 1000
 }
 
-async function fetchLive(origin) {
-  const res = await fetch(`${origin}/api/metrics/new-business`, { cache: 'no-store' })
-  return res.json()
+// Build the metrics IN-PROCESS. Do NOT self-fetch over HTTP:
+// on Render the container can't reliably reach its own public hostname,
+// which made this route throw "fetch failed" and 500 whenever the cache
+// went stale (>6h). Calling the exported builder directly avoids the network
+// hop entirely and is faster.
+async function fetchLive() {
+  return getNewBusinessMetrics()
 }
 
 export async function GET(req) {
@@ -52,8 +57,26 @@ export async function GET(req) {
       })
     }
 
-    const origin = `${url.protocol}//${url.host}`
-    const payload = await fetchLive(origin)
+    // Try a live refresh. If it fails for any reason, fall back to the last
+    // cached snapshot rather than 500ing the whole page.
+    let payload
+    try {
+      payload = await fetchLive()
+    } catch (refreshErr) {
+      console.error('New business snapshot live refresh failed, falling back to cache:', refreshErr)
+      if (latest?.payload) {
+        return NextResponse.json({
+          ...latest.payload,
+          snapshot: {
+            source: 'db-cache-stale',
+            asOf: latest.asOf,
+            id: latest.id,
+            refreshError: refreshErr.message || 'live refresh failed',
+          },
+        })
+      }
+      throw refreshErr
+    }
 
     const insert = await pool.query(
       `INSERT INTO "NewBusinessSnapshot" (payload) VALUES ($1::jsonb) RETURNING id, "asOf"`,
