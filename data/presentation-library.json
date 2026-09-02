@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-09-01T10:18:00.000Z",
+  "updatedAt": "2026-09-02T09:40:00.000Z",
   "resources": [
     {
       "id": "notion-training-hub",
@@ -806,6 +806,29 @@
         "strategy"
       ],
       "addedDate": "2026-09-01"
+    },
+    {
+      "id": "research-intent-md-ai-native-sdlc",
+      "module": null,
+      "category": "research",
+      "title": "Start With Intent, Not Code — The intent.md Deep Dive",
+      "description": "Plain-English, implementation-heavy guide to Anthropic's intent.md: why it exists, the required structure, the artifact chain, a six-step discovery workflow, a sample file, and the GYC application.",
+      "url": "https://docs.google.com/presentation/d/1eaLVTiZaEBJzwO11FECMFFIggKux7DpvUIrWkngq5No/edit",
+      "slideCount": 9,
+      "status": "live",
+      "source": "YouTube — Rob Shocks; verified against Anthropic's AI-Native SDLC playbook",
+      "sourceUrl": "https://youtu.be/LoMOPj-lO8U",
+      "audience": "Todd, leadership",
+      "tags": [
+        "research",
+        "intent-md",
+        "ai-native-sdlc",
+        "artifact-chain",
+        "requirements",
+        "agentic-coding",
+        "workflow-design"
+      ],
+      "addedDate": "2026-09-02"
     }
   ]
 }
