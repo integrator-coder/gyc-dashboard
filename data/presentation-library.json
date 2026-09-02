@@ -830,6 +830,30 @@
         "m3-spec-builder"
       ],
       "addedDate": "2026-09-02"
+    },
+    {
+      "id": "research-ai-three-camps-spend",
+      "module": null,
+      "category": "research",
+      "title": "AI Split Into Three Camps — How to Spend $20/$60/$200",
+      "description": "8 slides. Nate B. Jones on AI fracturing into three camps: OpenAI (own the whole stack, incl. its Jalapeño inference chip + Cursor cutoff), NVIDIA (sell to everybody), and Anthropic (stay switchable). The individual/business move is to copy Anthropic: keep your memory, files, instructions and skills in a layer YOU control, route across models, and make every paid plan earn its place. Includes the $20/$60/$200 spend playbook and the GYC angle (we already run this via OpenClaw).",
+      "url": "https://docs.google.com/presentation/d/1uzOshHos5XS3rzecJuZNVhDnjf27biC0D6CSqBDVINg/edit",
+      "slideCount": 8,
+      "status": "live",
+      "source": "YouTube — Nate B. Jones; chip + acquisition claims verified via web (OpenAI Jalapeño, SpaceX–Cursor)",
+      "sourceUrl": "https://youtu.be/L9xXnPqVfnM",
+      "audience": "Todd, leadership",
+      "tags": [
+        "research",
+        "ai-strategy",
+        "vendor-lock-in",
+        "portability",
+        "ai-spend",
+        "openai",
+        "nvidia",
+        "anthropic"
+      ],
+      "addedDate": "2026-09-02"
     }
   ]
 }
