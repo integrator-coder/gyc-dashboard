@@ -811,13 +811,13 @@
       "id": "research-intent-md-ai-native-sdlc",
       "module": null,
       "category": "research",
-      "title": "Start With Intent, Not Code — The intent.md Deep Dive",
-      "description": "Plain-English, implementation-heavy guide to Anthropic's intent.md: why it exists, the required structure, the artifact chain, a six-step discovery workflow, a sample file, and the GYC application.",
+      "title": "intent.md & the AI-Native SDLC",
+      "description": "8 slides. Anthropic's AI-native SDLC playbook: why code stopped being the bottleneck, the full artifact chain (intent.md → spec.md → plan.md → code → review → deploy → maintain), what a valid intent.md requires, the explicit 7-step discovery-to-signoff workflow, a sample markdown template, and the GYC application — Zac's M3 spec-builder already implements this pattern and goes further (specs + UI design + working skill). Closing takeaway: standardize the process, not just the code.",
       "url": "https://docs.google.com/presentation/d/1eaLVTiZaEBJzwO11FECMFFIggKux7DpvUIrWkngq5No/edit",
-      "slideCount": 9,
+      "slideCount": 8,
       "status": "live",
       "source": "YouTube — Rob Shocks; verified against Anthropic's AI-Native SDLC playbook",
-      "sourceUrl": "https://youtu.be/LoMOPj-lO8U",
+      "sourceUrl": "https://claude.com/blog/the-ai-native-sdlc-playbook",
       "audience": "Todd, leadership",
       "tags": [
         "research",
@@ -826,7 +826,8 @@
         "artifact-chain",
         "requirements",
         "agentic-coding",
-        "workflow-design"
+        "workflow-design",
+        "m3-spec-builder"
       ],
       "addedDate": "2026-09-02"
     }
