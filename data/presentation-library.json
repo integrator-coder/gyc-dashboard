@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-09-02T09:40:00.000Z",
+  "updatedAt": "2026-09-15T10:21:00.000Z",
   "resources": [
     {
       "id": "notion-training-hub",
@@ -854,6 +854,30 @@
         "anthropic"
       ],
       "addedDate": "2026-09-02"
+    },
+    {
+      "id": "research-ai-search-website-job-changing",
+      "module": null,
+      "category": "research",
+      "title": "AI Search: Your Website's Job Is Changing — Deep Dive",
+      "description": "6-slide research brief on the shift from website-first discovery to verified-data and action layers. Covers zero-click compression, the knowledge catalog concept, an agent-ready business framework, the website-evolution counterpoint, and GYC's childcare-specific execution window.",
+      "url": "https://docs.google.com/presentation/d/1r_rRlKlt6y_gZLLSqaKJHpeG84lRsHp8yYR1VS5Qaow/edit",
+      "slideCount": 6,
+      "status": "live",
+      "source": "YouTube — Tim The SEO Guru",
+      "sourceUrl": "https://youtu.be/KqX-7CfxoaM",
+      "audience": "Todd, leadership",
+      "tags": [
+        "research",
+        "ai-strategy",
+        "ai-search",
+        "zero-click",
+        "knowledge-catalog",
+        "childcare",
+        "agent-ready",
+        "seo"
+      ],
+      "addedDate": "2026-09-15"
     }
   ]
 }
