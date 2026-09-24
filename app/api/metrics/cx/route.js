@@ -81,6 +81,12 @@ export async function getCxMetrics() {
       return { name, acronym, mc, months: monthStatus }
     })
 
+    // An empty rollup set means the Notion scorecard relations are broken. Do not
+    // present 0% as real performance or mark this source healthy in leadership.
+    if (parsed.length > 0 && parsed.every(c => !c.name && !c.acronym && !c.mc)) {
+      throw new Error(`CX scorecard has ${parsed.length} rows but no linked client rollups; repair the Notion client relations`)
+    }
+
     // Exclude clients with no MC/Growth Advisor assigned — they skew the numbers
     const active = parsed.filter(c => c.mc && c.mc.trim() !== '')
     const total = active.length

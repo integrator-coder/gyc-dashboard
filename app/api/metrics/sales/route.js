@@ -30,6 +30,9 @@ const DAILY_TARGETS = {
   'Cancelled': 1,
   'Rebooked': 4,
   'Agreements Sent': 6,
+  // This is displayed on the leadership board even though it has no target.
+  // Keeping it in the aggregation set prevents a valid sheet metric from being dropped.
+  'Agreements Closed': 0,
   'Close Rate': 0.3333,
   'Conversion Rate': 0.3333,
 }

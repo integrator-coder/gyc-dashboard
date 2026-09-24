@@ -9,10 +9,21 @@ function ageDays(iso) {
 }
 
 function summarizeByWindow(items, getIso) {
+  const now = new Date()
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const weekStart = new Date(todayStart)
+  const day = weekStart.getDay()
+  weekStart.setDate(weekStart.getDate() - day + (day === 0 ? -6 : 1))
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const inWindow = (item, start) => {
+    const date = new Date(getIso(item))
+    return Number.isFinite(date.getTime()) && date >= start && date <= now
+  }
+
   return {
-    today: items.filter(item => ageDays(getIso(item)) <= 1).length,
-    week: items.filter(item => ageDays(getIso(item)) <= 7).length,
-    month: items.filter(item => ageDays(getIso(item)) <= 30).length,
+    today: items.filter(item => inWindow(item, todayStart)).length,
+    week: items.filter(item => inWindow(item, weekStart)).length,
+    month: items.filter(item => inWindow(item, monthStart)).length,
   }
 }
 
@@ -84,6 +95,7 @@ export async function getLeadMetrics() {
           .map(stage => stage.name),
         recentContactsSampled: recentContacts.length,
       },
+      updatedAt: new Date().toISOString(),
     }
 }
 

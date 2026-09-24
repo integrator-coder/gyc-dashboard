@@ -20,6 +20,7 @@ export async function getDealSizeMetrics() {
       totalDeals,
       totalValue,
       period: '30d',
+      updatedAt: new Date().toISOString(),
     }
 }
 
