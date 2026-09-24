@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-09-15T10:21:00.000Z",
+  "updatedAt": "2026-09-24",
   "resources": [
     {
       "id": "notion-training-hub",
@@ -32,6 +32,35 @@
     }
   ],
   "presentations": [
+    {
+      "id": "research-claude-2026-verified-agent-operations",
+      "module": null,
+      "category": "research",
+      "title": "Claude in 2026 — Verified Agent Operations",
+      "description": "7-slide leadership research brief on the shift from prompt craft to outcome specification, verification loops, workflow graphs, bounded authority, and evidence-based automation. Validates the source against Anthropic's 2026 research and corrects its prompt-injection overclaim.",
+      "url": "https://docs.google.com/presentation/d/10H7T8StDd946hHHtTVuGAe7-RmhJfcNMEYocCvGGpnE/edit",
+      "slideCount": 7,
+      "status": "live",
+      "source": "YouTube — AI Edge: Claude's Creator Just Told Us How to Actually Use Claude in 2026",
+      "sourceUrl": "https://www.youtube.com/watch?v=tRmLQZJYQdA",
+      "audience": "Todd, leadership",
+      "tags": [
+        "claude",
+        "claude-code",
+        "anthropic",
+        "ai-agents",
+        "agentic-workflows",
+        "verification",
+        "workflow-graphs",
+        "ablation",
+        "prompt-injection",
+        "governance",
+        "automation",
+        "leadership",
+        "research"
+      ],
+      "addedDate": "2026-09-24"
+    },
     {
       "id": "codex-at-gyc",
       "module": null,
