@@ -152,9 +152,10 @@ async function sync() {
   const newCustomerIds = new Set(newSubsWindow.map(s => typeof s.customer === 'string' ? s.customer : s.customer.id))
   const newCustomers = newCustomerIds.size
 
-  // Clear old customer data and insert fresh
+  // Clear old customer data and insert fresh. StripeMetrics is intentionally
+  // retained until the replacement snapshot is complete, so a later failure
+  // can never erase the last known-good leadership metrics.
   console.log('Clearing old data...')
-  await prisma.stripeMetrics.deleteMany()
   await prisma.stripeCustomer.deleteMany()
   await prisma.syncLog.deleteMany()
 

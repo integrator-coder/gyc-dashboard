@@ -18,7 +18,7 @@ export async function getFinanceMetrics() {
       ORDER BY "syncedAt" DESC
       LIMIT 2
     `)
-    const latest = metricsRows[0] || null
+    const latestSnapshot = metricsRows[0] || null
     const previous = metricsRows[1] || null
 
     // Active customers sorted by MRR (includes past_due/unpaid — still active clients)
@@ -36,6 +36,29 @@ export async function getFinanceMetrics() {
       .reduce((sum, c) => sum + Number(c.mrr || 0), 0)
     const mrrAtRisk = mrrContracted - mrrCollected
     const unpaidCount = customers.filter(c => c.status === 'unpaid').length
+
+    // Resilience fallback: if the snapshot table is empty, preserve useful
+    // leadership metrics from the customer mirror and recent cash history.
+    let latest = latestSnapshot
+    if (!latest) {
+      const { rows: fallbackRevenueRows } = await client.query(`
+        SELECT COALESCE(SUM(amount), 0) AS revenue
+        FROM "DailyRevenue"
+        WHERE date::date >= CURRENT_DATE - INTERVAL '29 days'
+      `)
+      const fallbackRevenue = Number(fallbackRevenueRows[0]?.revenue || 0)
+      latest = {
+        id: null,
+        syncedAt: null,
+        mrr: Math.round(mrrContracted * 100) / 100,
+        totalRevenue: Math.round(fallbackRevenue * 100) / 100,
+        activeCustomers: customers.length,
+        newCustomers: 0,
+        churnedCustomers: 0,
+        netRevenue: Math.round(fallbackRevenue * 100) / 100,
+        isFallback: true,
+      }
+    }
 
     // Last sync log for stripe
     const { rows: syncRows } = await client.query(`
@@ -117,7 +140,7 @@ export async function getFinanceMetrics() {
     }))
 
     // Inject computed dual-MRR fields into metrics object
-    const enrichedMetrics = latest ? {
+    const enrichedMetrics = {
       ...latest,
       mrrCollected: Math.round(mrrCollected * 100) / 100,
       mrrContracted: Math.round(mrrContracted * 100) / 100,
@@ -125,7 +148,7 @@ export async function getFinanceMetrics() {
       arrCollected: Math.round(mrrCollected * 12 * 100) / 100,
       arrContracted: Math.round(mrrContracted * 12 * 100) / 100,
       unpaidCount,
-    } : null
+    }
 
     return {
       metrics: enrichedMetrics,
