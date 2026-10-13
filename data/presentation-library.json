@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-09-24",
+  "updatedAt": "2026-10-13T17:38:24Z",
   "resources": [
     {
       "id": "notion-training-hub",
@@ -907,6 +907,35 @@
         "seo"
       ],
       "addedDate": "2026-09-15"
+    },
+    {
+      "id": "research-ai-moved-inside-your-tools",
+      "module": null,
+      "category": "research",
+      "title": "The Week AI Moved Inside Your Tools",
+      "description": "7-slide research brief on the Oct 2026 product wave that embedded AI inside existing tools: Claude for Google Workspace (in-file, approval-gated), Claude Motion + Dashboards, Grokbot model-as-commodity routing + its 4 unknowns, and GPT-6 Intelligent UI + Haiku 5.5 economics. Includes GYC adoption calls with skeptic counters and a client-data hard stop on multi-model routing.",
+      "url": "https://docs.google.com/document/d/1L_F7mlyPyDi1Fg-wZqAuoAFNKSGNbnYtyMsOx-F9rI8/edit",
+      "slideCount": 7,
+      "status": "draft",
+      "source": "YouTube — AI for Non Techies: Anthropic Just Dropped Claude Motion, Dashboards + More",
+      "sourceUrl": "https://youtu.be/LlwhNla5eQg",
+      "audience": "Todd, leadership",
+      "tags": [
+        "research",
+        "ai-strategy",
+        "automation",
+        "anthropic",
+        "claude-workspace",
+        "claude-motion",
+        "claude-dashboards",
+        "grokbot",
+        "model-as-commodity",
+        "gpt-6",
+        "haiku-5.5",
+        "intelligent-routing",
+        "leadership"
+      ],
+      "addedDate": "2026-10-13"
     }
   ]
 }
