@@ -934,6 +934,29 @@
       ],
       "addedDate": "2026-10-13",
       "docUrl": "https://docs.google.com/document/d/17plZRi6AL-Br-FJ5YJykbpdAcIjIhas61w0f8ZMI3Rc/edit"
+    },
+    {
+      "id": "leadership-gyc-new-direction-setup-2026-10-15",
+      "module": null,
+      "category": "leadership/strategy",
+      "title": "GYC — The New Direction & Setup",
+      "description": "8-slide internal leadership deck synthesizing the Oct 15, 2026 strategy session: ticket-first delivery, clear request routing and ownership, the proposed Blueprint/Engine/Strategist offer architecture, AI-visible mobile-first websites, and M3 as a scalable low-cost on-ramp.",
+      "url": "https://docs.google.com/presentation/d/1HWU1Qk2XVBs6tbRGGDW3wDyUWP5saYr3Ug9srS2SZMY/edit",
+      "slideCount": 8,
+      "status": "live",
+      "source": "GYC Leadership Meeting — Oct 15, 2026",
+      "audience": "GYC leadership",
+      "tags": [
+        "leadership",
+        "strategy",
+        "delivery-model",
+        "ticketing",
+        "ownership",
+        "packaging",
+        "ai-visibility",
+        "m3"
+      ],
+      "addedDate": "2026-10-16"
     }
   ]
 }
