@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-19T17:51:19.870Z",
+  "updatedAt": "2026-10-19T18:01:45.000Z",
   "resources": [
     {
       "id": "notion-training-hub",
@@ -1002,6 +1002,29 @@
         "reputation-engine",
         "training",
         "process"
+      ],
+      "addedDate": "2026-10-19"
+    },
+    {
+      "id": "gyc-master-plan-bruce-vision-v2",
+      "module": null,
+      "category": "strategy",
+      "title": "GYC Master Plan — Bruce's Vision for the Company",
+      "description": "14 slides. Visuals edition of the Master Plan deck, built around the 6 master-plan visuals: North Star (M3 as GYC's operating system — More, Better, Faster), the M3 System Map, the Five Workstreams (WS1 M3 build-out, WS2 Onboarding Engine, WS3 Support & Escalation, WS4 Re-onboarding Wave, WS5 Sales & Positioning), the 5-part onboarding flow (Part 1 is the gate) + Kaci's checklists and capacity math, ticket-first support with Maya triage and 3 bundles, level-up-the-base re-onboarding, Jesse's Success Stack, phased timeline to the January enrollment sprint, the open team-structure decision, a what-we-each-own ownership map, and a closing rally. Speaker notes on every slide carry Bruce's intent and transcript nuance.",
+      "url": "https://docs.google.com/presentation/d/1fg0jskIaTVAe6bZeYAkTDIQGcuOZtK9Xa2VCAREhn0k/edit",
+      "slideCount": 14,
+      "status": "live",
+      "source": "5 Bruce/Todd Oct 16–19 transcripts + master plan",
+      "sourceUrl": "",
+      "audience": "All staff + Leadership",
+      "tags": [
+        "master-plan",
+        "m3",
+        "delivery",
+        "onboarding",
+        "strategy",
+        "vision",
+        "leadership"
       ],
       "addedDate": "2026-10-19"
     }
