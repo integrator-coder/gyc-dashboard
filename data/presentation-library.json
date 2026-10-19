@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-13T17:39:15Z",
+  "updatedAt": "2026-10-19T20:00:00Z",
   "resources": [
     {
       "id": "notion-training-hub",
@@ -957,6 +957,27 @@
         "m3"
       ],
       "addedDate": "2026-10-16"
+    },
+    {
+      "id": "onboarding-customer-journey-2026-10-19",
+      "module": null,
+      "category": "onboarding",
+      "title": "GYC Onboarding — The Customer Journey",
+      "description": "11-slide internal training deck on the five-part onboarding sequence, the M3/GBP access gate, parallel execution, delivery bookend, capacity math, and team ownership decisions.",
+      "url": "https://docs.google.com/presentation/d/1uzOshHos5XS3rzecJuZNVhDnjf27biC0D6CSqBDVINg/edit",
+      "slideCount": 11,
+      "status": "live",
+      "source": "Transcript — Bruce + Todd, Oct 19 onboarding journey",
+      "audience": "Onboarding team",
+      "tags": [
+        "onboarding",
+        "m3",
+        "gbp",
+        "reputation-engine",
+        "training",
+        "process"
+      ],
+      "addedDate": "2026-10-19"
     }
   ]
 }
