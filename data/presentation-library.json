@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-19T20:00:00Z",
+  "updatedAt": "2026-10-19",
   "resources": [
     {
       "id": "notion-training-hub",
@@ -976,6 +976,28 @@
         "reputation-engine",
         "training",
         "process"
+      ],
+      "addedDate": "2026-10-19"
+    },
+    {
+      "id": "gyc-master-plan-bruces-vision-2026-10-19",
+      "module": null,
+      "category": "strategy",
+      "title": "GYC Master Plan — Bruce's Vision for the Company",
+      "description": "14-slide team deck translating Bruce's transformation vision: M3 as GYC's operating system, More/Better/Faster, the M3 system map, five workstreams (platform build-out, onboarding engine, support/escalation, re-onboarding wave, sales positioning), the 5-part onboarding flow and Kaci's checklists, the ticket-first support model, the phased timeline to the January enrollment sprint, the open team-structure decision, and who owns what. Speaker notes on every slide carry Bruce's intent and transcript nuance.",
+      "url": "https://docs.google.com/presentation/d/177vJoArLA2aYMaNxP4R3oE_iHb27jafX3Ga_65cADsY/edit",
+      "slideCount": 14,
+      "status": "live",
+      "source": "5 Bruce/Todd Oct 16–19 transcripts + master plan",
+      "audience": "All staff + Leadership",
+      "tags": [
+        "master-plan",
+        "m3",
+        "delivery",
+        "onboarding",
+        "strategy",
+        "vision",
+        "leadership"
       ],
       "addedDate": "2026-10-19"
     }
