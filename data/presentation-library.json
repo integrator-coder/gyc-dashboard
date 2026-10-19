@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-19T18:01:45.000Z",
+  "updatedAt": "2026-10-19T18:13:13.000Z",
   "resources": [
     {
       "id": "notion-training-hub",
@@ -37,11 +37,11 @@
       "module": null,
       "category": "strategy",
       "title": "GYC Master Plan — Bruce's Vision for the Company",
-      "description": "15 slides. The single artifact Bruce asked for to hold the whole transformation in one view. M3 as the operating system; piecemeal templates → bundled, AI-powered, daily-cadence delivery (More, Better, Faster). Covers the 3 layers of delivery (Basic → Reputation Engine ~80% of clients → Strategist Access +$1,500/mo with Stefen; Web runs alongside), the 5 workstreams, the M3 system map, the 5-part onboarding engine + Kaci's checklists, support/escalation, the team-staffing open question, phased timeline to January, sales Success Stack, and a RACI (Todd designs → Dev builds → Lada implements/rolls out → team runs). Built on Fable 5.1 from 5 Bruce/Todd Oct 16–19 transcripts.",
+      "description": "17 slides. The single artifact Bruce asked for to hold the whole transformation in one view. M3 as the operating system; piecemeal templates → bundled, AI-powered, daily-cadence delivery (More, Better, Faster). Covers the offer (Growth eliminated, Core renamed the Engine at $997/mo; Blueprint/Basic paused; Strategist +$1,500/mo premium, capped/apply-only, Stefen backed by Bruce), the product lines (Engine incl. Google LSA + Simple CRM · Website with AI-visibility content built in · one-time AI Visibility Website Upgrade · Simple CRM owned by Travis), the 5 workstreams, the M3 system map, the 5-part onboarding engine + Kaci's checklists, support/escalation, the team-staffing open question, phased timeline to January, sales Success Stack, and a RACI (Todd designs → Dev builds → Lada rolls out → team runs). Built on Fable 5.1 from 6 transcripts: Bruce's Oct 15 first-pass restructure (leadership) + Oct 16–19 Bruce/Todd/Zu/Kaci/Jesse sessions.",
       "url": "https://docs.google.com/presentation/d/177vJoArLA2aYMaNxP4R3oE_iHb27jafX3Ga_65cADsY/edit",
-      "slideCount": 15,
+      "slideCount": 17,
       "status": "live",
-      "source": "5 Bruce/Todd Oct 16–19 transcripts + GYC Master Plan doc",
+      "source": "6 transcripts — Oct 15 Bruce first-pass restructure + Oct 16–19 Bruce/Todd/Zu/Kaci/Jesse + GYC Master Plan doc",
       "sourceUrl": "",
       "audience": "All staff + Leadership",
       "tags": [
@@ -54,7 +54,8 @@
         "leadership",
         "reputation-engine",
         "tiers",
-        "sales"
+        "sales",
+        "product-lines"
       ],
       "addedDate": "2026-10-19"
     },
@@ -1002,29 +1003,6 @@
         "reputation-engine",
         "training",
         "process"
-      ],
-      "addedDate": "2026-10-19"
-    },
-    {
-      "id": "gyc-master-plan-bruce-vision-v2",
-      "module": null,
-      "category": "strategy",
-      "title": "GYC Master Plan — Bruce's Vision for the Company",
-      "description": "14 slides. Visuals edition of the Master Plan deck, built around the 6 master-plan visuals: North Star (M3 as GYC's operating system — More, Better, Faster), the M3 System Map, the Five Workstreams (WS1 M3 build-out, WS2 Onboarding Engine, WS3 Support & Escalation, WS4 Re-onboarding Wave, WS5 Sales & Positioning), the 5-part onboarding flow (Part 1 is the gate) + Kaci's checklists and capacity math, ticket-first support with Maya triage and 3 bundles, level-up-the-base re-onboarding, Jesse's Success Stack, phased timeline to the January enrollment sprint, the open team-structure decision, a what-we-each-own ownership map, and a closing rally. Speaker notes on every slide carry Bruce's intent and transcript nuance.",
-      "url": "https://docs.google.com/presentation/d/1fg0jskIaTVAe6bZeYAkTDIQGcuOZtK9Xa2VCAREhn0k/edit",
-      "slideCount": 14,
-      "status": "live",
-      "source": "5 Bruce/Todd Oct 16–19 transcripts + master plan",
-      "sourceUrl": "",
-      "audience": "All staff + Leadership",
-      "tags": [
-        "master-plan",
-        "m3",
-        "delivery",
-        "onboarding",
-        "strategy",
-        "vision",
-        "leadership"
       ],
       "addedDate": "2026-10-19"
     }
