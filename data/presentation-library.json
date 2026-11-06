@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-01T21:20:00.000Z",
+  "updatedAt": "2026-11-06T21:15:00.000Z",
   "resources": [
     {
       "id": "notion-training-hub",
@@ -1034,6 +1034,26 @@
       ],
       "addedDate": "2026-11-01",
       "docUrl": "https://docs.google.com/document/d/1yqJAT9MWGrZgVydg2RvLCtsQ6nGmrpuUlud-ieQZpz0/edit"
+    },
+    {
+      "id": "research-agent-access-2027-deep-dive-2026-11-06",
+      "module": null,
+      "category": "research",
+      "title": "The Agent Can't Always Get In",
+      "description": "18-slide research deep dive on agent-task fit, proactive outcomes, authorization, the Three-Zone Web, trust infrastructure, agentic commerce distribution, second-order security effects, and GYC's agent-ready enrollment opportunity.",
+      "url": "https://docs.google.com/presentation/d/1J-eIyINePanK677Xl0YXaW0mP7SldFRJoOH13fjlXNA/edit",
+      "slideCount": 18,
+      "status": "live",
+      "source": "Nate B Jones — The Future Of The Internet Isn't Open For Your Agent",
+      "sourceUrl": "https://youtu.be/c3HHFL_lsLM",
+      "audience": "Todd, leadership",
+      "tags": [
+        "research",
+        "ai-strategy",
+        "ai-agents",
+        "agentic-commerce"
+      ],
+      "addedDate": "2026-11-06"
     }
   ]
 }
