@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-06T21:15:00.000Z",
+  "updatedAt": "2026-11-09T19:35:00.000Z",
   "resources": [
     {
       "id": "notion-training-hub",
@@ -1054,6 +1054,30 @@
         "agentic-commerce"
       ],
       "addedDate": "2026-11-06"
+    },
+    {
+      "id": "research-ai-data-center-backlash-2026-11-09",
+      "module": null,
+      "category": "research",
+      "title": "AI Demand Won't Wait — The Data Center Backlash",
+      "description": "8-slide research brief on the 2026 data-center backlash, the demand-infrastructure paradox, delay cascades, incumbent concentration, bubble-risk pressure valves, capacity migration, and the strategic value of stakeholder consent.",
+      "url": "https://docs.google.com/presentation/d/1s5IROR48xYRZHn9TE6G4PT4SCh27X7VOOPBZvcejhbs/edit",
+      "slideCount": 8,
+      "status": "live",
+      "source": "Nate B Jones — Is the AI Boom Over? Let's Talk About It.",
+      "sourceUrl": "https://youtu.be/illf65HD_t4?si=nRoooGph8Nsv1Tc4",
+      "audience": "Todd, leadership",
+      "tags": [
+        "research",
+        "ai-strategy",
+        "data-centers",
+        "compute-capacity",
+        "community-consent",
+        "infrastructure",
+        "vendor-resilience"
+      ],
+      "addedDate": "2026-11-09",
+      "docUrl": "https://docs.google.com/document/d/1gOYQhxzs4F3TQHKzoK7iHOpfdcCBdiW08OjlCSTJavY/edit"
     }
   ]
 }
