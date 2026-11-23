@@ -336,11 +336,11 @@ export default function LeadershipPage() {
         <DualMetricCard
           label="Contracted MRR"
           primaryValue={fmt$(metrics?.mrrContracted || metrics?.mrr)}
-          primarySub={`Current snapshot · 30d avg ${fmtMaybe$(metrics?.mrr30DayAverage)}`}
+          primarySub={`Total book incl. at-risk · 30d avg ${fmtMaybe$(metrics?.mrr30DayAverage)}`}
           secondaryValue={fmtMaybe$(metrics?.mrrCollected)}
-          secondarySub={`Collectible now · ${fmtMaybeN(metrics?.unpaidCount)} unpaid subs excluded`}
+          secondarySub="Collectible now (active + past due)"
           atRisk={metrics?.mrrAtRisk ? fmt$(metrics.mrrAtRisk) : null}
-          tooltip="Contracted MRR is today's live snapshot of active, past-due, and unpaid recurring subscriptions. The 30-day average is computed from the daily MRR lifecycle series. Collectible MRR excludes unpaid subscriptions; the at-risk amount is the gap."
+          tooltip={`Contracted MRR is today's total recurring book, including active, past-due, and ${fmtMaybeN(metrics?.unpaidCount)} unpaid subscriptions. Collectible MRR includes active and past-due subscriptions; At Risk is the unpaid portion. The 30-day average comes from the daily MRR lifecycle series.`}
         />
         <Card label="Cash Collected (30d)" value={fmt$(metrics?.totalRevenue)} sub="Stripe payments — not MRR" tooltip="All successful Stripe charges in the rolling 30-day window, net of refunds attached to those charges. Includes recurring subscriptions, setup fees, PIF/upfront payments, and direct one-time charges." />
         <DualMetricCard

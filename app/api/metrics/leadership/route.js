@@ -16,7 +16,10 @@ const { Pool } = pkg
 const pool = new Pool({ connectionString: process.env.NEON_DATABASE_URL || process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } })
 
 const SNAPSHOT_MAX_AGE_HOURS = 1
-const BUNDLE_SCHEMA_VERSION = 2
+// Increment whenever a bundled source changes meaning or shape. This forces
+// pre-change LeadershipSnapshot rows to refresh instead of serving stale cards
+// for up to an hour after a deploy.
+const BUNDLE_SCHEMA_VERSION = 3
 
 async function ensureTable() {
   await pool.query(`
