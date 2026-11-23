@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-09T19:35:00.000Z",
+  "updatedAt": "2026-11-23T14:20:00.000Z",
   "resources": [
     {
       "id": "notion-training-hub",
@@ -1078,6 +1078,31 @@
       ],
       "addedDate": "2026-11-09",
       "docUrl": "https://docs.google.com/document/d/1gOYQhxzs4F3TQHKzoK7iHOpfdcCBdiW08OjlCSTJavY/edit"
+    },
+    {
+      "id": "research-systemic-infrastructure-outages-2026-11-23",
+      "module": null,
+      "category": "research",
+      "title": "When the Fix Becomes the Failure",
+      "description": "8-slide research brief on the November 2026 outage cluster, the complexity-speed asymmetry, recovery amplification, hidden dependency risk, and a practical resilience playbook for GYC's cloud and API stack.",
+      "url": "https://docs.google.com/presentation/d/1W1knbY7qMbasdw6jpDutaT_UPav2Q37_xZ2WMx0BOBQ/edit",
+      "slideCount": 8,
+      "status": "live",
+      "source": "Nate B Jones — Microsoft, The FAA And Even The NSA Had Outages In One Week. What Is Happening?",
+      "sourceUrl": "https://youtu.be/fFeyE4nINqs",
+      "audience": "Todd, leadership",
+      "tags": [
+        "research",
+        "infrastructure",
+        "reliability",
+        "systemic-risk",
+        "cybersecurity",
+        "cloud-dependencies",
+        "business-continuity",
+        "incident-response"
+      ],
+      "addedDate": "2026-11-23",
+      "docUrl": "https://docs.google.com/document/d/1_d8pqed6lZVebw7JSTbJ4O_RZMAAZM_95zK5Ea0ApOA/edit"
     }
   ]
 }
