@@ -75,6 +75,7 @@ export default function FinancePage() {
   const [syncing, setSyncing] = useState(false)
   const [error, setError] = useState(null)
   const [mrrTrendData, setMrrTrendData] = useState(null)
+  const [cashTrendData, setCashTrendData] = useState(null)
 
   const fetchData = useCallback(async () => {
     try {
@@ -101,9 +102,21 @@ export default function FinancePage() {
     }
   }, [])
 
+  const fetchCashTrend = useCallback(async () => {
+    try {
+      const res = await fetch('/api/metrics/finance/cash-trend')
+      const json = await res.json()
+      if (!Array.isArray(json)) throw new Error('Invalid response')
+      setCashTrendData(json.filter((p) => p.month >= '2023-01'))
+    } catch (err) {
+      console.error('Cash trend fetch error:', err.message)
+    }
+  }, [])
+
   useEffect(() => {
     fetchMrrTrend()
-  }, [fetchMrrTrend])
+    fetchCashTrend()
+  }, [fetchMrrTrend, fetchCashTrend])
 
   useEffect(() => {
     const init = async () => {
@@ -469,6 +482,67 @@ export default function FinancePage() {
             </ComposedChart>
           </ResponsiveContainer>
         )}
+      </div>
+
+      {/* Cash trend uses the same month domain as the MRR chart above. */}
+      <div className="rounded-2xl p-6 executive-surface">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-sm font-semibold executive-label">
+            Cash Collected per Month
+          </h3>
+          <span className="text-xs executive-muted">Jan 2023 – Present</span>
+        </div>
+        <p className="text-xs executive-muted mb-4">
+          All successful Stripe charges, net of refunds · Includes 6-month PIF upfront payments and one-time/setup charges — monthly cash is lumpy by design and is not directly comparable to the MRR line
+        </p>
+        {!cashTrendData ? (
+          <div className="flex items-center justify-center h-48">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-t-transparent" style={{ borderColor: B.p4, borderTopColor: 'transparent' }} />
+          </div>
+        ) : cashTrendData.length === 0 ? (
+          <p className="text-center text-sm executive-muted py-12">No cash history available</p>
+        ) : (
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={cashTrendData} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+              <XAxis
+                dataKey="month"
+                tick={{ fill: B.muted, fontSize: 10 }}
+                axisLine={{ stroke: B.border }}
+                tickLine={false}
+                tickFormatter={(month, index) => {
+                  if (index % 6 !== 0) return ''
+                  const [yr, mo] = month.split('-')
+                  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+                  return months[parseInt(mo, 10) - 1] + " '" + yr.slice(2)
+                }}
+              />
+              <YAxis
+                tick={{ fill: B.muted, fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => '$' + (v / 1000).toFixed(0) + 'k'}
+                domain={[0, 'auto']}
+              />
+              <Tooltip
+                formatter={(value) => ['$' + Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 'Cash collected']}
+                contentStyle={{ background: B.panel, border: `1px solid ${B.borderStrong}`, borderRadius: 12 }}
+                labelStyle={{ color: B.muted }}
+                itemStyle={{ color: B.accent }}
+                labelFormatter={(label) => {
+                  const [yr, mo] = label.split('-')
+                  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+                  return months[parseInt(mo, 10) - 1] + ' ' + yr
+                }}
+              />
+              <Bar dataKey="cash" fill={B.p3} radius={[3, 3, 0, 0]} maxBarSize={18}>
+                {cashTrendData.map((entry) => (
+                  <Cell key={`cell-cash-trend-${entry.month}`} fill={entry.isCurrentMonth ? B.accent : B.p3} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+        <p className="mt-2 text-center text-xs executive-faint">Current partial month highlighted in gold</p>
       </div>
 
       {mrrHistory.length > 0 && (
