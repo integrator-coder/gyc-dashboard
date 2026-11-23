@@ -1105,18 +1105,18 @@
       "docUrl": "https://docs.google.com/document/d/1_d8pqed6lZVebw7JSTbJ4O_RZMAAZM_95zK5Ea0ApOA/edit"
     },
     {
-      "id": "module-12-claude-features-expanded",
+      "id": "module-12-claude-7-features",
       "module": 12,
       "category": "training",
-      "title": "Claude: The Full Work Stack — Expanded GYC Training",
-      "description": "14-slide expanded training module covering Projects, memory, Artifacts, web search, extended reasoning, connectors and MCP, Claude in Chrome, computer use, Agent Skills, Claude Code, subagents, hooks, Files API, prompt caching, Message Batches, the video's seven feature claims, two dedicated limitations lessons, GYC workflow mapping, and a governed 30-day pilot.",
+      "title": "Claude's 7 New Features — Strengths, Limits & GYC Uses",
+      "description": "10-slide training module focused only on Claude Meetings, Claude Whiteboards, Claude Sheets, Claude Data, Interactive Connectors, Custom Themes, and Advisor. Each feature includes what it replaces, strengths, limitations, setup guidance, and a GYC workflow, followed by a governance summary and selective-adoption takeaway.",
       "url": "https://docs.google.com/presentation/d/1uU8lpggpnEnVSXxVHl-uT8qc1T-9szXZV-YxSGPhCec/edit",
-      "slideCount": 14,
+      "slideCount": 10,
       "status": "live",
       "source": "Jay / RoboNuggets — Anthropic Just Dropped 7 MASSIVE Claude Features",
       "sourceUrl": "https://youtu.be/OMfU5iq8Eik",
       "audience": "GYC sales, CX, operations, content, CRM, leadership, and AI builders",
-      "tags": ["training", "ai-strategy", "claude", "projects", "memory", "artifacts", "connectors", "mcp", "claude-code", "agent-skills", "subagents", "hooks", "computer-use", "api", "limitations", "governance"],
+      "tags": ["training", "ai-strategy", "claude", "meetings", "whiteboards", "sheets", "data", "interactive-connectors", "custom-themes", "advisor", "limitations", "governance"],
       "addedDate": "2026-11-23",
       "docUrl": "https://docs.google.com/document/d/1MExyxfJXsF2pGUekM-CkPWiYtw5FZanY2LJCGIajXKk/edit",
       "notionUrl": "https://www.notion.so/421ca865e1978146aea5dee036298f41"
