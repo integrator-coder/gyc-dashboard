@@ -1103,6 +1103,23 @@
       ],
       "addedDate": "2026-11-23",
       "docUrl": "https://docs.google.com/document/d/1_d8pqed6lZVebw7JSTbJ4O_RZMAAZM_95zK5Ea0ApOA/edit"
+    },
+    {
+      "id": "module-12-claude-7-features",
+      "module": 12,
+      "category": "training",
+      "title": "Claude’s 7 New Features — GYC Training",
+      "description": "9-slide training module on Claude Meetings, Whiteboards, Sheets, Data, interactive connectors, Custom themes, and Advisor, with GYC pilots, governance controls, and speaker notes.",
+      "url": "https://docs.google.com/presentation/d/1uU8lpggpnEnVSXxVHl-uT8qc1T-9szXZV-YxSGPhCec/edit",
+      "slideCount": 9,
+      "status": "live",
+      "source": "Jay / RoboNuggets — Anthropic Just Dropped 7 MASSIVE Claude Features",
+      "sourceUrl": "https://youtu.be/OMfU5iq8Eik",
+      "audience": "GYC sales, CX, operations, content, CRM, leadership, and AI builders",
+      "tags": ["training", "ai-strategy", "claude", "artifacts", "connectors", "data", "meetings"],
+      "addedDate": "2026-11-23",
+      "docUrl": "https://docs.google.com/document/d/1MExyxfJXsF2pGUekM-CkPWiYtw5FZanY2LJCGIajXKk/edit",
+      "notionUrl": "https://app.notion.com/p/Training-Module-Claude-s-7-New-Features-421ca865e1978146aea5dee036298f41"
     }
   ]
 }
