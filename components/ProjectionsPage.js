@@ -645,9 +645,9 @@ export default function ProjectionsPage() {
       <Section title="Scoreboard" sub="Live metrics pulled from Stripe + cash ledger">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16 }}>
           <KpiCard
-            title="Current MRR"
+            title="Contracted MRR"
             value={loading ? '…' : fmtM(s?.mrr)}
-            sub={`${s?.activeClients ?? '…'} active clients`}
+            sub={`${s?.activeClients ?? '…'} active, past-due, or unpaid contracts`}
             icon="🔁"
             accent={C.purple}
           />
@@ -704,9 +704,9 @@ export default function ProjectionsPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
                 <KpiCard
-                  title="Recurring MRR"
+                  title="Contracted MRR"
                   value={fmtM(rev.mrrComponent)}
-                  sub="Active subscriptions billed monthly via Stripe"
+                  sub="Active + past-due + unpaid recurring contracts"
                   icon="🔁"
                   accent={C.purple}
                 />

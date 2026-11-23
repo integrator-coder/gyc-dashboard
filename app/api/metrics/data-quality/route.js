@@ -140,12 +140,12 @@ export async function GET() {
     const mrrOk = mrrVal > 0
     const clientsOk = activeCount > 0
     addCheck(
-      'MRR Not Zero / Active Clients',
+      'MRR Not Zero / Contracted Accounts',
       mrrOk && clientsOk,
       `${fmtMoney(mrrVal)} MRR · ${activeCount} active clients`,
       mrrOk && clientsOk ? null : [
         !mrrOk ? 'MRR is zero or null' : null,
-        !clientsOk ? 'No active Stripe customers found' : null,
+        !clientsOk ? 'No active, past-due, or unpaid Stripe customer records found' : null,
       ].filter(Boolean).join('; ')
     )
 

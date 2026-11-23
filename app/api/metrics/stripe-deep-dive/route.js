@@ -57,7 +57,8 @@ export async function GET() {
         COUNT(*)::int AS acquired,
         SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END)::int AS still_active,
         SUM(CASE WHEN status = 'past_due' THEN 1 ELSE 0 END)::int AS past_due,
-        SUM(CASE WHEN status NOT IN ('active','past_due') THEN 1 ELSE 0 END)::int AS churned
+        SUM(CASE WHEN status = 'unpaid' THEN 1 ELSE 0 END)::int AS unpaid,
+        SUM(CASE WHEN status NOT IN ('active','past_due','unpaid') THEN 1 ELSE 0 END)::int AS churned
       FROM "StripeCustomer"
       GROUP BY 1
       ORDER BY 1
@@ -607,9 +608,10 @@ export async function GET() {
       acquired: r.acquired,
       stillActive: r.still_active,
       pastDue: r.past_due,
+      unpaid: r.unpaid,
       churned: r.churned,
       retentionPct: r.acquired > 0
-        ? Math.round(((r.still_active + r.past_due) / r.acquired) * 100)
+        ? Math.round(((r.still_active + r.past_due + r.unpaid) / r.acquired) * 100)
         : 0,
     }))
 

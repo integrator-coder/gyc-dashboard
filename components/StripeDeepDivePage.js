@@ -168,6 +168,7 @@ function CohortTable({ cohortData }) {
               <th className="text-right py-2 pr-4">Acquired</th>
               <th className="text-right py-2 pr-4">Still Active</th>
               <th className="text-right py-2 pr-4">Past Due</th>
+              <th className="text-right py-2 pr-4">Unpaid / At Risk</th>
               <th className="text-right py-2 pr-4">Churned</th>
               <th className="text-right py-2">Retention %</th>
             </tr>
@@ -179,6 +180,7 @@ function CohortTable({ cohortData }) {
                 <td className="text-right py-3 pr-4 text-gray-300">{row.acquired}</td>
                 <td className="text-right py-3 pr-4 text-emerald-400 font-semibold">{row.stillActive}</td>
                 <td className="text-right py-3 pr-4 text-yellow-400">{row.pastDue}</td>
+                <td className="text-right py-3 pr-4 text-orange-400">{row.unpaid || 0}</td>
                 <td className="text-right py-3 pr-4 text-red-400">{row.churned}</td>
                 <td className="text-right py-3">
                   <span className={`font-bold ${row.retentionPct >= 90 ? 'text-emerald-400' : row.retentionPct >= 75 ? 'text-yellow-400' : 'text-red-400'}`}>{row.retentionPct}%</span>
