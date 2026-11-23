@@ -152,6 +152,7 @@ export async function getFinanceMetrics() {
       arrCollected: Math.round(mrrCollected * 12 * 100) / 100,
       arrContracted: Math.round(mrrContracted * 12 * 100) / 100,
       unpaidCount,
+      unpaidCustomerCount: unpaidCount,
     }
 
     return {
