@@ -334,15 +334,15 @@ export default function LeadershipPage() {
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <DualMetricCard
-          label="MRR"
-          primaryValue={fmt$(metrics?.mrrCollected || metrics?.mrr)}
-          primarySub="Active + past-due subs"
-          secondaryValue={fmtMaybe$(metrics?.mrrContracted)}
-          secondarySub={`Contracted incl. ${fmtMaybeN(metrics?.unpaidCount)} unpaid subs`}
+          label="Contracted MRR"
+          primaryValue={fmt$(metrics?.mrrContracted || metrics?.mrr)}
+          primarySub={`Current snapshot · 30d avg ${fmtMaybe$(metrics?.mrr30DayAverage)}`}
+          secondaryValue={fmtMaybe$(metrics?.mrrCollected)}
+          secondarySub={`Collectible now · ${fmtMaybeN(metrics?.unpaidCount)} unpaid subs excluded`}
           atRisk={metrics?.mrrAtRisk ? fmt$(metrics.mrrAtRisk) : null}
-          tooltip="Two MRR views: Active MRR counts active + past-due subscriptions (money being collected now). Contracted MRR also includes unpaid subscriptions that have failed payments but haven't yet cancelled. The at-risk amount is the gap between the two."
+          tooltip="Contracted MRR is today's live snapshot of active, past-due, and unpaid recurring subscriptions. The 30-day average is computed from the daily MRR lifecycle series. Collectible MRR excludes unpaid subscriptions; the at-risk amount is the gap."
         />
-        <Card label="Revenue (30d)" value={fmt$(metrics?.totalRevenue)} tooltip="Total cash collected in the last 30 days across all Stripe payments. Includes one-time fees, signing payments, and recurring charges. Source: Stripe." />
+        <Card label="Cash Collected (30d)" value={fmt$(metrics?.totalRevenue)} sub="Stripe payments — not MRR" tooltip="Total cash collected in the last 30 days across all Stripe payments. This is a cash-flow metric, not an MRR value. It includes one-time fees, signing payments, and recurring charges. Source: Stripe." />
         <DualMetricCard
           label="ARR"
           primaryValue={fmt$(metrics?.arrCollected || Number(metrics?.mrrCollected || metrics?.mrr || 0) * 12)}

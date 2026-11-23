@@ -244,20 +244,20 @@ export default function FinancePage() {
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <MetricCard
-          title="MRR"
-          value={formatCurrency(metrics?.mrr)}
-          subtitle="Monthly Recurring Revenue"
+          title="Contracted MRR"
+          value={formatCurrency(metrics?.mrrContracted ?? metrics?.mrr)}
+          subtitle={metrics?.mrr30DayAverage != null ? `Current snapshot · 30d avg ${formatCurrency(metrics.mrr30DayAverage)}` : 'Current monthly recurring revenue'}
           trend={mrrTrend ? `${mrrTrend.pct}% vs last sync` : undefined}
           trendPositive={mrrTrend?.positive}
           icon="💰"
-          tooltip="Sum of all active Stripe subscription amounts. Monthly subs count at face value; annual subs are divided by 12. Includes active + past_due subscriptions. Excludes one-time payments and cancelled subs. Snapshotted at last sync."
+          tooltip="Today's contracted MRR snapshot: active, past-due, and unpaid recurring subscriptions. The subtitle's 30-day average is computed from the daily MRR lifecycle series. Excludes one-time payments and cancelled subscriptions."
         />
         <MetricCard
-          title="Revenue (30d)"
+          title="Cash Collected (30d)"
           value={formatCurrency(metrics?.totalRevenue)}
-          subtitle="Cash collected, last 30 days"
+          subtitle="Stripe payments — not MRR"
           icon="💵"
-          tooltip="Total cash collected from paid Stripe invoices in the rolling 30-day window prior to last sync. Includes both recurring subscription charges and one-time payments."
+          tooltip="Total cash collected from paid Stripe invoices in the rolling 30-day window prior to last sync. This is a cash-flow metric, not MRR. Includes both recurring subscription charges and one-time payments."
         />
         <MetricCard
           title="ARR"

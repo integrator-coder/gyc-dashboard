@@ -103,6 +103,9 @@ export async function getFinanceMetrics() {
         mrr: Number(row.mrr) || 0,
       }
     })
+    const mrr30DayAverage = mrrHistory.length
+      ? mrrHistory.reduce((sum, point) => sum + point.mrr, 0) / mrrHistory.length
+      : 0
 
     // Last 35 days of daily revenue (oldest first)
     const thirtyFiveDaysAgo = new Date()
@@ -144,6 +147,7 @@ export async function getFinanceMetrics() {
       ...latest,
       mrrCollected: Math.round(mrrCollected * 100) / 100,
       mrrContracted: Math.round(mrrContracted * 100) / 100,
+      mrr30DayAverage: Math.round(mrr30DayAverage * 100) / 100,
       mrrAtRisk: Math.round(mrrAtRisk * 100) / 100,
       arrCollected: Math.round(mrrCollected * 12 * 100) / 100,
       arrContracted: Math.round(mrrContracted * 12 * 100) / 100,
