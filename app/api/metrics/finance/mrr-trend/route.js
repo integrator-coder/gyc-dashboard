@@ -32,8 +32,8 @@ function parseMoney(val) {
   return isNaN(num) ? null : num
 }
 
-// Sheet covers whatever months it has data for.
-// MRRHistory fills in any months the sheet doesn't cover.
+// The sheet is the legacy basis through Apr 2026. From May 2026 onward,
+// MRRHistory is the locked collectible-MRR series (active + past_due).
 
 export async function GET() {
   try {
@@ -110,7 +110,7 @@ export async function GET() {
     // Continue with Stripe data only
   }
 
-  // ── 2. MRRHistory table — fill in any months the sheet doesn't cover ──────
+  // ── 2. Canonical collectible MRR history (Stripe era begins May 2026) ─────
   let stripePoints = []
   const sheetMonths = new Set(sheetPoints.map((p) => p.month))
   const client = await pool.connect()
@@ -124,7 +124,7 @@ export async function GET() {
         "expansionMrr"::float,
         "activeSubscriptions"
       FROM "MRRHistory"
-      WHERE "tenantId" = 'gyc'
+      WHERE "tenantId" = 'gyc' AND "month" >= '2026-05'
       ORDER BY "month" ASC
     `)
 
@@ -135,8 +135,52 @@ export async function GET() {
       mrr: r.mrr || 0,
       newMrr: r.newmrr ?? null,
       churnedMrr: r.churnedmrr ?? null,
-      source: 'stripe',
+      source: 'stripe-collectible',
     }))
+
+    // Sep/Oct have immutable month-end snapshots on the collectible basis.
+    // Prefer those over legacy rows produced by live-object reconstruction.
+    const snapshotResult = await client.query(`
+      SELECT DISTINCT ON (to_char("syncedAt" AT TIME ZONE 'America/Toronto', 'YYYY-MM'))
+        to_char("syncedAt" AT TIME ZONE 'America/Toronto', 'YYYY-MM') AS month,
+        ROUND(mrr::numeric, 2)::float AS mrr
+      FROM "StripeMetrics"
+      WHERE "tenantId" = 'gyc'
+        AND "syncedAt" >= TIMESTAMPTZ '2026-09-01 America/Toronto'
+        AND "syncedAt" < TIMESTAMPTZ '2026-11-01 America/Toronto'
+        AND "activeCustomers" < 320
+      ORDER BY to_char("syncedAt" AT TIME ZONE 'America/Toronto', 'YYYY-MM'), "syncedAt" DESC
+    `)
+    for (const snapshot of snapshotResult.rows) {
+      stripePoints = stripePoints.filter((point) => point.month !== snapshot.month)
+      stripePoints.push({
+        month: snapshot.month,
+        mrr: snapshot.mrr,
+        newMrr: null,
+        churnedMrr: null,
+        source: 'stripe-collectible-snapshot',
+      })
+    }
+
+    // The current month is a live point, not a fabricated month-end snapshot.
+    // Replace/append it from the same collectible basis used by Finance cards.
+    const currentMonth = new Date().toISOString().slice(0, 7)
+    const currentResult = await client.query(`
+      SELECT ROUND(COALESCE(SUM(mrr), 0)::numeric, 2)::float AS mrr
+      FROM "StripeCustomer"
+      WHERE "tenantId" = 'gyc' AND status IN ('active', 'past_due')
+    `)
+    const currentMrr = currentResult.rows[0]?.mrr || 0
+    if (currentMonth >= '2026-05' && currentMrr > 0) {
+      stripePoints = stripePoints.filter((point) => point.month !== currentMonth)
+      stripePoints.push({
+        month: currentMonth,
+        mrr: currentMrr,
+        newMrr: null,
+        churnedMrr: null,
+        source: 'stripe-collectible-live',
+      })
+    }
   } catch (err) {
     console.error('MRR trend — MRRHistory error:', err.message)
   } finally {

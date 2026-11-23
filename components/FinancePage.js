@@ -391,7 +391,7 @@ export default function FinancePage() {
           <span className="text-xs executive-muted">Jan 2023 – Present</span>
         </div>
         <p className="text-xs executive-muted mb-4">
-          Jan 2023–Feb 2026: source Google Sheets · Mar 2026+: source Stripe · New MRR shown from Mar 2026 onwards
+          Jan 2023–Apr 2026: Google Sheets · Stripe collectible MRR (active + past due) begins May 2026 · Feb→Mar methodology break is not churn
         </p>
         {!mrrTrendData ? (
           <div className="flex items-center justify-center h-48">
