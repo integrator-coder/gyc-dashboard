@@ -83,7 +83,7 @@ async function sync() {
   // past_due = contracted revenue not yet collected (should count for MRR)
   // trialing = committed customers who will convert to paid
   // NOTE: 'paused' subscriptions are intentionally excluded — paused = not charging = does NOT count toward MRR
-  const statusesToSync = ['active', 'past_due', 'trialing']
+  const statusesToSync = ['active', 'past_due', 'unpaid', 'trialing']
   const allSubscriptions = []
 
   for (const status of statusesToSync) {
@@ -141,8 +141,12 @@ async function sync() {
 
     existing.mrr += subMrr
     if (createdAt < existing.createdAt) existing.createdAt = createdAt
-    if (existing.status !== 'active' && sub._syncStatus === 'active') existing.status = 'active'
-    else if (existing.status === 'trialing' && sub._syncStatus === 'past_due') existing.status = 'past_due'
+    // Preserve the highest-risk status when a customer has multiple subscriptions.
+    // Otherwise an active subscription can mask a past_due/unpaid subscription.
+    const statusPriority = { trialing: 0, active: 1, past_due: 2, unpaid: 3 }
+    if ((statusPriority[sub._syncStatus] ?? -1) > (statusPriority[existing.status] ?? -1)) {
+      existing.status = sub._syncStatus
+    }
   }
 
   const customers = Array.from(customersById.values())
