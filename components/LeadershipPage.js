@@ -342,7 +342,7 @@ export default function LeadershipPage() {
           atRisk={metrics?.mrrAtRisk ? fmt$(metrics.mrrAtRisk) : null}
           tooltip="Contracted MRR is today's live snapshot of active, past-due, and unpaid recurring subscriptions. The 30-day average is computed from the daily MRR lifecycle series. Collectible MRR excludes unpaid subscriptions; the at-risk amount is the gap."
         />
-        <Card label="Cash Collected (30d)" value={fmt$(metrics?.totalRevenue)} sub="Stripe payments — not MRR" tooltip="Total cash collected in the last 30 days across all Stripe payments. This is a cash-flow metric, not an MRR value. It includes one-time fees, signing payments, and recurring charges. Source: Stripe." />
+        <Card label="Cash Collected (30d)" value={fmt$(metrics?.totalRevenue)} sub="Stripe payments — not MRR" tooltip="All successful Stripe charges in the rolling 30-day window, net of refunds attached to those charges. Includes recurring subscriptions, setup fees, PIF/upfront payments, and direct one-time charges." />
         <DualMetricCard
           label="ARR"
           primaryValue={fmt$(metrics?.arrCollected || Number(metrics?.mrrCollected || metrics?.mrr || 0) * 12)}

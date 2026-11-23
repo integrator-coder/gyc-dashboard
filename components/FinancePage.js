@@ -257,7 +257,7 @@ export default function FinancePage() {
           value={formatCurrency(metrics?.totalRevenue)}
           subtitle="Stripe payments — not MRR"
           icon="💵"
-          tooltip="Total cash collected from paid Stripe invoices in the rolling 30-day window prior to last sync. This is a cash-flow metric, not MRR. Includes both recurring subscription charges and one-time payments."
+          tooltip="All successful Stripe charges in the rolling 30-day window, net of refunds attached to those charges. Includes recurring subscriptions, setup fees, PIF/upfront payments, and direct one-time charges."
         />
         <MetricCard
           title="ARR"

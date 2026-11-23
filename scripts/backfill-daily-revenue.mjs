@@ -181,7 +181,7 @@ async function main() {
       for (const charge of charges) {
         const dateStr = toEasternDateStr(charge.created)
         const existing = dailyMap.get(dateStr) || { amount: 0, count: 0 }
-        existing.amount += charge.amount / 100
+        existing.amount += (charge.amount - (charge.amount_refunded || 0)) / 100
         existing.count += 1
         dailyMap.set(dateStr, existing)
       }
