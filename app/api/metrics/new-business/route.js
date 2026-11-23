@@ -451,7 +451,11 @@ export async function getNewBusinessMetrics() {
           AND term::numeric > 0
         ORDER BY renewal_month_key
       `),
-      pool.query(`SELECT mrr FROM "StripeMetrics" ORDER BY "syncedAt" DESC LIMIT 1`),
+      pool.query(`
+        SELECT COALESCE(SUM(mrr), 0)::float AS mrr
+        FROM "StripeCustomer"
+        WHERE status IN ('active', 'past_due', 'unpaid')
+      `),
       pool.query(`SELECT month, mrr::numeric AS mrr FROM "MRRHistory" WHERE "tenantId" = 'gyc' ORDER BY month DESC LIMIT 12`),
       pool.query(`
         SELECT to_char(date::date, 'YYYY-MM') AS month, SUM(amount) AS mrr
@@ -496,7 +500,7 @@ export async function getNewBusinessMetrics() {
     }
 
     const currentMRR = parseFloat(mrrMetricsRes.rows[0]?.mrr || 0)
-    const PROJECTION_START_MRR = 230354  // Fixed starting MRR for projection baseline
+    const PROJECTION_START_MRR = currentMRR
 
     // Build historical MRR for last 12 months: MRRHistory primary, DailyRevenue fallback
     const mrrHistoryByMonth = {}
@@ -553,7 +557,7 @@ export async function getNewBusinessMetrics() {
       return { month: key, label, renewalThisMonth: Math.round(renewalThisMonth), scenarios }
     })
 
-    const mrrProjection = { currentMRR, projectionStartMRR: PROJECTION_START_MRR, historical, projected }
+    const mrrProjection = { currentMRR, projectionStartMRR: PROJECTION_START_MRR, mrrBasis: 'contracted', historical, projected }
     // ─── End MRR Growth Projection ────────────────────────────────────────────────
 
     // PIF vs Recurring stats

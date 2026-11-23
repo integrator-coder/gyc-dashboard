@@ -42,8 +42,23 @@ export async function GET() {
 
     // ── Check 2: MRR/ARR consistency ────────────────────────────────────────
     const { rows: stripeRows } = await client.query(`
-      SELECT mrr, "totalRevenue", "activeCustomers" FROM "StripeMetrics"
-      ORDER BY "syncedAt" DESC LIMIT 1
+      SELECT
+        live.mrr,
+        snapshot."totalRevenue",
+        live."activeCustomers"
+      FROM (
+        SELECT
+          COALESCE(SUM(mrr), 0)::float AS mrr,
+          COUNT(*)::int AS "activeCustomers"
+        FROM "StripeCustomer"
+        WHERE status IN ('active', 'past_due', 'unpaid')
+      ) live
+      CROSS JOIN LATERAL (
+        SELECT "totalRevenue"
+        FROM "StripeMetrics"
+        ORDER BY "syncedAt" DESC
+        LIMIT 1
+      ) snapshot
     `)
     const sm = stripeRows[0] || null
     if (!sm || !sm.mrr) {
@@ -117,7 +132,7 @@ export async function GET() {
 
     // ── Check 5: MRR not zero / active clients > 0 ───────────────────────────
     const { rows: activeRows } = await client.query(`
-      SELECT COUNT(*) AS cnt FROM "StripeCustomer" WHERE status = 'active'
+      SELECT COUNT(*) AS cnt FROM "StripeCustomer" WHERE status IN ('active', 'past_due', 'unpaid')
     `)
     const activeCount = Number(activeRows[0]?.cnt || 0)
     const mrrVal = sm ? Number(sm.mrr) : 0

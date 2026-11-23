@@ -127,13 +127,18 @@ export async function GET() {
     const daysRemaining = daysInYear - daysElapsed
 
     // ─── A. Scoreboard KPIs from DB ───────────────────────────────────────────
-    const [metricsRes, activeClientsRes, ytdRes, monthlyActualsRes, dealMrrRes] =
+    const [metricsRes, contractedMrrRes, activeClientsRes, ytdRes, monthlyActualsRes, dealMrrRes] =
       await Promise.all([
         dbClient.query(
           `SELECT * FROM "StripeMetrics" ORDER BY "syncedAt" DESC LIMIT 2`
         ),
+        dbClient.query(`
+          SELECT COALESCE(SUM(mrr), 0)::float AS contracted_mrr
+          FROM "StripeCustomer"
+          WHERE status IN ('active', 'past_due', 'unpaid')
+        `),
         dbClient.query(
-          `SELECT COUNT(*) AS cnt FROM "StripeCustomer" WHERE status = 'active'`
+          `SELECT COUNT(*) AS cnt FROM "StripeCustomer" WHERE status IN ('active', 'past_due', 'unpaid')`
         ),
         dbClient.query(
           `SELECT COALESCE(SUM(amount), 0)::float AS ytd_cash FROM "DailyRevenue" WHERE date >= $1`,
@@ -167,7 +172,7 @@ export async function GET() {
     const previousMetrics = metricsRes.rows[1] || {}
     const activeClients = Number(activeClientsRes.rows[0]?.cnt || 0)
     const ytdCash = Number(ytdRes.rows[0]?.ytd_cash || 0)
-    const currentMRR = Number(latestMetrics.mrr || 213334)
+    const currentMRR = Number(contractedMrrRes.rows[0]?.contracted_mrr || latestMetrics.mrr || 0)
 
     // Live avg deal MRR (fallback to 2025 hardcoded values if query fails)
     const dealMrrRow = dealMrrRes.rows[0] || {}
@@ -227,8 +232,12 @@ export async function GET() {
     const daysToTarget = dailyRate > 0 ? Math.round(remaining / dailyRate) : null
 
     // NRR approximation
-    const prevMrr = Number(previousMetrics.mrr || currentMRR)
-    const nrr = prevMrr > 0 ? Math.round((currentMRR / prevMrr) * 100) : 100
+    // NRR remains snapshot-to-snapshot so both numerator and denominator use
+    // the same historical basis. Comparing live contracted MRR to the prior
+    // collectible snapshot would create a false jump when unpaid rows appear.
+    const snapshotMrr = Number(latestMetrics.mrr || 0)
+    const prevMrr = Number(previousMetrics.mrr || snapshotMrr)
+    const nrr = prevMrr > 0 ? Math.round((snapshotMrr / prevMrr) * 100) : 100
 
     // ─── Monthly revenue decomposition ───────────────────────────────────────
     const avgDealsPerMonth = 10  // base assumption
@@ -395,7 +404,7 @@ export async function GET() {
       unifiedMatrix_3,
       unifiedMatrix_4,
       avgDealStats: { avgDealMRR: AVG_DEAL_MRR, avgFirstPayment: AVG_DEAL_FIRST_PAYMENT, dealCount: DEAL_COUNT_2025 },
-      keyMetrics: { nrr, quickRatio, daysToTarget, churnCost, currentMRR },
+      keyMetrics: { nrr, quickRatio, daysToTarget, churnCost, currentMRR, mrrBasis: 'contracted' },
       meta: {
         projStartKey,
         currentMRR,

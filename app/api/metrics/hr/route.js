@@ -45,11 +45,19 @@ export async function GET() {
     `)
     const config = configRows[0] || null
 
-    // Get latest MRR from StripeMetrics for RPE calc
+    // RPE uses today's full contracted recurring book, including at-risk
+    // past-due and unpaid subscriptions. StripeMetrics.mrr is a lagging
+    // collectible snapshot and must not be used as the contracted baseline.
     const { rows: metricsRows } = await client.query(`
-      SELECT mrr FROM "StripeMetrics" ORDER BY "syncedAt" DESC LIMIT 1
+      SELECT
+        COALESCE(SUM(mrr) FILTER (WHERE status = 'active'), 0)::float AS active_mrr,
+        COALESCE(SUM(mrr) FILTER (WHERE status = 'past_due'), 0)::float AS past_due_mrr,
+        COALESCE(SUM(mrr) FILTER (WHERE status = 'unpaid'), 0)::float AS unpaid_mrr,
+        COALESCE(SUM(mrr) FILTER (WHERE status IN ('active', 'past_due', 'unpaid')), 0)::float AS contracted_mrr
+      FROM "StripeCustomer"
     `)
-    const mrr = Number(metricsRows[0]?.mrr || 0)
+    const mrrBreakdown = metricsRows[0] || {}
+    const mrr = Number(mrrBreakdown.contracted_mrr || 0)
 
     const monthlyPayroll = Number(config?.monthlyPayroll || 132500)
     const impliedHeadcount = monthlyPayroll / (85000 / 12) // monthly equivalent of $85k/yr
@@ -65,6 +73,12 @@ export async function GET() {
         impliedHeadcount: Math.round(impliedHeadcount * 10) / 10,
         rpe,
         mrr,
+        mrrBasis: 'contracted',
+        mrrBreakdown: {
+          active: Number(mrrBreakdown.active_mrr || 0),
+          pastDue: Number(mrrBreakdown.past_due_mrr || 0),
+          unpaid: Number(mrrBreakdown.unpaid_mrr || 0),
+        },
       },
     })
   } catch (error) {
